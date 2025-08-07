@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Órdenes de Trabajo - TallerPro</title>
+    <link rel="stylesheet" href="../base-styles.css">
+    <link rel="stylesheet" href="ordenes-trabajo.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <h1 class="page-title">Órdenes de Trabajo</h1>
+                    <p class="page-subtitle">Gestiona todas las órdenes de servicio del taller</p>
+                </div>
+                <button class="btn btn-primary">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+                    </svg>
+                    Nueva Orden
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="orders-content">
+            <!-- Quick Stats -->
+            <div class="order-stats">
+                <div class="stat-card stat-pending">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">Pendientes</div>
+                </div>
+                <div class="stat-card stat-progress">
+                    <div class="stat-number">15</div>
+                    <div class="stat-label">En Proceso</div>
+                </div>
+                <div class="stat-card stat-completed">
+                    <div class="stat-number">156</div>
+                    <div class="stat-label">Completadas</div>
+                </div>
+                <div class="stat-card stat-revenue">
+                    <div class="stat-number">$24.5M</div>
+                    <div class="stat-label">Ingresos del mes</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-section">
+                <div class="search-container">
+                    <div class="search-box">
+                        <svg class="search-icon" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        </svg>
+                        <input type="text" placeholder="Buscar por orden, cliente o vehículo..." class="search-input">
+                    </div>
+                </div>
+                
+                <div class="filters">
+                    <select class="filter-select">
+                        <option>Todos los estados</option>
+                        <option>Pendientes</option>
+                        <option>En Proceso</option>
+                        <option>Completadas</option>
+                        <option>Canceladas</option>
+                    </select>
+                    
+                    <select class="filter-select">
+                        <option>Última semana</option>
+                        <option>Último mes</option>
+                        <option>Últimos 3 meses</option>
+                        <option>Este año</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Orders List -->
+            <div class="orders-list">
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-info">
+                            <div class="order-number">#ORD-2024-001</div>
+                            <div class="order-date">15 Jul 2024 - 14:30</div>
+                        </div>
+                        <div class="order-status">
+                            <span class="badge badge-warning">En Proceso</span>
+                        </div>
+                    </div>
+                    
+                    <div class="order-body">
+                        <div class="client-vehicle-info">
+                            <div class="client-info">
+                                <div class="client-avatar">JP</div>
+                                <div class="client-details">
+                                    <div class="client-name">Juan Carlos Pérez</div>
+                                    <div class="client-contact">+57 300 123 4567</div>
+                                </div>
+                            </div>
+                            <div class="vehicle-info">
+                                <div class="vehicle-plate">ABC-123</div>
+                                <div class="vehicle-name">Toyota Corolla 2020</div>
+                            </div>
+                        </div>
+                        
+                        <div class="service-details">
+                            <div class="service-type">
+                                <svg class="service-icon" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+                                </svg>
+                                <span>Cambio de aceite y filtros</span>
+                            </div>
+                            <div class="service-description">
+                                Cambio de aceite sintético 5W-30, filtro de aceite y filtro de aire. Revisión de niveles.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-footer">
+                        <div class="order-pricing">
+                            <div class="price-item">
+                                <span class="price-label">Estimado:</span>
+                                <span class="price-value">$180.000</span>
+                            </div>
+                            <div class="price-item">
+                                <span class="price-label">Mecánico:</span>
+                                <span class="mechanic-name">Carlos Ramírez</span>
+                            </div>
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-secondary btn-sm">Ver Detalles</button>
+                            <button class="btn btn-primary btn-sm">Actualizar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-info">
+                            <div class="order-number">#ORD-2024-002</div>
+                            <div class="order-date">14 Jul 2024 - 09:15</div>
+                        </div>
+                        <div class="order-status">
+                            <span class="badge badge-success">Completada</span>
+                        </div>
+                    </div>
+                    
+                    <div class="order-body">
+                        <div class="client-vehicle-info">
+                            <div class="client-info">
+                                <div class="client-avatar">MG</div>
+                                <div class="client-details">
+                                    <div class="client-name">María García López</div>
+                                    <div class="client-contact">+57 301 987 6543</div>
+                                </div>
+                            </div>
+                            <div class="vehicle-info">
+                                <div class="vehicle-plate">DEF-456</div>
+                                <div class="vehicle-name">Honda Civic 2019</div>
+                            </div>
+                        </div>
+                        
+                        <div class="service-details">
+                            <div class="service-type">
+                                <svg class="service-icon" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span>Mantenimiento preventivo</span>
+                            </div>
+                            <div class="service-description">
+                                Revisión completa de 20.000 km. Cambio de aceite, filtros, bujías y revisión de frenos.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-footer">
+                        <div class="order-pricing">
+                            <div class="price-item">
+                                <span class="price-label">Total:</span>
+                                <span class="price-value price-final">$450.000</span>
+                            </div>
+                            <div class="price-item">
+                                <span class="price-label">Mecánico:</span>
+                                <span class="mechanic-name">Luis González</span>
+                            </div>
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-secondary btn-sm">Ver Detalles</button>
+                            <button class="btn btn-success btn-sm">Facturar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-info">
+                            <div class="order-number">#ORD-2024-003</div>
+                            <div class="order-date">13 Jul 2024 - 16:45</div>
+                        </div>
+                        <div class="order-status">
+                            <span class="badge badge-info">Pendiente</span>
+                        </div>
+                    </div>
+                    
+                    <div class="order-body">
+                        <div class="client-vehicle-info">
+                            <div class="client-info">
+                                <div class="client-avatar">CL</div>
+                                <div class="client-details">
+                                    <div class="client-name">Carlos López</div>
+                                    <div class="client-contact">+57 302 456 7890</div>
+                                </div>
+                            </div>
+                            <div class="vehicle-info">
+                                <div class="vehicle-plate">GHI-789</div>
+                                <div class="vehicle-name">Nissan Sentra 2021</div>
+                            </div>
+                        </div>
+                        
+                        <div class="service-details">
+                            <div class="service-type">
+                                <svg class="service-icon" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                                <span>Diagnóstico de motor</span>
+                            </div>
+                            <div class="service-description">
+                                Cliente reporta ruido extraño en el motor y pérdida de potencia. Requiere diagnóstico completo.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-footer">
+                        <div class="order-pricing">
+                            <div class="price-item">
+                                <span class="price-label">Estimado:</span>
+                                <span class="price-value">$120.000</span>
+                            </div>
+                            <div class="price-item">
+                                <span class="price-label">Asignar a:</span>
+                                <select class="mechanic-select">
+                                    <option>Seleccionar mecánico</option>
+                                    <option>Carlos Ramírez</option>
+                                    <option>Luis González</option>
+                                    <option>Ana Martínez</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="order-actions">
+                            <button class="btn btn-secondary btn-sm">Ver Detalles</button>
+                            <button class="btn btn-primary btn-sm">Asignar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    Mostrando 1-10 de 194 órdenes
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn pagination-btn-disabled">Anterior</button>
+                    <button class="pagination-btn pagination-btn-active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">3</button>
+                    <span class="pagination-dots">...</span>
+                    <button class="pagination-btn">20</button>
+                    <button class="pagination-btn">Siguiente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - TallerPro</title>
+    <link rel="stylesheet" href="../base-styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Panel de control y estadísticas generales</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="dashboard-content">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-primary">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3-3v5.25h.75a.75.75 0 01.75.75H6a.75.75 0 01.75-.75h.75V15m0 0v-3.375c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125V15h6.75zM6 10.5h2.25a.75.75 0 00.75-.75V7.5a.75.75 0 00-.75-.75H6a.75.75 0 00-.75.75v2.25c0 .414.336.75.75.75z" />
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">156</div>
+                        <div class="stat-label">Órdenes Totales</div>
+                        <div class="stat-change stat-change-positive">+12% vs mes anterior</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-warning">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4" />
+                            <circle cx="12" cy="12" r="10" />
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">23</div>
+                        <div class="stat-label">Órdenes Pendientes</div>
+                        <div class="stat-change stat-change-negative">+3 desde ayer</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-success">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">133</div>
+                        <div class="stat-label">Órdenes Completadas</div>
+                        <div class="stat-change stat-change-positive">+8% esta semana</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon-primary">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0l.879-.659M6 10.5a6 6 0 006-6 6 6 0 006 6" />
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">L.1,405,908.45</div>
+                        <div class="stat-label">Ingresos del Mes</div>
+                        <div class="stat-change stat-change-positive">+15.3% vs mes anterior</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Recent Activity -->
+            <div class="dashboard-grid">
+                <!-- Revenue Chart -->
+                <div class="chart-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Ingresos Mensuales</h3>
+                        <select class="chart-period">
+                            <option>Últimos 6 meses</option>
+                            <option>Último año</option>
+                        </select>
+                    </div>
+                    <div class="chart-placeholder">
+                        <div class="chart-bars">
+                            <div class="chart-bar" style="height: 60%"></div>
+                            <div class="chart-bar" style="height: 80%"></div>
+                            <div class="chart-bar" style="height: 45%"></div>
+                            <div class="chart-bar" style="height: 90%"></div>
+                            <div class="chart-bar" style="height: 70%"></div>
+                            <div class="chart-bar" style="height: 100%"></div>
+                        </div>
+                        <div class="chart-labels">
+                            <span>Feb</span>
+                            <span>Mar</span>
+                            <span>Abr</span>
+                            <span>May</span>
+                            <span>Jun</span>
+                            <span>Jul</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="recent-orders">
+                    <div class="card-header">
+                        <h3 class="card-title">Órdenes Recientes</h3>
+                        <a href="#" class="btn btn-secondary btn-sm">Ver todas</a>
+                    </div>
+                    <div class="orders-list">
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="order-number">#ORD-2024-001</div>
+                                <div class="order-client">Juan Pérez</div>
+                                <div class="order-vehicle">Toyota Corolla 2020</div>
+                            </div>
+                            <div class="order-status">
+                                <span class="badge badge-warning">En Proceso</span>
+                                <div class="order-date">Hoy, 14:30</div>
+                            </div>
+                        </div>
+
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="order-number">#ORD-2024-002</div>
+                                <div class="order-client">María García</div>
+                                <div class="order-vehicle">Honda Civic 2019</div>
+                            </div>
+                            <div class="order-status">
+                                <span class="badge badge-success">Completado</span>
+                                <div class="order-date">Ayer, 16:45</div>
+                            </div>
+                        </div>
+
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="order-number">#ORD-2024-003</div>
+                                <div class="order-client">Carlos López</div>
+                                <div class="order-vehicle">Nissan Sentra 2021</div>
+                            </div>
+                            <div class="order-status">
+                                <span class="badge badge-info">Pendiente</span>
+                                <div class="order-date">2 días</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3 class="section-title">Acciones Rápidas</h3>
+                <div class="actions-grid">
+                    <a href="#" class="action-card">
+                        <div class="action-icon">
+                            <svg class="icon icon-lg" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Nueva Orden</div>
+                            <div class="action-description">Crear una nueva orden de trabajo</div>
+                        </div>
+                    </a>
+
+                    <a href="#" class="action-card">
+                        <div class="action-icon">
+                            <svg class="icon icon-lg" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Nuevo Cliente</div>
+                            <div class="action-description">Registrar un cliente nuevo</div>
+                        </div>
+                    </a>
+
+                    <a href="#" class="action-card">
+                        <div class="action-icon">
+                            <svg class="icon icon-lg" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m6.75 4.5v-3a3 3 0 00-3-3H3.375a1.125 1.125 0 01-1.125-1.125V7.875m0 0A1.125 1.125 0 013.375 6.75h3.5m0 0v2.25a2.25 2.25 0 002.25 2.25H12m0 0V6a2 2 0 012-2h2.25M15.75 12a1.5 1.5 0 00-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25" />
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Generar Reporte</div>
+                            <div class="action-description">Ver reportes y estadísticas</div>
+                        </div>
+                    </a>
+
+                    <a href="#" class="action-card">
+                        <div class="action-icon">
+                            <svg class="icon icon-lg" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Recordatorios</div>
+                            <div class="action-description">Gestionar recordatorios pendientes</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
