@@ -1,6 +1,6 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
 
-# TallerPro - Sistema de Gestión para Talleres Mecánicos
+# PruebaProject - Sistema de Gestión para Talleres Mecánicos
 
 Este es un proyecto de frontend desarrollado con React + TypeScript + Vite para la gestión integral de talleres mecánicos.
 

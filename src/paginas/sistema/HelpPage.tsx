@@ -6,7 +6,7 @@ export function HelpPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Ayuda del Sistema</h1>
-        <p className="text-gray-600">Información útil para usar TallerPro</p>
+  <p className="text-gray-600">Información útil para usar PruebaProject</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

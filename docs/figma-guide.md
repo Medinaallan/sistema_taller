@@ -1,4 +1,4 @@
-# 🎨 Guía para Diseñar TallerPro en Figma
+# 🎨 Guía para Diseñar PruebaProject en Figma
 
 ## 🚀 **Método 1: Screenshots + Recreación (RECOMENDADO)**
 
@@ -65,7 +65,7 @@
 ## 📋 **Estructura de Figma Recomendada**
 
 ```
-TallerPro - Design System
+PruebaProject - Design System
 ├── 🎨 Design System
 │   ├── Colors
 │   ├── Typography  
@@ -159,7 +159,7 @@ TallerPro - Design System
 ## 📁 **Recursos Adicionales**
 
 ### **Assets necesarios:**
-- Logo TallerPro (crear o usar icono actual)
+- Logo PruebaProject (crear o usar icono actual)
 - Iconografía Heroicons
 - Imágenes placeholder para vehículos
 - Avatars para usuarios

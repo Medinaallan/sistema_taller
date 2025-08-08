@@ -1,4 +1,4 @@
-# 🎨 TallerPro - Especificaciones de Design System para Figma
+# 🎨 PruebaProject - Especificaciones de Design System para Figma
 
 ## 🎯 **INFORMACIÓN CRÍTICA**
 

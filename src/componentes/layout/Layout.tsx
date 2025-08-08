@@ -120,7 +120,7 @@ export function Layout({ children }: LayoutProps) {
       <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
         <div className="flex h-16 items-center justify-center border-b border-gray-200">
           <WrenchScrewdriverIcon className="h-8 w-8 text-blue-600" />
-          <span className="ml-2 text-xl font-bold text-gray-900">TallerPro</span>
+          <span className="ml-2 text-xl font-bold text-gray-900">PruebaProject</span>
         </div>
         
         <nav className="mt-8 px-4">
