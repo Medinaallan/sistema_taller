@@ -168,7 +168,7 @@ export function ClientAppointmentsPage() {
                   <div>
                     <p className="text-sm font-medium text-blue-800">Servicios de Emergencia</p>
                     <p className="text-sm text-blue-700">
-                      Para emergencias viales, contáctanos directamente al (555) 123-4567
+                      Para emergencias viales, contáctanos directamente al +504 2234-5678
                     </p>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ export function ClientAppointmentsPage() {
                   Tu solicitud de cita ha sido recibida. Te contactaremos dentro de 2 horas para confirmar.
                 </p>
                 <p className="text-sm text-gray-600">
-                  También puedes llamarnos al (555) 123-4567 si tienes preguntas urgentes.
+                  También puedes llamarnos al +504 2234-5678 si tienes preguntas urgentes.
                 </p>
               </div>
             ) : (
@@ -353,7 +353,7 @@ export function ClientAppointmentsPage() {
                     value={formData.contactPhone}
                     onChange={(e) => handleInputChange('contactPhone', e.target.value)}
                     required
-                    placeholder="(555) 123-4567"
+                    placeholder="+504 9789-6227"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

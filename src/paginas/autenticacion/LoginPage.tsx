@@ -184,19 +184,14 @@ export function LoginPage() {
 
           {!isRegistering && (
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <h3 className="text-sm font-medium text-blue-800 mb-2">Credenciales de Prueba:</h3>
-              <div className="grid grid-cols-1 gap-2 text-xs text-blue-700">
-                <div>
-                  <strong>Admin:</strong> admin@taller.com / admin123
-                </div>
-                <div>
-                  <strong>Recepción:</strong> recep@taller.com / recep123
-                </div>
-                <div>
-                  <strong>Mecánico:</strong> mecanico@taller.com / mec123
-                </div>
+              <h3 className="text-sm font-medium text-blue-800 mb-2">Sistema de Gestión de Taller</h3>
+              <div className="text-xs text-blue-700 space-y-1">
+                <div>• Gestión completa de órdenes de trabajo</div>
+                <div>• Control de inventario y servicios</div>
+                <div>• Reportes y análisis de rendimiento</div>
+                <div>• Seguimiento de clientes y vehículos</div>
                 <div className="text-xs text-blue-600 mt-2 italic">
-                  * Los clientes se crean desde el panel de Administración
+                  * Contacte al administrador para obtener acceso al sistema
                 </div>
               </div>
             </div>
