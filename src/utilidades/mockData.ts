@@ -5,30 +5,30 @@ export const mockUsers: User[] = [
   // Administrador
   {
     id: 'admin-001',
-    email: 'admin@tallerpro.hn',
+    email: 'admin@taller.com',
     password: 'admin123',
     role: 'admin',
-    name: 'Carlos Alberto Mendoza',
-    phone: '+504 2234-5678',
+    name: 'ALLAN MEDINA',
+    phone: '+504 9789-6227',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
   },
   // Recepcionista
   {
     id: 'recep-001',
-    email: 'recepcion@tallerpro.hn',
+    email: 'recep@taller.com',
     password: 'recep123',
     role: 'receptionist',
-    name: 'María Elena Rodríguez',
-    phone: '+504 9876-5432',
+    name: 'Andre Vargas',
+    phone: '+504 9656-3917',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
   },
   // Mecánico
   {
     id: 'mech-001',
-    email: 'mecanico@tallerpro.hn',
-    password: 'mech123',
+    email: 'mecanico@taller.com',
+    password: 'mec123',
     role: 'mechanic',
     name: 'José Manuel Hernández',
     phone: '+504 8765-4321',

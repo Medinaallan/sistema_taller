@@ -157,7 +157,7 @@ export function LoginPage() {
               value={formData.email}
               onChange={handleInputChange}
               error={errors.email}
-              placeholder={isRegistering ? "admin@tuempresa.com" : "usuario@taller.com"}
+              placeholder= "usuario@talleR.com"
               required
             />
 
@@ -187,13 +187,13 @@ export function LoginPage() {
               <h3 className="text-sm font-medium text-blue-800 mb-2">Credenciales de Prueba:</h3>
               <div className="grid grid-cols-1 gap-2 text-xs text-blue-700">
                 <div>
-                  <strong>Admin:</strong> admin@tallerpro.hn / admin123
+                  <strong>Admin:</strong> admin@taller.com / admin123
                 </div>
                 <div>
-                  <strong>Recepción:</strong> recepcion@tallerpro.hn / recep123
+                  <strong>Recepción:</strong> recep@taller.com / recep123
                 </div>
                 <div>
-                  <strong>Mecánico:</strong> mecanico@tallerpro.hn / mech123
+                  <strong>Mecánico:</strong> mecanico@taller.com / mec123
                 </div>
                 <div className="text-xs text-blue-600 mt-2 italic">
                   * Los clientes se crean desde el panel de Administración
