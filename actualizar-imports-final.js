@@ -115,13 +115,13 @@ filesToUpdate.forEach(({ file, updates }) => {
     
     if (changed) {
       fs.writeFileSync(filePath, content);
-      console.log(`✅ ${file} - imports actualizados`);
+      console.log(` ${file} - imports actualizados`);
     } else {
-      console.log(`⚪ ${file} - sin cambios necesarios`);
+      console.log(` ${file} - sin cambios necesarios`);
     }
   } else {
-    console.log(`❌ ${file} - archivo no encontrado`);
+    console.log(` ${file} - archivo no encontrado`);
   }
 });
 
-console.log('\n🎉 Actualización de imports completada!');
+console.log('\n Actualización de imports completada!');
