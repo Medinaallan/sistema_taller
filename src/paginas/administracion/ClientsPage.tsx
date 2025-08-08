@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
-import { useApp } from '../../contexto/AppContext';
+import { useApp } from '../../contexto/useApp';
 import { mockClients, generateId, formatDate } from '../../utilidades/mockData';
 import type { Client } from '../../tipos';
 

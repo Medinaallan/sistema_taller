@@ -5,7 +5,7 @@ import {
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { Card, Button } from '../../componentes/comunes/UI';
-import { useApp } from '../../contexto/AppContext';
+import { useApp } from '../../contexto/useApp';
 import { mockVehicles } from '../../utilidades/mockData';
 
 interface AppointmentForm {
@@ -90,7 +90,7 @@ export function ClientAppointmentsPage() {
           additionalNotes: '',
         });
       }, 3000);
-    } catch (error) {
+    } catch {
       setSubmitStatus('error');
       setTimeout(() => setSubmitStatus('idle'), 3000);
     }

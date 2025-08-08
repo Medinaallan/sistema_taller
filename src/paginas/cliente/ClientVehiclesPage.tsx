@@ -7,7 +7,8 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import { Card, Badge } from '../../componentes/comunes/UI';
-import { useApp } from '../../contexto/AppContext';
+import { useApp } from '../../contexto/useApp';
+import type { Vehicle, WorkOrder, Part } from '../../tipos/index';
 import { mockWorkOrders, mockVehicles, formatCurrency, getStatusText, formatDate } from '../../utilidades/mockData';
 
 export function ClientVehiclesPage() {
@@ -137,7 +138,7 @@ export function ClientVehiclesPage() {
   );
 }
 
-function VehicleDetails({ vehicle, workOrders }: { vehicle: any; workOrders: any[] }) {
+function VehicleDetails({ vehicle, workOrders }: { vehicle: Vehicle; workOrders: WorkOrder[] }) {
   const stats = {
     totalServices: workOrders.length,
     completedServices: workOrders.filter(o => o.status === 'completed').length,
@@ -249,7 +250,7 @@ function VehicleDetails({ vehicle, workOrders }: { vehicle: any; workOrders: any
                         <div className="mb-3">
                           <h5 className="text-sm font-medium text-gray-700 mb-1">Repuestos utilizados:</h5>
                           <div className="space-y-1">
-                            {order.parts.map((part: any) => (
+                            {order.parts.map((part: Part) => (
                               <div key={part.id} className="flex justify-between text-sm">
                                 <span className="text-gray-600">
                                   {part.name} (x{part.quantity})

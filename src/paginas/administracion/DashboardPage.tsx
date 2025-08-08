@@ -8,7 +8,7 @@ import {
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { Card } from '../../componentes/comunes/UI';
-import { useApp } from '../../contexto/AppContext';
+import { useApp } from '../../contexto/useApp';
 import { mockDashboardStats, mockWorkOrders, formatCurrency, getStatusColor, getStatusText } from '../../utilidades/mockData';
 
 interface StatCardProps {

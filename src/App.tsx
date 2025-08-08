@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider, useApp } from './contexto/AppContext';
+import { AppProvider } from './contexto/AppProvider';
+import { useApp } from './contexto/useApp';
 import { Layout } from './componentes/layout/Layout';
 import { LoginPage } from './paginas/autenticacion/LoginPage';
 import { DashboardPage } from './paginas/administracion/DashboardPage';

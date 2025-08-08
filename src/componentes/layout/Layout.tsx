@@ -12,7 +12,7 @@ import {
   ArrowRightOnRectangleIcon,
   CalendarDaysIcon
 } from '@heroicons/react/24/outline';
-import { useApp } from '../../contexto/AppContext';
+import { useApp } from '../../contexto/useApp';
 import { getRoleText } from '../../utilidades/mockData';
 
 interface LayoutProps {

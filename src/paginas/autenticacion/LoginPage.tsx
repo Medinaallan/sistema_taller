@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
-import { useApp } from '../../contexto/AppContext';
+import { useApp } from '../../contexto/useApp';
 import { mockUsers, generateId } from '../../utilidades/mockData';
 
 export function LoginPage() {
@@ -90,7 +90,7 @@ export function LoginPage() {
           setErrors({ general: 'Credenciales inválidas' });
         }
       }
-    } catch (error) {
+    } catch {
       setErrors({ general: isRegistering ? 'Error al registrar usuario' : 'Error al iniciar sesión. Inténtalo de nuevo.' });
     } finally {
       setLoading(false);

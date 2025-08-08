@@ -8,7 +8,7 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import { Card } from '../../componentes/comunes/UI';
-import { useApp } from '../../contexto/AppContext';
+import { useApp } from '../../contexto/useApp';
 import { mockWorkOrders, mockVehicles, mockReminders, formatCurrency, getStatusColor, getStatusText, formatDate } from '../../utilidades/mockData';
 
 export function ClientDashboardPage() {
