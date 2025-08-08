@@ -3,7 +3,7 @@ import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/ou
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { mockClients, generateId, formatDate } from '../../utilidades/mockData';
-import type { Client } from '../../tipos';
+import type { Client, User } from '../../tipos';
 
 interface ClientFormProps {
   client?: Client;
@@ -161,25 +161,67 @@ export function ClientsPage() {
 
   const handleDeleteClient = (clientId: string) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
+      // Buscar el cliente para obtener su email
+      const clientToDelete = state.clients.find(c => c.id === clientId);
+      if (clientToDelete) {
+        // Encontrar y eliminar también el usuario correspondiente
+        const userToDelete = state.users.find(u => u.email === clientToDelete.email && u.role === 'client');
+        if (userToDelete) {
+          dispatch({ type: 'DELETE_USER', payload: userToDelete.id });
+        }
+      }
+      
       dispatch({ type: 'DELETE_CLIENT', payload: clientId });
     }
   };
 
   const handleFormSubmit = (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (modalType === 'create') {
+      const clientId = generateId();
       const newClient: Client = {
         ...clientData,
-        id: generateId(),
+        id: clientId,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+      
+      // Crear también el usuario para login del cliente
+      const newUser: User = {
+        id: generateId(),
+        email: clientData.email,
+        password: clientData.password,
+        role: 'client',
+        name: clientData.name,
+        phone: clientData.phone,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      // Agregar cliente y usuario al estado
       dispatch({ type: 'ADD_CLIENT', payload: newClient });
+      dispatch({ type: 'ADD_USER', payload: newUser });
+      
     } else if (modalType === 'edit' && selectedClient) {
       const updatedClient: Client = {
         ...selectedClient,
         ...clientData,
         updatedAt: new Date(),
       };
+      
+      // Buscar y actualizar también el usuario correspondiente
+      const userToUpdate = state.users.find(u => u.email === selectedClient.email && u.role === 'client');
+      if (userToUpdate) {
+        const updatedUser: User = {
+          ...userToUpdate,
+          email: clientData.email,
+          password: clientData.password,
+          name: clientData.name,
+          phone: clientData.phone,
+          updatedAt: new Date(),
+        };
+        dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+      }
+      
       dispatch({ type: 'UPDATE_CLIENT', payload: updatedClient });
     }
     setIsModalOpen(false);

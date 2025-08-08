@@ -1,7 +1,41 @@
 import type { User, Client, Vehicle, WorkOrder, ServiceType, Reminder, DashboardStats } from '../tipos/index';
 
-// Datos mock para desarrollo - ARRAYS VACÍOS (sin datos de ejemplo)
-export const mockUsers: User[] = [];
+// Usuarios predefinidos del sistema - Honduras
+export const mockUsers: User[] = [
+  // Administrador
+  {
+    id: 'admin-001',
+    email: 'admin@tallerpro.hn',
+    password: 'admin123',
+    role: 'admin',
+    name: 'Carlos Alberto Mendoza',
+    phone: '+504 2234-5678',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+  // Recepcionista
+  {
+    id: 'recep-001',
+    email: 'recepcion@tallerpro.hn',
+    password: 'recep123',
+    role: 'receptionist',
+    name: 'María Elena Rodríguez',
+    phone: '+504 9876-5432',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+  // Mecánico
+  {
+    id: 'mech-001',
+    email: 'mecanico@tallerpro.hn',
+    password: 'mech123',
+    role: 'mechanic',
+    name: 'José Manuel Hernández',
+    phone: '+504 8765-4321',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+];
 
 export const mockServiceTypes: ServiceType[] = [];
 
@@ -30,19 +64,18 @@ export const generateId = (): string => {
 };
 
 export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-  }).format(amount);
+  return `L. ${new Intl.NumberFormat('es-HN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)}`;
 };
 
 export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('es-CO').format(date);
+  return new Intl.DateTimeFormat('es-HN').format(date);
 };
 
 export const formatDateTime = (date: Date): string => {
-  return new Intl.DateTimeFormat('es-CO', {
+  return new Intl.DateTimeFormat('es-HN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

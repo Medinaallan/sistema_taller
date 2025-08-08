@@ -1,4 +1,5 @@
 import type { AppState, AppAction } from './AppContext';
+import { mockUsers, mockServiceTypes, mockClients, mockVehicles, mockWorkOrders, mockReminders, mockDashboardStats } from '../utilidades/mockData';
 
 // Función para obtener estado inicial con persistencia
 export const getInitialState = (): AppState => {
@@ -10,13 +11,13 @@ export const getInitialState = (): AppState => {
       return {
         user: JSON.parse(savedUser),
         isAuthenticated: true,
-        clients: [],
-        vehicles: [],
-        workOrders: [],
-        reminders: [],
-        serviceTypes: [],
-        users: [],
-        dashboardStats: null,
+        clients: mockClients, // Inicialmente vacío
+        vehicles: mockVehicles, // Inicialmente vacío
+        workOrders: mockWorkOrders, // Inicialmente vacío
+        reminders: mockReminders, // Inicialmente vacío
+        serviceTypes: mockServiceTypes, // Inicialmente vacío
+        users: mockUsers, // Solo los usuarios predefinidos
+        dashboardStats: mockDashboardStats, // Stats en cero
         loading: false,
         error: null,
       };
@@ -28,13 +29,13 @@ export const getInitialState = (): AppState => {
   return {
     user: null,
     isAuthenticated: false,
-    clients: [],
-    vehicles: [],
-    workOrders: [],
-    reminders: [],
-    serviceTypes: [],
-    users: [],
-    dashboardStats: null,
+    clients: mockClients, // Inicialmente vacío
+    vehicles: mockVehicles, // Inicialmente vacío
+    workOrders: mockWorkOrders, // Inicialmente vacío
+    reminders: mockReminders, // Inicialmente vacío
+    serviceTypes: mockServiceTypes, // Inicialmente vacío
+    users: mockUsers, // Solo los usuarios predefinidos
+    dashboardStats: mockDashboardStats, // Stats en cero
     loading: false,
     error: null,
   };

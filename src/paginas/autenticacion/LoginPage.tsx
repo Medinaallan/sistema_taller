@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { mockUsers, generateId } from '../../utilidades/mockData';
+import { generateId } from '../../utilidades/mockData';
 
 export function LoginPage() {
-  const { dispatch } = useApp();
-  const [isRegistering, setIsRegistering] = useState(mockUsers.length === 0);
+  const { state, dispatch } = useApp();
+  const [isRegistering, setIsRegistering] = useState(state.users.length === 0);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -75,12 +75,13 @@ export function LoginPage() {
           updatedAt: new Date(),
         };
         
-        mockUsers.push(newUser);
+        // Agregar usuario al estado del contexto
+        dispatch({ type: 'ADD_USER', payload: newUser });
         dispatch({ type: 'LOGIN', payload: newUser });
         setIsRegistering(false);
       } else {
-        // Buscar usuario en datos mock
-        const user = mockUsers.find(
+        // Buscar usuario en el estado del contexto
+        const user = state.users.find(
           u => u.email === formData.email && u.password === formData.password
         );
 
@@ -181,6 +182,26 @@ export function LoginPage() {
             </div>
           )}
 
+          {!isRegistering && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <h3 className="text-sm font-medium text-blue-800 mb-2">Credenciales de Prueba:</h3>
+              <div className="grid grid-cols-1 gap-2 text-xs text-blue-700">
+                <div>
+                  <strong>Admin:</strong> admin@tallerpro.hn / admin123
+                </div>
+                <div>
+                  <strong>Recepción:</strong> recepcion@tallerpro.hn / recep123
+                </div>
+                <div>
+                  <strong>Mecánico:</strong> mecanico@tallerpro.hn / mech123
+                </div>
+                <div className="text-xs text-blue-600 mt-2 italic">
+                  * Los clientes se crean desde el panel de Administración
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <Button
               type="submit"
@@ -192,7 +213,7 @@ export function LoginPage() {
             </Button>
           </div>
 
-          {!isRegistering && mockUsers.length > 0 && (
+          {!isRegistering && state.users.length > 0 && (
             <div className="text-center">
               <button
                 type="button"

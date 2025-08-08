@@ -10,6 +10,7 @@ import { VehiclesPage } from './paginas/administracion/VehiclesPage';
 import { ClientDashboardPage } from './paginas/cliente/ClientDashboardPage';
 import { ClientVehiclesPage } from './paginas/cliente/ClientVehiclesPage';
 import { ClientAppointmentsPage } from './paginas/cliente/ClientAppointmentsPage';
+import { HelpPage } from './paginas/sistema/HelpPage';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -187,6 +188,14 @@ function AppRoutes() {
                 </p>
               </div>
             </div>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/help"
+        element={
+          <ProtectedRoute>
+            <HelpPage />
           </ProtectedRoute>
         }
       />

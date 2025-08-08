@@ -10,7 +10,8 @@ import {
   Cog6ToothIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
-  CalendarDaysIcon
+  CalendarDaysIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { getRoleText } from '../../utilidades/mockData';
@@ -92,6 +93,12 @@ const navigation: NavigationItem[] = [
     href: '/admin', 
     icon: Cog6ToothIcon,
     roles: ['admin']
+  },
+  { 
+    name: 'Ayuda', 
+    href: '/help', 
+    icon: QuestionMarkCircleIcon,
+    roles: ['admin', 'mechanic', 'receptionist', 'client']
   },
 ];
 
