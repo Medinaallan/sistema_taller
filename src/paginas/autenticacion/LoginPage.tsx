@@ -192,6 +192,10 @@ export function LoginPage() {
                 <div>• Seguimiento de clientes y vehículos</div>
                 <div className="text-xs text-blue-600 mt-2 italic">
                   * Contacte al administrador para obtener acceso al sistema
+                  <div>Admin: admin@taller.com / Contraseña: admin123</div>
+                  <div>Recep: recep@taller.com / Contraseña: recep123</div>
+                  <div>Mec: mecanico@taller.com / Contraseña: mec123</div>
+                  <div>Cliente: se genera desde el panel del admin</div>
                 </div>
               </div>
             </div>
