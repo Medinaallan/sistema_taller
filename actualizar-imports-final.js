@@ -97,7 +97,7 @@ const filesToUpdate = [
   }
 ];
 
-console.log('🔧 Actualizando imports...\n');
+console.log('Actualizando imports...\n');
 
 filesToUpdate.forEach(({ file, updates }) => {
   const filePath = path.join(__dirname, file);
