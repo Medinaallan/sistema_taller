@@ -168,13 +168,7 @@ export function HelpPage() {
             </div>
             
             <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">¿Cómo generar una factura?</h3>
-                <p className="text-sm text-gray-600">
-                  Desde una orden completada, haga clic en "Generar Factura". 
-                  El sistema calculará automáticamente totales e impuestos.
-                </p>
-              </div>
+              
               
               <div>
                 <h3 className="font-medium text-gray-900 mb-2">¿Cómo configurar recordatorios?</h3>
