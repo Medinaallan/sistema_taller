@@ -131,9 +131,11 @@ export function ClientsPage() {
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
 
   useEffect(() => {
-    // Cargar clientes mock
-    dispatch({ type: 'SET_CLIENTS', payload: mockClients });
-  }, [dispatch]);
+    // Solo cargar clientes mock si no hay clientes persistidos
+    if (!state.clients || state.clients.length === 0) {
+      dispatch({ type: 'SET_CLIENTS', payload: mockClients });
+    }
+  }, [dispatch, state.clients]);
 
   const filteredClients = state.clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

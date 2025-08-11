@@ -39,6 +39,9 @@ export type AppAction =
   | { type: 'UPDATE_REMINDER'; payload: Reminder }
   | { type: 'DELETE_REMINDER'; payload: string }
   | { type: 'SET_SERVICE_TYPES'; payload: ServiceType[] }
+  | { type: 'ADD_SERVICE_TYPE'; payload: ServiceType }
+  | { type: 'UPDATE_SERVICE_TYPE'; payload: ServiceType }
+  | { type: 'DELETE_SERVICE_TYPE'; payload: string }
   | { type: 'SET_USERS'; payload: User[] }
   | { type: 'ADD_USER'; payload: User }
   | { type: 'UPDATE_USER'; payload: User }

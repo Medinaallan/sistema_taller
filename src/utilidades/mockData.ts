@@ -71,7 +71,10 @@ export const formatCurrency = (amount: number): string => {
 };
 
 export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('es-HN').format(date);
+  if (!date || isNaN(new Date(date).getTime())) {
+    return 'Fecha no disponible';
+  }
+  return new Intl.DateTimeFormat('es-HN').format(new Date(date));
 };
 
 export const formatDateTime = (date: Date): string => {

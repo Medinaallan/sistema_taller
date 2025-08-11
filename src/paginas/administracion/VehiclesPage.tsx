@@ -4,6 +4,7 @@ import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/com
 import { useApp } from '../../contexto/useApp';
 import { mockVehicles, mockClients, mockServiceTypes, generateId, formatDate } from '../../utilidades/mockData';
 import type { Vehicle, Client, ServiceType } from '../../tipos';
+import { ServiceTypesPanel } from './ServiceTypesPanel';
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
@@ -195,11 +196,13 @@ export function VehiclesPage() {
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
 
   useEffect(() => {
-    // Cargar datos mock
+    // Cargar datos mock solo si no hay datos persistidos
     dispatch({ type: 'SET_VEHICLES', payload: mockVehicles });
-    dispatch({ type: 'SET_CLIENTS', payload: mockClients });
+    if (!state.clients || state.clients.length === 0) {
+      dispatch({ type: 'SET_CLIENTS', payload: mockClients });
+    }
     dispatch({ type: 'SET_SERVICE_TYPES', payload: mockServiceTypes });
-  }, [dispatch]);
+  }, [dispatch, state.clients]);
 
   const filteredVehicles = state.vehicles.filter(vehicle => {
     const client = state.clients.find(c => c.id === vehicle.clientId);
@@ -477,6 +480,8 @@ export function VehiclesPage() {
           />
         )}
       </Modal>
+
+      <ServiceTypesPanel />
     </div>
   );
 }

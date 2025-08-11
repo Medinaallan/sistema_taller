@@ -3,39 +3,38 @@ import { mockUsers, mockServiceTypes, mockClients, mockVehicles, mockWorkOrders,
 
 // Función para obtener estado inicial con persistencia
 export const getInitialState = (): AppState => {
+  let user = null;
+  let isAuthenticated = false;
+  let clients = mockClients;
+  let serviceTypes = mockServiceTypes;
   try {
     const savedUser = localStorage.getItem('tallerApp_user');
     const savedAuth = localStorage.getItem('tallerApp_isAuthenticated');
-    
+    const savedClients = localStorage.getItem('tallerApp_clients');
+    const savedServiceTypes = localStorage.getItem('tallerApp_serviceTypes');
     if (savedUser && savedAuth === 'true') {
-      return {
-        user: JSON.parse(savedUser),
-        isAuthenticated: true,
-        clients: mockClients, // Inicialmente vacío
-        vehicles: mockVehicles, // Inicialmente vacío
-        workOrders: mockWorkOrders, // Inicialmente vacío
-        reminders: mockReminders, // Inicialmente vacío
-        serviceTypes: mockServiceTypes, // Inicialmente vacío
-        users: mockUsers, // Solo los usuarios predefinidos
-        dashboardStats: mockDashboardStats, // Stats en cero
-        loading: false,
-        error: null,
-      };
+      user = JSON.parse(savedUser);
+      isAuthenticated = true;
+    }
+    if (savedClients) {
+      clients = JSON.parse(savedClients);
+    }
+    if (savedServiceTypes) {
+      serviceTypes = JSON.parse(savedServiceTypes);
     }
   } catch (error) {
-    console.error('Error loading saved user:', error);
+    console.error('Error loading saved user, clients or serviceTypes:', error);
   }
-  
   return {
-    user: null,
-    isAuthenticated: false,
-    clients: mockClients, // Inicialmente vacío
-    vehicles: mockVehicles, // Inicialmente vacío
-    workOrders: mockWorkOrders, // Inicialmente vacío
-    reminders: mockReminders, // Inicialmente vacío
-    serviceTypes: mockServiceTypes, // Inicialmente vacío
-    users: mockUsers, // Solo los usuarios predefinidos
-    dashboardStats: mockDashboardStats, // Stats en cero
+    user,
+    isAuthenticated,
+    clients,
+    vehicles: mockVehicles,
+    workOrders: mockWorkOrders,
+    reminders: mockReminders,
+    serviceTypes,
+    users: mockUsers,
+    dashboardStats: mockDashboardStats,
     loading: false,
     error: null,
   };
@@ -80,31 +79,42 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         loading: false,
       };
 
-    case 'SET_CLIENTS':
+    case 'SET_CLIENTS': {
+      localStorage.setItem('tallerApp_clients', JSON.stringify(action.payload));
       return {
         ...state,
         clients: action.payload,
       };
+    }
 
-    case 'ADD_CLIENT':
+    case 'ADD_CLIENT': {
+      const updatedClients = [...state.clients, action.payload];
+      localStorage.setItem('tallerApp_clients', JSON.stringify(updatedClients));
       return {
         ...state,
-        clients: [...state.clients, action.payload],
+        clients: updatedClients,
       };
+    }
 
-    case 'UPDATE_CLIENT':
+    case 'UPDATE_CLIENT': {
+      const updatedClients = state.clients.map((client) =>
+        client.id === action.payload.id ? action.payload : client
+      );
+      localStorage.setItem('tallerApp_clients', JSON.stringify(updatedClients));
       return {
         ...state,
-        clients: state.clients.map((client) =>
-          client.id === action.payload.id ? action.payload : client
-        ),
+        clients: updatedClients,
       };
+    }
 
-    case 'DELETE_CLIENT':
+    case 'DELETE_CLIENT': {
+      const updatedClients = state.clients.filter((client) => client.id !== action.payload);
+      localStorage.setItem('tallerApp_clients', JSON.stringify(updatedClients));
       return {
         ...state,
-        clients: state.clients.filter((client) => client.id !== action.payload),
+        clients: updatedClients,
       };
+    }
 
     case 'SET_VEHICLES':
       return {
@@ -184,11 +194,39 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         reminders: state.reminders.filter((reminder) => reminder.id !== action.payload),
       };
 
-    case 'SET_SERVICE_TYPES':
+    case 'SET_SERVICE_TYPES': {
+      localStorage.setItem('tallerApp_serviceTypes', JSON.stringify(action.payload));
       return {
         ...state,
         serviceTypes: action.payload,
       };
+    }
+    case 'ADD_SERVICE_TYPE': {
+      const updatedServiceTypes = [...state.serviceTypes, action.payload];
+      localStorage.setItem('tallerApp_serviceTypes', JSON.stringify(updatedServiceTypes));
+      return {
+        ...state,
+        serviceTypes: updatedServiceTypes,
+      };
+    }
+    case 'UPDATE_SERVICE_TYPE': {
+      const updatedServiceTypes = state.serviceTypes.map((st) =>
+        st.id === action.payload.id ? action.payload : st
+      );
+      localStorage.setItem('tallerApp_serviceTypes', JSON.stringify(updatedServiceTypes));
+      return {
+        ...state,
+        serviceTypes: updatedServiceTypes,
+      };
+    }
+    case 'DELETE_SERVICE_TYPE': {
+      const updatedServiceTypes = state.serviceTypes.filter((st) => st.id !== action.payload);
+      localStorage.setItem('tallerApp_serviceTypes', JSON.stringify(updatedServiceTypes));
+      return {
+        ...state,
+        serviceTypes: updatedServiceTypes,
+      };
+    }
 
     case 'SET_USERS':
       return {
