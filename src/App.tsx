@@ -148,7 +148,7 @@ function AppRoutes() {
               </div>
               <div className="bg-white rounded-lg shadow p-6">
                 <p className="text-gray-600">
-                  Página en desarrollo... Aquí se gestionarán los recordatorios de mantenimiento xd xd.
+                  Página en desarrollo... Aquí se gestionarán los recordatorios de mantenimiento xd xd .
                 </p>
               </div>
             </div>
