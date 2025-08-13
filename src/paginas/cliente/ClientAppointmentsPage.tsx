@@ -38,13 +38,13 @@ export function ClientAppointmentsPage() {
   const clientVehicles = mockVehicles.filter(vehicle => vehicle.clientId === clientId);
 
   const serviceTypes = [
-    { id: 'maintenance', name: 'Mantenimiento Preventivo', icon: '🔧' },
+    { id: 'maintenance', name: 'Mantenimiento Preventivo', icon: '' },
     { id: 'repair', name: 'Reparación', icon: '' },
     { id: 'diagnostic', name: 'Diagnóstico', icon: '' },
     { id: 'oil-change', name: 'Cambio de Aceite', icon: '' },
     { id: 'tire-service', name: 'Servicio de Llantas', icon: '' },
     { id: 'brake-service', name: 'Servicio de Frenos', icon: '' },
-    { id: 'battery', name: 'Batería', icon: '🔋' },
+    { id: 'battery', name: 'Batería', icon: '' },
     { id: 'air-conditioning', name: 'Aire Acondicionado', icon: '' },
     { id: 'transmission', name: 'Transmisión', icon: '' },
     { id: 'other', name: 'Otro', icon: '' },
