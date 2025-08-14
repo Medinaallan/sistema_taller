@@ -12,6 +12,7 @@ import { ClientVehiclesPage } from './paginas/cliente/ClientVehiclesPage';
 import { ClientAppointmentsPage } from './paginas/cliente/ClientAppointmentsPage';
 import { HelpPage } from './paginas/sistema/HelpPage';
 import { ReportsPage } from './paginas/administracion/ReportsPage';
+import { WorkOrdersPage } from './paginas/administracion/WorkOrdersPage';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -124,17 +125,7 @@ function AppRoutes() {
         path="/work-orders"
         element={
           <ProtectedRoute>
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Órdenes de Trabajo</h1>
-                <p className="text-gray-600">Gestión de servicios y reparaciones</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-gray-600">
-                  Página en desarrollo... Aquí se gestionarán las órdenes de trabajo.
-                </p>
-              </div>
-            </div>
+            <WorkOrdersPage />
           </ProtectedRoute>
         }
       />
