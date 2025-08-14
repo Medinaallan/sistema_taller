@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, Button, Select, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import type { ReportFilters, FinancialStats, ServiceStats, SatisfactionStats } from '../../tipos/reportes';
+import type { ReportFilters, FinancialStats } from '../../tipos/reportes';
 import { formatCurrency } from '../../utilidades/mockData';
 
 // Componente para el filtro de fechas y otros filtros
@@ -112,9 +112,15 @@ function FinancialReport({ stats }: { stats: FinancialStats }) {
             <p className="text-xl font-semibold text-red-600">{formatCurrency(stats.pendingPayments)}</p>
           </div>
         </div>
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end space-x-4">
           <Button variant="outline">
-            REPORTE COMETO DETALLADO
+            Exportar a Excel
+          </Button>
+          <Button variant="outline">
+            Exportar a PDF
+          </Button>
+          <Button>
+            Generar Reporte Completo
           </Button>
         </div>
       </div>
@@ -123,48 +129,31 @@ function FinancialReport({ stats }: { stats: FinancialStats }) {
 }
 
 // Componente para el reporte de servicios
-function ServiceReport({ stats }: { stats: ServiceStats }) {
+function ServiceReport() {
   return (
     <Card>
       <div className="p-4">
         <h2 className="text-lg font-semibold mb-4">Reporte de Servicios</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white p-4 rounded-lg border">
-            <p className="text-sm text-gray-600">Total Órdenes</p>
-            <p className="text-2xl font-bold">{stats.totalOrders}</p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <p className="text-sm text-green-600">Completadas</p>
-            <p className="text-2xl font-bold text-green-700">{stats.completedOrders}</p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-600">En Proceso</p>
-            <p className="text-2xl font-bold text-blue-700">{stats.inProgressOrders}</p>
-          </div>
-          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-            <p className="text-sm text-yellow-600">Pendientes</p>
-            <p className="text-2xl font-bold text-yellow-700">{stats.pendingOrders}</p>
-          </div>
-          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-            <p className="text-sm text-red-600">Rechazadas</p>
-            <p className="text-2xl font-bold text-red-700">{stats.rejectedOrders}</p>
-          </div>
+        <div className="bg-gray-50 p-6 rounded-lg border text-center">
+          <p className="text-gray-600">
+            aun falta xd xd xd xd
+          </p>
         </div>
-
       </div>
     </Card>
   );
 }
 
 // Componente para el reporte de satisfacción
-function SatisfactionReport({ stats }: { stats: SatisfactionStats }) {
+function SatisfactionReport() {
   return (
     <Card>
       <div className="p-4">
         <h2 className="text-lg font-semibold mb-4">Reporte de Satisfacción</h2>
-        
-        <div className="mt-4">
-          <h3 className="text-md font-semibold mb-3">Calificaciones por Mecánico</h3>
+        <div className="bg-gray-50 p-6 rounded-lg border text-center">
+          <p className="text-gray-600">
+            tambien falta jsjs xD
+          </p>
         </div>
       </div>
     </Card>
@@ -189,34 +178,6 @@ export function ReportsPage() {
     pendingPayments: 0.00,
   });
 
-  const [serviceStats] = useState<ServiceStats>({
-    totalOrders: 0,
-    completedOrders: 0,
-    inProgressOrders: 0,
-    pendingOrders: 0,
-    rejectedOrders: 0,
-  });
-
-  const [satisfactionStats] = useState<SatisfactionStats>({
-    averageRating: 0.0,
-    totalRatings: 0,
-    ratingDistribution: {
-      1: 0,
-      2: 0,
-      3: 0,
-      4: 0,
-      5: 0,
-    },
-    mechanicRatings: [
-      {
-        mechanicId: '1',
-        mechanicName: 'Sin datos',
-        averageRating: 0.0,
-        totalRatings: 0,
-      }
-    ],
-  });
-
   return (
     <div className="space-y-6">
       <div>
@@ -226,20 +187,8 @@ export function ReportsPage() {
 
       <ReportFilters filters={filters} onChange={setFilters} />
       <FinancialReport stats={financialStats} />
-      <ServiceReport stats={serviceStats} />
-      <SatisfactionReport stats={satisfactionStats} />
-
-      <div className="flex justify-end space-x-4">
-        <Button variant="outline">
-          Exportar a Excel
-        </Button>
-        <Button variant="outline">
-          Exportar a PDF
-        </Button>
-        <Button>
-          Generar Reporte Completo
-        </Button>
-      </div>
+      <ServiceReport />
+      <SatisfactionReport />
     </div>
   );
 }
