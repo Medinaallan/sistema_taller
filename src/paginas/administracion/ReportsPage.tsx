@@ -65,6 +65,11 @@ function ReportFilters({ filters, onChange }: {
             ]}
           />
         </div>
+        <div className="mt-6 flex justify-end">
+          <Button>
+            Filtrar Reporte
+          </Button>
+        </div>
       </div>
     </Card>
   );
