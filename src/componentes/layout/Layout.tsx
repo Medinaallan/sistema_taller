@@ -11,7 +11,8 @@ import {
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
   CalendarDaysIcon,
-  QuestionMarkCircleIcon
+  QuestionMarkCircleIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { getRoleText } from '../../utilidades/mockData';
@@ -28,78 +29,27 @@ interface NavigationItem {
 }
 
 const navigation: NavigationItem[] = [
-  { 
-    name: 'Dashboard', 
-    href: '/dashboard', 
-    icon: HomeIcon,
-    roles: ['admin', 'mechanic', 'receptionist']
-  },
-  { 
-    name: 'Mi Panel', 
-    href: '/client-dashboard', 
-    icon: HomeIcon,
-    roles: ['client']
-  },
-  { 
-    name: 'Clientes', 
-    href: '/clients', 
-    icon: UsersIcon,
-    roles: ['admin', 'receptionist']
-  },
-  { 
-    name: 'Vehículos', 
-    href: '/vehicles', 
-    icon: TruckIcon,
-    roles: ['admin', 'receptionist', 'mechanic']
-  },
-  { 
-    name: 'Mis Vehículos', 
-    href: '/client-vehicles', 
-    icon: TruckIcon,
-    roles: ['client']
-  },
-  { 
-    name: 'Órdenes de Trabajo', 
-    href: '/work-orders', 
-    icon: WrenchScrewdriverIcon,
-    roles: ['admin', 'receptionist', 'mechanic']
-  },
-  { 
-    name: 'Solicitar Cita', 
-    href: '/client-appointments', 
-    icon: CalendarDaysIcon,
-    roles: ['client']
-  },
-  { 
-    name: 'Recordatorios', 
-    href: '/reminders', 
-    icon: BellIcon,
-    roles: ['admin', 'receptionist']
-  },
-  { 
-    name: 'Mis Recordatorios', 
-    href: '/client-reminders', 
-    icon: BellIcon,
-    roles: ['client']
-  },
-  { 
-    name: 'Reportes', 
-    href: '/reports', 
-    icon: ChartBarIcon,
-    roles: ['admin']
-  },
-  { 
-    name: 'Administración', 
-    href: '/admin', 
-    icon: Cog6ToothIcon,
-    roles: ['admin']
-  },
-  { 
-    name: 'Ayuda', 
-    href: '/help', 
-    icon: QuestionMarkCircleIcon,
-    roles: ['admin', 'mechanic', 'receptionist', 'client']
-  },
+  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, roles: ['admin', 'mechanic', 'receptionist'] },
+  { name: 'Mi Panel', href: '/client-dashboard', icon: HomeIcon, roles: ['client'] },
+  { name: 'Clientes', href: '/clients', icon: UsersIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Vehículos', href: '/vehicles', icon: TruckIcon, roles: ['admin', 'receptionist', 'mechanic'] },
+  { name: 'Mis Vehículos', href: '/client-vehicles', icon: TruckIcon, roles: ['client'] },
+  { name: 'Órdenes de Trabajo', href: '/work-orders', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
+  { name: 'Solicitar Cita', href: '/client-appointments', icon: CalendarDaysIcon, roles: ['client'] },
+  { name: 'Citas', href: '/appointments', icon: CalendarDaysIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Cotizaciones', href: '/quotations', icon: ChartBarIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Facturas', href: '/invoices', icon: CurrencyDollarIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Pagos', href: '/payments', icon: CurrencyDollarIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Inventario', href: '/inventory', icon: TruckIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Proveedores', href: '/suppliers', icon: UsersIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Productos', href: '/products', icon: TruckIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Servicios', href: '/services', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
+  { name: 'Bitácora', href: '/logs', icon: BellIcon, roles: ['admin'] },
+  { name: 'Recordatorios', href: '/reminders', icon: BellIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Mis Recordatorios', href: '/client-reminders', icon: BellIcon, roles: ['client'] },
+  { name: 'Reportes', href: '/reports', icon: ChartBarIcon, roles: ['admin'] },
+  { name: 'Administración', href: '/admin', icon: Cog6ToothIcon, roles: ['admin'] },
+  { name: 'Ayuda', href: '/help', icon: QuestionMarkCircleIcon, roles: ['admin', 'mechanic', 'receptionist', 'client'] },
 ];
 
 export function Layout({ children }: LayoutProps) {

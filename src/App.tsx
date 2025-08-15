@@ -13,6 +13,15 @@ import { ClientAppointmentsPage } from './paginas/cliente/ClientAppointmentsPage
 import { HelpPage } from './paginas/sistema/HelpPage';
 import { ReportsPage } from './paginas/administracion/ReportsPage';
 import { WorkOrdersPage } from './paginas/administracion/WorkOrdersPage';
+import AppointmentsPage from './paginas/appointments/AppointmentsPage';
+import QuotationsPage from './paginas/quotations/QuotationsPage';
+import InvoicesPage from './paginas/invoices/InvoicesPage';
+import PaymentsPage from './paginas/payments/PaymentsPage';
+import InventoryPage from './paginas/inventory/InventoryPage';
+import SuppliersPage from './paginas/suppliers/SuppliersPage';
+import ProductsPage from './paginas/products/ProductsPage';
+import ServicesPage from './paginas/services/ServicesPage';
+import LogsPage from './paginas/logs/LogsPage';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -170,6 +179,79 @@ function AppRoutes() {
                 </p>
               </div>
             </div>
+          </ProtectedRoute>
+        }
+      />
+      {/* Nuevos módulos administrativos y de gestión */}
+      <Route
+        path="/appointments"
+        element={
+          <ProtectedRoute>
+            <AppointmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quotations"
+        element={
+          <ProtectedRoute>
+            <QuotationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/invoices"
+        element={
+          <ProtectedRoute>
+            <InvoicesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute>
+            <PaymentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute>
+            <InventoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/suppliers"
+        element={
+          <ProtectedRoute>
+            <SuppliersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <ProductsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/services"
+        element={
+          <ProtectedRoute>
+            <ServicesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/logs"
+        element={
+          <ProtectedRoute>
+            <LogsPage />
           </ProtectedRoute>
         }
       />
