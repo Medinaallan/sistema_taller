@@ -182,9 +182,10 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md', className }: ModalProps) {
   if (!isOpen) return null;
 
   const sizeClasses = {
@@ -201,7 +202,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         
         <div className={clsx(
           'relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 w-full',
-          sizeClasses[size]
+          sizeClasses[size],
+          className
         )}>
           <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
             <div className="flex items-center justify-between mb-4">

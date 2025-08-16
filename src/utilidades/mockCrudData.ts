@@ -73,7 +73,13 @@ export const mockQuotations: Quotation[] = [
     clientId: 'c1',
     vehicleId: 'v1',
     items: [
-      { id: 'qi1', description: 'Cambio de aceite', quantity: 1, unitPrice: 500, total: 500 },
+      {
+        id: 'qi1',
+        description: 'Cambio de aceite',
+        quantity: 1,
+        unitPrice: 500,
+        total: 500
+      } as QuotationItem
     ],
     total: 500,
     status: 'pending',
@@ -90,7 +96,13 @@ export const mockInvoices: Invoice[] = [
     invoiceNumber: 'F-001',
     date: new Date('2025-08-14'),
     items: [
-      { id: 'fi1', description: 'Cambio de aceite', quantity: 1, unitPrice: 500, total: 500 },
+      {
+        id: 'fi1',
+        description: 'Cambio de aceite',
+        quantity: 1,
+        unitPrice: 500,
+        total: 500
+      } as InvoiceItem
     ],
     subtotal: 500,
     tax: 75,
