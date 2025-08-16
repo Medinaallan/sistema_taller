@@ -1,5 +1,6 @@
 // mockCrudData.ts
 // Mock data para tablas CRUD de todos los módulos administrativos
+import type { WorkOrder } from '../tipos/workOrder';
 import type { Appointment } from '../tipos/appointment';
 import type { Quotation, QuotationItem } from '../tipos/quotation';
 import type { Invoice, InvoiceItem } from '../tipos/invoice';
@@ -9,6 +10,35 @@ import type { Supplier } from '../tipos/supplier';
 import type { Product } from '../tipos/product';
 import type { Service } from '../tipos/service';
 import type { Log } from '../tipos/log';
+
+export const mockWorkOrders: WorkOrder[] = [
+  {
+    id: 'wo1',
+    clientId: 'c1',
+    vehicleId: 'v1',
+    status: 'in-progress',
+    description: 'Reparación de motor',
+    estimatedCompletionDate: new Date('2025-08-20'),
+    laborCost: 2000,
+    partsCost: 3000,
+    totalCost: 5000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'wo2',
+    clientId: 'c2',
+    vehicleId: 'v2',
+    status: 'pending',
+    description: 'Cambio de frenos',
+    estimatedCompletionDate: new Date('2025-08-18'),
+    laborCost: 800,
+    partsCost: 1200,
+    totalCost: 2000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
 
 export const mockAppointments: Appointment[] = [
   {
@@ -20,6 +50,18 @@ export const mockAppointments: Appointment[] = [
     time: '10:00',
     status: 'pending',
     notes: 'Primera cita',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'a2',
+    clientId: 'c2',
+    vehicleId: 'v2',
+    serviceTypeId: 's2',
+    date: new Date('2025-08-16'),
+    time: '14:30',
+    status: 'confirmed',
+    notes: 'Servicio regular',
     createdAt: new Date(),
     updatedAt: new Date(),
   },

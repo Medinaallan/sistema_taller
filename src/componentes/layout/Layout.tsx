@@ -12,7 +12,7 @@ import {
   ArrowRightOnRectangleIcon,
   CalendarDaysIcon,
   QuestionMarkCircleIcon,
-  CurrencyDollarIcon
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { getRoleText } from '../../utilidades/mockData';
@@ -28,18 +28,14 @@ interface NavigationItem {
   roles: string[];
 }
 
-const navigation: NavigationItem[] = [
+const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, roles: ['admin', 'mechanic', 'receptionist'] },
   { name: 'Mi Panel', href: '/client-dashboard', icon: HomeIcon, roles: ['client'] },
+  { name: 'Gestión', href: '/gestion', icon: ClipboardDocumentListIcon, roles: ['admin', 'receptionist'] },
   { name: 'Clientes', href: '/clients', icon: UsersIcon, roles: ['admin', 'receptionist'] },
   { name: 'Vehículos', href: '/vehicles', icon: TruckIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Mis Vehículos', href: '/client-vehicles', icon: TruckIcon, roles: ['client'] },
-  { name: 'Órdenes de Trabajo', href: '/work-orders', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Solicitar Cita', href: '/client-appointments', icon: CalendarDaysIcon, roles: ['client'] },
-  { name: 'Citas', href: '/appointments', icon: CalendarDaysIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Cotizaciones', href: '/quotations', icon: ChartBarIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Facturas', href: '/invoices', icon: CurrencyDollarIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Pagos', href: '/payments', icon: CurrencyDollarIcon, roles: ['admin', 'receptionist'] },
   { name: 'Inventario', href: '/inventory', icon: TruckIcon, roles: ['admin', 'receptionist'] },
   { name: 'Proveedores', href: '/suppliers', icon: UsersIcon, roles: ['admin', 'receptionist'] },
   { name: 'Productos', href: '/products', icon: TruckIcon, roles: ['admin', 'receptionist'] },
@@ -60,7 +56,7 @@ export function Layout({ children }: LayoutProps) {
     dispatch({ type: 'LOGOUT' });
   };
 
-  const filteredNavigation = navigation.filter(item => 
+  const filteredNavigation = navigationItems.filter(item => 
     state.user ? item.roles.includes(state.user.role) : false
   );
 

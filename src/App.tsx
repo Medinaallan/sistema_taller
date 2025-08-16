@@ -7,6 +7,7 @@ import { LoginPage } from './paginas/autenticacion/LoginPage';
 import { DashboardPage } from './paginas/administracion/DashboardPage';
 import { ClientsPage } from './paginas/administracion/ClientsPage';
 import { VehiclesPage } from './paginas/administracion/VehiclesPage';
+import GestionPage from './paginas/administracion/GestionPage';
 import { ClientDashboardPage } from './paginas/cliente/ClientDashboardPage';
 import { ClientVehiclesPage } from './paginas/cliente/ClientVehiclesPage';
 import { ClientAppointmentsPage } from './paginas/cliente/ClientAppointmentsPage';
@@ -65,6 +66,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion"
+        element={
+          <ProtectedRoute>
+            <GestionPage />
           </ProtectedRoute>
         }
       />
