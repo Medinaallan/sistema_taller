@@ -1,5 +1,6 @@
 // mockCrudData.ts
 // Mock data para tablas CRUD de todos los módulos administrativos
+// Nota: Todos los valores monetarios están en Lempiras Hondureños (L.)
 import type { WorkOrder } from '../tipos/workOrder';
 import type { Appointment } from '../tipos/appointment';
 import type { Quotation, QuotationItem } from '../tipos/quotation';
