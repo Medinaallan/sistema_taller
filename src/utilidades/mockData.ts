@@ -45,7 +45,50 @@ export const mockVehicles: Vehicle[] = [];
 
 export const mockWorkOrders: WorkOrder[] = [];
 
-export const mockReminders: Reminder[] = [];
+export const mockReminders: Reminder[] = [
+  {
+    id: 'r1',
+    vehicleId: 'v1',
+    clientId: 'c1',
+    type: 'date',
+    title: 'Cambio de Aceite',
+    description: 'Recordatorio para cambio de aceite programado',
+    triggerValue: new Date('2025-09-15'),
+    isActive: true,
+    isCompleted: false,
+    services: ['Cambio de aceite', 'Revisión de filtros'],
+    createdAt: new Date('2025-08-01'),
+    triggerDate: new Date('2025-09-15')
+  },
+  {
+    id: 'r2',
+    vehicleId: 'v2',
+    clientId: 'c2',
+    type: 'mileage',
+    title: 'Revisión de Frenos',
+    description: 'Revisión de pastillas y discos de freno',
+    triggerValue: 50000,
+    currentValue: 48500,
+    isActive: true,
+    isCompleted: false,
+    services: ['Revisión de frenos', 'Cambio de pastillas si es necesario'],
+    createdAt: new Date('2025-08-05')
+  },
+  {
+    id: 'r3',
+    vehicleId: 'v1',
+    clientId: 'c1',
+    type: 'date',
+    title: 'Alineación y Balanceo',
+    description: 'Mantenimiento preventivo de alineación',
+    triggerValue: new Date('2025-08-20'),
+    isActive: true,
+    isCompleted: false,
+    services: ['Alineación', 'Balanceo', 'Rotación de llantas'],
+    createdAt: new Date('2025-08-01'),
+    triggerDate: new Date('2025-08-20')
+  }
+];
 
 export const mockDashboardStats: DashboardStats = {
   totalWorkOrders: 0,

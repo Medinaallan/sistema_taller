@@ -8,7 +8,7 @@ import type { Quotation } from '../../tipos/quotation';
 import type { Invoice } from '../../tipos/invoice';
 import { mockWorkOrders, mockAppointments, mockQuotations, mockInvoices } from '../../utilidades/mockCrudData';
 import { FunnelIcon, ArrowPathIcon, ChartBarIcon } from '@heroicons/react/24/outline';
-import { formatCurrency } from '../../utilidades/formatUtils';
+import { formatCurrency } from '../../utilidades/mockData';
 
 // Definición de columnas para cada tipo
 const workOrderColumns: ColumnDef<WorkOrder>[] = [

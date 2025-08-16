@@ -23,6 +23,7 @@ import SuppliersPage from './paginas/suppliers/SuppliersPage';
 import ProductsPage from './paginas/products/ProductsPage';
 import ServicesPage from './paginas/services/ServicesPage';
 import { LogsPage } from './paginas/logs/LogsPage';
+import RemindersPage from './paginas/administracion/RemindersPage';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -92,6 +93,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ClientVehiclesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reminders"
+        element={
+          <ProtectedRoute>
+            <RemindersPage />
           </ProtectedRoute>
         }
       />
