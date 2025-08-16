@@ -22,7 +22,7 @@ import InventoryPage from './paginas/inventory/InventoryPage';
 import SuppliersPage from './paginas/suppliers/SuppliersPage';
 import ProductsPage from './paginas/products/ProductsPage';
 import ServicesPage from './paginas/services/ServicesPage';
-import LogsPage from './paginas/logs/LogsPage';
+import { LogsPage } from './paginas/logs/LogsPage';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
