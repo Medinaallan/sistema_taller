@@ -8,6 +8,7 @@ import type { Quotation } from '../../tipos/quotation';
 import type { Invoice } from '../../tipos/invoice';
 import { mockWorkOrders, mockAppointments, mockQuotations, mockInvoices } from '../../utilidades/mockCrudData';
 import { FunnelIcon, ArrowPathIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { formatCurrency } from '../../utilidades/formatUtils';
 
 // Definición de columnas para cada tipo
 const workOrderColumns: ColumnDef<WorkOrder>[] = [
@@ -23,7 +24,7 @@ const workOrderColumns: ColumnDef<WorkOrder>[] = [
   { 
     accessorKey: 'totalCost', 
     header: 'Costo Total',
-    cell: (info) => `$${info.getValue() as number}`
+    cell: (info) => formatCurrency(info.getValue() as number)
   },
 ];
 
@@ -47,7 +48,7 @@ const quotationColumns: ColumnDef<Quotation>[] = [
   { 
     accessorKey: 'total', 
     header: 'Total',
-    cell: (info) => `$${info.getValue() as number}`
+    cell: (info) => formatCurrency(info.getValue() as number)
   },
   { accessorKey: 'status', header: 'Estado' },
 ];
@@ -59,7 +60,7 @@ const invoiceColumns: ColumnDef<Invoice>[] = [
   { 
     accessorKey: 'total', 
     header: 'Total',
-    cell: (info) => `$${info.getValue() as number}`
+    cell: (info) => formatCurrency(info.getValue() as number)
   },
   { accessorKey: 'status', header: 'Estado' },
 ];
