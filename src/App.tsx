@@ -5,6 +5,7 @@ import { useApp } from './contexto/useApp';
 import { Layout } from './componentes/layout/Layout';
 import { LoginPage } from './paginas/autenticacion/LoginPage';
 import { DashboardPage } from './paginas/administracion/DashboardPage';
+import AdminPage from './paginas/administracion/AdminPage';
 import { ClientsPage } from './paginas/administracion/ClientsPage';
 import { VehiclesPage } from './paginas/administracion/VehiclesPage';
 import GestionPage from './paginas/administracion/GestionPage';
@@ -145,6 +146,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <VehiclesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminPage />
           </ProtectedRoute>
         }
       />

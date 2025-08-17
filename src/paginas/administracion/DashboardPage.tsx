@@ -10,7 +10,7 @@ import {
 import { Card } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { mockDashboardStats, mockWorkOrders, formatCurrency, getStatusColor, getStatusText } from '../../utilidades/mockData';
-import { ServiceTypesPanel } from './ServiceTypesPanel';
+
 
 interface StatCardProps {
   title: string;
@@ -211,7 +211,6 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <ServiceTypesPanel />
     </div>
   );
 }

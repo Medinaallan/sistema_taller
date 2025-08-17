@@ -1,33 +1,96 @@
 
-import { useState } from 'react';
-import { Card, Button } from '../../componentes/comunes/UI';
+import { useState, useEffect } from 'react';
+import { Card, Button, Modal } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
-import { mockServices } from '../../utilidades/mockCrudData';
-import type { Service } from '../../tipos/service';
-
 import type { ColumnDef } from '@tanstack/react-table';
+import { useApp } from '../../contexto/useApp';
+import { mockServiceTypes } from '../../utilidades/mockData';
+import type { ServiceType } from '../../tipos/index';
 
-const columns: ColumnDef<Service>[] = [
-  { accessorKey: 'id', header: 'ID' },
-  { accessorKey: 'name', header: 'Nombre' },
-  { accessorKey: 'basePrice', header: 'Precio Base' },
-  { accessorKey: 'estimatedTime', header: 'Tiempo Est.' },
+const columns: ColumnDef<ServiceType>[] = [
+  { 
+    accessorKey: 'name', 
+    header: 'Nombre',
+    cell: ({ row }) => row.original.name
+  },
+  { 
+    accessorKey: 'description', 
+    header: 'Descripción',
+    cell: ({ row }) => row.original.description
+  },
+  { 
+    accessorKey: 'basePrice', 
+    header: 'Precio Base',
+    cell: ({ row }) => `L. ${row.original.basePrice}`
+  },
+  { 
+    accessorKey: 'estimatedDuration', 
+    header: 'Duración Est.',
+    cell: ({ row }) => `${row.original.estimatedDuration} hrs`
+  }
 ];
 
 const ServicesPage = () => {
-  const [data, setData] = useState<Service[]>(mockServices);
+  const [showForm, setShowForm] = useState(false);
+  const { state, dispatch } = useApp();
+  
+  useEffect(() => {
+    // Inicializar los tipos de servicio en el estado global si no existen
+    if (!state.serviceTypes || state.serviceTypes.length === 0) {
+      dispatch({ type: 'SET_SERVICE_TYPES', payload: mockServiceTypes });
+    }
+  }, []);
 
-  const handleEdit = (item: Service) => {
-    alert('Editar servicio: ' + item.id);
+  const data = state.serviceTypes || mockServiceTypes;
+
+  const handleEdit = (service: ServiceType) => {
+    setShowForm(true);
+    // TODO: Implementar edición
+    console.log('Editar servicio:', service);
   };
-  const handleDelete = (item: Service) => {
-    setData(data.filter(d => d.id !== item.id));
+
+  const handleDelete = (service: ServiceType) => {
+    if (window.confirm('¿Está seguro de eliminar este servicio?')) {
+      dispatch({ type: 'DELETE_SERVICE_TYPE', payload: service.id });
+    }
+  };
+
+  const handleCreate = () => {
+    setShowForm(true);
   };
 
   return (
-    <Card title="Servicios" actions={<Button onClick={() => alert('Nuevo registro')}>Nuevo</Button>}>
-  <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
-    </Card>
+    <div className="space-y-6">
+      {showForm && (
+        <Modal
+          isOpen={showForm}
+          onClose={() => setShowForm(false)}
+          title="Servicio"
+          size="md"
+        >
+          <div>
+            {/* TODO: Implementar formulario */}
+            <p>Formulario de servicio en construcción...</p>
+          </div>
+        </Modal>
+      )}
+      <Card 
+        title="Catálogo de Servicios" 
+        subtitle="Gestión de tipos de servicios y precios base"
+        actions={
+          <Button onClick={handleCreate} variant="primary">
+            Nuevo Servicio
+          </Button>
+        }
+      >
+        <TanStackCrudTable 
+          columns={columns} 
+          data={data} 
+          onEdit={handleEdit} 
+          onDelete={handleDelete}
+        />
+      </Card>
+    </div>
   );
 };
 

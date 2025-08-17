@@ -4,7 +4,7 @@ import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/com
 import { useApp } from '../../contexto/useApp';
 import { mockVehicles, mockClients, mockServiceTypes, generateId, formatDate } from '../../utilidades/mockData';
 import type { Vehicle, Client, ServiceType } from '../../tipos';
-import { ServiceTypesPanel } from './ServiceTypesPanel';
+
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
@@ -481,7 +481,6 @@ export function VehiclesPage() {
         )}
       </Modal>
 
-      <ServiceTypesPanel />
     </div>
   );
 }

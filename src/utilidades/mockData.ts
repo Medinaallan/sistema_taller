@@ -37,7 +37,43 @@ export const mockUsers: User[] = [
   },
 ];
 
-export const mockServiceTypes: ServiceType[] = [];
+export const mockServiceTypes: ServiceType[] = [
+  {
+    id: '1',
+    name: 'Cambio de Aceite',
+    description: 'Cambio de aceite y filtro de motor',
+    basePrice: 850,
+    estimatedDuration: 1
+  },
+  {
+    id: '2',
+    name: 'Alineación y Balanceo',
+    description: 'Alineación de dirección y balanceo de ruedas',
+    basePrice: 1200,
+    estimatedDuration: 2
+  },
+  {
+    id: '3',
+    name: 'Diagnóstico General',
+    description: 'Diagnóstico completo del vehículo',
+    basePrice: 500,
+    estimatedDuration: 1.5
+  },
+  {
+    id: '4',
+    name: 'Cambio de Frenos',
+    description: 'Cambio de pastillas o bandas de freno',
+    basePrice: 1500,
+    estimatedDuration: 3
+  },
+  {
+    id: '5',
+    name: 'Cambio de Batería',
+    description: 'Sustitución de batería y diagnóstico del sistema eléctrico',
+    basePrice: 300,
+    estimatedDuration: 0.5
+  }
+];
 
 export const mockClients: Client[] = [];
 

@@ -25,6 +25,17 @@ export const getInitialState = (): AppState => {
   } catch (error) {
     console.error('Error loading saved user, clients or serviceTypes:', error);
   }
+  // Cargar el estado del nav
+  let isNavCollapsed = false;
+  const savedNavState = localStorage.getItem('tallerApp_navState');
+  if (savedNavState) {
+    try {
+      isNavCollapsed = JSON.parse(savedNavState);
+    } catch (error) {
+      console.error('Error loading saved nav state:', error);
+    }
+  }
+
   return {
     user,
     isAuthenticated,
@@ -37,6 +48,7 @@ export const getInitialState = (): AppState => {
     dashboardStats: mockDashboardStats,
     loading: false,
     error: null,
+    isNavCollapsed
   };
 };
 
@@ -259,6 +271,18 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         dashboardStats: action.payload,
       };
+
+    case 'TOGGLE_NAV': {
+      const newNavState = typeof action.payload === 'boolean' 
+        ? action.payload 
+        : !state.isNavCollapsed;
+      const newState = {
+        ...state,
+        isNavCollapsed: newNavState
+      };
+      localStorage.setItem('tallerApp_navState', JSON.stringify(newState.isNavCollapsed));
+      return newState;
+    }
 
     default:
       return state;

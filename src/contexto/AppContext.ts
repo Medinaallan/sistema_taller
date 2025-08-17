@@ -14,6 +14,7 @@ export interface AppState {
   dashboardStats: DashboardStats | null;
   loading: boolean;
   error: string | null;
+  isNavCollapsed: boolean;
 }
 
 // Acciones disponibles
@@ -46,7 +47,8 @@ export type AppAction =
   | { type: 'ADD_USER'; payload: User }
   | { type: 'UPDATE_USER'; payload: User }
   | { type: 'DELETE_USER'; payload: string }
-  | { type: 'SET_DASHBOARD_STATS'; payload: DashboardStats };
+  | { type: 'SET_DASHBOARD_STATS'; payload: DashboardStats }
+  | { type: 'TOGGLE_NAV'; payload?: boolean };
 
 // Contexto
 export const AppContext = createContext<{
