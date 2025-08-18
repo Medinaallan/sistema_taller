@@ -1,21 +1,33 @@
 import { useState } from 'react';
 import { CrudTable } from '../../componentes/comunes/CrudTable';
-import { WorkOrder } from '../../tipos/workOrder';
+import { WorkOrder } from '../../tipos/index';
 
 const mockWorkOrders: WorkOrder[] = [
   {
     id: '1',
     vehicleId: 'VEH001',
     clientId: 'CLI001',
+    mechanicId: 'MEC001',
+    receptionistId: 'REC001',
     status: 'in-progress',
     description: 'Cambio de aceite y filtros',
+    problem: 'Mantenimiento preventivo programado',
+    diagnosis: 'Se requiere cambio de aceite y filtros',
+    serviceType: 'preventive',
     estimatedCompletionDate: new Date('2025-08-18'),
+    startDate: new Date('2025-08-17'),
+    technicianNotes: 'Mantenimiento preventivo regular',
     laborCost: 50.00,
     partsCost: 100.00,
     totalCost: 150.00,
+    estimatedCost: 150.00,
+    parts: [],
+    services: [],
+    notes: 'Cliente solicita revisión general',
+    recommendations: 'Próximo servicio en 5000km',
+    paymentStatus: 'pending',
     createdAt: new Date('2025-08-17'),
-    updatedAt: new Date('2025-08-17'),
-    technicianNotes: 'Mantenimiento preventivo regular'
+    updatedAt: new Date('2025-08-17')
   }
 ];
 

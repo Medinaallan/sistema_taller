@@ -1,28 +1,45 @@
 // mockCrudData.ts
 // Mock data para tablas CRUD de todos los módulos administrativos
 // Nota: Todos los valores monetarios están en Lempiras Hondureños (L.)
-import type { WorkOrder } from '../tipos/workOrder';
-import type { Appointment } from '../tipos/appointment';
-import type { Quotation, QuotationItem } from '../tipos/quotation';
-import type { Invoice, InvoiceItem } from '../tipos/invoice';
-import type { Payment } from '../tipos/payment';
-import type { InventoryItem } from '../tipos/inventory';
-import type { Supplier } from '../tipos/supplier';
-import type { Product } from '../tipos/product';
-import type { Service } from '../tipos/service';
-import type { Log } from '../tipos/log';
+import type {
+  WorkOrder,
+  Appointment,
+  Quotation,
+  QuotationItem,
+  Invoice,
+  InvoiceItem,
+  Payment,
+  InventoryItem,
+  Supplier,
+  Product,
+  Service,
+  Log
+} from '../tipos/index';
 
 export const mockWorkOrders: WorkOrder[] = [
   {
     id: 'wo1',
     clientId: 'c1',
     vehicleId: 'v1',
+    mechanicId: 'm1',
+    receptionistId: 'r1',
     status: 'in-progress',
     description: 'Reparación de motor',
+    problem: 'Ruido anormal en el motor',
+    diagnosis: 'Posible problema en los pistones',
+    serviceType: 'corrective',
     estimatedCompletionDate: new Date('2025-08-20'),
+    startDate: new Date('2025-08-15'),
+    technicianNotes: 'Se requiere desarmar el motor',
     laborCost: 2000,
     partsCost: 3000,
     totalCost: 5000,
+    estimatedCost: 5500,
+    parts: [],
+    services: [],
+    notes: 'Cliente reporta ruido desde hace una semana',
+    recommendations: 'Se recomienda cambio de aceite cada 5000km',
+    paymentStatus: 'pending',
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -30,12 +47,21 @@ export const mockWorkOrders: WorkOrder[] = [
     id: 'wo2',
     clientId: 'c2',
     vehicleId: 'v2',
+    mechanicId: 'm2',
+    receptionistId: 'r1',
     status: 'pending',
     description: 'Cambio de frenos',
+    problem: 'Frenos hacen ruido al frenar',
+    serviceType: 'preventive',
     estimatedCompletionDate: new Date('2025-08-18'),
     laborCost: 800,
     partsCost: 1200,
     totalCost: 2000,
+    estimatedCost: 2200,
+    parts: [],
+    services: [],
+    notes: 'Cliente solicita revisión completa del sistema de frenos',
+    paymentStatus: 'pending',
     createdAt: new Date(),
     updatedAt: new Date(),
   },

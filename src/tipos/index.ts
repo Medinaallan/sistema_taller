@@ -39,24 +39,46 @@ export interface Vehicle {
   updatedAt: Date;
 }
 
+export interface OrderPart {
+  id: string;
+  name: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+}
+
+export interface OrderService {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+}
+
 export interface WorkOrder {
   id: string;
   vehicleId: string;
   clientId: string;
   mechanicId?: string;
   receptionistId: string;
+  status: 'pending' | 'in-progress' | 'completed' | 'cancelled' | 'rejected';
   description: string;
   problem: string;
+  diagnosis?: string;
   serviceType: 'preventive' | 'corrective';
-  status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
+  estimatedCompletionDate: Date;
+  actualCompletionDate?: Date;
+  startDate?: Date;
+  technicianNotes?: string;
+  laborCost: number;
+  partsCost: number;
+  totalCost: number;
   estimatedCost: number;
   finalCost?: number;
-  estimatedDate?: Date;
-  completedDate?: Date;
-  parts?: Part[];
+  parts: OrderPart[];
+  services: OrderService[];
   notes?: string;
   recommendations?: string;
-  paymentStatus: 'pending' | 'paid';
+  paymentStatus: 'pending' | 'partial' | 'completed';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,10 +143,8 @@ export interface WorkOrderFilters {
   status?: WorkOrder['status'];
   clientId?: string;
   mechanicId?: string;
-  dateRange?: {
-    start: Date;
-    end: Date;
-  };
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export interface DashboardStats {
@@ -136,4 +156,206 @@ export interface DashboardStats {
   totalClients: number;
   totalVehicles: number;
   activeReminders: number;
+}
+
+// Cita de servicio
+export interface Appointment {
+  id: string;
+  clientId: string;
+  vehicleId: string;
+  serviceTypeId: string;
+  date: Date;
+  time: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Inventario
+export interface InventoryItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  minStock: number;
+  maxStock?: number;
+  location?: string;
+  supplierId?: string;
+  lastEntryDate?: Date;
+  lastExitDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Factura
+export interface Invoice {
+  id: string;
+  clientId: string;
+  workOrderId: string;
+  invoiceNumber: string;
+  date: Date;
+  items: InvoiceItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: 'pending' | 'paid' | 'cancelled';
+  paymentId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+// Pago
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  clientId: string;
+  amount: number;
+  method: 'cash' | 'card' | 'transfer' | 'other';
+  date: Date;
+  status: 'pending' | 'completed' | 'failed';
+  reference?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Servicio
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  basePrice: number;
+  estimatedTime?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Proveedor
+export interface Supplier {
+  id: string;
+  name: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  productsSupplied?: string[]; // productIds
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Producto
+export interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  brand?: string;
+  model?: string;
+  price: number;
+  cost?: number;
+  stock: number;
+  supplierId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Cotización
+export interface Quotation {
+  id: string;
+  clientId: string;
+  vehicleId: string;
+  items: QuotationItem[];
+  total: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface QuotationItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+// Rol de usuario
+export interface Role {
+  id: string;
+  name: string; // Ej: 'admin', 'mechanic', 'receptionist', 'client'
+  description?: string;
+  permissions?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Bitácora de acciones
+export interface Log {
+  id: string;
+  userId: string;
+  action: string;
+  entity: string;
+  entityId: string;
+  description?: string;
+  timestamp: Date;
+}
+
+// Estadísticas y reportes
+export interface FinancialStats {
+  totalSales: number;
+  taxableAmount: number;
+  isv: number;
+  totalWithTax: number;
+  cashPayments: number;
+  cardPayments: number;
+  transferPayments: number;
+  pendingPayments: number;
+}
+
+export interface ServiceStats {
+  totalOrders: number;
+  completedOrders: number;
+  inProgressOrders: number;
+  pendingOrders: number;
+  rejectedOrders: number;
+}
+
+export interface SatisfactionStats {
+  averageRating: number;
+  totalRatings: number;
+  ratingDistribution: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+  mechanicRatings: {
+    mechanicId: string;
+    mechanicName: string;
+    averageRating: number;
+    totalRatings: number;
+  }[];
+}
+
+export interface OrderRating {
+  orderId: string;
+  mechanicId: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+}
+
+export interface ReportFilters {
+  startDate: Date;
+  endDate: Date;
+  mechanicId?: string;
+  serviceTypeId?: string;
+  status?: 'completed' | 'in-progress' | 'pending' | 'rejected';
 }

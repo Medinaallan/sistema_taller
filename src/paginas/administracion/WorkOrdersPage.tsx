@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, Button, Select, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import type { WorkOrder, WorkOrderFilters } from '../../tipos/ordenes';
+import type { WorkOrder, WorkOrderFilters } from '../../tipos/index';
 import { formatCurrency } from '../../utilidades/mockData';
 
 // Componente para los filtros de órdenes
@@ -157,14 +157,23 @@ export function WorkOrdersPage() {
       id: '1',
       vehicleId: 'v1',
       clientId: 'c1',
+      mechanicId: 'm1',
+      receptionistId: 'r1',
       status: 'in-progress',
-      createdAt: new Date(),
       description: 'Servicio de mantenimiento preventivo',
-      serviceType: 'Mantenimiento Preventivo',
-      estimatedCost: 0,
+      problem: 'Mantenimiento programado',
+      serviceType: 'preventive',
+      estimatedCompletionDate: new Date(),
+      laborCost: 500,
+      partsCost: 1000,
+      totalCost: 1500,
+      estimatedCost: 1500,
       parts: [],
       services: [],
-      paymentStatus: 'pending'
+      notes: 'Servicio de rutina',
+      paymentStatus: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
   ]);
 

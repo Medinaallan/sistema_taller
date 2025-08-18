@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Reminder, Client, Vehicle } from '../../tipos';
-import { formatDate, formatCurrency } from '../../utilidades/mockData';
+import { formatDate } from '../../utilidades/mockData';
 import { mockClients, mockVehicles, mockReminders } from '../../utilidades/mockData';
 import { CalendarIcon, BellIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { Button, Modal, Card } from '../../componentes/comunes/UI';
