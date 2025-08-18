@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { mockProducts } from '../../utilidades/mockCrudData';
-import type { Product } from '../../tipos/product';
+import type { Product } from '../../tipos';
 
 import type { ColumnDef } from '@tanstack/react-table';
 

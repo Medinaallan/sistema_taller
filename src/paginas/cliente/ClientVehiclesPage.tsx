@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Card, Badge } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import type { Vehicle, WorkOrder, Part } from '../../tipos/index';
+import type { Vehicle, WorkOrder, OrderPart } from '../../tipos/index';
 import { mockWorkOrders, mockVehicles, formatCurrency, getStatusText, formatDate } from '../../utilidades/mockData';
 
 export function ClientVehiclesPage() {
@@ -250,13 +250,13 @@ function VehicleDetails({ vehicle, workOrders }: { vehicle: Vehicle; workOrders:
                         <div className="mb-3">
                           <h5 className="text-sm font-medium text-gray-700 mb-1">Repuestos utilizados:</h5>
                           <div className="space-y-1">
-                            {order.parts.map((part: Part) => (
+                            {order.parts.map((part: OrderPart) => (
                               <div key={part.id} className="flex justify-between text-sm">
                                 <span className="text-gray-600">
                                   {part.name} (x{part.quantity})
                                 </span>
                                 <span className="text-gray-900">
-                                  {formatCurrency(part.cost * part.quantity)}
+                                  {formatCurrency(part.unitCost * part.quantity)}
                                 </span>
                               </div>
                             ))}
@@ -290,13 +290,13 @@ function VehicleDetails({ vehicle, workOrders }: { vehicle: Vehicle; workOrders:
                       
                       <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
                         <span className={`text-sm font-medium ${
-                          order.paymentStatus === 'paid' ? 'text-green-600' : 'text-red-600'
+                          order.paymentStatus === 'completed' ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          Estado de pago: {order.paymentStatus === 'paid' ? 'Pagado' : 'Pendiente'}
+                          Estado de pago: {order.paymentStatus === 'completed' ? 'Pagado' : 'Pendiente'}
                         </span>
-                        {order.completedDate && (
+                        {order.actualCompletionDate && (
                           <span className="text-sm text-gray-500">
-                            Completado: {formatDate(order.completedDate)}
+                            Completado: {formatDate(order.actualCompletionDate)}
                           </span>
                         )}
                       </div>

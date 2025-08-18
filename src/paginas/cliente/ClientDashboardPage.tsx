@@ -254,7 +254,7 @@ export function ClientDashboardPage() {
                       <p className="text-sm font-medium text-gray-900">{order.description}</p>
                       <p className="text-sm text-gray-500">
                         {vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Vehículo'} • 
-                        {order.completedDate && ` ${formatDate(order.completedDate)}`}
+                        {order.actualCompletionDate && ` ${formatDate(order.actualCompletionDate)}`}
                       </p>
                     </div>
                     <div className="text-right">
@@ -262,7 +262,7 @@ export function ClientDashboardPage() {
                         {formatCurrency(order.finalCost || order.estimatedCost)}
                       </p>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.paymentStatus)}`}>
-                        {order.paymentStatus === 'paid' ? 'Pagado' : 'Pendiente'}
+                        {order.paymentStatus === 'completed' ? 'Pagado' : 'Pendiente'}
                       </span>
                     </div>
                   </div>

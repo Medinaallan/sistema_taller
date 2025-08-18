@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { mockAppointments } from '../../utilidades/mockCrudData';
-import type { Appointment } from '../../tipos/appointment';
+import type { Appointment } from '../../tipos';
 
 import type { ColumnDef } from '@tanstack/react-table';
 

@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { Card, Button, Modal } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { mockInvoices, mockPayments } from '../../utilidades/mockCrudData';
-import type { Invoice } from '../../tipos/invoice';
-import type { Payment } from '../../tipos/payment';
+import type { Invoice, Payment } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columns: ColumnDef<Invoice>[] = [
