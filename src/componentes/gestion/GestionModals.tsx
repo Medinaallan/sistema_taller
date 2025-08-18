@@ -1,11 +1,8 @@
 import { useState } from 'react';
-import { Modal, Button, Card } from '../comunes/UI';
+import { Modal, Button } from '../comunes/UI';
 import { TanStackCrudTable } from '../comunes/TanStackCrudTable';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { WorkOrder } from '../../tipos/workOrder';
-import type { Appointment } from '../../tipos/appointment';
-import type { Quotation } from '../../tipos/quotation';
-import type { Invoice } from '../../tipos/invoice';
+import type { WorkOrder, Appointment, Quotation, Invoice } from '../../tipos';
 import { mockWorkOrders, mockAppointments, mockQuotations, mockInvoices } from '../../utilidades/mockCrudData';
 import { FunnelIcon, ArrowPathIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { formatCurrency } from '../../utilidades/mockData';
