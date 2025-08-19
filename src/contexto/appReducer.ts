@@ -1,5 +1,24 @@
 import type { AppState, AppAction } from './AppContext';
-import { mockUsers, mockServiceTypes, mockClients, mockVehicles, mockWorkOrders, mockReminders, mockDashboardStats } from '../utilidades/mockData';
+import type { DashboardStats } from '../tipos/index';
+import { 
+  mockUsers, 
+  mockServiceTypes, 
+  mockClients, 
+  mockVehicles, 
+  mockWorkOrders, 
+  mockReminders, 
+  mockDashboardStats,
+  mockAppointments,
+  mockQuotations,
+  mockInvoices,
+  mockPayments,
+  mockServices,
+  mockSuppliers,
+  mockProducts,
+  mockInventory,
+  mockLogs,
+  generateId
+} from '../utilidades/globalMockDatabase';
 
 // Función para obtener estado inicial con persistencia
 export const getInitialState = (): AppState => {
@@ -37,15 +56,39 @@ export const getInitialState = (): AppState => {
   }
 
   return {
+    // Autenticación y usuario
     user,
     isAuthenticated,
+    
+    // Datos principales del negocio
     clients,
     vehicles: mockVehicles,
     workOrders: mockWorkOrders,
-    reminders: mockReminders,
+    
+    // Sistema de citas y servicios
+    appointments: mockAppointments,
+    services: mockServices,
     serviceTypes,
+    
+    // Sistema financiero
+    quotations: mockQuotations,
+    invoices: mockInvoices,
+    payments: mockPayments,
+    
+    // Inventario y productos
+    products: mockProducts,
+    inventory: mockInventory,
+    suppliers: mockSuppliers,
+    
+    // Sistema administrativo
     users: mockUsers,
+    reminders: mockReminders,
+    logs: mockLogs,
+    
+    // Dashboard y estadísticas
     dashboardStats: mockDashboardStats,
+    
+    // Estados de UI
     loading: false,
     error: null,
     isNavCollapsed
@@ -270,6 +313,190 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         dashboardStats: action.payload,
+      };
+
+    case 'REFRESH_DASHBOARD_STATS':
+      // Función para recalcular estadísticas basadas en datos actuales
+      const totalClients = state.clients.length;
+      const totalVehicles = state.vehicles.length;
+      const totalWorkOrders = state.workOrders.length;
+      const completedOrders = state.workOrders.filter(wo => wo.status === 'completed').length;
+      const totalRevenue = state.invoices
+        .filter(inv => inv.status === 'paid')
+        .reduce((sum, inv) => sum + inv.total, 0);
+      const activeReminders = state.reminders.filter(r => r.isActive).length;
+
+      const refreshedStats: DashboardStats = {
+        totalClients,
+        totalVehicles,
+        totalWorkOrders,
+        completedOrders,
+        pendingOrders: totalWorkOrders - completedOrders,
+        totalRevenue,
+        monthlyRevenue: totalRevenue, // Simplificado para el ejemplo
+        activeReminders,
+      };
+
+      return {
+        ...state,
+        dashboardStats: refreshedStats,
+      };
+
+    // ========== CITAS ==========
+    case 'SET_APPOINTMENTS':
+      return { ...state, appointments: action.payload };
+    case 'ADD_APPOINTMENT':
+      return { ...state, appointments: [...state.appointments, action.payload] };
+    case 'UPDATE_APPOINTMENT':
+      return {
+        ...state,
+        appointments: state.appointments.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_APPOINTMENT':
+      return {
+        ...state,
+        appointments: state.appointments.filter(item => item.id !== action.payload)
+      };
+
+    // ========== COTIZACIONES ==========
+    case 'SET_QUOTATIONS':
+      return { ...state, quotations: action.payload };
+    case 'ADD_QUOTATION':
+      return { ...state, quotations: [...state.quotations, action.payload] };
+    case 'UPDATE_QUOTATION':
+      return {
+        ...state,
+        quotations: state.quotations.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_QUOTATION':
+      return {
+        ...state,
+        quotations: state.quotations.filter(item => item.id !== action.payload)
+      };
+
+    // ========== FACTURAS ==========
+    case 'SET_INVOICES':
+      return { ...state, invoices: action.payload };
+    case 'ADD_INVOICE':
+      return { ...state, invoices: [...state.invoices, action.payload] };
+    case 'UPDATE_INVOICE':
+      return {
+        ...state,
+        invoices: state.invoices.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_INVOICE':
+      return {
+        ...state,
+        invoices: state.invoices.filter(item => item.id !== action.payload)
+      };
+
+    // ========== PAGOS ==========
+    case 'SET_PAYMENTS':
+      return { ...state, payments: action.payload };
+    case 'ADD_PAYMENT':
+      return { ...state, payments: [...state.payments, action.payload] };
+    case 'UPDATE_PAYMENT':
+      return {
+        ...state,
+        payments: state.payments.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_PAYMENT':
+      return {
+        ...state,
+        payments: state.payments.filter(item => item.id !== action.payload)
+      };
+
+    // ========== SERVICIOS ==========
+    case 'SET_SERVICES':
+      return { ...state, services: action.payload };
+    case 'ADD_SERVICE':
+      return { ...state, services: [...state.services, action.payload] };
+    case 'UPDATE_SERVICE':
+      return {
+        ...state,
+        services: state.services.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_SERVICE':
+      return {
+        ...state,
+        services: state.services.filter(item => item.id !== action.payload)
+      };
+
+    // ========== PRODUCTOS ==========
+    case 'SET_PRODUCTS':
+      return { ...state, products: action.payload };
+    case 'ADD_PRODUCT':
+      return { ...state, products: [...state.products, action.payload] };
+    case 'UPDATE_PRODUCT':
+      return {
+        ...state,
+        products: state.products.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_PRODUCT':
+      return {
+        ...state,
+        products: state.products.filter(item => item.id !== action.payload)
+      };
+
+    // ========== INVENTARIO ==========
+    case 'SET_INVENTORY':
+      return { ...state, inventory: action.payload };
+    case 'ADD_INVENTORY_ITEM':
+      return { ...state, inventory: [...state.inventory, action.payload] };
+    case 'UPDATE_INVENTORY_ITEM':
+      return {
+        ...state,
+        inventory: state.inventory.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_INVENTORY_ITEM':
+      return {
+        ...state,
+        inventory: state.inventory.filter(item => item.id !== action.payload)
+      };
+
+    // ========== PROVEEDORES ==========
+    case 'SET_SUPPLIERS':
+      return { ...state, suppliers: action.payload };
+    case 'ADD_SUPPLIER':
+      return { ...state, suppliers: [...state.suppliers, action.payload] };
+    case 'UPDATE_SUPPLIER':
+      return {
+        ...state,
+        suppliers: state.suppliers.map(item =>
+          item.id === action.payload.id ? action.payload : item
+        )
+      };
+    case 'DELETE_SUPPLIER':
+      return {
+        ...state,
+        suppliers: state.suppliers.filter(item => item.id !== action.payload)
+      };
+
+    // ========== LOGS/BITÁCORA ==========
+    case 'SET_LOGS':
+      return { ...state, logs: action.payload };
+    case 'ADD_LOG':
+      const newLog = {
+        ...action.payload,
+        timestamp: new Date()
+      };
+      return { 
+        ...state, 
+        logs: [newLog, ...state.logs].slice(0, 1000) // Mantener solo los últimos 1000 logs
       };
 
     case 'TOGGLE_NAV': {

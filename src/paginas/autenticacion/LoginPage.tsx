@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { generateId } from '../../utilidades/mockData';
+import { generateId } from '../../utilidades/globalMockDatabase';
 
 export function LoginPage() {
   const { state, dispatch } = useApp();

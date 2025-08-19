@@ -17,7 +17,7 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
-import { getRoleText } from '../../utilidades/mockData';
+import { getRoleText } from '../../utilidades/globalMockDatabase';
 import { clsx } from 'clsx';
 
 interface LayoutProps {
@@ -35,6 +35,7 @@ const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, roles: ['admin', 'mechanic', 'receptionist'] },
   { name: 'Mi Panel', href: '/client-dashboard', icon: HomeIcon, roles: ['client'] },
   { name: 'Gestión', href: '/gestion', icon: ClipboardDocumentListIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Perfil del Cliente', href: '/client-profile', icon: ChartBarIcon, roles: ['admin', 'receptionist'] },
   { name: 'Clientes', href: '/clients', icon: UsersIcon, roles: ['admin', 'receptionist'] },
   { name: 'Vehículos', href: '/vehicles', icon: TruckIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Mis Vehículos', href: '/client-vehicles', icon: TruckIcon, roles: ['client'] },

@@ -1,19 +1,23 @@
-
 import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
-import { mockInventory } from '../../utilidades/mockCrudData';
+import { mockInventory, formatCurrency } from '../../utilidades/globalMockDatabase';
 import type { InventoryItem } from '../../tipos';
-
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columns: ColumnDef<InventoryItem>[] = [
   { accessorKey: 'id', header: 'ID' },
-  { accessorKey: 'productId', header: 'Producto' },
+  { accessorKey: 'name', header: 'Nombre' },
+  { accessorKey: 'category', header: 'Categoría' },
+  { accessorKey: 'sku', header: 'SKU' },
   { accessorKey: 'quantity', header: 'Cantidad' },
-  { accessorKey: 'minStock', header: 'Stock Mín.' },
-  { accessorKey: 'maxStock', header: 'Stock Máx.' },
-  { accessorKey: 'location', header: 'Ubicación' },
+  { accessorKey: 'minQuantity', header: 'Min. Stock' },
+  { 
+    accessorKey: 'unitPrice', 
+    header: 'Precio',
+    cell: ({ getValue }) => formatCurrency(getValue() as number)
+  },
+  { accessorKey: 'supplier', header: 'Proveedor' },
 ];
 
 const InventoryPage = () => {
@@ -22,13 +26,14 @@ const InventoryPage = () => {
   const handleEdit = (item: InventoryItem) => {
     alert('Editar inventario: ' + item.id);
   };
+  
   const handleDelete = (item: InventoryItem) => {
     setData(data.filter(d => d.id !== item.id));
   };
 
   return (
-    <Card title="Inventario" actions={<Button onClick={() => alert('Nuevo registro')}>Nuevo</Button>}>
-  <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
+    <Card title="Inventario" actions={<Button onClick={() => alert('Nuevo item')}>Nuevo Item</Button>}>
+      <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
     </Card>
   );
 };

@@ -9,7 +9,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { Card } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { mockDashboardStats, mockWorkOrders, formatCurrency, getStatusColor, getStatusText } from '../../utilidades/mockData';
+import useInterconnectedData from '../../contexto/useInterconnectedData';
+import { formatCurrency, getStatusText, getStatusColor } from '../../utilidades/globalMockDatabase';
 
 
 interface StatCardProps {
@@ -38,26 +39,24 @@ function StatCard({ title, value, icon: Icon, color, subtitle }: StatCardProps) 
 }
 
 export function DashboardPage() {
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
+  const data = useInterconnectedData();
 
   useEffect(() => {
-    // Simular carga de estadísticas del dashboard
-    dispatch({ type: 'SET_DASHBOARD_STATS', payload: mockDashboardStats });
-    dispatch({ type: 'SET_WORK_ORDERS', payload: mockWorkOrders });
+    // Refrescar estadísticas del dashboard automáticamente
+    dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
   }, [dispatch]);
 
-  const stats = state.dashboardStats;
+  const stats = data.dashboardStats;
   
-  // Órdenes recientes (últimas 5)
-  const recentOrders = state.workOrders.slice(0, 5);
-  
-  // Órdenes pendientes
-  const pendingOrders = state.workOrders.filter(order => order.status === 'pending');
-  
-  // Órdenes en progreso
-  const inProgressOrders = state.workOrders.filter(order => order.status === 'in-progress');
+  // Datos para las tablas
+  const recentOrders = data.workOrders.slice(0, 5);
 
-  return (
+  // Filtrar órdenes por estado
+  const pendingOrders = data.workOrders.filter(order => order.status === 'pending');
+
+  // Filtrar órdenes en progreso
+  const inProgressOrders = data.workOrders.filter(order => order.status === 'in-progress');  return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>

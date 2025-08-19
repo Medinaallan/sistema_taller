@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { mockVehicles, mockClients, mockServiceTypes, generateId, formatDate } from '../../utilidades/mockData';
+import useInterconnectedData from '../../contexto/useInterconnectedData';
+import { mockVehicles, mockClients, mockServiceTypes, generateId, formatDate } from '../../utilidades/globalMockDatabase';
 import type { Vehicle, Client, ServiceType } from '../../tipos';
-
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
@@ -57,31 +57,38 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      const selectedServiceType = serviceTypes.find(st => st.id === formData.serviceTypeId);
-      if (selectedServiceType) {
-        onSubmit({
-          clientId: formData.clientId,
-          brand: formData.brand,
-          model: formData.model,
-          year: formData.year,
-          licensePlate: formData.licensePlate,
-          color: formData.color,
-          mileage: formData.mileage,
-          serviceType: selectedServiceType,
-        });
-      }
-    }
+    
+    if (!validateForm()) return;
+
+    const selectedServiceType = serviceTypes.find(st => st.id === formData.serviceTypeId);
+    if (!selectedServiceType) return;
+
+    onSubmit({
+      clientId: formData.clientId,
+      brand: formData.brand.trim(),
+      model: formData.model.trim(),
+      year: formData.year,
+      licensePlate: formData.licensePlate.trim(),
+      color: formData.color.trim(),
+      mileage: formData.mileage > 0 ? formData.mileage : undefined,
+      serviceType: selectedServiceType,
+    });
   };
 
   const clientOptions = [
-    { value: '', label: 'Seleccionar cliente...' },
-    ...clients.map(client => ({ value: client.id, label: client.name }))
+    { value: '', label: 'Selecciona un cliente...' },
+    ...clients.map(client => ({
+      value: client.id,
+      label: client.name
+    }))
   ];
 
   const serviceTypeOptions = [
-    { value: '', label: 'Seleccionar tipo de servicio...' },
-    ...serviceTypes.map(st => ({ value: st.id, label: st.name }))
+    { value: '', label: 'Selecciona un tipo de servicio...' },
+    ...serviceTypes.map(serviceType => ({
+      value: serviceType.id,
+      label: serviceType.name
+    }))
   ];
 
   return (
@@ -96,7 +103,7 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
         required
       />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Marca"
           name="brand"
@@ -116,9 +123,7 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
           placeholder="Corolla"
           required
         />
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
         <Input
           label="Año"
           name="year"
@@ -137,12 +142,10 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
           value={formData.licensePlate}
           onChange={handleInputChange}
           error={errors.licensePlate}
-          placeholder="ABC-123"
+          placeholder="ABC123"
           required
         />
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
         <Input
           label="Color"
           name="color"
@@ -189,6 +192,7 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
 
 export function VehiclesPage() {
   const { state, dispatch } = useApp();
+  const data = useInterconnectedData();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -205,7 +209,7 @@ export function VehiclesPage() {
   }, [dispatch, state.clients]);
 
   const filteredVehicles = state.vehicles.filter(vehicle => {
-    const client = state.clients.find(c => c.id === vehicle.clientId);
+    const client = data.getClientById(vehicle.clientId);
     const matchesSearch = 
       vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -236,14 +240,23 @@ export function VehiclesPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteVehicle = (vehicleId: string) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este vehículo?')) {
-      dispatch({ type: 'DELETE_VEHICLE', payload: vehicleId });
+  const handleDeleteVehicle = (vehicle: Vehicle) => {
+    if (confirm(`¿Estás seguro de que quieres eliminar el vehículo ${vehicle.brand} ${vehicle.model}?`)) {
+      data.deleteVehicleWithRelations(vehicle.id);
     }
   };
 
   const handleFormSubmit = (vehicleData: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'workOrders' | 'reminders'>) => {
-    if (modalType === 'create') {
+    if (modalType === 'edit' && selectedVehicle) {
+      dispatch({
+        type: 'UPDATE_VEHICLE',
+        payload: {
+          ...selectedVehicle,
+          ...vehicleData,
+          updatedAt: new Date(),
+        }
+      });
+    } else {
       const newVehicle: Vehicle = {
         ...vehicleData,
         id: generateId(),
@@ -253,34 +266,16 @@ export function VehiclesPage() {
         updatedAt: new Date(),
       };
       dispatch({ type: 'ADD_VEHICLE', payload: newVehicle });
-    } else if (modalType === 'edit' && selectedVehicle) {
-      const updatedVehicle: Vehicle = {
-        ...selectedVehicle,
-        ...vehicleData,
-        updatedAt: new Date(),
-      };
-      dispatch({ type: 'UPDATE_VEHICLE', payload: updatedVehicle });
     }
     setIsModalOpen(false);
   };
 
-  const getClientName = (clientId: string) => {
-    const client = state.clients.find(c => c.id === clientId);
-    return client?.name || 'Cliente no encontrado';
-  };
-
-  const getModalTitle = () => {
-    switch (modalType) {
-      case 'create': return 'Registrar Nuevo Vehículo';
-      case 'edit': return 'Editar Vehículo';
-      case 'view': return 'Detalles del Vehículo';
-      default: return '';
-    }
-  };
-
-  const clientFilterOptions = [
+  const clientOptions = [
     { value: '', label: 'Todos los clientes' },
-    ...state.clients.map(client => ({ value: client.id, label: client.name }))
+    ...state.clients.map(client => ({
+      value: client.id,
+      label: client.name
+    }))
   ];
 
   return (
@@ -288,31 +283,68 @@ export function VehiclesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Vehículos</h1>
-          <p className="text-gray-600">Administra la flota de vehículos de los clientes</p>
+          <p className="text-gray-600">Administra todos los vehículos registrados</p>
         </div>
-        <Button onClick={handleCreateVehicle}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Nuevo Vehículo
+        <Button onClick={handleCreateVehicle} className="flex items-center space-x-2">
+          <PlusIcon className="h-4 w-4" />
+          <span>Agregar Vehículo</span>
         </Button>
       </div>
 
-      {/* Filtros y búsqueda */}
+      {/* Filtros */}
       <Card>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            placeholder="Buscar por marca, modelo, placa o propietario..."
+            label="Buscar vehículos"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por marca, modelo, placa, color o propietario..."
           />
+          
           <Select
+            label="Filtrar por cliente"
             value={selectedClient}
             onChange={(e) => setSelectedClient(e.target.value)}
-            options={clientFilterOptions}
+            options={clientOptions}
           />
         </div>
       </Card>
 
-      {/* Lista de vehículos */}
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{state.vehicles.length}</div>
+            <div className="text-sm text-gray-500">Total Vehículos</div>
+          </div>
+        </Card>
+        <Card>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {data.workOrders.filter(wo => wo.status !== 'completed').length}
+            </div>
+            <div className="text-sm text-gray-500">Órdenes Activas</div>
+          </div>
+        </Card>
+        <Card>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              {data.appointments.filter(app => app.status === 'confirmed').length}
+            </div>
+            <div className="text-sm text-gray-500">Citas Confirmadas</div>
+          </div>
+        </Card>
+        <Card>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-600">
+              {filteredVehicles.length}
+            </div>
+            <div className="text-sm text-gray-500">Vehículos Filtrados</div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Tabla de Vehículos */}
       <Card>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -328,7 +360,10 @@ export function VehiclesPage() {
                   Detalles
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Servicio
+                  Órdenes de Trabajo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Citas
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Fecha Registro
@@ -339,73 +374,94 @@ export function VehiclesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredVehicles.map((vehicle) => (
-                <tr key={vehicle.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {vehicle.brand} {vehicle.model}
+              {filteredVehicles.map((vehicle) => {
+                const client = data.getClientById(vehicle.clientId);
+                const workOrders = data.getWorkOrdersByVehicle(vehicle.id);
+                const appointments = data.getAppointmentsByVehicle(vehicle.id);
+                const activeWorkOrders = workOrders.filter(wo => wo.status !== 'completed');
+                const upcomingAppointments = appointments.filter(app => app.status === 'confirmed');
+                
+                return (
+                  <tr key={vehicle.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {vehicle.brand} {vehicle.model}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {vehicle.licensePlate} • {vehicle.color}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {vehicle.licensePlate} • {vehicle.color}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{client?.name || 'Cliente no encontrado'}</div>
+                      {client && (
+                        <div className="text-sm text-gray-500">{client.phone}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">Año {vehicle.year}</div>
+                      {vehicle.mileage && (
+                        <div className="text-sm text-gray-500">{vehicle.mileage.toLocaleString()} km</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        Total: {workOrders.length}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{getClientName(vehicle.clientId)}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">Año {vehicle.year}</div>
-                    {vehicle.mileage && (
-                      <div className="text-sm text-gray-500">{vehicle.mileage.toLocaleString()} km</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge variant="primary" size="sm">
-                      {vehicle.serviceType.name}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(vehicle.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleViewVehicle(vehicle)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Ver detalles"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEditVehicle(vehicle)}
-                        className="text-yellow-600 hover:text-yellow-900"
-                        title="Editar"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteVehicle(vehicle.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Eliminar"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      {activeWorkOrders.length > 0 && (
+                        <div className="text-sm text-orange-600">
+                          Activas: {activeWorkOrders.length}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        Total: {appointments.length}
+                      </div>
+                      {upcomingAppointments.length > 0 && (
+                        <div className="text-sm text-blue-600">
+                          Próximas: {upcomingAppointments.length}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(vehicle.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleViewVehicle(vehicle)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Ver detalles"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditVehicle(vehicle)}
+                          className="text-yellow-600 hover:text-yellow-900"
+                          title="Editar"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(vehicle)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Eliminar"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
           {filteredVehicles.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">
-                {searchTerm || selectedClient 
-                  ? 'No se encontraron vehículos que coincidan con los filtros.' 
-                  : 'No hay vehículos registrados.'
-                }
-              </p>
+              <p className="text-gray-500">No se encontraron vehículos que coincidan con los filtros.</p>
             </div>
           )}
         </div>
@@ -415,64 +471,22 @@ export function VehiclesPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={getModalTitle()}
-        size="lg"
+        title={
+          modalType === 'create' ? 'Agregar Vehículo' :
+          modalType === 'edit' ? 'Editar Vehículo' :
+          'Detalles del Vehículo'
+        }
       >
         {modalType === 'view' && selectedVehicle ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Marca</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedVehicle.brand}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Modelo</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedVehicle.model}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Año</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedVehicle.year}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Placa</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedVehicle.licensePlate}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Color</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedVehicle.color}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Kilometraje</label>
-                <p className="mt-1 text-sm text-gray-900">
-                  {selectedVehicle.mileage ? `${selectedVehicle.mileage.toLocaleString()} km` : 'No especificado'}
-                </p>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Propietario</label>
-              <p className="mt-1 text-sm text-gray-900">{getClientName(selectedVehicle.clientId)}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Tipo de Servicio</label>
-              <p className="mt-1 text-sm text-gray-900">{selectedVehicle.serviceType.name}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Fecha de Registro</label>
-              <p className="mt-1 text-sm text-gray-900">{formatDate(selectedVehicle.createdAt)}</p>
-            </div>
-            <div className="flex justify-end pt-4">
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-                Cerrar
-              </Button>
-            </div>
-          </div>
+          <VehicleDetails 
+            vehicle={selectedVehicle} 
+            client={data.getClientById(selectedVehicle.clientId)}
+            workOrders={data.getWorkOrdersByVehicle(selectedVehicle.id)}
+            appointments={data.getAppointmentsByVehicle(selectedVehicle.id)}
+          />
         ) : (
           <VehicleForm
-            vehicle={selectedVehicle || undefined}
+            vehicle={modalType === 'edit' ? selectedVehicle || undefined : undefined}
             clients={state.clients}
             serviceTypes={state.serviceTypes}
             onSubmit={handleFormSubmit}
@@ -480,7 +494,153 @@ export function VehiclesPage() {
           />
         )}
       </Modal>
-
     </div>
   );
 }
+
+// Componente para mostrar detalles del vehículo con información interconectada
+interface VehicleDetailsProps {
+  vehicle: Vehicle;
+  client: Client | undefined;
+  workOrders: any[];
+  appointments: any[];
+}
+
+function VehicleDetails({ vehicle, client, workOrders, appointments }: VehicleDetailsProps) {
+  const activeWorkOrders = workOrders.filter(wo => wo.status !== 'completed');
+  const completedWorkOrders = workOrders.filter(wo => wo.status === 'completed');
+  const upcomingAppointments = appointments.filter(app => app.status === 'confirmed');
+
+  return (
+    <div className="space-y-6">
+      {/* Información básica del vehículo */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Información del Vehículo</h3>
+          <dl className="space-y-2">
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Marca y Modelo</dt>
+              <dd className="text-sm text-gray-900">{vehicle.brand} {vehicle.model}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Año</dt>
+              <dd className="text-sm text-gray-900">{vehicle.year}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Placa</dt>
+              <dd className="text-sm text-gray-900">{vehicle.licensePlate}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Color</dt>
+              <dd className="text-sm text-gray-900">{vehicle.color}</dd>
+            </div>
+            {vehicle.mileage && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Kilometraje</dt>
+                <dd className="text-sm text-gray-900">{vehicle.mileage.toLocaleString()} km</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Propietario</h3>
+          {client ? (
+            <dl className="space-y-2">
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Nombre</dt>
+                <dd className="text-sm text-gray-900">{client.name}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Teléfono</dt>
+                <dd className="text-sm text-gray-900">{client.phone}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Email</dt>
+                <dd className="text-sm text-gray-900">{client.email}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="text-sm text-gray-500">Cliente no encontrado</p>
+          )}
+        </div>
+      </div>
+
+      {/* Estadísticas del vehículo */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-blue-600">{workOrders.length}</div>
+          <div className="text-sm text-blue-500">Total Órdenes</div>
+        </div>
+        <div className="bg-orange-50 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-orange-600">{activeWorkOrders.length}</div>
+          <div className="text-sm text-orange-500">Órdenes Activas</div>
+        </div>
+        <div className="bg-green-50 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-green-600">{completedWorkOrders.length}</div>
+          <div className="text-sm text-green-500">Completadas</div>
+        </div>
+        <div className="bg-purple-50 p-4 rounded-lg text-center">
+          <div className="text-2xl font-bold text-purple-600">{appointments.length}</div>
+          <div className="text-sm text-purple-500">Total Citas</div>
+        </div>
+      </div>
+
+      {/* Órdenes de trabajo recientes */}
+      {workOrders.length > 0 && (
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Órdenes de Trabajo Recientes</h3>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {workOrders.slice(0, 5).map((order) => (
+              <div key={order.id} className="border rounded-lg p-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-sm">{order.description}</p>
+                    <p className="text-xs text-gray-500">
+                      {formatDate(order.createdAt)}
+                    </p>
+                  </div>
+                  <Badge 
+                    variant={order.status === 'completed' ? 'success' : 
+                            order.status === 'in-progress' ? 'warning' : 'default'}
+                    size="sm"
+                  >
+                    {order.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Citas próximas */}
+      {upcomingAppointments.length > 0 && (
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Próximas Citas</h3>
+          <div className="space-y-2">
+            {upcomingAppointments.slice(0, 3).map((appointment) => (
+              <div key={appointment.id} className="border rounded-lg p-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-sm">
+                      {formatDate(appointment.date)} - {appointment.time}
+                    </p>
+                    {appointment.notes && (
+                      <p className="text-xs text-gray-500">{appointment.notes}</p>
+                    )}
+                  </div>
+                  <Badge variant="primary" size="sm">
+                    {appointment.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default VehiclesPage;

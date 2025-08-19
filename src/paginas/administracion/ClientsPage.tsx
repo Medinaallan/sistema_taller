@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { mockClients, generateId, formatDate } from '../../utilidades/mockData';
+import useInterconnectedData from '../../contexto/useInterconnectedData';
+import { generateId, formatDate, formatCurrency } from '../../utilidades/globalMockDatabase';
 import type { Client, User } from '../../tipos';
 
 interface ClientFormProps {
@@ -124,20 +125,19 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
 }
 
 export function ClientsPage() {
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
+  const data = useInterconnectedData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
 
   useEffect(() => {
-    // Solo cargar clientes mock si no hay clientes persistidos
-    if (!state.clients || state.clients.length === 0) {
-      dispatch({ type: 'SET_CLIENTS', payload: mockClients });
-    }
-  }, [dispatch, state.clients]);
+    // Los datos ya están disponibles a través del contexto interconectado
+    // No necesitamos cargar mock data aquí
+  }, []);
 
-  const filteredClients = state.clients.filter(client =>
+  const filteredClients = data.clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.phone.includes(searchTerm)
@@ -162,18 +162,19 @@ export function ClientsPage() {
   };
 
   const handleDeleteClient = (clientId: string) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
-      // Buscar el cliente para obtener su email
-      const clientToDelete = state.clients.find(c => c.id === clientId);
-      if (clientToDelete) {
-        // Encontrar y eliminar también el usuario correspondiente
-        const userToDelete = state.users.find(u => u.email === clientToDelete.email && u.role === 'client');
-        if (userToDelete) {
-          dispatch({ type: 'DELETE_USER', payload: userToDelete.id });
-        }
-      }
-      
-      dispatch({ type: 'DELETE_CLIENT', payload: clientId });
+    const client = data.getClientById(clientId);
+    if (!client) return;
+
+    const vehicleCount = data.getVehiclesByClient(clientId).length;
+    const workOrderCount = data.getWorkOrdersByClient(clientId).length;
+
+    const confirmMessage = vehicleCount > 0 || workOrderCount > 0
+      ? `Este cliente tiene ${vehicleCount} vehículo(s) y ${workOrderCount} orden(es) de trabajo. ¿Estás seguro de que deseas eliminar el cliente y todos sus datos relacionados?`
+      : '¿Estás seguro de que deseas eliminar este cliente?';
+
+    if (window.confirm(confirmMessage)) {
+      // Usar la función interconectada que elimina todo automáticamente
+      data.deleteClientWithRelations(clientId);
     }
   };
 
@@ -183,6 +184,7 @@ export function ClientsPage() {
       const newClient: Client = {
         ...clientData,
         id: clientId,
+        vehicles: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -199,8 +201,8 @@ export function ClientsPage() {
         updatedAt: new Date(),
       };
       
-      // Agregar cliente y usuario al estado
-      dispatch({ type: 'ADD_CLIENT', payload: newClient });
+      // Usar la función interconectada que crea cliente con log automático
+      data.createClientWithLog(newClient);
       dispatch({ type: 'ADD_USER', payload: newUser });
       
     } else if (modalType === 'edit' && selectedClient) {
@@ -211,7 +213,7 @@ export function ClientsPage() {
       };
       
       // Buscar y actualizar también el usuario correspondiente
-      const userToUpdate = state.users.find(u => u.email === selectedClient.email && u.role === 'client');
+      const userToUpdate = data.users.find(u => u.email === selectedClient.email && u.role === 'client');
       if (userToUpdate) {
         const updatedUser: User = {
           ...userToUpdate,
@@ -224,7 +226,8 @@ export function ClientsPage() {
         dispatch({ type: 'UPDATE_USER', payload: updatedUser });
       }
       
-      dispatch({ type: 'UPDATE_CLIENT', payload: updatedClient });
+      // Usar la función interconectada que actualiza cliente con log automático
+      data.updateClientWithLog(updatedClient);
     }
     setIsModalOpen(false);
   };
@@ -277,7 +280,7 @@ export function ClientsPage() {
                   Contacto
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vehículos
+                  Actividad & Estado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Fecha Registro
@@ -303,9 +306,28 @@ export function ClientsPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">
-                      {client.vehicles.length} vehículo{client.vehicles.length !== 1 ? 's' : ''}
-                    </span>
+                    {(() => {
+                      const vehicleCount = data.getVehiclesByClient(client.id).length;
+                      const workOrderCount = data.getWorkOrdersByClient(client.id).length;
+                      const financialStatus = data.getClientFinancialStatus(client.id);
+                      
+                      return (
+                        <div className="text-sm">
+                          <div className="text-gray-900">
+                            {vehicleCount} vehículo{vehicleCount !== 1 ? 's' : ''}
+                          </div>
+                          <div className="text-gray-500">
+                            {workOrderCount} orden{workOrderCount !== 1 ? 'es' : ''}
+                          </div>
+                          <div className={`text-xs ${financialStatus.pendingDebt > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {financialStatus.pendingDebt > 0 
+                              ? `Debe: ${formatCurrency(financialStatus.pendingDebt)}`
+                              : 'Al día'
+                            }
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(client.createdAt)}

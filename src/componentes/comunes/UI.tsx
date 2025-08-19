@@ -256,3 +256,50 @@ export function Badge({ children, variant = 'default', size = 'sm' }: BadgeProps
     </span>
   );
 }
+
+// Componentes de Tabs
+interface TabsProps {
+  activeTab: string;
+  onTabChange: (tabId: string) => void;
+  children: React.ReactNode;
+}
+
+export function Tabs({ activeTab, onTabChange, children }: TabsProps) {
+  const tabs = React.Children.toArray(children).filter(
+    (child): child is React.ReactElement<TabProps> => 
+      React.isValidElement(child) && child.type === Tab
+  );
+
+  return (
+    <div>
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.props.id}
+              onClick={() => onTabChange(tab.props.id)}
+              className={clsx(
+                'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm',
+                activeTab === tab.props.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              )}
+            >
+              {tab.props.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+interface TabProps {
+  id: string;
+  label: string;
+  children?: React.ReactNode;
+}
+
+export function Tab({ children }: TabProps) {
+  return <div>{children}</div>;
+}

@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { mockVehicles } from '../../utilidades/mockData';
+import { mockVehicles } from '../../utilidades/globalMockDatabase';
 
 interface AppointmentForm {
   vehicleId: string;

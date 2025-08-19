@@ -3,9 +3,9 @@ import { Modal, Button } from '../comunes/UI';
 import { TanStackCrudTable } from '../comunes/TanStackCrudTable';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkOrder, Appointment, Quotation, Invoice } from '../../tipos';
-import { mockWorkOrders, mockAppointments, mockQuotations, mockInvoices } from '../../utilidades/mockCrudData';
+import { mockWorkOrders, mockAppointments, mockQuotations, mockInvoices } from '../../utilidades/globalMockDatabase';
 import { FunnelIcon, ArrowPathIcon, ChartBarIcon } from '@heroicons/react/24/outline';
-import { formatCurrency } from '../../utilidades/mockData';
+import { formatCurrency } from '../../utilidades/globalMockDatabase';
 
 // Definición de columnas para cada tipo
 const workOrderColumns: ColumnDef<WorkOrder>[] = [

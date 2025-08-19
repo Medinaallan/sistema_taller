@@ -2,7 +2,7 @@ import { useState, MouseEvent, useCallback } from 'react';
 import { Card, Button, Select, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import type { ReportFilters, FinancialStats } from '../../tipos/index';
-import { formatCurrency } from '../../utilidades/mockData';
+import { formatCurrency } from '../../utilidades/globalMockDatabase';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import {

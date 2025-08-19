@@ -9,7 +9,7 @@ import {
 import { Card, Badge } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import type { Vehicle, WorkOrder, OrderPart } from '../../tipos/index';
-import { mockWorkOrders, mockVehicles, formatCurrency, getStatusText, formatDate } from '../../utilidades/mockData';
+import { mockWorkOrders, mockVehicles, formatCurrency, getStatusText, formatDate } from '../../utilidades/globalMockDatabase';
 
 export function ClientVehiclesPage() {
   const { state, dispatch } = useApp();

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, Button, Select, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import type { WorkOrder, WorkOrderFilters } from '../../tipos/index';
-import { formatCurrency } from '../../utilidades/mockData';
+import { formatCurrency } from '../../utilidades/globalMockDatabase';
 
 // Componente para los filtros de órdenes
 function WorkOrderFilters({ filters, onChange }: {
