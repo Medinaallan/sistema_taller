@@ -59,14 +59,12 @@ export const formatDateTime = (date: string | Date): string => {
 // ====================================
 
 export const mockDashboardStats: DashboardStats = {
+  totalWorkOrders: 0,
+  pendingOrders: 0,
+  completedOrders: 0,
+  totalRevenue: 0,
+  monthlyRevenue: 0,
   totalClients: 0,
   totalVehicles: 0,
-  activeWorkOrders: 0,
-  pendingAppointments: 0,
-  monthlyRevenue: 0,
-  completedWorkOrders: 0,
-  averageServiceTime: 0,
-  customerSatisfaction: 0,
-  inventoryItems: 0,
-  lowStockItems: 0
+  activeReminders: 0
 };

@@ -16,8 +16,7 @@ import {
   mockSuppliers,
   mockProducts,
   mockInventory,
-  mockLogs,
-  generateId
+  mockLogs
 } from '../utilidades/globalMockDatabase';
 
 // Función para obtener estado inicial con persistencia
