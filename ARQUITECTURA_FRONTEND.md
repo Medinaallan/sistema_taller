@@ -219,7 +219,7 @@ src/
 - `/cotizaciones/create` - Crear cotización
 - `/cotizaciones/:id/edit` - Editar cotización
 
-## 📝 Interfaces TypeScript Principales
+##  Interfaces TypeScript Principales
 
 ### Usuario y Autenticación
 ```typescript
@@ -388,7 +388,7 @@ export interface QuotationApproval {
 }
 ```
 
-## 🔧 Componentes Clave por Módulo
+##  Componentes Clave por Módulo
 
 ### Módulo Citas
 ```typescript
@@ -852,4 +852,3 @@ export const useCreateAppointment = () => {
 };
 ```
 
-Esta arquitectura proporciona una base sólida y escalable para tu sistema de taller mecánico, con separación clara de responsabilidades, tipos seguros y una experiencia de usuario optimizada.
