@@ -196,7 +196,7 @@ function ServiceReport() {
     labels: ['Cambio de Aceite', 'Alineación', 'Frenos', 'Motor', 'Suspensión', 'Otros'],
     datasets: [
       {
-        data: [0, 0, 0, 0, 0, 0],
+        data: [5, 4, 0, 6, 0, 0],
         backgroundColor: [
           '#FF6384',
           '#36A2EB',
