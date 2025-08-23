@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { UserManagementSection } from './secciones/UserManagementSection';
+import { CompanyDataSection } from './secciones/CompanyDataSection';
 import {
   UsersIcon,
   CurrencyDollarIcon,
@@ -112,6 +113,7 @@ export default function AdminPage() {
           ← Volver a todas las configuraciones
         </button>
         {selectedSection === 'usuarios' && <UserManagementSection />}
+        {selectedSection === 'empresa' && <CompanyDataSection />}
         {/* Aquí se agregarán las demás secciones */}
       </div>
     );
