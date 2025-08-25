@@ -11,7 +11,6 @@ interface CompanyData {
   businessName: string;
   tradeName: string;
   rtn: string;
-  cai: string;
   address: string;
   city: string;
   state: string;
@@ -34,7 +33,6 @@ const initialCompanyData: CompanyData = {
   businessName: 'Taller Mecánico XD',
   tradeName: 'La Esperanza',
   rtn: '1001200300188',
-  cai: '123456-123456-123456-123456-123456-12',
   address: 'Col. Las Flores, Calle Principal #123',
   city: 'LA ESPERANZA',
   state: 'INTIBUCA',
@@ -202,11 +200,7 @@ export function CompanyDataSection() {
             placeholder="0801-1998-123456"
             required
           />
-          <InputField
-            label="CAI"
-            field="cai"
-            placeholder="123456-123456-123456-123456-123456-12"
-          />
+          
           <InputField
             label="Actividad Económica"
             field="economicActivity"
@@ -217,10 +211,7 @@ export function CompanyDataSection() {
             field="establishedDate"
             type="date"
           />
-          <InputField
-            label="Régimen Fiscal"
-            field="fiscalRegime"
-          />
+          
         </div>
       </div>
 

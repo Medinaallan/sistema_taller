@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UserManagementSection } from './secciones/UserManagementSection';
 import { CompanyDataSection } from './secciones/CompanyDataSection';
+import { BillingConfigSection } from './secciones/BillingConfigSection';
 import {
   UsersIcon,
   CurrencyDollarIcon,
@@ -114,6 +115,7 @@ export default function AdminPage() {
         </button>
         {selectedSection === 'usuarios' && <UserManagementSection />}
         {selectedSection === 'empresa' && <CompanyDataSection />}
+        {selectedSection === 'facturacion' && <BillingConfigSection />}
         {/* Aquí se agregarán las demás secciones */}
       </div>
     );
