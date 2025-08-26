@@ -32,7 +32,7 @@ interface CompanyData {
 const initialCompanyData: CompanyData = {
   businessName: 'Taller Mecánico XD',
   tradeName: 'La Esperanza',
-  rtn: '1001200300188',
+  rtn: '1001200300100',
   address: 'Col. Las Flores, Calle Principal #123',
   city: 'LA ESPERANZA',
   state: 'INTIBUCA',

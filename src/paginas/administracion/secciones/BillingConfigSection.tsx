@@ -502,16 +502,7 @@ export function BillingConfigSection() {
                   <li>Declaración mensual de ISV</li>
                 </ul>
                 <div className="mt-4">
-                  <p className="text-sm font-medium text-blue-800 mb-2">
-                    Códigos de Tipos de Documento Fiscal:
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
-                    <div>01 → Factura</div>
-                    <div>02 → Nota de Débito</div>
-                    <div>03 → Nota de Crédito</div>
-                    <div>04 → Nota de Remisión</div>
-                    <div>05 → Comprobante de Retención</div>
-                  </div>
+
                 </div>
               </div>
             </div>
