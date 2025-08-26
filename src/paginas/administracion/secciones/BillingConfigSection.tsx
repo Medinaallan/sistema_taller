@@ -423,6 +423,7 @@ export function BillingConfigSection() {
                   value={newCAI.rangeFrom}
                   onChange={(e) => handleCAIChange('rangeFrom', e.target.value)}
                   placeholder="00000001"
+                  maxLength={8}
                 />
                 <Input
                   label="Hasta (Número)*"
