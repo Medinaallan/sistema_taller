@@ -379,32 +379,7 @@ export function BillingConfigSection() {
                 />
 
                 <div className="md:col-span-2">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                    <p className="text-sm font-medium text-yellow-800 mb-1">
-                      Formato de Numeración del Documento:
-                    </p>
-                    <div className="font-mono text-lg text-yellow-800 bg-white px-3 py-2 rounded border">
-                      {newCAI.establecimiento || '001'}-{newCAI.puntoEmision || '001'}-{getDocumentCode(newCAI.tipoDocumento)}-{(newCAI.rangeFrom || '00000001').padStart(8, '0')}
-                    </div>
-                    <div className="text-xs text-yellow-600 mt-2 grid grid-cols-4 gap-2">
-                      <div className="text-center">
-                        <div className="font-medium">Est.</div>
-                        <div>{newCAI.establecimiento || '001'}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">Pto.</div>
-                        <div>{newCAI.puntoEmision || '001'}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">Tipo</div>
-                        <div>{getDocumentCode(newCAI.tipoDocumento)}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">Correlativo</div>
-                        <div>{(newCAI.rangeFrom || '00000001').padStart(8, '0')}</div>
-                      </div>
-                    </div>
-                  </div>
+                  
                 </div>
 
                 <Select
@@ -502,7 +477,6 @@ export function BillingConfigSection() {
                   <li>Declaración mensual de ISV</li>
                 </ul>
                 <div className="mt-4">
-
                 </div>
               </div>
             </div>
