@@ -10,7 +10,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ShieldCheckIcon,
-  ClockIcon
+  ClockIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 interface User {
@@ -526,6 +527,152 @@ export function UserManagementSection() {
         </div>
       </div>
 
+      {/* Activity and Security Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Actividad Reciente</h3>
+          <div className="space-y-3">
+            {users
+              .filter(u => u.lastLogin)
+              .sort((a, b) => (b.lastLogin?.getTime() || 0) - (a.lastLogin?.getTime() || 0))
+              .slice(0, 5)
+              .map((user) => (
+                <div key={user.id} className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                      <UserIcon className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user.fullName}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Último acceso: {formatLastLogin(user.lastLogin)}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      user.role === 'mechanic' ? 'bg-blue-100 text-blue-800' :
+                      user.role === 'receptionist' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {getRoleLabel(user.role)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Security Overview */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Estado de Seguridad</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                <span className="text-sm text-gray-600">Usuarios con contraseñas seguras</span>
+              </div>
+              <span className="text-sm font-medium text-gray-900">
+                {users.filter(u => !u.mustChangePassword).length}/{users.length}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <XCircleIcon className="h-5 w-5 text-red-500 mr-2" />
+                <span className="text-sm text-gray-600">Usuarios inactivos</span>
+              </div>
+              <span className="text-sm font-medium text-gray-900">
+                {users.filter(u => u.status === 'inactive').length}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <ClockIcon className="h-5 w-5 text-yellow-500 mr-2" />
+                <span className="text-sm text-gray-600">Sin acceso reciente ({'>'}7 días)</span>
+              </div>
+              <span className="text-sm font-medium text-gray-900">
+                {users.filter(u => {
+                  if (!u.lastLogin) return true;
+                  const daysSinceLogin = Math.floor((new Date().getTime() - u.lastLogin.getTime()) / (1000 * 60 * 60 * 24));
+                  return daysSinceLogin > 7;
+                }).length}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <ShieldCheckIcon className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-sm text-gray-600">Usuarios con permisos elevados</span>
+              </div>
+              <span className="text-sm font-medium text-gray-900">
+                {users.filter(u => u.role === 'admin' || u.permissions.canManageUsers).length}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Acciones Rápidas</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button
+            onClick={() => {
+              const inactiveUsers = users.filter(u => u.status === 'inactive');
+              if (inactiveUsers.length > 0) {
+                alert(`Hay ${inactiveUsers.length} usuario(s) inactivo(s) que podrían requerir atención.`);
+              } else {
+                alert('Todos los usuarios están activos.');
+              }
+            }}
+            className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <UserIcon className="h-5 w-5 text-blue-600 mr-2" />
+            <span className="text-sm font-medium text-gray-700">Revisar Usuarios Inactivos</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              const usersNeedingPasswordChange = users.filter(u => u.mustChangePassword);
+              if (usersNeedingPasswordChange.length > 0) {
+                alert(`${usersNeedingPasswordChange.length} usuario(s) necesitan cambiar su contraseña.`);
+              } else {
+                alert('Todas las contraseñas están actualizadas.');
+              }
+            }}
+            className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <KeyIcon className="h-5 w-5 text-yellow-600 mr-2" />
+            <span className="text-sm font-medium text-gray-700">Revisar Contraseñas</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              const data = users.map(u => ({
+                Usuario: u.username,
+                Nombre: u.fullName,
+                Email: u.email,
+                Rol: getRoleLabel(u.role),
+                Estado: u.status === 'active' ? 'Activo' : 'Inactivo',
+                'Último Acceso': formatLastLogin(u.lastLogin)
+              }));
+              console.log('Exportar datos:', data);
+              alert('Funcionalidad de exportación lista para implementar.');
+            }}
+            className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+          >
+            <DocumentArrowDownIcon className="h-5 w-5 text-green-600 mr-2" />
+            <span className="text-sm font-medium text-gray-700">Exportar Usuarios</span>
+          </button>
+        </div>
+      </div>
+
       {/* User Modal */}
       {showUserModal && (
         <UserModal
@@ -882,6 +1029,41 @@ function PasswordResetModal({ user, onClose, onSave }: PasswordResetModalProps) 
     setConfirmPassword(result);
   };
 
+  const copyToClipboard = async () => {
+    if (newPassword) {
+      try {
+        await navigator.clipboard.writeText(newPassword);
+        alert('Contraseña copiada al portapapeles');
+      } catch (err) {
+        console.error('Error al copiar:', err);
+        // Fallback para navegadores que no soportan clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = newPassword;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Contraseña copiada al portapapeles');
+      }
+    }
+  };
+
+  const getPasswordStrength = (password: string): { score: number; label: string; color: string } => {
+    let score = 0;
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+    if (score <= 2) return { score, label: 'Débil', color: 'bg-red-500' };
+    if (score <= 4) return { score, label: 'Moderada', color: 'bg-yellow-500' };
+    return { score, label: 'Fuerte', color: 'bg-green-500' };
+  };
+
+  const strength = getPasswordStrength(newPassword);
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -904,21 +1086,54 @@ function PasswordResetModal({ user, onClose, onSave }: PasswordResetModalProps) 
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="block w-full pr-10 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pr-20 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   minLength={6}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <EyeIcon className="h-4 w-4 text-gray-400" />
+                <div className="absolute inset-y-0 right-0 flex items-center">
+                  {newPassword && (
+                    <button
+                      type="button"
+                      onClick={copyToClipboard}
+                      className="mr-2 p-1 text-gray-400 hover:text-gray-600"
+                      title="Copiar contraseña"
+                    >
+                      📋
+                    </button>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="mr-3 p-1 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
+              
+              {/* Password Strength Indicator */}
+              {newPassword && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-gray-600">Fortaleza de la contraseña:</span>
+                    <span className={`font-medium ${
+                      strength.label === 'Fuerte' ? 'text-green-600' :
+                      strength.label === 'Moderada' ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                      {strength.label}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${strength.color} transition-all duration-300`}
+                      style={{ width: `${(strength.score / 6) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -948,14 +1163,35 @@ function PasswordResetModal({ user, onClose, onSave }: PasswordResetModalProps) 
               </label>
             </div>
 
-            <div className="bg-gray-50 p-3 rounded">
-              <button
-                type="button"
-                onClick={generatePassword}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                Generar contraseña segura
-              </button>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-gray-900">Generador de Contraseñas</h4>
+                <button
+                  type="button"
+                  onClick={generatePassword}
+                  className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  🎲 Generar
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                  12 caracteres
+                </div>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                  Mayúsculas y minúsculas
+                </div>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                  Números
+                </div>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                  Símbolos especiales
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">
