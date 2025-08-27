@@ -430,6 +430,7 @@ export function BillingConfigSection() {
                   value={newCAI.rangeTo}
                   onChange={(e) => handleCAIChange('rangeTo', e.target.value)}
                   placeholder="10000000"
+                  maxLength={8}
                 />
               </div>
               <div className="flex justify-end space-x-3 mt-4">
