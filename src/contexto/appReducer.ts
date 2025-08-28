@@ -1,7 +1,6 @@
 import type { AppState, AppAction } from './AppContext';
 import type { DashboardStats } from '../tipos/index';
 import { 
-  mockUsers, 
   mockServiceTypes, 
   mockClients, 
   mockVehicles, 
@@ -18,6 +17,7 @@ import {
   mockInventory,
   mockLogs
 } from '../utilidades/globalMockDatabase';
+import { obtenerTodosLosUsuarios } from '../utilidades/BaseDatosJS';
 
 // Función para obtener estado inicial con persistencia
 export const getInitialState = (): AppState => {
@@ -25,11 +25,14 @@ export const getInitialState = (): AppState => {
   let isAuthenticated = false;
   let clients = mockClients;
   let serviceTypes = mockServiceTypes;
+  let users = obtenerTodosLosUsuarios();
   try {
     const savedUser = localStorage.getItem('tallerApp_user');
     const savedAuth = localStorage.getItem('tallerApp_isAuthenticated');
     const savedClients = localStorage.getItem('tallerApp_clients');
     const savedServiceTypes = localStorage.getItem('tallerApp_serviceTypes');
+    const savedUsers = localStorage.getItem('tallerApp_users');
+    
     if (savedUser && savedAuth === 'true') {
       user = JSON.parse(savedUser);
       isAuthenticated = true;
@@ -40,8 +43,11 @@ export const getInitialState = (): AppState => {
     if (savedServiceTypes) {
       serviceTypes = JSON.parse(savedServiceTypes);
     }
+    if (savedUsers) {
+      users = JSON.parse(savedUsers);
+    }
   } catch (error) {
-    console.error('Error loading saved user, clients or serviceTypes:', error);
+    console.error('Error loading saved user, clients, serviceTypes or users:', error);
   }
   // Cargar el estado del nav
   let isNavCollapsed = false;
@@ -80,7 +86,7 @@ export const getInitialState = (): AppState => {
     suppliers: mockSuppliers,
     
     // Sistema administrativo
-    users: mockUsers,
+    users,
     reminders: mockReminders,
     logs: mockLogs,
     
@@ -289,23 +295,32 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
 
     case 'ADD_USER':
+      const newUsersArray = [...state.users, action.payload];
+      // Persistir en localStorage
+      localStorage.setItem('tallerApp_users', JSON.stringify(newUsersArray));
       return {
         ...state,
-        users: [...state.users, action.payload],
+        users: newUsersArray,
       };
 
     case 'UPDATE_USER':
+      const updatedUsersArray = state.users.map((user) =>
+        user.id === action.payload.id ? action.payload : user
+      );
+      // Persistir en localStorage
+      localStorage.setItem('tallerApp_users', JSON.stringify(updatedUsersArray));
       return {
         ...state,
-        users: state.users.map((user) =>
-          user.id === action.payload.id ? action.payload : user
-        ),
+        users: updatedUsersArray,
       };
 
     case 'DELETE_USER':
+      const filteredUsersArray = state.users.filter((user) => user.id !== action.payload);
+      // Persistir en localStorage
+      localStorage.setItem('tallerApp_users', JSON.stringify(filteredUsersArray));
       return {
         ...state,
-        users: state.users.filter((user) => user.id !== action.payload),
+        users: filteredUsersArray,
       };
 
     case 'SET_DASHBOARD_STATS':
