@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { 
+  SP_VALIDAR_CORREO_USUARIO,
   SP_REGISTRAR_USUARIO_CLIENTE,
   SP_VERIFICAR_CODIGO_SEGURIDAD,
-  SP_REGISTRAR_PASSWORD,
-  SP_VALIDAR_CORREO_USUARIO
-} from '../../utilidades/storedProcedures';
+  SP_REGISTRAR_PASSWORD
+} from '../../utilidades/storedProceduresBackend';
 
 interface ClientRegisterFormProps {
   onSuccess: () => void;
@@ -18,6 +18,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
   const [currentStep, setCurrentStep] = useState<RegisterStep>('email');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [securityCode, setSecurityCode] = useState<string>(''); // Para guardar el código generado
   
   const [formData, setFormData] = useState({
     email: '',
@@ -123,8 +124,9 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               formData.phone
             );
             
-            if (result.allow === 1) {
+            if (result.allow === 1 || result.response === '200 OK') {
               setCurrentStep('code');
+              setSecurityCode(result.codigo_seguridad || '');
               // Mostrar código en consola para pruebas
               console.log('Código enviado:', result.codigo_seguridad);
             } else {
@@ -182,9 +184,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
         }
         break;
     }
-  };
-
-  const getStepTitle = () => {
+  };  const getStepTitle = () => {
     switch (currentStep) {
       case 'email': return 'Verificar Email';
       case 'info': return 'Información Personal';
@@ -261,7 +261,6 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               placeholder="Su nombre completo"
               required
             />
-            
             <Input
               id="phone"
               name="phone"
@@ -290,6 +289,21 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               maxLength={6}
               required
             />
+            {securityCode && (
+              <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-md">
+                <div className="flex items-center">
+                  <div className="text-green-800">
+                    <strong>✅ Código de seguridad (SIMULACIÓN):</strong>
+                    <div className="text-lg font-mono bg-green-100 px-2 py-1 rounded mt-1">
+                      {securityCode}
+                    </div>
+                    <p className="mt-2 text-xs text-green-600">
+                      En producción, este código se enviaría por email.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-md">
               <strong>Para pruebas:</strong> Revise la consola del navegador (F12) para ver el código de seguridad generado.
             </div>

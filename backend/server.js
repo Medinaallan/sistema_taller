@@ -1,0 +1,82 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config();
+
+const authRoutes = require('./routes/auth');
+const clientRoutes = require('./routes/clients');
+const userRoutes = require('./routes/users');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middlewares de seguridad
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // límite de 100 requests por IP por ventana
+  message: 'Demasiadas peticiones desde esta IP, intente más tarde.'
+});
+app.use(limiter);
+
+// CORS
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5176',
+  credentials: true
+}));
+
+// Parser JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Rutas
+app.use('/api/auth', authRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/users', userRoutes);
+
+// Ruta de salud
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    database: process.env.DB_DATABASE
+  });
+});
+
+// Manejo de errores
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  
+  if (err.code === 'EREQUEST' && err.originalError) {
+    // Error de SQL Server
+    return res.status(500).json({
+      success: false,
+      message: 'Error en la base de datos',
+      error: process.env.NODE_ENV === 'development' ? err.originalError.message : 'Error interno'
+    });
+  }
+  
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Error interno del servidor',
+    error: process.env.NODE_ENV === 'development' ? err.stack : 'Error interno'
+  });
+});
+
+// 404
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Endpoint no encontrado' 
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+  console.log(`📊 Base de datos: ${process.env.DB_DATABASE}`);
+  console.log(`🌍 Entorno: ${process.env.NODE_ENV}`);
+});

@@ -6,7 +6,7 @@ import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegist
 import { 
   SP_LOGIN,
   SP_REGISTRAR_USUARIO_PANEL_ADMIN
-} from '../../utilidades/storedProcedures';
+} from '../../utilidades/storedProceduresBackend';
 import { generateId } from '../../utilidades/globalMockDatabase';
 
 type ViewMode = 'login' | 'setup' | 'clientRegister';
@@ -70,23 +70,24 @@ export function LoginPage() {
       const result = await SP_LOGIN(formData.email, formData.password);
       
       if (result.allow === 1 && result.usuario) {
-        // Crear objeto User para el contexto
+        // Crear objeto User para el contexto usando la estructura exacta de tu SP
         const user = {
-          id: result.usuario.usuario_id,
+          id: result.usuario.usuario_id.toString(),
           email: result.usuario.correo,
           password: formData.password, // Mantener para compatibilidad
-          role: result.usuario.rol as any,
+          role: result.usuario.rol === 'admin' ? 'admin' as const : 'client' as const,
           name: result.usuario.nombre_completo,
-          phone: result.usuario.telefono,
+          phone: result.usuario.telefono || '', // Del SP
           createdAt: new Date(),
           updatedAt: new Date(),
         };
         
         dispatch({ type: 'LOGIN', payload: user });
       } else {
-        setErrors({ general: result.msg });
+        setErrors({ general: result.msg || 'Error en el inicio de sesión' });
       }
-    } catch {
+    } catch (error) {
+      console.error('Error en login:', error);
       setErrors({ general: 'Error al iniciar sesión. Inténtalo de nuevo.' });
     } finally {
       setLoading(false);
@@ -101,14 +102,14 @@ export function LoginPage() {
       const result = await SP_REGISTRAR_USUARIO_PANEL_ADMIN(
         formData.name,
         formData.email,
-        formData.phone,
-        'admin'
+        '', // telefono - no disponible en el form, usar cadena vacía
+        'admin' // rol
       );
       
-      if (result.allow === 1) {
+      if (result.allow === 1 || result.response === '200 OK') {
         // Crear usuario administrador directamente en el contexto
         const newUser = {
-          id: generateId(),
+          id: generateId(), // Generar ID temporal
           email: formData.email,
           password: formData.password,
           role: 'admin' as const,
@@ -117,15 +118,18 @@ export function LoginPage() {
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        
+
         dispatch({ type: 'ADD_USER', payload: newUser });
         dispatch({ type: 'LOGIN', payload: newUser });
         setViewMode('login');
+        setFormData({ email: '', password: '', name: '', phone: '' });
+        setErrors({});
       } else {
-        setErrors({ general: result.msg });
+        setErrors({ general: result.msg || 'Error al crear administrador' });
       }
-    } catch {
-      setErrors({ general: 'Error al registrar usuario administrador' });
+    } catch (error) {
+      console.error('Error creando administrador:', error);
+      setErrors({ general: 'Error al configurar administrador. Inténtalo de nuevo.' });
     } finally {
       setLoading(false);
     }
