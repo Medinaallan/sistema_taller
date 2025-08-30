@@ -1,12 +1,29 @@
 import { useState } from 'react';
 import {
-  CalendarIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  PlusIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
+  XMarkIcon,
+  TruckIcon,
+  WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
-import { Card, Button } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { mockVehicles } from '../../utilidades/globalMockDatabase';
+
+interface Appointment {
+  id: string;
+  vehicleId: string;
+  vehicleName: string;
+  serviceType: string;
+  date: string;
+  time: string;
+  status: 'pending' | 'confirmed' | 'in-progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  problem: string;
+  contactPhone: string;
+  notes?: string;
+  createdDate: string;
+}
 
 interface AppointmentForm {
   vehicleId: string;
@@ -22,7 +39,9 @@ interface AppointmentForm {
 export function ClientAppointmentsPage() {
   const { state } = useApp();
   const [showForm, setShowForm] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+
   const [formData, setFormData] = useState<AppointmentForm>({
     vehicleId: '',
     serviceType: '',
@@ -30,392 +49,511 @@ export function ClientAppointmentsPage() {
     preferredTime: '',
     problem: '',
     priority: 'medium',
-    contactPhone: '',
+    contactPhone: state.user?.phone || '',
     additionalNotes: '',
   });
 
-  const clientId = state.user?.id;
-  const clientVehicles = mockVehicles.filter(vehicle => vehicle.clientId === clientId);
+  // Datos de ejemplo
+  const clientVehicles = [
+    { id: '1', brand: 'Toyota', model: 'Corolla', year: 2020, licensePlate: 'HTN-0123' },
+    { id: '2', brand: 'Honda', model: 'Civic', year: 2019, licensePlate: 'HTN-4567' },
+    { id: '3', brand: 'Nissan', model: 'Sentra', year: 2021, licensePlate: 'HTN-8910' }
+  ];
+
+  const appointments: Appointment[] = [
+    {
+      id: 'APP-001',
+      vehicleId: '1',
+      vehicleName: 'Toyota Corolla 2020',
+      serviceType: 'Diagnóstico General',
+      date: '2025-09-05',
+      time: '09:00',
+      status: 'confirmed',
+      priority: 'medium',
+      problem: 'Ruido extraño en el motor al acelerar',
+      contactPhone: '9876-5432',
+      createdDate: '2025-08-28'
+    },
+    {
+      id: 'APP-002',
+      vehicleId: '2',
+      vehicleName: 'Honda Civic 2019',
+      serviceType: 'Mantenimiento Preventivo',
+      date: '2025-09-10',
+      time: '14:30',
+      status: 'pending',
+      priority: 'low',
+      problem: 'Mantenimiento rutinario programado',
+      contactPhone: '9876-5432',
+      notes: 'Cambio de aceite y filtros',
+      createdDate: '2025-08-29'
+    },
+    {
+      id: 'APP-003',
+      vehicleId: '1',
+      vehicleName: 'Toyota Corolla 2020',
+      serviceType: 'Reparación de frenos',
+      date: '2025-08-25',
+      time: '10:00',
+      status: 'completed',
+      priority: 'high',
+      problem: 'Frenos chirriando y pedal esponjoso',
+      contactPhone: '9876-5432',
+      createdDate: '2025-08-20'
+    }
+  ];
 
   const serviceTypes = [
-    { id: 'maintenance', name: 'Mantenimiento Preventivo', icon: '' },
-    { id: 'repair', name: 'Reparación', icon: '' },
-    { id: 'diagnostic', name: 'Diagnóstico', icon: '' },
-    { id: 'oil-change', name: 'Cambio de Aceite', icon: '' },
-    { id: 'tire-service', name: 'Servicio de Llantas', icon: '' },
-    { id: 'brake-service', name: 'Servicio de Frenos', icon: '' },
-    { id: 'battery', name: 'Batería', icon: '' },
-    { id: 'air-conditioning', name: 'Aire Acondicionado', icon: '' },
-    { id: 'transmission', name: 'Transmisión', icon: '' },
-    { id: 'other', name: 'Otro', icon: '' },
+    { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado' },
+    { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas' },
+    { id: 'repair', name: 'Reparación',  description: 'Arreglo de componentes específicos' },
+    { id: 'oil-change', name: 'Cambio de Aceite',  description: 'Cambio de aceite y filtros' },
+    { id: 'tire-service', name: 'Servicio de Llantas',  description: 'Cambio, rotación o alineación' },
+    { id: 'brake-service', name: 'Servicio de Frenos', description: 'Pastillas, discos y sistema de frenos' },
+    { id: 'battery', name: 'Batería', description: 'Cambio o revisión de batería' },
+    { id: 'air-conditioning', name: 'Aire Acondicionado', description: 'Servicio del sistema A/C' },
+    { id: 'transmission', name: 'Transmisión', description: 'Servicio del sistema de transmisión' },
+    { id: 'other', name: 'Otro', description: 'Otro tipo de servicio' }
   ];
 
   const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', '12:00',
-    '14:00', '15:00', '16:00', '17:00', '18:00'
+    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
   ];
 
-  const priorityLevels = [
-    { value: 'low', label: 'Baja', color: 'text-green-600', description: 'Mantenimiento rutinario' },
-    { value: 'medium', label: 'Media', color: 'text-yellow-600', description: 'Servicio normal' },
-    { value: 'high', label: 'Alta', color: 'text-orange-600', description: 'Problema importante' },
-    { value: 'urgent', label: 'Urgente', color: 'text-red-600', description: 'Emergencia vial' },
-  ];
+  const filteredAppointments = appointments.filter(appointment => 
+    activeFilter === 'all' || appointment.status === activeFilter
+  );
 
-  const handleInputChange = (field: keyof AppointmentForm, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitStatus('submitting');
-
-    // Simular envío de la solicitud
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setSubmitStatus('success');
-      
-      // Resetear formulario después de 3 segundos
-      setTimeout(() => {
-        setSubmitStatus('idle');
-        setShowForm(false);
-        setFormData({
-          vehicleId: '',
-          serviceType: '',
-          preferredDate: '',
-          preferredTime: '',
-          problem: '',
-          priority: 'medium',
-          contactPhone: '',
-          additionalNotes: '',
-        });
-      }, 3000);
-    } catch {
-      setSubmitStatus('error');
-      setTimeout(() => setSubmitStatus('idle'), 3000);
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', text: 'Pendiente', icon: ClockIcon };
+      case 'confirmed':
+        return { color: 'bg-green-100 text-green-800 border-green-200', text: 'Confirmada', icon: CheckCircleIcon };
+      case 'in-progress':
+        return { color: 'bg-blue-100 text-blue-800 border-blue-200', text: 'En Proceso', icon: WrenchScrewdriverIcon };
+      case 'completed':
+        return { color: 'bg-gray-100 text-gray-800 border-gray-200', text: 'Completada', icon: CheckCircleIcon };
+      case 'cancelled':
+        return { color: 'bg-red-100 text-red-800 border-red-200', text: 'Cancelada', icon: XMarkIcon };
+      default:
+        return { color: 'bg-gray-100 text-gray-800 border-gray-200', text: status, icon: ClockIcon };
     }
   };
 
-  const getTodayDate = () => {
-    const today = new Date();
-    today.setDate(today.getDate() + 1); // Mínimo mañana
-    return today.toISOString().split('T')[0];
+  const getPriorityConfig = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return { color: 'text-green-600', text: 'Baja' };
+      case 'medium':
+        return { color: 'text-yellow-600', text: 'Media' };
+      case 'high':
+        return { color: 'text-orange-600', text: 'Alta' };
+      case 'urgent':
+        return { color: 'text-red-600', text: 'Urgente' };
+      default:
+        return { color: 'text-gray-600', text: priority };
+    }
   };
 
-  const getMaxDate = () => {
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 30); // Máximo 30 días
-    return maxDate.toISOString().split('T')[0];
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Nueva cita:', formData);
+    setShowForm(false);
+    // Reset form
+    setFormData({
+      vehicleId: '',
+      serviceType: '',
+      preferredDate: '',
+      preferredTime: '',
+      problem: '',
+      priority: 'medium',
+      contactPhone: state.user?.phone || '',
+      additionalNotes: '',
+    });
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Solicitar Cita</h1>
-        <p className="text-gray-600">Programa el mantenimiento de tus vehículos</p>
+  const renderAppointmentCard = (appointment: Appointment) => {
+    const statusConfig = getStatusConfig(appointment.status);
+    const priorityConfig = getPriorityConfig(appointment.priority);
+    const StatusIcon = statusConfig.icon;
+
+    return (
+      <div key={appointment.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden">
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center">
+              <div className="bg-blue-50 p-3 rounded-xl mr-4">
+                <CalendarDaysIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{appointment.serviceType}</h3>
+                <p className="text-sm text-gray-600">{appointment.vehicleName}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
+                <StatusIcon className="h-3 w-3 mr-1" />
+                {statusConfig.text}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Fecha</p>
+              <p className="text-sm font-semibold text-gray-900">{appointment.date}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Hora</p>
+              <p className="text-sm font-semibold text-gray-900">{appointment.time}</p>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Problema Reportado</p>
+            <p className="text-sm text-gray-700 line-clamp-2">{appointment.problem}</p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center text-sm">
+              <span className="text-gray-500 mr-2">Prioridad:</span>
+              <span className={`font-medium ${priorityConfig.color}`}>{priorityConfig.text}</span>
+            </div>
+            <div className="flex space-x-2">
+              {appointment.status === 'pending' && (
+                <button className="text-green-600 hover:text-green-700 text-sm font-medium">
+                  Confirmar
+                </button>
+              )}
+              <button 
+                onClick={() => setSelectedAppointment(appointment)}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                Ver Detalles
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+    );
+  };
 
-      {!showForm ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Información de Servicios */}
-          <Card title="Servicios Disponibles" subtitle="Tipos de mantenimiento que ofrecemos">
-            <div className="grid grid-cols-2 gap-3">
-              {serviceTypes.map((service) => (
-                <div key={service.id} className="p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">{service.icon}</span>
-                    <span className="text-sm font-medium text-gray-700">{service.name}</span>
+  const renderNewAppointmentForm = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-white/20 p-2 rounded-lg mr-3">
+                <CalendarDaysIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Agendar Nueva Cita</h3>
+                <p className="text-blue-100 text-sm">Programa tu próximo servicio</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowForm(false)}
+              className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          {/* Selección de vehículo */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              Selecciona tu vehículo *
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {clientVehicles.map((vehicle) => (
+                <div
+                  key={vehicle.id}
+                  onClick={() => setFormData({...formData, vehicleId: vehicle.id})}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    formData.vehicleId === vehicle.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <TruckIcon className={`h-5 w-5 mr-3 ${
+                      formData.vehicleId === vehicle.id ? 'text-blue-600' : 'text-gray-400'
+                    }`} />
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {vehicle.brand} {vehicle.model}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {vehicle.year} • {vehicle.licensePlate}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          {/* Horarios y Política */}
-          <Card title="Información del Servicio" subtitle="Horarios y políticas de citas">
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Horarios de Atención</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div className="flex justify-between">
-                    <span>Lunes - Viernes:</span>
-                    <span>8:00 AM - 6:00 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Sábados:</span>
-                    <span>8:00 AM - 2:00 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Domingos:</span>
-                    <span>Cerrado</span>
+          {/* Tipo de servicio */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              Tipo de servicio *
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {serviceTypes.map((service) => (
+                <div
+                  key={service.id}
+                  onClick={() => setFormData({...formData, serviceType: service.id})}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    formData.serviceType === service.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start">
+                    <span className="text-2xl mr-3">{service.icon}</span>
+                    <div>
+                      <p className="font-medium text-gray-900">{service.name}</p>
+                      <p className="text-sm text-gray-500">{service.description}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">Política de Citas</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Las citas deben programarse con al menos 24 horas de anticipación</li>
-                  <li>• Servicios urgentes serán atendidos según disponibilidad</li>
-                  <li>• Confirmación por teléfono dentro de 2 horas</li>
-                  <li>• Cancelaciones con al menos 4 horas de anticipación</li>
-                </ul>
-              </div>
+          {/* Fecha y hora preferida */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Fecha preferida *
+              </label>
+              <input
+                type="date"
+                value={formData.preferredDate}
+                onChange={(e) => setFormData({...formData, preferredDate: e.target.value})}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-start">
-                  <ExclamationTriangleIcon className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-800">Servicios de Emergencia</p>
-                    <p className="text-sm text-blue-700">
-                      Para emergencias viales, contáctanos directamente al +504 2234-5678
-                    </p>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Hora preferida *
+              </label>
+              <select
+                value={formData.preferredTime}
+                onChange={(e) => setFormData({...formData, preferredTime: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              >
+                <option value="">Selecciona una hora</option>
+                {timeSlots.map((time) => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Problema y prioridad */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Describe el problema o servicio necesario *
+            </label>
+            <textarea
+              value={formData.problem}
+              onChange={(e) => setFormData({...formData, problem: e.target.value})}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Describe detalladamente el problema o el servicio que necesitas..."
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Prioridad
+              </label>
+              <select
+                value={formData.priority}
+                onChange={(e) => setFormData({...formData, priority: e.target.value as any})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="low">Baja - No es urgente</option>
+                <option value="medium">Media - Normal</option>
+                <option value="high">Alta - Importante</option>
+                <option value="urgent">Urgente - Crítico</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Teléfono de contacto *
+              </label>
+              <input
+                type="tel"
+                value={formData.contactPhone}
+                onChange={(e) => setFormData({...formData, contactPhone: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="9876-5432"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Notas adicionales */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Notas adicionales (opcional)
+            </label>
+            <textarea
+              value={formData.additionalNotes}
+              onChange={(e) => setFormData({...formData, additionalNotes: e.target.value})}
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Información adicional que consideres importante..."
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center"
+            >
+              <CheckCircleIcon className="h-5 w-5 mr-2" />
+              Agendar Cita
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header mejorado */}
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 rounded-2xl p-8 text-white mb-8 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center mb-4">
+                <div className="bg-white/20 p-3 rounded-xl mr-4">
+                  <CalendarDaysIcon className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold">Mis Citas</h1>
+                  <p className="text-indigo-100 text-lg">Agenda y gestiona tus servicios</p>
+                </div>
+              </div>
+              
+              {/* Stats de citas */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6">
+                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="text-2xl font-bold">{appointments.length}</div>
+                  <div className="text-indigo-100 text-sm">Total Citas</div>
+                </div>
+                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="text-2xl font-bold">
+                    {appointments.filter(a => a.status === 'pending').length}
                   </div>
+                  <div className="text-indigo-100 text-sm">Pendientes</div>
+                </div>
+                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="text-2xl font-bold">
+                    {appointments.filter(a => a.status === 'confirmed').length}
+                  </div>
+                  <div className="text-indigo-100 text-sm">Confirmadas</div>
+                </div>
+                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="text-2xl font-bold">
+                    {appointments.filter(a => a.status === 'completed').length}
+                  </div>
+                  <div className="text-indigo-100 text-sm">Completadas</div>
                 </div>
               </div>
             </div>
-          </Card>
 
-          {/* Botón para Solicitar Cita */}
-          <div className="lg:col-span-2">
-            <Card>
-              <div className="text-center py-8">
-                <CalendarIcon className="h-16 w-16 text-blue-500 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-900 mb-2">
-                  ¿Listo para programar tu cita?
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Selecciona el vehículo, tipo de servicio y horario que mejor te convenga
-                </p>
-                <Button
-                  onClick={() => setShowForm(true)}
-                  disabled={clientVehicles.length === 0}
-                  className="px-8 py-3"
-                >
-                  <CalendarIcon className="h-5 w-5 mr-2" />
-                  Solicitar Cita
-                </Button>
-                {clientVehicles.length === 0 && (
-                  <p className="text-sm text-gray-500 mt-2">
-                    Necesitas tener al menos un vehículo registrado para solicitar una cita
-                  </p>
-                )}
-              </div>
-            </Card>
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-semibold hover:bg-indigo-50 transition-colors flex items-center shadow-lg"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Nueva Cita
+            </button>
           </div>
         </div>
-      ) : (
-        <div className="max-w-2xl mx-auto">
-          <Card title="Nueva Solicitud de Cita" subtitle="Completa la información para programar tu servicio">
-            {submitStatus === 'success' ? (
-              <div className="text-center py-8">
-                <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-green-800 mb-2">¡Solicitud Enviada!</h3>
-                <p className="text-green-700 mb-4">
-                  Tu solicitud de cita ha sido recibida. Te contactaremos dentro de 2 horas para confirmar.
-                </p>
-                <p className="text-sm text-gray-600">
-                  También puedes llamarnos al +504 2234-5678 si tienes preguntas urgentes.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Selección de Vehículo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Vehículo <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.vehicleId}
-                    onChange={(e) => handleInputChange('vehicleId', e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Selecciona un vehículo</option>
-                    {clientVehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.brand} {vehicle.model} ({vehicle.year}) - {vehicle.licensePlate}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
-                {/* Tipo de Servicio */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Servicio <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.serviceType}
-                    onChange={(e) => handleInputChange('serviceType', e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Selecciona el tipo de servicio</option>
-                    {serviceTypes.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.icon} {service.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Descripción del Problema */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descripción del Problema <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={formData.problem}
-                    onChange={(e) => handleInputChange('problem', e.target.value)}
-                    required
-                    rows={4}
-                    placeholder="Describe en detalle el problema o el servicio que necesitas..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Fecha y Hora Preferida */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fecha Preferida <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.preferredDate}
-                      onChange={(e) => handleInputChange('preferredDate', e.target.value)}
-                      min={getTodayDate()}
-                      max={getMaxDate()}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Hora Preferida <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={formData.preferredTime}
-                      onChange={(e) => handleInputChange('preferredTime', e.target.value)}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Selecciona la hora</option>
-                      {timeSlots.map((time) => (
-                        <option key={time} value={time}>
-                          {time}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Prioridad */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prioridad del Servicio
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {priorityLevels.map((priority) => (
-                      <label key={priority.value} className="cursor-pointer">
-                        <input
-                          type="radio"
-                          value={priority.value}
-                          checked={formData.priority === priority.value}
-                          onChange={(e) => handleInputChange('priority', e.target.value)}
-                          className="sr-only"
-                        />
-                        <div className={`p-3 border-2 rounded-lg text-center transition-all ${
-                          formData.priority === priority.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}>
-                          <div className={`text-sm font-medium ${priority.color}`}>
-                            {priority.label}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {priority.description}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Teléfono de Contacto */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Teléfono de Contacto <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.contactPhone}
-                    onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                    required
-                    placeholder="+504 9789-6227"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Notas Adicionales */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notas Adicionales
-                  </label>
-                  <textarea
-                    value={formData.additionalNotes}
-                    onChange={(e) => handleInputChange('additionalNotes', e.target.value)}
-                    rows={3}
-                    placeholder="Información adicional, preferencias de horario, instrucciones especiales..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Botones */}
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 space-y-3 space-y-reverse sm:space-y-0">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowForm(false)}
-                    disabled={submitStatus === 'submitting'}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={submitStatus === 'submitting'}
-                    className="flex items-center justify-center"
-                  >
-                    {submitStatus === 'submitting' ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <CalendarIcon className="h-4 w-4 mr-2" />
-                        Solicitar Cita
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {submitStatus === 'error' && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center">
-                      <ExclamationTriangleIcon className="h-5 w-5 text-red-600 mr-2" />
-                      <p className="text-red-800 text-sm">
-                        Hubo un error al enviar la solicitud. Por favor, inténtalo de nuevo o contáctanos directamente.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </form>
-            )}
-          </Card>
+        {/* Filtros */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'all', label: 'Todas', count: appointments.length },
+              { key: 'pending', label: 'Pendientes', count: appointments.filter(a => a.status === 'pending').length },
+              { key: 'confirmed', label: 'Confirmadas', count: appointments.filter(a => a.status === 'confirmed').length },
+              { key: 'completed', label: 'Completadas', count: appointments.filter(a => a.status === 'completed').length }
+            ].map((filter) => (
+              <button
+                key={filter.key}
+                onClick={() => setActiveFilter(filter.key as any)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center ${
+                  activeFilter === filter.key
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {filter.label}
+                <span className="ml-2 bg-white px-2 py-0.5 rounded-full text-xs">
+                  {filter.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Lista de citas */}
+        {filteredAppointments.length > 0 ? (
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            {filteredAppointments.map(renderAppointmentCard)}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <CalendarDaysIcon className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {activeFilter === 'all' ? 'No tienes citas programadas' : `No hay citas ${activeFilter}`}
+            </h3>
+            <p className="text-gray-500 mb-8">
+              Comienza agendando tu primera cita de servicio
+            </p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Agendar Primera Cita
+            </button>
+          </div>
+        )}
+
+        {/* Modal de nueva cita */}
+        {showForm && renderNewAppointmentForm()}
+      </div>
     </div>
   );
 }
