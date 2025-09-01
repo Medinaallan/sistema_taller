@@ -39,7 +39,7 @@ interface VehicleForm {
 }
 
 export function ClientVehiclesPage() {
-  const { state } = useApp();
+  const { } = useApp();
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);

@@ -40,7 +40,7 @@ export function ClientAppointmentsPage() {
   const { state } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+
 
   const [formData, setFormData] = useState<AppointmentForm>({
     vehicleId: '',
@@ -104,16 +104,16 @@ export function ClientAppointmentsPage() {
   ];
 
   const serviceTypes = [
-    { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado' },
-    { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas' },
-    { id: 'repair', name: 'Reparación',  description: 'Arreglo de componentes específicos' },
-    { id: 'oil-change', name: 'Cambio de Aceite',  description: 'Cambio de aceite y filtros' },
-    { id: 'tire-service', name: 'Servicio de Llantas',  description: 'Cambio, rotación o alineación' },
-    { id: 'brake-service', name: 'Servicio de Frenos', description: 'Pastillas, discos y sistema de frenos' },
-    { id: 'battery', name: 'Batería', description: 'Cambio o revisión de batería' },
-    { id: 'air-conditioning', name: 'Aire Acondicionado', description: 'Servicio del sistema A/C' },
-    { id: 'transmission', name: 'Transmisión', description: 'Servicio del sistema de transmisión' },
-    { id: 'other', name: 'Otro', description: 'Otro tipo de servicio' }
+    { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado', icon: '🔧' },
+    { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas', icon: '🔍' },
+    { id: 'repair', name: 'Reparación',  description: 'Arreglo de componentes específicos', icon: '⚙️' },
+    { id: 'oil-change', name: 'Cambio de Aceite',  description: 'Cambio de aceite y filtros', icon: '🛢️' },
+    { id: 'tire-service', name: 'Servicio de Llantas',  description: 'Cambio, rotación o alineación', icon: '🛞' },
+    { id: 'brake-service', name: 'Servicio de Frenos', description: 'Pastillas, discos y sistema de frenos', icon: '🛑' },
+    { id: 'battery', name: 'Batería', description: 'Cambio o revisión de batería', icon: '🔋' },
+    { id: 'air-conditioning', name: 'Aire Acondicionado', description: 'Servicio del sistema A/C', icon: '❄️' },
+    { id: 'transmission', name: 'Transmisión', description: 'Servicio del sistema de transmisión', icon: '⚡' },
+    { id: 'other', name: 'Otro', description: 'Otro tipo de servicio', icon: '🔨' }
   ];
 
   const timeSlots = [
@@ -228,7 +228,6 @@ export function ClientAppointmentsPage() {
                 </button>
               )}
               <button 
-                onClick={() => setSelectedAppointment(appointment)}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
               >
                 Ver Detalles
