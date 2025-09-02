@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
+import { CSVDataManager } from '../../componentes/administracion/CSVDataManager';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { generateId, formatDate, formatCurrency } from '../../utilidades/globalMockDatabase';
@@ -254,6 +255,9 @@ export function ClientsPage() {
         </Button>
       </div>
 
+      {/* Gestor de datos CSV */}
+      <CSVDataManager />
+
       {/* Filtros y búsqueda */}
       <Card>
         <div className="flex flex-col sm:flex-row gap-4">
@@ -295,7 +299,14 @@ export function ClientsPage() {
                 <tr key={client.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900">{client.name}</span>
+                        {client.id.startsWith('client-') && client.email.includes('@taller.com') && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            CSV
+                          </span>
+                        )}
+                      </div>
                       <div className="text-sm text-gray-500">{client.email}</div>
                     </div>
                   </td>

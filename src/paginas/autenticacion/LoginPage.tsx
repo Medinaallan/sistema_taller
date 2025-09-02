@@ -3,11 +3,8 @@ import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegisterForm';
-import { 
-  SP_LOGIN,
-  SP_REGISTRAR_USUARIO_PANEL_ADMIN
-} from '../../utilidades/storedProceduresBackend';
-import { generateId } from '../../utilidades/globalMockDatabase';
+import { authenticateClient } from '../../utilidades/csvDatabase';
+import { mockUsers } from '../../utilidades/mockData';
 
 type ViewMode = 'login' | 'setup' | 'clientRegister';
 
@@ -67,25 +64,37 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      const result = await SP_LOGIN(formData.email, formData.password);
+      // Intentar autenticación con datos del CSV (clientes)
+      const client = authenticateClient(formData.email, formData.password);
       
-      if (result.allow === 1 && result.usuario) {
-        // Crear objeto User para el contexto usando la estructura exacta de tu SP
+      if (client) {
+        // Cliente encontrado en CSV
         const user = {
-          id: result.usuario.usuario_id.toString(),
-          email: result.usuario.correo,
-          password: formData.password, // Mantener para compatibilidad
-          role: result.usuario.rol === 'admin' ? 'admin' as const : 'client' as const,
-          name: result.usuario.nombre_completo,
-          phone: result.usuario.telefono || '', // Del SP
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          id: client.id,
+          email: client.email,
+          password: client.password,
+          role: 'client' as const,
+          name: client.name,
+          phone: client.phone,
+          createdAt: client.createdAt,
+          updatedAt: client.updatedAt,
         };
         
         dispatch({ type: 'LOGIN', payload: user });
-      } else {
-        setErrors({ general: result.msg || 'Error en el inicio de sesión' });
+        return;
       }
+
+      // Intentar autenticación con usuarios del sistema (admin, mecánico, recepcionista)
+      const systemUser = mockUsers.find(u => u.email === formData.email && u.password === formData.password);
+      
+      if (systemUser) {
+        dispatch({ type: 'LOGIN', payload: systemUser });
+        return;
+      }
+
+      // No se encontró usuario
+      setErrors({ general: 'Email o contraseña incorrectos' });
+      
     } catch (error) {
       console.error('Error en login:', error);
       setErrors({ general: 'Error al iniciar sesión. Inténtalo de nuevo.' });
@@ -99,34 +108,24 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      const result = await SP_REGISTRAR_USUARIO_PANEL_ADMIN(
-        formData.name,
-        formData.email,
-        '', // telefono - no disponible en el form, usar cadena vacía
-        'admin' // rol
-      );
-      
-      if (result.allow === 1 || result.response === '200 OK') {
-        // Crear usuario administrador directamente en el contexto
-        const newUser = {
-          id: generateId(), // Generar ID temporal
-          email: formData.email,
-          password: formData.password,
-          role: 'admin' as const,
-          name: formData.name,
-          phone: formData.phone,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      // Crear usuario administrador directamente en el contexto
+      const newUser = {
+        id: `admin-${Date.now()}`, // Generar ID temporal
+        email: formData.email,
+        password: formData.password,
+        role: 'admin' as const,
+        name: formData.name,
+        phone: formData.phone,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-        dispatch({ type: 'ADD_USER', payload: newUser });
-        dispatch({ type: 'LOGIN', payload: newUser });
-        setViewMode('login');
-        setFormData({ email: '', password: '', name: '', phone: '' });
-        setErrors({});
-      } else {
-        setErrors({ general: result.msg || 'Error al crear administrador' });
-      }
+      dispatch({ type: 'ADD_USER', payload: newUser });
+      dispatch({ type: 'LOGIN', payload: newUser });
+      setViewMode('login');
+      setFormData({ email: '', password: '', name: '', phone: '' });
+      setErrors({});
+      
     } catch (error) {
       console.error('Error creando administrador:', error);
       setErrors({ general: 'Error al configurar administrador. Inténtalo de nuevo.' });

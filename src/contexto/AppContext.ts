@@ -158,6 +158,9 @@ export type AppAction =
   | { type: 'SET_DASHBOARD_STATS'; payload: DashboardStats }
   | { type: 'REFRESH_DASHBOARD_STATS' }
   
+  // ========== DATOS CSV ==========
+  | { type: 'LOAD_CSV_DATA'; payload: { clients: Client[], vehicles: Vehicle[], workOrders: WorkOrder[] } }
+  
   // ========== UI ==========
   | { type: 'TOGGLE_NAV'; payload?: boolean };
 

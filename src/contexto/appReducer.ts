@@ -1,31 +1,24 @@
 import type { AppState, AppAction } from './AppContext';
 import type { DashboardStats } from '../tipos/index';
 import { 
+  mockUsers,
   mockServiceTypes, 
   mockClients, 
   mockVehicles, 
   mockWorkOrders, 
   mockReminders, 
   mockDashboardStats,
-  mockAppointments,
-  mockQuotations,
-  mockInvoices,
-  mockPayments,
-  mockServices,
-  mockSuppliers,
-  mockProducts,
-  mockInventory,
-  mockLogs
-} from '../utilidades/globalMockDatabase';
-import { obtenerTodosLosUsuarios } from '../utilidades/BaseDatosJS';
+  mockNotifications
+} from '../utilidades/mockData';
 
 // Función para obtener estado inicial con persistencia
 export const getInitialState = (): AppState => {
   let user = null;
   let isAuthenticated = false;
-  let clients = mockClients;
+  let clients = mockClients; // Datos del CSV
   let serviceTypes = mockServiceTypes;
-  let users = obtenerTodosLosUsuarios();
+  let users = mockUsers; // Usuarios del sistema
+  
   try {
     const savedUser = localStorage.getItem('tallerApp_user');
     const savedAuth = localStorage.getItem('tallerApp_isAuthenticated');
@@ -49,6 +42,7 @@ export const getInitialState = (): AppState => {
   } catch (error) {
     console.error('Error loading saved user, clients, serviceTypes or users:', error);
   }
+  
   // Cargar el estado del nav
   let isNavCollapsed = false;
   const savedNavState = localStorage.getItem('tallerApp_navState');
@@ -65,32 +59,32 @@ export const getInitialState = (): AppState => {
     user,
     isAuthenticated,
     
-    // Datos principales del negocio
+    // Datos principales del negocio (usando datos del CSV)
     clients,
     vehicles: mockVehicles,
     workOrders: mockWorkOrders,
     
     // Sistema de citas y servicios
-    appointments: mockAppointments,
-    services: mockServices,
+    appointments: [], // Inicializar vacío por ahora
+    services: [], // Inicializar vacío por ahora
     serviceTypes,
     
     // Sistema financiero
-    quotations: mockQuotations,
-    invoices: mockInvoices,
-    payments: mockPayments,
+    quotations: [], // Inicializar vacío por ahora
+    invoices: [], // Inicializar vacío por ahora
+    payments: [], // Inicializar vacío por ahora
     
     // Inventario y productos
-    products: mockProducts,
-    inventory: mockInventory,
-    suppliers: mockSuppliers,
+    products: [], // Inicializar vacío por ahora
+    inventory: [], // Inicializar vacío por ahora
+    suppliers: [], // Inicializar vacío por ahora
     
     // Sistema administrativo
     users,
     reminders: mockReminders,
-    logs: mockLogs,
+    logs: [], // Inicializar vacío por ahora
     
-    // Dashboard y estadísticas
+    // Dashboard y estadísticas (usando datos del CSV)
     dashboardStats: mockDashboardStats,
     
     // Estados de UI
@@ -523,6 +517,34 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
       localStorage.setItem('tallerApp_navState', JSON.stringify(newState.isNavCollapsed));
       return newState;
+    }
+
+    case 'LOAD_CSV_DATA': {
+      const { clients, vehicles, workOrders } = action.payload;
+      
+      // Calcular nuevas estadísticas del dashboard
+      const newDashboardStats = {
+        totalWorkOrders: workOrders.length,
+        pendingOrders: workOrders.filter(wo => wo.status === 'pending').length,
+        completedOrders: workOrders.filter(wo => wo.status === 'completed').length,
+        totalRevenue: workOrders
+          .filter(wo => wo.status === 'completed')
+          .reduce((sum, wo) => sum + wo.totalCost, 0),
+        monthlyRevenue: workOrders
+          .filter(wo => wo.status === 'completed' && wo.actualCompletionDate?.getMonth() === new Date().getMonth())
+          .reduce((sum, wo) => sum + wo.totalCost, 0),
+        totalClients: clients.length,
+        totalVehicles: vehicles.length,
+        activeReminders: state.reminders.filter(r => r.isActive).length
+      };
+
+      return {
+        ...state,
+        clients: [...clients, ...state.clients.filter(c => !clients.find(nc => nc.email === c.email))], // Merge sin duplicar
+        vehicles: [...vehicles, ...state.vehicles.filter(v => !vehicles.find(nv => nv.id === v.id))], // Merge sin duplicar
+        workOrders: [...workOrders, ...state.workOrders.filter(wo => !workOrders.find(nwo => nwo.id === wo.id))], // Merge sin duplicar
+        dashboardStats: newDashboardStats
+      };
     }
 
     default:
