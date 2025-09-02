@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { loadCSVData, csvToClients, csvToWorkOrders, CSVClientData } from '../utilidades/csvDatabase';
+import { obtenerClientesActualizados } from '../utilidades/BaseDatosJS';
 import { Client, Vehicle, WorkOrder } from '../tipos/index';
 
-// Hook para cargar datos del CSV dinámicamente
+// Hook para cargar datos del CSV via API del backend
 export function useCSVData() {
-  const [csvData, setCSVData] = useState<CSVClientData[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
@@ -16,20 +15,22 @@ export function useCSVData() {
       setLoading(true);
       setError(null);
       
-      const data = await loadCSVData();
-      setCSVData(data);
+      console.log('🔄 useCSVData: Cargando datos desde API...');
+      const clientesAPI = await obtenerClientesActualizados();
       
-      const convertedClients = csvToClients(data);
-      const convertedVehicles = convertedClients.flatMap(client => client.vehicles);
-      const convertedWorkOrders = csvToWorkOrders(data);
+      console.log('📊 useCSVData: Datos recibidos:', clientesAPI.length, 'clientes');
       
-      setClients(convertedClients);
-      setVehicles(convertedVehicles);
-      setWorkOrders(convertedWorkOrders);
+      // Por ahora solo usamos los clientes, los vehículos y órdenes se manejarán después
+      const vehiculosExtraidos: Vehicle[] = [];
+      const ordenesExtraidas: WorkOrder[] = [];
+      
+      setClients(clientesAPI);
+      setVehicles(vehiculosExtraidos);
+      setWorkOrders(ordenesExtraidas);
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando datos del CSV');
-      console.error('Error en useCSVData:', err);
+      setError(err instanceof Error ? err.message : 'Error cargando datos del CSV via API');
+      console.error('❌ Error en useCSVData:', err);
     } finally {
       setLoading(false);
     }
@@ -41,11 +42,11 @@ export function useCSVData() {
 
   // Función para recargar los datos (útil cuando se actualiza el CSV)
   const reloadData = () => {
+    console.log('🔄 useCSVData: Recargando datos...');
     loadData();
   };
 
   return {
-    csvData,
     clients,
     vehicles,
     workOrders,

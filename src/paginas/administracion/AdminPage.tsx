@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { UserManagementSection } from './secciones/UserManagementSection';
 import { CompanyDataSection } from './secciones/CompanyDataSection';
 import { BillingConfigSection } from './secciones/BillingConfigSection';
+import { CSVDataManager } from '../../componentes/administracion/CSVDataManager';
 import {
   UsersIcon,
   CurrencyDollarIcon,
@@ -88,6 +89,13 @@ const configSections: ConfigSection[] = [
     path: 'servicios'
   },
   {
+    id: 'csv-data',
+    title: 'Gestión de Datos CSV',
+    description: 'Administrar y sincronizar datos del archivo CSV de clientes',
+    icon: DocumentTextIcon,
+    path: 'csv-data'
+  },
+  {
     id: 'sistema',
     title: 'Configuración del Sistema',
     description: 'Respaldos, restauración y configuración general',
@@ -116,6 +124,7 @@ export default function AdminPage() {
         {selectedSection === 'usuarios' && <UserManagementSection />}
         {selectedSection === 'empresa' && <CompanyDataSection />}
         {selectedSection === 'facturacion' && <BillingConfigSection />}
+        {selectedSection === 'csv-data' && <CSVDataManager />}
         {/* Aquí se agregarán las demás secciones */}
       </div>
     );

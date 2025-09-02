@@ -168,4 +168,5 @@ export type AppAction =
 export const AppContext = createContext<{
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
+  reloadCSVData?: () => void;
 } | null>(null);

@@ -26,6 +26,7 @@ import ServicesPage from './paginas/services/ServicesPage';
 import LogsPage from './paginas/logs/LogsPage';
 import RemindersPage from './paginas/administracion/RemindersPage';
 import ClientProfilePage from './paginas/administracion/ClientProfilePage';
+import { DebugPage } from './paginas/DebugPage';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -296,6 +297,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <HelpPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/debug"
+        element={
+          <ProtectedRoute>
+            <DebugPage />
           </ProtectedRoute>
         }
       />

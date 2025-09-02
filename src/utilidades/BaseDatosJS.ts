@@ -1,71 +1,154 @@
 // ====================================
 // BASE DE DATOS TYPESCRIPT - CLIENTES
-// Sistema de almacenamiento de clientes registrados en localStorage
+// Sistema de almacenamiento de clientes en CSV vía API
 // ====================================
 
-import type { User } from '../tipos';
+import type { Client } from '../tipos';
 
-// Clave para localStorage específica para clientes
-const CLIENTES_STORAGE_KEY = 'tallerApp_clientesRegistrados';
+const API_BASE_URL = 'http://localhost:8080/api';
 
-// Función para cargar clientes desde localStorage
-function cargarClientesDesdeStorage(): User[] {
+// Array de clientes registrados (cargado desde CSV)
+export let clientesRegistrados: Client[] = [];
+
+// Función para cargar clientes desde CSV vía API
+async function cargarClientesDesdeCSV(): Promise<Client[]> {
   try {
-    const clientesGuardados = localStorage.getItem(CLIENTES_STORAGE_KEY);
-    if (clientesGuardados) {
-      const clientes = JSON.parse(clientesGuardados);
-      // Convertir fechas de string a Date
-      return clientes.map((cliente: any) => ({
-        ...cliente,
-        createdAt: new Date(cliente.createdAt),
-        updatedAt: new Date(cliente.updatedAt)
+    console.log('🔄 Cargando clientes desde CSV...');
+    const response = await fetch(`${API_BASE_URL}/clients`);
+    const data = await response.json();
+    
+    if (data.success) {
+      console.log(`✅ ${data.clients.length} clientes cargados desde CSV`);
+      // Convertir los datos del CSV al formato Client
+      return data.clients.map((cliente: any) => ({
+        id: cliente.id,
+        name: cliente.nombre,
+        email: cliente.email,
+        phone: cliente.telefono,
+        address: cliente.direccion,
+        password: cliente.password,
+        vehicles: [], // Los vehículos se cargarían por separado
+        createdAt: new Date(),
+        updatedAt: new Date()
       }));
+    } else {
+      console.error('❌ Error cargando clientes:', data.error);
+      return [];
     }
   } catch (error) {
-    console.error('Error al cargar clientes desde localStorage:', error);
+    console.error('❌ Error al cargar clientes desde CSV:', error);
+    return [];
   }
-  return [];
 }
 
-// Función para guardar clientes en localStorage
-function guardarClientesEnStorage(clientes: User[]): void {
+// Función para guardar cliente en CSV vía API
+async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
   try {
-    localStorage.setItem(CLIENTES_STORAGE_KEY, JSON.stringify(clientes));
-    console.log('Clientes guardados en localStorage:', clientes.length);
+    console.log('💾 Guardando cliente en CSV:', cliente.name);
+    const response = await fetch(`${API_BASE_URL}/clients`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        nombre: cliente.name,
+        telefono: cliente.phone,
+        email: cliente.email,
+        direccion: cliente.address || '',
+        password: cliente.password,
+        vehiculos: cliente.vehicles.length || 0,
+        vehiculoNombre: cliente.vehicles[0]?.brand || '',
+        vehiculoModelo: cliente.vehicles[0]?.model || '',
+        kilometraje: cliente.vehicles[0]?.mileage || 0
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      console.log('✅ Cliente guardado exitosamente en CSV');
+      return true;
+    } else {
+      console.error('❌ Error guardando cliente:', data.error);
+      return false;
+    }
   } catch (error) {
-    console.error('Error al guardar clientes en localStorage:', error);
+    console.error('❌ Error al guardar cliente en CSV:', error);
+    return false;
   }
 }
 
-// Array de clientes registrados (se carga desde localStorage)
-export let clientesRegistrados: User[] = cargarClientesDesdeStorage();
-
-// Función para agregar un nuevo cliente
-export function agregarCliente(nuevoCliente: User): User {
-  clientesRegistrados.push(nuevoCliente);
-  guardarClientesEnStorage(clientesRegistrados);
-  console.log('Cliente agregado a BaseDatosJS:', nuevoCliente);
-  console.log('Total clientes registrados:', clientesRegistrados.length);
-  return nuevoCliente;
+// Función para inicializar clientes desde CSV
+export async function inicializarClientesDesdeCSV(): Promise<void> {
+  clientesRegistrados = await cargarClientesDesdeCSV();
+  
+  // Configurar recarga automática cada 30 segundos
+  setInterval(async () => {
+    try {
+      const clientesActualizados = await cargarClientesDesdeCSV();
+      if (clientesActualizados.length !== clientesRegistrados.length) {
+        console.log(`🔄 Cambios detectados en CSV: ${clientesActualizados.length} clientes`);
+        clientesRegistrados = clientesActualizados;
+      }
+    } catch (error) {
+      console.error('❌ Error en recarga automática:', error);
+    }
+  }, 30000); // 30 segundos
 }
 
-// Función para obtener todos los clientes (recarga desde storage)
-export function obtenerClientes(): User[] {
-  clientesRegistrados = cargarClientesDesdeStorage();
+// Función para recargar clientes desde CSV (para refrescar cambios manuales)
+export async function recargarClientesDesdeCSV(): Promise<void> {
+  console.log('🔄 Recargando clientes desde CSV...');
+  clientesRegistrados = await cargarClientesDesdeCSV();
+}
+
+// Función para obtener todos los clientes (con opción de recargar)
+export async function obtenerClientes(recargar: boolean = true): Promise<Client[]> {
+  if (recargar) {
+    // Recargar datos frescos del CSV
+    clientesRegistrados = await cargarClientesDesdeCSV();
+  }
   return [...clientesRegistrados];
 }
 
-// Función para buscar cliente por email (recarga desde storage)
-export function buscarClientePorEmail(email: string): User | undefined {
-  clientesRegistrados = cargarClientesDesdeStorage();
+// Función para obtener todos los clientes (versión síncrona - datos en memoria)
+export function obtenerClientesEnMemoria(): Client[] {
+  return [...clientesRegistrados];
+}
+
+// Función para obtener todos los clientes con recarga forzada
+export async function obtenerClientesActualizados(): Promise<Client[]> {
+  await recargarClientesDesdeCSV();
+  return [...clientesRegistrados];
+}
+
+// Función para agregar un nuevo cliente
+export async function agregarCliente(nuevoCliente: Client): Promise<Client | null> {
+  console.log('➕ Agregando nuevo cliente:', nuevoCliente.name);
+  
+  // Guardar en CSV
+  const guardado = await guardarClienteEnCSV(nuevoCliente);
+  
+  if (guardado) {
+    clientesRegistrados.push(nuevoCliente);
+    console.log('✅ Cliente agregado exitosamente');
+    console.log('Total clientes registrados:', clientesRegistrados.length);
+    return nuevoCliente;
+  } else {
+    console.error('❌ Error al agregar cliente');
+    return null;
+  }
+}
+
+// Función para buscar cliente por email
+export function buscarClientePorEmail(email: string): Client | undefined {
   return clientesRegistrados.find(cliente => 
     cliente.email.toLowerCase() === email.toLowerCase()
   );
 }
 
-// Función para buscar cliente por email y password (recarga desde storage)
-export function autenticarCliente(email: string, password: string): User | undefined {
-  clientesRegistrados = cargarClientesDesdeStorage();
+// Función para autenticar cliente
+export function autenticarCliente(email: string, password: string): Client | undefined {
   return clientesRegistrados.find(cliente => 
     cliente.email.toLowerCase() === email.toLowerCase() && 
     cliente.password === password
@@ -73,8 +156,7 @@ export function autenticarCliente(email: string, password: string): User | undef
 }
 
 // Función para actualizar un cliente
-export function actualizarCliente(id: string, datosActualizados: Partial<User>): User | null {
-  clientesRegistrados = cargarClientesDesdeStorage();
+export async function actualizarCliente(id: string, datosActualizados: Partial<Client>): Promise<Client | null> {
   const index = clientesRegistrados.findIndex(cliente => cliente.id === id);
   if (index !== -1) {
     clientesRegistrados[index] = { 
@@ -82,21 +164,20 @@ export function actualizarCliente(id: string, datosActualizados: Partial<User>):
       ...datosActualizados,
       updatedAt: new Date()
     };
-    guardarClientesEnStorage(clientesRegistrados);
-    console.log('Cliente actualizado en BaseDatosJS:', clientesRegistrados[index]);
+    
+    // Aquí podrías agregar lógica para actualizar en CSV si es necesario
+    console.log('✅ Cliente actualizado:', clientesRegistrados[index]);
     return clientesRegistrados[index];
   }
   return null;
 }
 
 // Función para eliminar un cliente
-export function eliminarCliente(id: string): User | null {
-  clientesRegistrados = cargarClientesDesdeStorage();
+export function eliminarCliente(id: string): Client | null {
   const index = clientesRegistrados.findIndex(cliente => cliente.id === id);
   if (index !== -1) {
     const clienteEliminado = clientesRegistrados.splice(index, 1)[0];
-    guardarClientesEnStorage(clientesRegistrados);
-    console.log('Cliente eliminado de BaseDatosJS:', clienteEliminado);
+    console.log('✅ Cliente eliminado:', clienteEliminado);
     return clienteEliminado;
   }
   return null;
@@ -104,74 +185,25 @@ export function eliminarCliente(id: string): User | null {
 
 // Función para obtener estadísticas
 export function obtenerEstadisticasClientes() {
-  const clientes = cargarClientesDesdeStorage();
   return {
-    total: clientes.length,
-    fechaUltimoRegistro: clientes.length > 0 
-      ? Math.max(...clientes.map(c => c.createdAt.getTime()))
+    total: clientesRegistrados.length,
+    fechaUltimoRegistro: clientesRegistrados.length > 0 
+      ? Math.max(...clientesRegistrados.map(c => c.createdAt.getTime()))
       : null
   };
 }
 
-// Función para limpiar todos los clientes (solo para testing)
-export function limpiarTodosLosClientes(): void {
-  clientesRegistrados = [];
-  guardarClientesEnStorage(clientesRegistrados);
-  console.log('Todos los clientes han sido eliminados de BaseDatosJS');
+// Función para limpiar localStorage (eliminar datos antiguos)
+export function limpiarLocalStorage(): void {
+  try {
+    // Eliminar clientes del localStorage
+    localStorage.removeItem('tallerApp_clientesRegistrados');
+    localStorage.removeItem('tallerApp_clients');
+    console.log('🧹 LocalStorage de clientes limpiado');
+  } catch (error) {
+    console.error('❌ Error limpiando localStorage:', error);
+  }
 }
 
-// Función para obtener todos los usuarios (admin/empleados + clientes)
-export function obtenerTodosLosUsuarios(): User[] {
-  // Obtener usuarios admin/empleados desde localStorage
-  let adminUsers: User[] = [];
-  try {
-    const savedUsers = localStorage.getItem('tallerApp_users');
-    if (savedUsers) {
-      adminUsers = JSON.parse(savedUsers);
-    }
-  } catch (error) {
-    console.error('Error loading admin users from localStorage:', error);
-  }
-  
-  // Si no hay usuarios admin, usar los por defecto
-  if (adminUsers.length === 0) {
-    adminUsers = [
-      {
-        id: 'user-admin-001',
-        email: 'admin@taller.com',
-        password: 'admin123',
-        role: 'admin',
-        name: 'ALLAN MEDINA',
-        phone: '+1234567890',
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-      },
-      {
-        id: 'user-recep-001',
-        email: 'recep@taller.com',
-        password: 'recep123',
-        role: 'receptionist',
-        name: 'ANDRE VARGAS',
-        phone: '+1234567891',
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-      },
-      {
-        id: 'user-mec-001',
-        email: 'mecanico@taller.com',
-        password: 'mec123',
-        role: 'mechanic',
-        name: 'Mecánico Principal',
-        phone: '+1234567892',
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-      }
-    ];
-  }
-  
-  // Obtener clientes desde localStorage específico
-  const clientesActuales = cargarClientesDesdeStorage();
-  
-  // Combinar usuarios admin/empleados con clientes
-  return [...adminUsers, ...clientesActuales];
-}
+// Auto-limpiar localStorage al cargar el módulo
+limpiarLocalStorage();

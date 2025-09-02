@@ -57,9 +57,6 @@ export async function loadCSVData(): Promise<CSVClientData[]> {
 // Datos de fallback si no se puede leer el CSV
 function getFallbackData(): CSVClientData[] {
   const csvData = `Andre Vargas;9999-9999;avargas@taller.com;Col. Los arbolitos;asdf1234;1;Honda;Civic;2;2;1;20000
-Gerardo Medina;9999-9999;gmedina@taller.com;Col. Los maestros;asdf1234;3;Toyota;Hilux;1;1;2;12000
-Alex Vasquez;9999-1000;avasquez@taller.con;Barrio x;asdf1234;4;Mazda;BT50;1;1;3;8000
-Natanael Cano;9999-1002;ncano@taller.com;Barrio z;asdf1234;2;Toyota;Corolla;3;2;4;7500
 Katy Ramos;9999-1003;kramos@taller.com;Barrio A;asdf1234;4;Honda;Crv;2;1;5;120000`;
 
   return csvData.split('\n')
