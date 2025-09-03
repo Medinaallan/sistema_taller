@@ -12,6 +12,7 @@ import GestionPage from './paginas/administracion/GestionPage';
 import { ClientDashboardPage } from './paginas/cliente/ClientDashboardPage';
 import { ClientVehiclesPage } from './paginas/cliente/ClientVehiclesPage';
 import { ClientAppointmentsPage } from './paginas/cliente/ClientAppointmentsPage';
+import ClientRemindersPage from './paginas/cliente/ClientRemindersPage';
 import { HelpPage } from './paginas/sistema/HelpPage';
 import { ReportsPage } from './paginas/administracion/ReportsPage';
 import { WorkOrdersPage } from './paginas/administracion/WorkOrdersPage';
@@ -27,6 +28,7 @@ import LogsPage from './paginas/logs/LogsPage';
 import RemindersPage from './paginas/administracion/RemindersPage';
 import ClientProfilePage from './paginas/administracion/ClientProfilePage';
 import { DebugPage } from './paginas/DebugPage';
+import { TestLogin } from './paginas/TestLogin';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -119,17 +121,7 @@ function AppRoutes() {
         path="/client-reminders"
         element={
           <ProtectedRoute>
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Mis Recordatorios</h1>
-                <p className="text-gray-600">Recordatorios de mantenimiento para tus vehículos</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-gray-600">
-                  Página en desarrollo... Aquí verás todos tus recordatorios de mantenimiento.
-                </p>
-              </div>
-            </div>
+            <ClientRemindersPage />
           </ProtectedRoute>
         }
       />
@@ -307,6 +299,10 @@ function AppRoutes() {
             <DebugPage />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/test-login"
+        element={<TestLogin />}
       />
       <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
     </Routes>

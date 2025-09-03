@@ -6,9 +6,9 @@ import { inicializarClientesDesdeCSV } from './utilidades/BaseDatosJS'
 
 // Inicializar clientes desde CSV al arrancar la aplicación
 inicializarClientesDesdeCSV().then(() => {
-  console.log('🚀 Clientes cargados desde CSV');
+  console.log('Clientes cargados desde CSV');
 }).catch((error) => {
-  console.error('❌ Error inicializando clientes:', error);
+  console.error('Error inicializando clientes:', error);
 });
 
 createRoot(document.getElementById('root')!).render(

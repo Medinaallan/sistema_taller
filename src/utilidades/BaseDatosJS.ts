@@ -13,14 +13,13 @@ export let clientesRegistrados: Client[] = [];
 // Función para cargar clientes desde CSV vía API
 async function cargarClientesDesdeCSV(): Promise<Client[]> {
   try {
-    console.log('🔄 Cargando clientes desde CSV...');
     const response = await fetch(`${API_BASE_URL}/clients`);
     const data = await response.json();
     
     if (data.success) {
-      console.log(`✅ ${data.clients.length} clientes cargados desde CSV`);
+      
       // Convertir los datos del CSV al formato Client
-      return data.clients.map((cliente: any) => ({
+      const clientesConvertidos = data.clients.map((cliente: any) => ({
         id: cliente.id,
         name: cliente.nombre,
         email: cliente.email,
@@ -31,12 +30,11 @@ async function cargarClientesDesdeCSV(): Promise<Client[]> {
         createdAt: new Date(),
         updatedAt: new Date()
       }));
+      return clientesConvertidos;
     } else {
-      console.error('❌ Error cargando clientes:', data.error);
       return [];
     }
   } catch (error) {
-    console.error('❌ Error al cargar clientes desde CSV:', error);
     return [];
   }
 }
@@ -44,7 +42,7 @@ async function cargarClientesDesdeCSV(): Promise<Client[]> {
 // Función para guardar cliente en CSV vía API
 async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
   try {
-    console.log('💾 Guardando cliente en CSV:', cliente.name);
+    console.log('Guardando cliente en CSV:', cliente.name);
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
       headers: {
@@ -66,14 +64,14 @@ async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
     const data = await response.json();
     
     if (data.success) {
-      console.log('✅ Cliente guardado exitosamente en CSV');
+      console.log('Cliente guardado exitosamente en CSV');
       return true;
     } else {
-      console.error('❌ Error guardando cliente:', data.error);
+      console.error('Error guardando cliente:', data.error);
       return false;
     }
   } catch (error) {
-    console.error('❌ Error al guardar cliente en CSV:', error);
+    console.error('Error al guardar cliente en CSV:', error);
     return false;
   }
 }
@@ -87,18 +85,18 @@ export async function inicializarClientesDesdeCSV(): Promise<void> {
     try {
       const clientesActualizados = await cargarClientesDesdeCSV();
       if (clientesActualizados.length !== clientesRegistrados.length) {
-        console.log(`🔄 Cambios detectados en CSV: ${clientesActualizados.length} clientes`);
+        console.log(`Cambios detectados en CSV: ${clientesActualizados.length} clientes`);
         clientesRegistrados = clientesActualizados;
       }
     } catch (error) {
-      console.error('❌ Error en recarga automática:', error);
+      console.error('Error en recarga automática:', error);
     }
   }, 30000); // 30 segundos
 }
 
 // Función para recargar clientes desde CSV (para refrescar cambios manuales)
 export async function recargarClientesDesdeCSV(): Promise<void> {
-  console.log('🔄 Recargando clientes desde CSV...');
+  console.log('Recargando clientes desde CSV...');
   clientesRegistrados = await cargarClientesDesdeCSV();
 }
 
@@ -124,18 +122,18 @@ export async function obtenerClientesActualizados(): Promise<Client[]> {
 
 // Función para agregar un nuevo cliente
 export async function agregarCliente(nuevoCliente: Client): Promise<Client | null> {
-  console.log('➕ Agregando nuevo cliente:', nuevoCliente.name);
+  console.log('Agregando nuevo cliente:', nuevoCliente.name);
   
   // Guardar en CSV
   const guardado = await guardarClienteEnCSV(nuevoCliente);
   
   if (guardado) {
     clientesRegistrados.push(nuevoCliente);
-    console.log('✅ Cliente agregado exitosamente');
+    console.log('Cliente agregado exitosamente');
     console.log('Total clientes registrados:', clientesRegistrados.length);
     return nuevoCliente;
   } else {
-    console.error('❌ Error al agregar cliente');
+    console.error('Error al agregar cliente');
     return null;
   }
 }
@@ -166,7 +164,7 @@ export async function actualizarCliente(id: string, datosActualizados: Partial<C
     };
     
     // Aquí podrías agregar lógica para actualizar en CSV si es necesario
-    console.log('✅ Cliente actualizado:', clientesRegistrados[index]);
+    console.log('Cliente actualizado:', clientesRegistrados[index]);
     return clientesRegistrados[index];
   }
   return null;
@@ -177,7 +175,7 @@ export function eliminarCliente(id: string): Client | null {
   const index = clientesRegistrados.findIndex(cliente => cliente.id === id);
   if (index !== -1) {
     const clienteEliminado = clientesRegistrados.splice(index, 1)[0];
-    console.log('✅ Cliente eliminado:', clienteEliminado);
+    console.log('Cliente eliminado:', clienteEliminado);
     return clienteEliminado;
   }
   return null;

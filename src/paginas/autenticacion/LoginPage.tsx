@@ -3,7 +3,7 @@ import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegisterForm';
-import { authenticateClient } from '../../utilidades/csvDatabase';
+import { obtenerClientesActualizados } from '../../utilidades/BaseDatosJS';
 import { mockUsers } from '../../utilidades/mockData';
 
 type ViewMode = 'login' | 'setup' | 'clientRegister';
@@ -64,11 +64,26 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      // Intentar autenticación con datos del CSV (clientes)
-      const client = authenticateClient(formData.email, formData.password);
+      console.log('🔍 Intentando login con:', formData.email, formData.password);
+      
+      // Obtener clientes actualizados desde la API del backend
+      const clientesActualizados = await obtenerClientesActualizados();
+      console.log('📊 Clientes obtenidos:', clientesActualizados.length);
+      console.log('📋 Lista de clientes:', clientesActualizados.map(c => ({
+        email: c.email,
+        password: c.password,
+        name: c.name
+      })));
+      
+      // Buscar cliente que coincida con email y contraseña
+      const client = clientesActualizados.find(c => 
+        c.email === formData.email && c.password === formData.password
+      );
+      
+      console.log('🎯 Cliente encontrado:', client);
       
       if (client) {
-        // Cliente encontrado en CSV
+        // Cliente encontrado en la API
         const user = {
           id: client.id,
           email: client.email,
@@ -76,10 +91,11 @@ export function LoginPage() {
           role: 'client' as const,
           name: client.name,
           phone: client.phone,
-          createdAt: client.createdAt,
-          updatedAt: client.updatedAt,
+          createdAt: client.createdAt || new Date(),
+          updatedAt: client.updatedAt || new Date(),
         };
         
+        console.log('✅ Cliente autenticado:', user);
         dispatch({ type: 'LOGIN', payload: user });
         return;
       }
