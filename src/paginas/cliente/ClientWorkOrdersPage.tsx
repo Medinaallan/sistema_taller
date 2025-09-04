@@ -483,46 +483,46 @@ export function ClientWorkOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-2xl p-8 text-white mb-8 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Header responsivo */}
+        <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white mb-6 sm:mb-8 shadow-xl">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-6 lg:mb-0">
               <div className="flex items-center mb-4">
-                <div className="bg-white/20 p-3 rounded-xl mr-4">
-                  <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
+                <div className="bg-white/20 p-2 sm:p-3 rounded-lg sm:rounded-xl mr-3 sm:mr-4">
+                  <WrenchScrewdriverIcon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold">Órdenes de Trabajo</h1>
-                  <p className="text-orange-100 text-lg">Seguimiento en tiempo real de tus servicios</p>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Órdenes de Trabajo</h1>
+                  <p className="text-orange-100 text-sm sm:text-base lg:text-lg">Seguimiento en tiempo real de tus servicios</p>
                 </div>
               </div>
               
-              {/* Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">{workOrders.length}</div>
-                  <div className="text-orange-100 text-sm">Total Órdenes</div>
+              {/* Stats responsivas */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">{workOrders.length}</div>
+                  <div className="text-orange-100 text-xs sm:text-sm">Total Órdenes</div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">
                     {workOrders.filter(o => !['completed', 'cancelled'].includes(o.status)).length}
                   </div>
-                  <div className="text-orange-100 text-sm">En Proceso</div>
+                  <div className="text-orange-100 text-xs sm:text-sm">En Proceso</div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">
                     {workOrders.filter(o => o.status === 'completed').length}
                   </div>
-                  <div className="text-orange-100 text-sm">Completadas</div>
+                  <div className="text-orange-100 text-xs sm:text-sm">Completadas</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
+        {/* Filtros responsivos */}
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-100">
           <div className="flex flex-wrap gap-2">
             {[
               { key: 'all', label: 'Todas', count: workOrders.length },

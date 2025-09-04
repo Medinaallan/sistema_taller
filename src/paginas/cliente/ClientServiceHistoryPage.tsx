@@ -441,51 +441,51 @@ export function ClientServiceHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-2xl p-8 text-white mb-8 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Header responsivo */}
+        <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white mb-6 sm:mb-8 shadow-xl">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-6 lg:mb-0">
               <div className="flex items-center mb-4">
-                <div className="bg-white/20 p-3 rounded-xl mr-4">
-                  <CheckCircleIcon className="h-8 w-8 text-white" />
+                <div className="bg-white/20 p-2 sm:p-3 rounded-lg sm:rounded-xl mr-3 sm:mr-4">
+                  <CheckCircleIcon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold">Historial de Servicios</h1>
-                  <p className="text-green-100 text-lg">Todos tus servicios completados</p>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Historial de Servicios</h1>
+                  <p className="text-green-100 text-sm sm:text-base lg:text-lg">Todos tus servicios completados</p>
                 </div>
               </div>
               
-              {/* Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">{serviceHistory.length}</div>
-                  <div className="text-green-100 text-sm">Servicios Totales</div>
+              {/* Stats responsivas */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">{serviceHistory.length}</div>
+                  <div className="text-green-100 text-xs sm:text-sm">Servicios Totales</div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">{formatCurrency(totalSpent)}</div>
-                  <div className="text-green-100 text-sm">Total Invertido</div>
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">{formatCurrency(totalSpent)}</div>
+                  <div className="text-green-100 text-xs sm:text-sm">Total Invertido</div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">{averageRating.toFixed(1)}/5</div>
-                  <div className="text-green-100 text-sm">Calificación Promedio</div>
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">{averageRating.toFixed(1)}/5</div>
+                  <div className="text-green-100 text-xs sm:text-sm">Calificación Promedio</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filtros y búsqueda */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Filtros y búsqueda responsivos */}
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-100">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="relative">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-3" />
+              <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 absolute left-3 top-2.5 sm:top-3" />
               <input
                 type="text"
                 placeholder="Buscar servicios..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-9 sm:pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
               />
             </div>
 

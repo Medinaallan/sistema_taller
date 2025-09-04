@@ -688,27 +688,49 @@ export function ClientDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white mb-8">
-          <h1 className="text-2xl font-bold">Mi Panel de Control</h1>
-          <p className="text-blue-100">Bienvenido, {state.user?.name}</p>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Header - Improved Responsive Design */}
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 sm:p-6 text-white mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+            <div className="mb-4 sm:mb-0">
+              <h1 className="text-xl sm:text-2xl font-bold">Mi Panel de Control</h1>
+              <p className="text-blue-100 text-sm sm:text-base">Bienvenido, {state.user?.name}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <button
+                onClick={() => setActiveTab('appointments')}
+                className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <CalendarDaysIcon className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Nueva</span> Cita
+              </button>
+              <button
+                onClick={() => setActiveTab('vehicles')}
+                className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 border border-white text-sm font-medium rounded-md text-white bg-transparent hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white"
+              >
+                <TruckIcon className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Ver</span> Vehículos
+              </button>
+            </div>
+          </div>
+          
+          {/* Responsive Stats Grid */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             <div className="bg-white/10 rounded-lg p-3">
               <div className="flex items-center">
-                <TruckIcon className="h-6 w-6 text-blue-200" />
-                <div className="ml-3">
-                  <p className="text-sm text-blue-200">Vehículos</p>
-                  <p className="text-lg font-semibold">{clientVehicles.length}</p>
+                <TruckIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
+                <div className="ml-2 sm:ml-3">
+                  <p className="text-xs sm:text-sm text-blue-200">Vehículos</p>
+                  <p className="text-lg sm:text-xl font-semibold text-white">{clientVehicles.length}</p>
                 </div>
               </div>
             </div>
             <div className="bg-white/10 rounded-lg p-3">
               <div className="flex items-center">
-                <WrenchScrewdriverIcon className="h-6 w-6 text-blue-200" />
-                <div className="ml-3">
-                  <p className="text-sm text-blue-200">Órdenes Activas</p>
-                  <p className="text-lg font-semibold">
+                <WrenchScrewdriverIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
+                <div className="ml-2 sm:ml-3">
+                  <p className="text-xs sm:text-sm text-blue-200">Órdenes Activas</p>
+                  <p className="text-lg sm:text-xl font-semibold text-white">
                     {workOrders.filter(o => ['pending', 'in-progress', 'pending-parts'].includes(o.status)).length}
                   </p>
                 </div>
@@ -716,19 +738,19 @@ export function ClientDashboardPage() {
             </div>
             <div className="bg-white/10 rounded-lg p-3">
               <div className="flex items-center">
-                <CalendarDaysIcon className="h-6 w-6 text-blue-200" />
-                <div className="ml-3">
-                  <p className="text-sm text-blue-200">Próximas Citas</p>
-                  <p className="text-lg font-semibold">{appointments.length}</p>
+                <CalendarDaysIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
+                <div className="ml-2 sm:ml-3">
+                  <p className="text-xs sm:text-sm text-blue-200">Próximas Citas</p>
+                  <p className="text-lg sm:text-xl font-semibold text-white">{appointments.length}</p>
                 </div>
               </div>
             </div>
             <div className="bg-white/10 rounded-lg p-3">
               <div className="flex items-center">
-                <DocumentTextIcon className="h-6 w-6 text-blue-200" />
-                <div className="ml-3">
-                  <p className="text-sm text-blue-200">Cotizaciones</p>
-                  <p className="text-lg font-semibold">{quotations.filter(q => q.status === 'pending').length}</p>
+                <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
+                <div className="ml-2 sm:ml-3">
+                  <p className="text-xs sm:text-sm text-blue-200">Cotizaciones</p>
+                  <p className="text-lg sm:text-xl font-semibold text-white">{quotations.filter(q => q.status === 'pending').length}</p>
                 </div>
               </div>
             </div>
@@ -737,7 +759,31 @@ export function ClientDashboardPage() {
 
         {/* Navigation Tabs */}
         <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+          {/* Mobile Tab Selector */}
+          <div className="sm:hidden">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as any)}
+              className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            >
+              {[
+                { id: 'overview', name: 'Resumen' },
+                { id: 'vehicles', name: 'Mis Vehículos' },
+                { id: 'appointments', name: 'Citas' },
+                { id: 'orders', name: 'Órdenes de Trabajo' },
+                { id: 'quotations', name: 'Cotizaciones' },
+                { id: 'history', name: 'Historial' },
+                { id: 'payments', name: 'Pagos' },
+              ].map((tab) => (
+                <option key={tab.id} value={tab.id}>
+                  {tab.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Desktop Tabs */}
+          <nav className="hidden sm:flex -mb-px space-x-8" aria-label="Tabs">
             {[
               { id: 'overview', name: 'Resumen', icon: InformationCircleIcon },
               { id: 'vehicles', name: 'Mis Vehículos', icon: TruckIcon },
@@ -753,10 +799,11 @@ export function ClientDashboardPage() {
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                } flex items-center whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium`}
+                } flex items-center whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium lg:text-base`}
               >
-                <tab.icon className="h-5 w-5 mr-2" />
-                {tab.name}
+                <tab.icon className="h-4 w-4 lg:h-5 lg:w-5 mr-1 lg:mr-2" />
+                <span className="hidden lg:inline">{tab.name}</span>
+                <span className="lg:hidden">{tab.name.split(' ')[0]}</span>
               </button>
             ))}
           </nav>
