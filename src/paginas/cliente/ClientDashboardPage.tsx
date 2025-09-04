@@ -741,7 +741,6 @@ export function ClientDashboardPage() {
             {[
               { id: 'overview', name: 'Resumen', icon: InformationCircleIcon },
               { id: 'vehicles', name: 'Mis Vehículos', icon: TruckIcon },
-              { id: 'appointments', name: 'Citas', icon: CalendarDaysIcon },
               { id: 'orders', name: 'Órdenes de Trabajo', icon: WrenchScrewdriverIcon },
               { id: 'quotations', name: 'Cotizaciones', icon: DocumentTextIcon },
               { id: 'history', name: 'Historial', icon: CheckCircleIcon },

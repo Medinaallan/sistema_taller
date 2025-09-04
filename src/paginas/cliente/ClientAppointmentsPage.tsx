@@ -104,16 +104,16 @@ export function ClientAppointmentsPage() {
   ];
 
   const serviceTypes = [
-    { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado', icon: '🔧' },
-    { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas', icon: '🔍' },
-    { id: 'repair', name: 'Reparación',  description: 'Arreglo de componentes específicos', icon: '⚙️' },
-    { id: 'oil-change', name: 'Cambio de Aceite',  description: 'Cambio de aceite y filtros', icon: '🛢️' },
-    { id: 'tire-service', name: 'Servicio de Llantas',  description: 'Cambio, rotación o alineación', icon: '🛞' },
-    { id: 'brake-service', name: 'Servicio de Frenos', description: 'Pastillas, discos y sistema de frenos', icon: '🛑' },
-    { id: 'battery', name: 'Batería', description: 'Cambio o revisión de batería', icon: '🔋' },
-    { id: 'air-conditioning', name: 'Aire Acondicionado', description: 'Servicio del sistema A/C', icon: '❄️' },
-    { id: 'transmission', name: 'Transmisión', description: 'Servicio del sistema de transmisión', icon: '⚡' },
-    { id: 'other', name: 'Otro', description: 'Otro tipo de servicio', icon: '🔨' }
+    { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado'},
+    { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas'},
+    { id: 'repair', name: 'Reparación',  description: 'Arreglo de componentes específicos'},
+    { id: 'oil-change', name: 'Cambio de Aceite',  description: 'Cambio de aceite y filtros'},
+    { id: 'tire-service', name: 'Servicio de Llantas',  description: 'Cambio, rotación o alineación'},
+    { id: 'brake-service', name: 'Servicio de Frenos', description: 'Pastillas, discos y sistema de frenos'},
+    { id: 'battery', name: 'Batería', description: 'Cambio o revisión de batería'},
+    { id: 'air-conditioning', name: 'Aire Acondicionado', description: 'Servicio del sistema A/C'},
+    { id: 'transmission', name: 'Transmisión', description: 'Servicio del sistema de transmisión'},
+    { id: 'other', name: 'Otro', description: 'Otro tipo de servicio'}
   ];
 
   const timeSlots = [
@@ -315,7 +315,7 @@ export function ClientAppointmentsPage() {
                   }`}
                 >
                   <div className="flex items-start">
-                    <span className="text-2xl mr-3">{service.icon}</span>
+                    <span className="text-2xl mr-3"></span>
                     <div>
                       <p className="font-medium text-gray-900">{service.name}</p>
                       <p className="text-sm text-gray-500">{service.description}</p>

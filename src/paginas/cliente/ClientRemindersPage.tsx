@@ -14,16 +14,46 @@ export default function ClientRemindersPage() {
     if (state.user && state.user.role === 'client') {
       // Buscar el cliente que corresponde al usuario autenticado
       const client = state.clients.find(c => c.email === state.user?.email);
-      
+      let reminders: Reminder[] = [];
       if (client) {
-        // Obtener recordatorios específicos de este cliente
-        const reminders = getClientReminders(client.id);
-        setClientReminders(reminders);
+        reminders = getClientReminders(client.id);
       } else {
-        // Si no se encuentra como cliente en state.clients, buscar por ID del usuario
-        const reminders = getClientReminders(state.user.id);
-        setClientReminders(reminders);
+        reminders = getClientReminders(state.user.id);
       }
+      // Si no hay recordatorios, mostrar dos ejemplos mock
+      if (reminders.length === 0) {
+        reminders = [
+          {
+            id: 'mock-1',
+            vehicleId: 'vehicle-mock-1',
+            clientId: client?.id || state.user.id,
+            type: 'date',
+            title: 'Mantenimiento Toyota Corolla',
+            description: 'Cambio de aceite y revisión general.',
+            triggerValue: new Date('2025-10-01'),
+            isActive: true,
+            isCompleted: false,
+            services: ['Cambio de aceite', 'Revisión de frenos'],
+            createdAt: new Date('2024-09-01'),
+            triggerDate: new Date('2025-09-04'),
+          },
+          {
+            id: 'mock-2',
+            vehicleId: 'vehicle-mock-2',
+            clientId: client?.id || state.user.id,
+            type: 'mileage',
+            title: 'Servicio mayor Honda CRV',
+            description: 'Reemplazo de banda de distribución y revisión completa.',
+            triggerValue: 125000,
+            currentValue: 120000,
+            isActive: true,
+            isCompleted: false,
+            services: ['Banda de distribución', 'Revisión general'],
+            createdAt: new Date('2025-09-04'),
+          },
+        ];
+      }
+      setClientReminders(reminders);
     }
   }, [state.user, state.clients]);
 
