@@ -180,20 +180,20 @@ export function ClientAppointmentsPage() {
     const StatusIcon = statusConfig.icon;
 
     return (
-      <div key={appointment.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden">
-        <div className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center">
-              <div className="bg-blue-50 p-3 rounded-xl mr-4">
-                <CalendarDaysIcon className="h-6 w-6 text-blue-600" />
+      <div key={appointment.id} className="bg-white rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
+            <div className="flex items-center mb-3 sm:mb-0">
+              <div className="bg-blue-50 p-2 sm:p-3 rounded-lg sm:rounded-xl mr-3 sm:mr-4">
+                <CalendarDaysIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">{appointment.serviceType}</h3>
-                <p className="text-sm text-gray-600">{appointment.vehicleName}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">{appointment.serviceType}</h3>
+                <p className="text-sm text-gray-600 truncate">{appointment.vehicleName}</p>
               </div>
             </div>
-            <div className="text-right">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
+            <div className="text-left sm:text-right">
+              <span className={`inline-flex items-center px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
                 <StatusIcon className="h-3 w-3 mr-1" />
                 {statusConfig.text}
               </span>
@@ -445,53 +445,53 @@ export function ClientAppointmentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header mejorado */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 rounded-2xl p-8 text-white mb-8 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Header mejorado y responsivo */}
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-white mb-6 sm:mb-8 shadow-xl">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-6 lg:mb-0">
               <div className="flex items-center mb-4">
-                <div className="bg-white/20 p-3 rounded-xl mr-4">
-                  <CalendarDaysIcon className="h-8 w-8 text-white" />
+                <div className="bg-white/20 p-2 sm:p-3 rounded-lg sm:rounded-xl mr-3 sm:mr-4">
+                  <CalendarDaysIcon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold">Mis Citas</h1>
-                  <p className="text-indigo-100 text-lg">Agenda y gestiona tus servicios</p>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Mis Citas</h1>
+                  <p className="text-indigo-100 text-sm sm:text-base lg:text-lg">Agenda y gestiona tus servicios</p>
                 </div>
               </div>
               
-              {/* Stats de citas */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6">
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">{appointments.length}</div>
-                  <div className="text-indigo-100 text-sm">Total Citas</div>
+              {/* Stats de citas responsivas */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">{appointments.length}</div>
+                  <div className="text-indigo-100 text-xs sm:text-sm">Total Citas</div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">
                     {appointments.filter(a => a.status === 'pending').length}
                   </div>
-                  <div className="text-indigo-100 text-sm">Pendientes</div>
+                  <div className="text-indigo-100 text-xs sm:text-sm">Pendientes</div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">
                     {appointments.filter(a => a.status === 'confirmed').length}
                   </div>
-                  <div className="text-indigo-100 text-sm">Confirmadas</div>
+                  <div className="text-indigo-100 text-xs sm:text-sm">Confirmadas</div>
                 </div>
-                <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-bold">
+                <div className="bg-white/10 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="text-xl sm:text-2xl font-bold">
                     {appointments.filter(a => a.status === 'completed').length}
                   </div>
-                  <div className="text-indigo-100 text-sm">Completadas</div>
+                  <div className="text-indigo-100 text-xs sm:text-sm">Completadas</div>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setShowForm(true)}
-              className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-semibold hover:bg-indigo-50 transition-colors flex items-center shadow-lg"
+              className="bg-white text-indigo-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center shadow-lg w-full lg:w-auto"
             >
-              <PlusIcon className="h-5 w-5 mr-2" />
+              <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
               Nueva Cita
             </button>
           </div>
