@@ -14,7 +14,8 @@ import {
   QuestionMarkCircleIcon,
   ClipboardDocumentListIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { getRoleText } from '../../utilidades/globalMockDatabase';
@@ -47,6 +48,7 @@ const navigationItems: NavigationItem[] = [
   { name: 'Bitácora', href: '/logs', icon: BellIcon, roles: ['admin'] },
   { name: 'Recordatorios', href: '/reminders', icon: BellIcon, roles: ['admin', 'receptionist'] },
   { name: 'Mis Recordatorios', href: '/client-reminders', icon: BellIcon, roles: ['client'] },
+  { name: 'Historial de Servicios', href: '/client-service-history', icon: DocumentTextIcon, roles: ['client'] },
   { name: 'Reportes', href: '/reports', icon: ChartBarIcon, roles: ['admin'] },
   { name: 'Administración', href: '/admin', icon: Cog6ToothIcon, roles: ['admin'] },
   { name: 'Ayuda', href: '/help', icon: QuestionMarkCircleIcon, roles: ['admin', 'mechanic', 'receptionist', 'client'] },

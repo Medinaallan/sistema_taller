@@ -13,6 +13,7 @@ import { ClientDashboardPage } from './paginas/cliente/ClientDashboardPage';
 import { ClientVehiclesPage } from './paginas/cliente/ClientVehiclesPage';
 import { ClientAppointmentsPage } from './paginas/cliente/ClientAppointmentsPage';
 import ClientRemindersPage from './paginas/cliente/ClientRemindersPage';
+import { ClientServiceHistoryPage } from './paginas/cliente/ClientServiceHistoryPage';
 import { HelpPage } from './paginas/sistema/HelpPage';
 import { ReportsPage } from './paginas/administracion/ReportsPage';
 import { WorkOrdersPage } from './paginas/administracion/WorkOrdersPage';
@@ -122,6 +123,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ClientRemindersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client-service-history"
+        element={
+          <ProtectedRoute>
+            <ClientServiceHistoryPage />
           </ProtectedRoute>
         }
       />
