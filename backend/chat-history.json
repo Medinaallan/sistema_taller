@@ -1,0 +1,234 @@
+{
+  "client-1": [
+    {
+      "mensaje_id": 1757141853142,
+      "sala_id": "client-1",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T06:57:33.142Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757141853151,
+      "sala_id": "client-1",
+      "usuario_id": "8myBIpWGVavCnD4SAAAH",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T06:57:33.151Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757141857173,
+      "sala_id": "client-1",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T06:57:37.173Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757141857182,
+      "sala_id": "client-1",
+      "usuario_id": "8myBIpWGVavCnD4SAAAH",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T06:57:37.182Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757142088533,
+      "sala_id": "client-1",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "...",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:01:28.533Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757142088535,
+      "sala_id": "client-1",
+      "usuario_id": "8myBIpWGVavCnD4SAAAH",
+      "rol": "admin",
+      "contenido": "...",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:01:28.536Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757148289564,
+      "sala_id": "client-1",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "erterte",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T08:44:49.564Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757152838761,
+      "sala_id": "client-1",
+      "usuario_id": "client-1",
+      "rol": "client",
+      "contenido": "holaaaa ",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T10:00:38.761Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1757152843481,
+      "sala_id": "client-1",
+      "usuario_id": "client-1",
+      "rol": "client",
+      "contenido": "x<asdxa",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T10:00:43.481Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1757152871639,
+      "sala_id": "client-1",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "kkjasuggdk<ahgdkjhvkjah<vdkaHDKAHSGFD<Akkjasuggdk<ahgdkjhvkjah<vdkaHDKAHSGFD<Akkjasuggdk<ahgdkjhvkjah<vdkaHDKAHSGFD<Akkjasuggdk<ahgdkjhvkjah<vdkaHDKAHSGFD<Akkjasuggdk<ahgdkjhvkjah<vdkaHDKAHSGFD<A",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T10:01:11.639Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757153653998,
+      "sala_id": "client-1",
+      "usuario_id": "client-1",
+      "rol": "client",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T10:14:13.998Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1757153696349,
+      "sala_id": "client-1",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "zxfz",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T10:14:56.349Z",
+      "leido": false
+    }
+  ],
+  "client-2": [
+    {
+      "mensaje_id": 1757143604201,
+      "sala_id": "client-2",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "asfdasdasdas",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:26:44.201Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757143604201,
+      "sala_id": "client-2",
+      "usuario_id": "BmIuHti_gZ9TdDyHAAAJ",
+      "rol": "admin",
+      "contenido": "asfdasdasdas",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:26:44.201Z",
+      "leido": false
+    }
+  ],
+  "client-4": [
+    {
+      "mensaje_id": 1757144580165,
+      "sala_id": "client-4",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "holi como estas",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:43:00.165Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757144580169,
+      "sala_id": "client-4",
+      "usuario_id": "BmIuHti_gZ9TdDyHAAAJ",
+      "rol": "admin",
+      "contenido": "holi como estas",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:43:00.169Z",
+      "leido": false
+    }
+  ],
+  "client-3": [
+    {
+      "mensaje_id": 1757144634436,
+      "sala_id": "client-3",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "6546",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:43:54.436Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757144634439,
+      "sala_id": "client-3",
+      "usuario_id": "LseWAFJI0Yg-VVNOAAAU",
+      "rol": "admin",
+      "contenido": "6546",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T07:43:54.439Z",
+      "leido": false
+    }
+  ],
+  "client-6": [
+    {
+      "mensaje_id": 1757147638934,
+      "sala_id": "client-6",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T08:33:58.934Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757148130178,
+      "sala_id": "client-6",
+      "usuario_id": "admin-1",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T08:42:10.178Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757153702151,
+      "sala_id": "client-6",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "dfgdfgd",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T10:15:02.151Z",
+      "leido": false
+    }
+  ],
+  "client-9": [
+    {
+      "mensaje_id": 1757153685917,
+      "sala_id": "client-9",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "hola Sr Wilmer como esta?",
+      "es_sistema": false,
+      "enviado_en": "2025-09-06T10:14:45.917Z",
+      "leido": false
+    }
+  ]
+}

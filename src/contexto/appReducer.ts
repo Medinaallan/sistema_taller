@@ -13,8 +13,17 @@ import {
 
 // Función para obtener estado inicial con persistencia
 export const getInitialState = (): AppState => {
-  let user = null;
-  let isAuthenticated = false;
+  let user: import('../tipos').User = {
+    id: 'admin-test',
+    name: 'Admin Prueba',
+    email: 'admin@prueba.com',
+    role: 'admin',
+    password: '',
+    phone: '1111-1111',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date(),
+  };
+  let isAuthenticated = true;
   let clients = mockClients; // Datos del CSV
   let serviceTypes = mockServiceTypes;
   let users = mockUsers; // Usuarios del sistema

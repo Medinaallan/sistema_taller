@@ -1,6 +1,6 @@
-# 🏗️ Arquitectura Frontend - Sistema Taller Mecánico
+# Arquitectura Frontend - Sistema Taller Mecánico 
 
-## 📁 Estructura de Carpetas Propuesta
+## Estructura de Carpetas Propuesta - ALLAN MEDINA
 
 ```
 src/

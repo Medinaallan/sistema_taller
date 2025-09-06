@@ -1,3 +1,5 @@
+import AdminChatPage from './paginas/administracion/chat/AdminChatPage';
+import ClientChatPage from './paginas/cliente/chat/ClientChatPage';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './contexto/AppProvider';
@@ -77,6 +79,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/admin-chat"
+        element={
+          <ProtectedRoute>
+            <AdminChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/gestion"
         element={
           <ProtectedRoute>
@@ -123,6 +133,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ClientRemindersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client-chat"
+        element={
+          <ProtectedRoute>
+            <ClientChatPage />
           </ProtectedRoute>
         }
       />

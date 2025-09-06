@@ -209,7 +209,7 @@ process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
 });
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -219,12 +219,87 @@ const io = new Server(server, {
   }
 });
 
-// Socket.IO: Chat básico
+// ====== CHAT AVANZADO (rooms + historial en memoria) ======
+const { guardarMensaje, obtenerHistorial, marcarLeidos } = require('./chatStorage');
+
 io.on('connection', (socket) => {
   console.log('Nuevo cliente conectado:', socket.id);
 
+  // Unirse a una sala específica (clientId)
+  socket.on('joinRoom', ({ sala_id }) => {
+    if (!sala_id) return;
+    socket.join(sala_id);
+    console.log(`Socket ${socket.id} unido a sala ${sala_id}`);
+    // Enviar historial actual al solicitante
+    const historial = obtenerHistorial(sala_id);
+    socket.emit('chat:historial', { sala_id, mensajes: historial });
+  });
+
+  socket.on('leaveRoom', ({ sala_id }) => {
+    if (!sala_id) return;
+    socket.leave(sala_id);
+    console.log(`Socket ${socket.id} salió de sala ${sala_id}`);
+  });
+
+  // Mensaje genérico compat (legacy)
   socket.on('chatMessage', (msg) => {
-    io.emit('chatMessage', msg);
+    // Adaptar msg a estructura estándar y guardar
+    const mensaje = {
+      mensaje_id: msg.id || Date.now(),
+      sala_id: msg.sala_id || msg.clientId || 'global',
+      usuario_id: msg.usuario_id || socket.id,
+      rol: msg.sender || 'client',
+      contenido: msg.text || msg.contenido || '',
+      es_sistema: false,
+      enviado_en: msg.timestamp || new Date().toISOString(),
+      leido: false,
+      archivo_url: msg.archivo_url,
+      tipo_archivo: msg.tipo_archivo
+    };
+    guardarMensaje(mensaje);
+    io.to(mensaje.sala_id).emit('chatMessage', mensaje); // Solo a la sala
+  });
+
+  // Nuevo evento enviar mensaje estándar
+  socket.on('chat:send', (data) => {
+    if (!data || !data.sala_id || !data.contenido) return;
+    const mensaje = {
+  // Usar el ID enviado por el cliente si existe para permitir de-duplicación en UI
+  mensaje_id: data.mensaje_id || Date.now(),
+      sala_id: data.sala_id,
+      usuario_id: data.usuario_id || socket.id,
+      rol: data.rol || 'client',
+      contenido: data.contenido,
+      es_sistema: false,
+      enviado_en: new Date().toISOString(),
+      leido: false,
+      archivo_url: data.archivo_url,
+      tipo_archivo: data.tipo_archivo
+    };
+    guardarMensaje(mensaje);
+    io.to(mensaje.sala_id).emit('chat:mensaje', mensaje);
+  });
+
+  // Solicitar historial explícito
+  socket.on('chat:historial:solicitar', ({ sala_id }) => {
+    if (!sala_id) return;
+    const historial = obtenerHistorial(sala_id);
+    socket.emit('chat:historial', { sala_id, mensajes: historial });
+  });
+
+  // Marcar mensajes como leídos
+  socket.on('chat:leer', ({ sala_id, rolLectura }) => {
+    if (!sala_id || !rolLectura) return;
+    const cambios = marcarLeidos(sala_id, rolLectura);
+    if (cambios > 0) {
+      io.to(sala_id).emit('chat:leido', { sala_id, rolLectura });
+    }
+  });
+
+  // Indicador escribiendo
+  socket.on('chat:typing', ({ sala_id, rol, escribiendo }) => {
+    if (!sala_id) return;
+    socket.to(sala_id).emit('chat:typing', { sala_id, rol, escribiendo: !!escribiendo });
   });
 
   socket.on('disconnect', () => {
