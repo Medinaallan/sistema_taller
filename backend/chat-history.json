@@ -229,6 +229,40 @@
       "es_sistema": false,
       "enviado_en": "2025-09-06T10:14:45.917Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1757336085627,
+      "sala_id": "client-9",
+      "usuario_id": "client-9",
+      "rol": "client",
+      "contenido": "Hopola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-08T12:54:44.976Z",
+      "leido": true
+    }
+  ],
+  "client-5": [
+    {
+      "mensaje_id": 1757330982031,
+      "sala_id": "client-5",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": ".",
+      "es_sistema": false,
+      "enviado_en": "2025-09-08T11:29:41.106Z",
+      "leido": false
+    }
+  ],
+  "client-10": [
+    {
+      "mensaje_id": 1757341953227,
+      "sala_id": "client-10",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-08T14:32:33.171Z",
+      "leido": false
     }
   ]
 }
