@@ -17,6 +17,7 @@ interface SalaEstado {
   cargandoHistorial: boolean;
   historialCargado: boolean;
   error?: string;
+  intentosHistorial?: number;
 }
 
 export function useAdminChat() {
@@ -24,7 +25,7 @@ export function useAdminChat() {
   const [busqueda, setBusqueda] = useState('');
   const [salaActiva, setSalaActiva] = useState<string | null>(null);
   const salasRef = useRef<Map<string, SalaEstado>>(new Map());
-  const [, forzarRender] = useState(0);
+  const [renderTick, setRenderTick] = useState(0);
   const [conectado, setConectado] = useState(false);
   const [typingMap, setTypingMap] = useState<Record<string, boolean>>({});
 
@@ -41,28 +42,68 @@ export function useAdminChat() {
       sala = { sala_id: clientId, mensajes: [], cargandoHistorial: false, historialCargado: false };
       salasRef.current.set(clientId, sala);
     }
-    chatService.unirSala(clientId);
+    // Importante: suscribir ANTES de solicitar/unir para no perder el evento 'chat:historial'
     if (!sala.historialCargado && !sala.cargandoHistorial) {
       sala.cargandoHistorial = true;
-      try {
+      sala.intentosHistorial = (sala.intentosHistorial || 0) + 1;
+      const unsubHist = chatService.on('chat:historial', (data: { sala_id: string; mensajes: ChatMensajeDTO[] }) => {
+        if (data.sala_id === clientId) {
+          sala!.mensajes = [...data.mensajes, ...sala!.mensajes];
+          sala!.historialCargado = true;
+          sala!.cargandoHistorial = false;
+          setRenderTick(n => n + 1);
+          unsubHist();
+        }
+      });
+      // Ahora sí, solicitar historial y unirse a la sala (si ya hay conexión)
+      if (chatService.estaConectado()) {
+        chatService.unirSala(clientId);
         chatService.solicitarHistorial(clientId);
-        const unsubHist = chatService.on('chat:historial', (data: { sala_id: string; mensajes: ChatMensajeDTO[] }) => {
-          if (data.sala_id === clientId) {
-            sala!.mensajes = [...data.mensajes, ...sala!.mensajes];
-            sala!.historialCargado = true;
-            sala!.cargandoHistorial = false;
-            forzarRender(n => n + 1);
-            unsubHist();
-          }
+      } else {
+        // Deferir acciones hasta conectarse
+        const unsubOnConnect = chatService.on('connect', () => {
+          chatService.unirSala(clientId);
+          chatService.solicitarHistorial(clientId);
+          unsubOnConnect();
         });
-      } catch (e: any) {
-        sala.error = e.message || 'Error cargando historial';
-      } finally {
-        sala.cargandoHistorial = false;
-        forzarRender(n => n + 1);
       }
+
+      // Reintento: si en 1200ms no llega historial, solicitar de nuevo hasta 3 veces
+      const intentoActual = sala.intentosHistorial;
+      setTimeout(() => {
+        const salaAun = salasRef.current.get(clientId);
+        if (!salaAun) return;
+        const sigueActiva = salaActiva === clientId;
+        const noLlego = !salaAun.historialCargado && salaAun.cargandoHistorial && (salaAun.intentosHistorial === intentoActual);
+        if (sigueActiva && noLlego && (salaAun.intentosHistorial || 0) < 3) {
+          salaAun.intentosHistorial = (salaAun.intentosHistorial || 0) + 1;
+          if (chatService.estaConectado()) {
+            chatService.solicitarHistorial(clientId);
+          }
+        }
+      }, 1200);
+    } else {
+      // Asegurar que estamos unidos a la sala aunque ya haya historial
+      if (chatService.estaConectado()) {
+        chatService.unirSala(clientId);
+      } else {
+        const unsubOnConnect = chatService.on('connect', () => {
+          chatService.unirSala(clientId);
+          unsubOnConnect();
+        });
+      }
+  // Si ya había historial, aseguramos un re-render para mostrar mensajes previos
+  setRenderTick(n => n + 1);
     }
-    chatService.marcarLeidos(clientId);
+    // Marcar leídos (también sensible a conexión)
+    if (chatService.estaConectado()) {
+      chatService.marcarLeidos(clientId);
+    } else {
+      const unsubOnConnect2 = chatService.on('connect', () => {
+        chatService.marcarLeidos(clientId);
+        unsubOnConnect2();
+      });
+    }
   }, []);
 
   // Inicializar conexión socket una sola vez
@@ -94,7 +135,7 @@ export function useAdminChat() {
         }
         return c;
       }));
-      forzarRender(n => n + 1);
+  setRenderTick(n => n + 1);
     });
     return () => {
       unsubConnect();
@@ -140,7 +181,7 @@ export function useAdminChat() {
   const mensajesSalaActiva: ChatMensajeDTO[] = useMemo(() => {
     if (!salaActiva) return [];
     return salasRef.current.get(salaActiva)?.mensajes || [];
-  }, [salaActiva, salasRef.current, conectado]);
+  }, [salaActiva, renderTick]);
 
   const clientesFiltrados = useMemo(() => {
     const term = busqueda.toLowerCase();

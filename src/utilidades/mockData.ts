@@ -41,7 +41,7 @@ export const mockUsers: User[] = [
   {
     id: 'recep-001',
     email: 'recepcion@taller.com',
-    password: 'recep123',
+    password: 'recep123', 
     role: 'receptionist',
     name: 'María García',
     phone: '9999-0002',

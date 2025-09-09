@@ -264,5 +264,27 @@
       "enviado_en": "2025-09-08T14:32:33.171Z",
       "leido": false
     }
+  ],
+  "client-8": [
+    {
+      "mensaje_id": 1757422014518,
+      "sala_id": "client-8",
+      "usuario_id": "admin-test",
+      "rol": "admin",
+      "contenido": "Prueba de chats 09/09/2025 a las 2:47 pm",
+      "es_sistema": false,
+      "enviado_en": "2025-09-09T12:46:54.412Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757422263260,
+      "sala_id": "client-8",
+      "usuario_id": "client-8",
+      "rol": "client",
+      "contenido": "Prueba desde el web/app del cliente 09/09/2025 a las 2:53 pm",
+      "es_sistema": false,
+      "enviado_en": "2025-09-09T12:51:02.298Z",
+      "leido": true
+    }
   ]
 }

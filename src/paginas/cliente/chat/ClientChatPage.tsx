@@ -45,13 +45,42 @@ export default function ClientChatPage() {
     if (!salaId) return;
     chatService.conectar();
     chatService.setUserContext(salaId, 'client');
-    chatService.unirSala(salaId);
-    chatService.solicitarHistorial(salaId);
+    // Suscribir ANTES para no perder el primer 'chat:historial'
     const unsubHist = chatService.on('chat:historial', (data: { sala_id: string; mensajes: ChatMensajeDTO[] }) => {
       if (data.sala_id === salaId) {
         setMensajes(data.mensajes);
+        // Recibido el historial inicial; podemos dejar de escuchar este evento puntual
+        unsubHist();
       }
     });
+    // Unir/solicitar cuando haya conexión
+    const doJoinAndFetch = () => {
+      chatService.unirSala(salaId);
+      chatService.solicitarHistorial(salaId);
+    };
+    if (chatService.estaConectado()) {
+      doJoinAndFetch();
+    } else {
+      const unsubOnConnect = chatService.on('connect', () => {
+        doJoinAndFetch();
+        unsubOnConnect();
+      });
+    }
+    // Reintento: si en 1200ms no llega historial, re-solicitar (hasta 2 veces aquí)
+    let retries = 0;
+    const timer = setInterval(() => {
+      if (retries >= 2) { clearInterval(timer); return; }
+      if (chatService.estaConectado()) {
+        // Solo reintentar si aún no hay mensajes
+        setMensajes(prev => {
+          if (prev.length === 0) {
+            chatService.solicitarHistorial(salaId);
+            retries += 1;
+          }
+          return prev;
+        });
+      }
+    }, 1200);
     const unsubMsg = chatService.on('chat:mensaje', (msg: ChatMensajeDTO) => {
       if (msg.sala_id === salaId) {
         setMensajes((prev: LocalMsg[]) => prev.find((m: LocalMsg) => m.mensaje_id === msg.mensaje_id) ? prev : [...prev, msg]);
@@ -65,6 +94,7 @@ export default function ClientChatPage() {
       unsubMsg();
       unsubTyping();
       chatService.salirSala(salaId);
+  clearInterval(timer);
     };
   }, [salaId]);
 

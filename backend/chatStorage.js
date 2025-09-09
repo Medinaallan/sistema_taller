@@ -10,7 +10,7 @@ let historial = {
   // sala_id: [ mensajes ]
 };
 
-// Cargar si existe
+// Cargar si existe 
 try {
   if (fs.existsSync(DATA_PATH)) {
     const raw = fs.readFileSync(DATA_PATH, 'utf-8');
