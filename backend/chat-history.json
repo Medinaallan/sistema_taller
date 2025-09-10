@@ -263,6 +263,28 @@
       "es_sistema": false,
       "enviado_en": "2025-09-08T14:32:33.171Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1757510153323,
+      "sala_id": "client-10",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-10T13:15:53.256Z",
+      "leido": false,
+      "archivo_url": "http://localhost:8080/images/9e9cf193-cc85-4db1-af37-9defa659253d-1757510153248.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1757510823791,
+      "sala_id": "client-10",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "h",
+      "es_sistema": false,
+      "enviado_en": "2025-09-10T13:27:03.191Z",
+      "leido": false
     }
   ],
   "client-8": [
@@ -285,6 +307,26 @@
       "es_sistema": false,
       "enviado_en": "2025-09-09T12:51:02.298Z",
       "leido": true
+    },
+    {
+      "mensaje_id": 1757510884435,
+      "sala_id": "client-8",
+      "usuario_id": "admin-001",
+      "rol": "admin",
+      "contenido": "Prueba de web sockets el 10/09/2025 a las 15:27",
+      "es_sistema": false,
+      "enviado_en": "2025-09-10T13:28:04.146Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757510924400,
+      "sala_id": "client-8",
+      "usuario_id": "client-8",
+      "rol": "client",
+      "contenido": "Prueba de web sockets el 10/09/2025 a las 15:27 desde el panelñ del cliente",
+      "es_sistema": false,
+      "enviado_en": "2025-09-10T13:28:43.699Z",
+      "leido": false
     }
   ]
 }

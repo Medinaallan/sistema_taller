@@ -3,7 +3,36 @@ const fs = require('fs').promises;
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 const app = express();
+
+// Configuración de multer para subida de imágenes
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, 'SaveImages');
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB límite
+  },
+  fileFilter: (req, file, cb) => {
+    // Solo aceptar imágenes
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'), false);
+    }
+  }
+});
 
 // Middleware básico
 app.use(express.json());
@@ -16,6 +45,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Servir archivos estáticos de la carpeta SaveImages
+app.use('/images', express.static(path.join(__dirname, 'SaveImages')));
 
 // Cargar stored procedures
 let storedProcedures;
@@ -31,7 +63,29 @@ try {
 app.get('/api/health', (req, res) => {
   console.log('Health check solicitado');
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
+// Endpoint para subir imágenes de chat
+app.post('/api/upload-image', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No se recibió ningún archivo' });
+    }
+
+    const imageUrl = `http://localhost:8080/images/${req.file.filename}`;
+    console.log('📷 Imagen subida exitosamente:', imageUrl);
+    
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('❌ Error subiendo imagen:', error);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
 });
 
 // Validar email (Paso 1)

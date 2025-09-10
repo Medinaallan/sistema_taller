@@ -102,13 +102,36 @@ export default function ClientChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() && !image) return;
-    // TODO: manejo de imagen futura (subida y obtener URL)
-  if (!salaId) return;
-  chatService.enviarMensaje({ sala_id: salaId, contenido: input, rol: 'client', usuario_id: salaId });
-    setInput('');
-    setImage(null);
+    if (!salaId) return;
+
+    try {
+      if (image) {
+        // Enviar mensaje con imagen
+        await chatService.enviarMensajeConImagen({
+          sala_id: salaId,
+          contenido: input || '📷 Imagen',
+          archivo: image,
+          rol: 'client',
+          usuario_id: salaId
+        });
+      } else {
+        // Enviar solo texto
+        chatService.enviarMensaje({ 
+          sala_id: salaId, 
+          contenido: input, 
+          rol: 'client', 
+          usuario_id: salaId 
+        });
+      }
+      
+      setInput('');
+      setImage(null);
+    } catch (error) {
+      console.error('Error enviando mensaje:', error);
+      alert('Error enviando el mensaje. Intenta de nuevo.');
+    }
   };
 
   return (
@@ -122,6 +145,25 @@ export default function ClientChatPage() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-lg p-4 mb-2 border border-blue-100" style={{ minHeight: 350, marginBottom: '80px' }}>
+          {image && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-800">Imagen seleccionada:</span>
+                <button
+                  onClick={() => setImage(null)}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  ✕ Cancelar
+                </button>
+              </div>
+              <img
+                src={URL.createObjectURL(image)}
+                alt="Preview"
+                className="max-w-full h-auto rounded-lg"
+                style={{ maxHeight: '150px' }}
+              />
+            </div>
+          )}
           {mensajes.map((msg: LocalMsg) => {
             const esCliente = msg.rol === 'client';
             let bubbleColor = esCliente ? 'bg-blue-500' : 'bg-green-100';
@@ -135,7 +177,22 @@ export default function ClientChatPage() {
               <div key={msg.mensaje_id} className={`mb-6 flex ${align} items-end`}>
                 <img src={avatar} alt={label} className={`w-8 h-8 rounded-full border shadow mr-2 ${align === 'justify-end' ? 'order-2 ml-2' : ''}`} />
                 <div className={`max-w-xs px-4 py-3 rounded-2xl text-base font-medium shadow ${bubbleColor} ${textColor} relative`}>
-                  <span>{msg.contenido}</span>
+                  {msg.archivo_url && msg.tipo_archivo?.startsWith('image/') ? (
+                    <div className="mb-2">
+                      <img 
+                        src={msg.archivo_url} 
+                        alt="Imagen del chat" 
+                        className="max-w-full h-auto rounded-lg cursor-pointer"
+                        onClick={() => window.open(msg.archivo_url, '_blank')}
+                        style={{ maxHeight: '200px' }}
+                      />
+                      {msg.contenido && msg.contenido !== '📷 Imagen' && (
+                        <p className="mt-2">{msg.contenido}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <span>{msg.contenido}</span>
+                  )}
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs font-semibold opacity-70">{label}</span>
                     <span className="text-xs text-gray-200 ml-2">{new Date(msg.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

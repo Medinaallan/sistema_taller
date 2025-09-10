@@ -17,12 +17,14 @@ export default function AdminChatPage() {
     salaActiva,
     mensajes,
     enviarMensaje,
+    enviarMensajeConImagen,
     conectado,
     typing
   } = useAdminChat();
   const { state } = useApp();
 
   const [input, setInput] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,10 +38,22 @@ export default function AdminChatPage() {
     }
   }, [state.user]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    enviarMensaje(input.trim());
-    setInput('');
+  const handleSend = async () => {
+    if (!input.trim() && !selectedImage) return;
+    
+    try {
+      if (selectedImage) {
+        await enviarMensajeConImagen(input.trim(), selectedImage);
+      } else {
+        enviarMensaje(input.trim());
+      }
+      
+      setInput('');
+      setSelectedImage(null);
+    } catch (error) {
+      console.error('Error enviando mensaje:', error);
+      alert('Error enviando el mensaje. Intenta de nuevo.');
+    }
   };
 
   return (
@@ -95,12 +109,46 @@ export default function AdminChatPage() {
               </div>
               {/* Mensajes */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                {selectedImage && (
+                  <div className="mb-3 p-2 bg-yellow-50 rounded border border-yellow-200">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-yellow-800">Imagen seleccionada:</span>
+                      <button
+                        onClick={() => setSelectedImage(null)}
+                        className="text-yellow-600 hover:text-yellow-800 text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <img
+                      src={URL.createObjectURL(selectedImage)}
+                      alt="Preview"
+                      className="max-w-full h-auto rounded"
+                      style={{ maxHeight: '100px' }}
+                    />
+                  </div>
+                )}
                 {mensajes.map((m: ChatMensajeDTO) => {
                   const esAdmin = m.rol === 'admin';
                   return (
                     <div key={m.mensaje_id} className={`flex ${esAdmin ? 'justify-end' : 'justify-start'}`}> 
                       <div className={`max-w-xs rounded px-3 py-2 text-xs shadow ${esAdmin ? 'bg-blue-100' : 'bg-gray-100'}`}> 
-                        <div className="whitespace-pre-wrap break-words">{m.contenido}</div>
+                        {m.archivo_url && m.tipo_archivo?.startsWith('image/') ? (
+                          <div>
+                            <img 
+                              src={m.archivo_url} 
+                              alt="Imagen del chat" 
+                              className="max-w-full h-auto rounded cursor-pointer mb-1"
+                              onClick={() => window.open(m.archivo_url, '_blank')}
+                              style={{ maxHeight: '150px' }}
+                            />
+                            {m.contenido && m.contenido !== '📷 Imagen' && (
+                              <div className="whitespace-pre-wrap break-words">{m.contenido}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="whitespace-pre-wrap break-words">{m.contenido}</div>
+                        )}
                         <div className="mt-1 text-[10px] text-gray-500 text-right">{new Date(m.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                     </div>
@@ -120,6 +168,19 @@ export default function AdminChatPage() {
                   onFocus={() => salaActiva && chatService.setTyping(salaActiva, 'admin', true)}
                   onBlur={() => salaActiva && chatService.setTyping(salaActiva, 'admin', false)}
                 />
+                <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      if (e.target.files && e.target.files[0]) {
+                        setSelectedImage(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  📎
+                </label>
                 <button
                   onClick={handleSend}
                   className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded"

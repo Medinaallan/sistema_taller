@@ -178,6 +178,21 @@ export function useAdminChat() {
     chatService.enviarMensaje({ sala_id: salaActiva, contenido });
   }, [salaActiva]);
 
+  const enviarMensajeConImagen = useCallback(async (contenido: string, archivo: File) => {
+    if (!salaActiva) return;
+    try {
+      await chatService.enviarMensajeConImagen({
+        sala_id: salaActiva,
+        contenido: contenido || '📷 Imagen',
+        archivo: archivo,
+        rol: 'admin'
+      });
+    } catch (error) {
+      console.error('Error enviando mensaje con imagen:', error);
+      throw error;
+    }
+  }, [salaActiva]);
+
   const mensajesSalaActiva: ChatMensajeDTO[] = useMemo(() => {
     if (!salaActiva) return [];
     return salasRef.current.get(salaActiva)?.mensajes || [];
@@ -197,7 +212,8 @@ export function useAdminChat() {
     salaActiva,
     mensajes: mensajesSalaActiva,
     enviarMensaje,
-  conectado,
-  typing: salaActiva ? typingMap[salaActiva] : false
+    enviarMensajeConImagen,
+    conectado,
+    typing: salaActiva ? typingMap[salaActiva] : false
   };
 }

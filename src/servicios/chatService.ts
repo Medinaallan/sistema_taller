@@ -212,6 +212,51 @@ class ChatService {
     this.socket.emit('chat:typing', { sala_id, rol, escribiendo });
   }
 
+  // Subir imagen al servidor
+  async subirImagen(archivo: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('image', archivo);
+
+    try {
+      const response = await fetch(`${this.opciones.baseUrl}/api/upload-image`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.imageUrl;
+      } else {
+        throw new Error(result.error || 'Error subiendo imagen');
+      }
+    } catch (error) {
+      console.error('Error subiendo imagen:', error);
+      throw error;
+    }
+  }
+
+  // Enviar mensaje con imagen
+  async enviarMensajeConImagen(data: { sala_id: string; contenido?: string; archivo: File; rol?: ChatMensajeDTO['rol']; usuario_id?: string; }) {
+    try {
+      const imageUrl = await this.subirImagen(data.archivo);
+      
+      this.enviarMensaje({
+        sala_id: data.sala_id,
+        contenido: data.contenido || '📷 Imagen',
+        rol: data.rol,
+        usuario_id: data.usuario_id,
+        archivo_url: imageUrl,
+        tipo_archivo: data.archivo.type
+      });
+      
+      return imageUrl;
+    } catch (error) {
+      console.error('Error enviando mensaje con imagen:', error);
+      throw error;
+    }
+  }
+
   private generarId() {
     return Date.now() + Math.floor(Math.random() * 1000);
   }

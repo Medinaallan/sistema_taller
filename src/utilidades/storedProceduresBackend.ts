@@ -253,7 +253,8 @@ export async function SP_OBTENER_CLIENTES_REGISTRADOS(): Promise<ClientData[]> {
     });
 
     if (!response.ok) {
-      console.error('Error obteniendo clientes:', response.status);
+      console.error
+      ('Error obteniendo clientes:', response.status);
       return [];
     }
 
