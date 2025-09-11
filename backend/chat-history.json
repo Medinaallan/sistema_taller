@@ -119,6 +119,16 @@
       "es_sistema": false,
       "enviado_en": "2025-09-06T10:14:56.349Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1757593485702,
+      "sala_id": "client-1",
+      "usuario_id": "admin-test",
+      "rol": "admin",
+      "contenido": "asdf",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T12:24:45.500Z",
+      "leido": false
     }
   ],
   "client-2": [
@@ -285,6 +295,82 @@
       "es_sistema": false,
       "enviado_en": "2025-09-10T13:27:03.191Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1757589744373,
+      "sala_id": "client-10",
+      "usuario_id": "admin-test",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T11:22:24.196Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757589762667,
+      "sala_id": "client-10",
+      "usuario_id": "client-10",
+      "rol": "client",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T11:22:42.563Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1757589813806,
+      "sala_id": "client-10",
+      "usuario_id": "admin-test",
+      "rol": "admin",
+      "contenido": "prueba desde el panel del administrador / mecanico/ recepcionista en tiempo real",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T11:23:33.024Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1757589827564,
+      "sala_id": "client-10",
+      "usuario_id": "client-10",
+      "rol": "client",
+      "contenido": "prueba desde el panel del cliente en tiempo real ",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T11:23:47.032Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1757593521160,
+      "sala_id": "client-10",
+      "usuario_id": "admin-test",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T12:25:21.096Z",
+      "leido": false,
+      "archivo_url": "http://localhost:8080/images/81dfe2f6-4c16-45b3-84b3-506c64e951ab-1757593521091.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1757596160393,
+      "sala_id": "client-10",
+      "usuario_id": "client-10",
+      "rol": "client",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T13:09:20.337Z",
+      "leido": true,
+      "archivo_url": "http://localhost:8080/images/17d3a0d1-3bb5-40e5-abde-8354e7018bfa-1757596160333.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1757599233843,
+      "sala_id": "client-10",
+      "usuario_id": "client-10",
+      "rol": "client",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-11T14:00:33.219Z",
+      "leido": true,
+      "archivo_url": "http://localhost:8080/images/e8afa181-2e6b-4874-bf56-3dac140c6e08-1757599233209.png",
+      "tipo_archivo": "image/png"
     }
   ],
   "client-8": [
@@ -326,7 +412,7 @@
       "contenido": "Prueba de web sockets el 10/09/2025 a las 15:27 desde el panelñ del cliente",
       "es_sistema": false,
       "enviado_en": "2025-09-10T13:28:43.699Z",
-      "leido": false
+      "leido": true
     }
   ]
 }

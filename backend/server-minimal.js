@@ -179,16 +179,16 @@ const CSV_PATH = path.join(__dirname, '../src/Client_Database.csv');
 // Obtener clientes desde CSV
 app.get('/api/clients', async (req, res) => {
   try {
-    console.log('📋 Obteniendo clientes desde CSV');
+    console.log('Obteniendo clientes desde CSV');
     const csvContent = await fs.readFile(CSV_PATH, 'utf-8');
-    console.log('📄 Contenido CSV raw:', csvContent.length, 'caracteres');
+    console.log(' Contenido CSV raw:', csvContent.length, 'caracteres');
     
     const lines = csvContent.split('\n').filter(line => line.trim());
-    console.log('📝 Líneas totales después del filtro:', lines.length);
+    console.log('Líneas totales después del filtro:', lines.length);
     
     // Saltar la primera línea (headers)
     const dataLines = lines.slice(1);
-    console.log('📊 Líneas de datos:', dataLines.length);
+    console.log('Líneas de datos:', dataLines.length);
     
     // Debug: mostrar cada línea
     dataLines.forEach((line, index) => {
@@ -215,10 +215,10 @@ app.get('/api/clients', async (req, res) => {
       };
     });
     
-    console.log(`✅ ${clients.length} clientes cargados desde CSV`);
+    console.log(` ${clients.length} clientes cargados desde CSV`);
     res.json({ success: true, clients });
   } catch (error) {
-    console.error('❌ Error leyendo CSV:', error);
+    console.error(' Error leyendo CSV:', error);
     res.json({ success: false, error: 'Error leyendo base de datos de clientes' });
   }
 });
@@ -226,7 +226,7 @@ app.get('/api/clients', async (req, res) => {
 // Agregar nuevo cliente al CSV
 app.post('/api/clients', async (req, res) => {
   try {
-    console.log('➕ Agregando nuevo cliente al CSV:', req.body);
+    console.log(' Agregando nuevo cliente al CSV:', req.body);
     const { nombre, telefono, email, direccion, password, vehiculos = 0, vehiculoNombre = '', vehiculoModelo = '', kilometraje = 0 } = req.body;
     
     // Validar campos requeridos
@@ -240,10 +240,10 @@ app.post('/api/clients', async (req, res) => {
     // Agregar al archivo CSV
     await fs.appendFile(CSV_PATH, '\n' + csvLine);
     
-    console.log('✅ Cliente agregado exitosamente al CSV');
+    console.log(' Cliente agregado exitosamente al CSV');
     res.json({ success: true, message: 'Cliente agregado exitosamente' });
   } catch (error) {
-    console.error('❌ Error escribiendo en CSV:', error);
+    console.error(' Error escribiendo en CSV:', error);
     res.json({ success: false, error: 'Error guardando cliente' });
   }
 });
@@ -350,7 +350,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Indicador escribiendo
+  // Indicador escribiendo en el chat
   socket.on('chat:typing', ({ sala_id, rol, escribiendo }) => {
     if (!sala_id) return;
     socket.to(sala_id).emit('chat:typing', { sala_id, rol, escribiendo: !!escribiendo });
