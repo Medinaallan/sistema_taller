@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAdminChat } from '../../../hooks/useAdminChat';
 import { ChatMensajeDTO, chatService } from '../../../servicios/chatService';
 import { useApp } from '../../../contexto/useApp';
+import ImageModal from '../../../componentes/comunes/ImageModal';
 
 // Página de chat para el administrador
 // Estructura de dos columnas: lista de clientes + ventana de chat
@@ -25,6 +26,7 @@ export default function AdminChatPage() {
 
   const [input, setInput] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [modalImage, setModalImage] = useState<string | null>(null);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -139,7 +141,7 @@ export default function AdminChatPage() {
                               src={m.archivo_url} 
                               alt="Imagen del chat" 
                               className="max-w-full h-auto rounded cursor-pointer mb-1"
-                              onClick={() => window.open(m.archivo_url, '_blank')}
+                              onClick={() => setModalImage(m.archivo_url!)}
                               style={{ maxHeight: '150px' }}
                             />
                             {m.contenido && m.contenido !== '📷 Imagen' && (
@@ -192,6 +194,14 @@ export default function AdminChatPage() {
           )}
         </div>
       </div>
+      
+      {/* Modal para mostrar imágenes */}
+      <ImageModal
+        isOpen={!!modalImage}
+        imageUrl={modalImage || ''}
+        onClose={() => setModalImage(null)}
+        altText="Imagen del chat"
+      />
     </div>
   );
 }

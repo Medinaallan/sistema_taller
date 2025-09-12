@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { chatService, ChatMensajeDTO } from '../../../servicios/chatService';
 import { useApp } from '../../../contexto/useApp';
 import { obtenerClientesActualizados } from '../../../utilidades/BaseDatosJS';
+import ImageModal from '../../../componentes/comunes/ImageModal';
 
 interface LocalMsg extends ChatMensajeDTO {}
 
@@ -13,6 +14,7 @@ export default function ClientChatPage() {
   const [mensajes, setMensajes] = useState<LocalMsg[]>([]);
   const [input, setInput] = useState('');
   const [image, setImage] = useState<File | null>(null);
+  const [modalImage, setModalImage] = useState<string | null>(null);
   const [typingAdmin, setTypingAdmin] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -183,7 +185,7 @@ export default function ClientChatPage() {
                         src={msg.archivo_url} 
                         alt="Imagen del chat" 
                         className="max-w-full h-auto rounded-lg cursor-pointer"
-                        onClick={() => window.open(msg.archivo_url, '_blank')}
+                        onClick={() => setModalImage(msg.archivo_url!)}
                         style={{ maxHeight: '200px' }}
                       />
                       {msg.contenido && msg.contenido !== '📷 Imagen' && (
@@ -233,6 +235,14 @@ export default function ClientChatPage() {
           >Enviar</button>
         </div>
       </div>
+      
+      {/* Modal para mostrar imágenes */}
+      <ImageModal
+        isOpen={!!modalImage}
+        imageUrl={modalImage || ''}
+        onClose={() => setModalImage(null)}
+        altText="Imagen del chat"
+      />
     </div>
   );
 }
