@@ -138,19 +138,22 @@ export default function ClientChatPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 flex flex-col">
-      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col p-4 relative" style={{ position: 'relative' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <img src="https://cdn-icons-png.flaticon.com/512/3208/3208722.png" alt="Taller" className="w-10 h-10 rounded-full border shadow" />
-          <div>
-            <h1 className="text-2xl font-bold text-blue-900">Chat con el Taller</h1>
-              <p className="text-sm text-blue-700">Soporte y atención personalizada {typingAdmin && <span className="text-xs text-gray-500 animate-pulse ml-2">Admin escribiendo...</span>}</p>
+      <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col p-2 sm:p-4 relative">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <img src="https://cdn-icons-png.flaticon.com/512/3208/3208722.png" alt="Taller" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border shadow" />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-2xl font-bold text-blue-900 truncate">Chat con el Taller</h1>
+            <p className="text-xs sm:text-sm text-blue-700">
+              Soporte y atención personalizada 
+              {typingAdmin && <span className="text-xs text-gray-500 animate-pulse ml-2">Admin escribiendo...</span>}
+            </p>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-lg p-4 mb-2 border border-blue-100" style={{ minHeight: 350, marginBottom: '80px' }}>
+        <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-lg p-2 sm:p-4 mb-16 sm:mb-20 border border-blue-100" style={{ minHeight: 300 }}>
           {image && (
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-blue-800">Imagen seleccionada:</span>
+                <span className="text-xs sm:text-sm font-medium text-blue-800">Imagen seleccionada:</span>
                 <button
                   onClick={() => setImage(null)}
                   className="text-blue-600 hover:text-blue-800 text-sm"
@@ -162,7 +165,7 @@ export default function ClientChatPage() {
                 src={URL.createObjectURL(image)}
                 alt="Preview"
                 className="max-w-full h-auto rounded-lg"
-                style={{ maxHeight: '150px' }}
+                style={{ maxHeight: '120px' }}
               />
             </div>
           )}
@@ -176,9 +179,13 @@ export default function ClientChatPage() {
               ? 'https://cdn-icons-png.flaticon.com/512/921/921347.png'
               : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
             return (
-              <div key={msg.mensaje_id} className={`mb-6 flex ${align} items-end`}>
-                <img src={avatar} alt={label} className={`w-8 h-8 rounded-full border shadow mr-2 ${align === 'justify-end' ? 'order-2 ml-2' : ''}`} />
-                <div className={`max-w-xs px-4 py-3 rounded-2xl text-base font-medium shadow ${bubbleColor} ${textColor} relative`}>
+              <div key={msg.mensaje_id} className={`mb-4 sm:mb-6 flex ${align} items-end`}>
+                <img 
+                  src={avatar} 
+                  alt={label} 
+                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border shadow mr-2 ${align === 'justify-end' ? 'order-2 ml-2 mr-0' : ''}`} 
+                />
+                <div className={`max-w-xs sm:max-w-sm px-3 sm:px-4 py-2 sm:py-3 rounded-2xl text-sm sm:text-base font-medium shadow ${bubbleColor} ${textColor} relative`}>
                   {msg.archivo_url && msg.tipo_archivo?.startsWith('image/') ? (
                     <div className="mb-2">
                       <img 
@@ -186,18 +193,18 @@ export default function ClientChatPage() {
                         alt="Imagen del chat" 
                         className="max-w-full h-auto rounded-lg cursor-pointer"
                         onClick={() => setModalImage(msg.archivo_url!)}
-                        style={{ maxHeight: '200px' }}
+                        style={{ maxHeight: '180px' }}
                       />
                       {msg.contenido && msg.contenido !== '📷 Imagen' && (
-                        <p className="mt-2">{msg.contenido}</p>
+                        <p className="mt-2 text-xs sm:text-sm">{msg.contenido}</p>
                       )}
                     </div>
                   ) : (
-                    <span>{msg.contenido}</span>
+                    <span className="text-xs sm:text-sm">{msg.contenido}</span>
                   )}
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs font-semibold opacity-70">{label}</span>
-                    <span className="text-xs text-gray-200 ml-2">{new Date(msg.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[10px] sm:text-xs font-semibold opacity-70">{label}</span>
+                    <span className={`text-[10px] sm:text-xs ml-2 ${esCliente ? 'text-white' : 'text-gray-600'}`}>{new Date(msg.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
               </div>
@@ -205,34 +212,39 @@ export default function ClientChatPage() {
           })}
           <div ref={messagesEndRef} />
         </div>
-        <div className="flex gap-2 items-center bg-white rounded-xl shadow px-4 py-3 border border-blue-100 sticky bottom-0" style={{ width: '100%', zIndex: 10 }}>
-          <input
-            type="text"
-            className="flex-1 border border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Escribe tu mensaje..."
-            onKeyDown={e => e.key === 'Enter' && handleSend()}
-            onFocus={() => salaId && chatService.setTyping(salaId, 'client', true)}
-            onBlur={() => salaId && chatService.setTyping(salaId, 'client', false)}
-          />
-          <label className="cursor-pointer bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg font-semibold shadow flex items-center">
+        <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-4 sm:left-2 sm:right-2 p-2 sm:p-0">
+          <div className="flex gap-1 sm:gap-2 items-center bg-white rounded-xl shadow px-2 sm:px-4 py-2 sm:py-3 border border-blue-100 max-w-4xl mx-auto">
             <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={e => {
-                if (e.target.files && e.target.files[0]) {
-                  setImage(e.target.files[0]);
-                }
-              }}
+              type="text"
+              className="flex-1 border border-blue-300 rounded-lg px-2 sm:px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm min-w-0"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Escribe tu mensaje..."
+              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              onFocus={() => salaId && chatService.setTyping(salaId, 'client', true)}
+              onBlur={() => salaId && chatService.setTyping(salaId, 'client', false)}
             />
-            📎
-          </label>
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow"
-            onClick={handleSend}
-          >Enviar</button>
+            <label className="cursor-pointer bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 sm:px-3 py-2 rounded-lg font-semibold shadow flex items-center">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  if (e.target.files && e.target.files[0]) {
+                    setImage(e.target.files[0]);
+                  }
+                }}
+              />
+              📎
+            </label>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-6 py-2 rounded-lg font-semibold shadow text-sm"
+              onClick={handleSend}
+            >
+              <span className="hidden sm:inline">Enviar</span>
+              <span className="sm:hidden">📤</span>
+            </button>
+          </div>
         </div>
       </div>
       

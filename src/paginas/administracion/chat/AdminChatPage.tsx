@@ -27,6 +27,7 @@ export default function AdminChatPage() {
   const [input, setInput] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [showClientList, setShowClientList] = useState(true);
   const mensajesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,19 +61,27 @@ export default function AdminChatPage() {
 
   return (
     <div className="h-full flex flex-col w-full">
-      <div className="flex-1 flex overflow-hidden border rounded-lg bg-white shadow-sm">
+      <div className="flex-1 flex overflow-hidden border rounded-lg bg-white shadow-sm relative">
         {/* Columna izquierda: Lista de clientes */}
-        <div className="w-72 border-r flex flex-col">
-          <div className="p-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold tracking-wide">Clientes</h2>
-            <input
-              type="text"
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              placeholder="Buscar..."
-              className="mt-2 w-full text-sm border rounded px-2 py-1 focus:outline-none focus:ring"
-            />
-            <div className="text-[10px] mt-1 text-gray-500">Estado: {conectado ? 'Conectado' : 'Desconectado'}</div>
+        <div className={`${showClientList ? 'flex' : 'hidden'} lg:flex w-full lg:w-72 border-r flex-col absolute lg:relative inset-0 lg:inset-auto bg-white z-10 lg:z-auto`}>
+          <div className="p-3 border-b bg-gray-50 flex items-center justify-between">
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold tracking-wide">Clientes</h2>
+              <input
+                type="text"
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar..."
+                className="mt-2 w-full text-sm border rounded px-2 py-1 focus:outline-none focus:ring"
+              />
+              <div className="text-[10px] mt-1 text-gray-500">Estado: {conectado ? 'Conectado' : 'Desconectado'}</div>
+            </div>
+            <button
+              onClick={() => setShowClientList(false)}
+              className="lg:hidden ml-3 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto">
             {clientes.length === 0 && (
@@ -81,7 +90,10 @@ export default function AdminChatPage() {
             {clientes.map(c => (
               <button
                 key={c.id}
-                onClick={() => seleccionarSala(c.id)}
+                onClick={() => {
+                  seleccionarSala(c.id);
+                  setShowClientList(false); // En móvil, ocultar lista después de seleccionar
+                }}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 border-b ${salaActiva === c.id ? 'bg-blue-50' : ''}`}
               >
                 <img src={c.avatar} alt={c.nombre} className="w-8 h-8 rounded-full object-cover" />
@@ -100,17 +112,26 @@ export default function AdminChatPage() {
         </div>
 
         {/* Columna derecha: Chat */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {salaActiva ? (
             <>
               {/* Header */}
-              <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
-                <div className="text-sm font-semibold flex items-center gap-2">Chat con cliente #{salaActiva}
-                  {typing && <span className="text-[10px] text-gray-500 animate-pulse">escribiendo...</span>}
+              <div className="px-3 sm:px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowClientList(true)}
+                    className="lg:hidden p-1 hover:bg-gray-200 rounded"
+                  >
+                    ☰
+                  </button>
+                  <div className="text-xs sm:text-sm font-semibold flex items-center gap-2 min-w-0">
+                    <span className="truncate">Chat con cliente #{salaActiva}</span>
+                    {typing && <span className="text-[10px] text-gray-500 animate-pulse hidden sm:inline">escribiendo...</span>}
+                  </div>
                 </div>
               </div>
               {/* Mensajes */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 bg-gray-50">
                 {selectedImage && (
                   <div className="mb-3 p-2 bg-yellow-50 rounded border border-yellow-200">
                     <div className="flex items-center justify-between mb-1">
@@ -134,7 +155,7 @@ export default function AdminChatPage() {
                   const esAdmin = m.rol === 'admin';
                   return (
                     <div key={m.mensaje_id} className={`flex ${esAdmin ? 'justify-end' : 'justify-start'}`}> 
-                      <div className={`max-w-xs rounded px-3 py-2 text-xs shadow ${esAdmin ? 'bg-blue-100' : 'bg-gray-100'}`}> 
+                      <div className={`max-w-xs sm:max-w-sm rounded px-2 sm:px-3 py-2 text-xs shadow ${esAdmin ? 'bg-blue-100' : 'bg-gray-100'}`}> 
                         {m.archivo_url && m.tipo_archivo?.startsWith('image/') ? (
                           <div>
                             <img 
@@ -159,18 +180,18 @@ export default function AdminChatPage() {
                 <div ref={mensajesEndRef} />
               </div>
               {/* Input */}
-              <div className="p-3 border-t flex items-center gap-2 bg-white">
+              <div className="p-2 sm:p-3 border-t flex items-center gap-1 sm:gap-2 bg-white">
                 <input
                   type="text"
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
                   placeholder="Escribe un mensaje..."
-                  className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none"
+                  className="flex-1 border rounded px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm focus:outline-none min-w-0"
                   onFocus={() => salaActiva && chatService.setTyping(salaActiva, 'admin', true)}
                   onBlur={() => salaActiva && chatService.setTyping(salaActiva, 'admin', false)}
                 />
-                <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm">
+                <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 sm:px-3 py-1 sm:py-2 rounded text-xs sm:text-sm">
                   <input
                     type="file"
                     accept="image/*"
@@ -185,12 +206,25 @@ export default function AdminChatPage() {
                 </label>
                 <button
                   onClick={handleSend}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded"
-                >Enviar</button>
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium px-2 sm:px-4 py-1 sm:py-2 rounded"
+                >
+                  <span className="hidden sm:inline">Enviar</span>
+                  <span className="sm:hidden">📤</span>
+                </button>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-xs text-gray-500">Selecciona un cliente para iniciar el chat</div>
+            <div className="flex-1 flex items-center justify-center text-xs text-gray-500 p-4">
+              <div className="text-center">
+                <div className="mb-2">Selecciona un cliente para iniciar el chat</div>
+                <button
+                  onClick={() => setShowClientList(true)}
+                  className="lg:hidden bg-blue-600 text-white px-4 py-2 rounded text-sm"
+                >
+                  Ver Clientes
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

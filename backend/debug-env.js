@@ -10,10 +10,10 @@ const { setupDatabase } = require('./database/setup');
 
 setupDatabase()
   .then(() => {
-    console.log('🎉 Configuración completada');
+    console.log('Configuración completada');
     process.exit(0);
   })
   .catch(err => {
-    console.error('💥 Error en la configuración:', err);
+    console.error('Error en la configuración:', err);
     process.exit(1);
   });
