@@ -181,7 +181,7 @@ export function ClientsPage() {
     }
   };
 
-  const handleFormSubmit = (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleFormSubmit = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (modalType === 'create') {
       const clientId = generateId();
       const newClient: Client = {
@@ -204,8 +204,8 @@ export function ClientsPage() {
         updatedAt: new Date(),
       };
       
-      // Usar la función interconectada que crea cliente con log automático
-      data.createClientWithLog(newClient);
+      // Usar la función interconectada que crea cliente con log automático (ahora async)
+      await data.createClientWithLog(newClient);
       dispatch({ type: 'ADD_USER', payload: newUser });
       
     } else if (modalType === 'edit' && selectedClient) {

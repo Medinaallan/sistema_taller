@@ -55,36 +55,38 @@ async function cargarClientesDesdeCSV(): Promise<Client[]> {
 // Función para guardar cliente en CSV vía API
 async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
   try {
-    console.log('Guardando cliente en CSV:', cliente.name);
+    console.log('💾 Guardando cliente en CSV:', cliente.name);
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        nombre: cliente.name,
-        telefono: cliente.phone,
-        email: cliente.email,
-        direccion: cliente.address || '',
-        password: cliente.password,
-        vehiculos: cliente.vehicles.length || 0,
-        vehiculoNombre: cliente.vehicles[0]?.brand || '',
-        vehiculoModelo: cliente.vehicles[0]?.model || '',
-        kilometraje: cliente.vehicles[0]?.mileage || 0
+        name: cliente.name,           // Campo correcto: 'name'
+        email: cliente.email,         // Campo correcto: 'email'
+        phone: cliente.phone,         // Campo correcto: 'phone'
+        address: cliente.address || '', // Campo correcto: 'address'
+        password: cliente.password   // Se mapea a 'password_hash' en el backend
       })
     });
     
+    if (!response.ok) {
+      console.error('❌ Error HTTP al guardar cliente:', response.status);
+      return false;
+    }
+    
     const data = await response.json();
+    console.log('📊 Respuesta del servidor:', data);
     
     if (data.success) {
-      console.log('Cliente guardado exitosamente en CSV');
+      console.log('✅ Cliente guardado exitosamente en CSV:', data.data?.name);
       return true;
     } else {
-      console.error('Error guardando cliente:', data.error);
+      console.error('❌ Error guardando cliente:', data.error);
       return false;
     }
   } catch (error) {
-    console.error('Error al guardar cliente en CSV:', error);
+    console.error('❌ Error en guardarClienteEnCSV:', error);
     return false;
   }
 }
@@ -135,18 +137,23 @@ export async function obtenerClientesActualizados(): Promise<Client[]> {
 
 // Función para agregar un nuevo cliente
 export async function agregarCliente(nuevoCliente: Client): Promise<Client | null> {
-  console.log('Agregando nuevo cliente:', nuevoCliente.name);
+  console.log('💾 Agregando nuevo cliente:', nuevoCliente.name);
   
-  // Guardar en CSV
+  // Guardar en CSV vía API
   const guardado = await guardarClienteEnCSV(nuevoCliente);
   
   if (guardado) {
-    clientesRegistrados.push(nuevoCliente);
-    console.log('Cliente agregado exitosamente');
-    console.log('Total clientes registrados:', clientesRegistrados.length);
-    return nuevoCliente;
+    // Recargar datos desde el CSV para obtener el cliente con ID generado
+    await recargarClientesDesdeCSV();
+    
+    // Buscar el cliente recién creado por email
+    const clienteCreado = clientesRegistrados.find(c => c.email === nuevoCliente.email);
+    
+    console.log('✅ Cliente agregado exitosamente');
+    console.log('📊 Total clientes registrados:', clientesRegistrados.length);
+    return clienteCreado || nuevoCliente;
   } else {
-    console.error('Error al agregar cliente');
+    console.error('❌ Error al agregar cliente en CSV');
     return null;
   }
 }

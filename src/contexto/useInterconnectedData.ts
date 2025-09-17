@@ -1,6 +1,7 @@
 // Hook personalizado para funciones de datos interconectados
 import { useCallback } from 'react';
 import { useApp } from './useApp';
+import { agregarCliente, recargarClientesDesdeCSV } from '../utilidades/BaseDatosJS';
 import type { Client, Vehicle, WorkOrder, Invoice, Payment, Quotation, Appointment } from '../tipos/index';
 
 export const useInterconnectedData = () => {
@@ -95,21 +96,46 @@ export const useInterconnectedData = () => {
   // ========== FUNCIONES PARA ACCIONES INTERCONECTADAS ==========
 
   // Crear cliente con log automático
-  const createClientWithLog = useCallback((client: Client) => {
-    dispatch({ type: 'ADD_CLIENT', payload: client });
-    dispatch({ 
-      type: 'ADD_LOG', 
-      payload: {
-        id: `log-${Date.now()}`,
-        userId: state.user?.id || 'system',
-        action: 'create',
-        entity: 'client',
-        entityId: client.id,
-        description: `Cliente creado: ${client.name}`,
-        timestamp: new Date()
+  const createClientWithLog = useCallback(async (client: Client) => {
+    try {
+      console.log('🔄 Creando cliente con log:', client.name);
+      
+      // Guardar cliente en CSV vía API
+      const clienteGuardado = await agregarCliente(client);
+      
+      if (clienteGuardado) {
+        // Actualizar estado local con el cliente guardado (que incluye ID del servidor)
+        dispatch({ type: 'ADD_CLIENT', payload: clienteGuardado });
+        
+        // Agregar log de creación
+        dispatch({ 
+          type: 'ADD_LOG', 
+          payload: {
+            id: `log-${Date.now()}`,
+            userId: state.user?.id || 'system',
+            action: 'create',
+            entity: 'client',
+            entityId: clienteGuardado.id,
+            description: `Cliente creado: ${clienteGuardado.name}`,
+            timestamp: new Date()
+          }
+        });
+        
+        // Refrescar estadísticas
+        dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+        
+        // Recargar datos para sincronizar
+        setTimeout(async () => {
+          await recargarClientesDesdeCSV();
+        }, 1000);
+        
+        console.log('✅ Cliente creado exitosamente:', clienteGuardado.name);
+      } else {
+        console.error('❌ Error creando cliente');
       }
-    });
-    dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+    } catch (error) {
+      console.error('❌ Error en createClientWithLog:', error);
+    }
   }, [dispatch, state.user]);
 
   // Actualizar cliente con log automático

@@ -6,6 +6,9 @@ import {
   SP_VERIFICAR_CODIGO_SEGURIDAD,
   SP_REGISTRAR_PASSWORD
 } from '../../utilidades/storedProceduresBackend';
+import { agregarCliente } from '../../utilidades/BaseDatosJS';
+import { generateId } from '../../utilidades/globalMockDatabase';
+import type { Client } from '../../tipos';
 
 interface ClientRegisterFormProps {
   onSuccess: () => void;
@@ -166,12 +169,37 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
         if (validatePassword()) {
           setLoading(true);
           try {
+            // Registrar en el sistema de autenticación
             const result = await SP_REGISTRAR_PASSWORD(
               formData.email,
               formData.password
             );
             
             if (result.allow === 1) {
+              console.log('✅ Usuario registrado en sistema de auth');
+              
+              // También agregar cliente al sistema CSV
+              try {
+                const nuevoCliente: Client = {
+                  id: generateId(),
+                  name: formData.name,
+                  email: formData.email,
+                  phone: formData.phone,
+                  address: '', // Se puede agregar después
+                  password: formData.password,
+                  vehicles: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                };
+                
+                console.log('💾 Guardando cliente en CSV:', nuevoCliente.name);
+                await agregarCliente(nuevoCliente);
+                console.log('✅ Cliente agregado al CSV exitosamente');
+              } catch (csvError) {
+                console.warn('⚠️ Error guardando en CSV (pero auth exitoso):', csvError);
+                // No fallar el registro si el CSV falla
+              }
+              
               onSuccess();
             } else {
               setErrors({ password: result.msg });
