@@ -42,7 +42,7 @@ export function DebugPage() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Datos de la API:</h2>
           
-          {datos.success ? (
+          {datos.success !== false && datos.clients ? (
             <div>
               <p className="mb-4 text-green-600 font-semibold">
                 ✅ API funcionando - {datos.clients.length} clientes encontrados
@@ -51,18 +51,27 @@ export function DebugPage() {
               <div className="space-y-4">
                 {datos.clients.map((cliente: any, index: number) => (
                   <div key={index} className="p-4 border rounded-lg bg-gray-50">
-                    <h3 className="font-bold text-lg">{cliente.nombre}</h3>
+                    <h3 className="font-bold text-lg">{cliente.nombre || cliente.firstName + ' ' + cliente.lastName}</h3>
                     <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
                       <p><strong>ID:</strong> {cliente.id}</p>
-                      <p><strong>Teléfono:</strong> {cliente.telefono}</p>
+                      <p><strong>Teléfono:</strong> {cliente.telefono || cliente.phone}</p>
                       <p><strong>Email:</strong> {cliente.email}</p>
-                      <p><strong>Dirección:</strong> {cliente.direccion}</p>
+                      <p><strong>Dirección:</strong> {cliente.direccion || cliente.address}</p>
                       <p><strong>Vehículos:</strong> {cliente.vehiculos}</p>
                       <p><strong>Vehículo:</strong> {cliente.vehiculoNombre} {cliente.vehiculoModelo}</p>
                       <p><strong>Kilometraje:</strong> {cliente.kilometraje}</p>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          ) : datos.total >= 0 ? (
+            <div>
+              <p className="mb-4 text-green-600 font-semibold">
+                ✅ API funcionando - {datos.total} clientes encontrados
+              </p>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+                <p>📊 Total de registros: {datos.total}</p>
               </div>
             </div>
           ) : (

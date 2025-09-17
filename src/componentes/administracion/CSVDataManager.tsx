@@ -73,7 +73,7 @@ export function CSVDataManager() {
               <span className="font-medium">Última actualización:</span> {lastUpdate}
             </p>
             <p className="text-gray-700">
-              <span className="font-medium">Archivo:</span> src/Client_Database.csv
+              <span className="font-medium">Archivo:</span> backend/data/clients/clients.csv
             </p>
           </div>
         </div>

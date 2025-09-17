@@ -16,27 +16,35 @@ export function useCSVData() {
       setError(null);
       
       console.log('🔄 useCSVData: Cargando datos desde API...');
-      const clientesAPI = await obtenerClientesActualizados();
       
-      console.log('📊 useCSVData: Datos recibidos:', clientesAPI.length, 'clientes');
+      // Intentar obtener clientes de la API
+      try {
+        const clientesAPI = await obtenerClientesActualizados();
+        console.log('📊 useCSVData: Datos recibidos:', clientesAPI.length, 'clientes');
+        setClients(clientesAPI);
+      } catch (apiError) {
+        console.warn('⚠️ No se pudieron cargar clientes desde API, usando array vacío');
+        setClients([]);
+      }
       
       // Por ahora solo usamos los clientes, los vehículos y órdenes se manejarán después
-      const vehiculosExtraidos: Vehicle[] = [];
-      const ordenesExtraidas: WorkOrder[] = [];
-      
-      setClients(clientesAPI);
-      setVehicles(vehiculosExtraidos);
-      setWorkOrders(ordenesExtraidas);
+      setVehicles([]);
+      setWorkOrders([]);
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando datos del CSV via API');
       console.error('❌ Error en useCSVData:', err);
+      // En caso de error, usar arrays vacíos para que la app funcione
+      setClients([]);
+      setVehicles([]);
+      setWorkOrders([]);
+      setError(err instanceof Error ? err.message : 'Error cargando datos del CSV via API');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('🚀 useCSVData: Iniciando carga de datos...');
     loadData();
   }, []);
 

@@ -136,7 +136,9 @@ export function ClientsPage() {
   useEffect(() => {
     // Los datos ya están disponibles a través del contexto interconectado
     // No necesitamos cargar mock data aquí
-  }, []);
+    console.log('👥 ClientsPage: Clientes disponibles:', data.clients.length);
+    console.log('📋 ClientsPage: Lista de clientes:', data.clients.map(c => ({ id: c.id, name: c.name, email: c.email })));
+  }, [data.clients]);
 
   const filteredClients = data.clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

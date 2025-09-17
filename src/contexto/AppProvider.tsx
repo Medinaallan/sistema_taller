@@ -15,7 +15,9 @@ export function AppProvider({ children }: AppProviderProps) {
 
   // Actualizar el estado cuando se cargan los datos del CSV
   useEffect(() => {
+    console.log('📊 AppProvider: Datos CSV cargados:', clients.length, 'clientes');
     if (clients.length > 0) {
+      console.log('✅ AppProvider: Actualizando estado con', clients.length, 'clientes');
       dispatch({ type: 'LOAD_CSV_DATA', payload: { clients, vehicles, workOrders } });
     }
   }, [clients, vehicles, workOrders]);

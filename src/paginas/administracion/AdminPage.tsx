@@ -3,6 +3,7 @@ import { UserManagementSection } from './secciones/UserManagementSection';
 import { CompanyDataSection } from './secciones/CompanyDataSection';
 import { BillingConfigSection } from './secciones/BillingConfigSection';
 import { CSVDataManager } from '../../componentes/administracion/CSVDataManager';
+import { DataManagementPanel } from '../../componentes/administracion/DataManagementPanel';
 import {
   UsersIcon,
   CurrencyDollarIcon,
@@ -96,6 +97,13 @@ const configSections: ConfigSection[] = [
     path: 'csv-data'
   },
   {
+    id: 'data-reset',
+    title: 'Restablecimiento de Datos',
+    description: 'Restablecer todos los archivos CSV con datos de ejemplo',
+    icon: CogIcon,
+    path: 'data-reset'
+  },
+  {
     id: 'sistema',
     title: 'Configuración del Sistema',
     description: 'Respaldos, restauración y configuración general',
@@ -125,6 +133,7 @@ export default function AdminPage() {
         {selectedSection === 'empresa' && <CompanyDataSection />}
         {selectedSection === 'facturacion' && <BillingConfigSection />}
         {selectedSection === 'csv-data' && <CSVDataManager />}
+        {selectedSection === 'data-reset' && <DataManagementPanel />}
         {/* Aquí se agregarán las demás secciones */}
       </div>
     );

@@ -7,8 +7,7 @@ import {
   mockVehicles, 
   mockWorkOrders, 
   mockReminders, 
-  mockDashboardStats,
-  mockNotifications
+  mockDashboardStats
 } from '../utilidades/mockData';
 
 // Función para obtener estado inicial con persistencia

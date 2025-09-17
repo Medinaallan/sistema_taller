@@ -237,7 +237,7 @@ async function SP_LOGIN(correo, password) {
   }
 }
 
-// SP_REGISTRAR_USUARIO_PANEL_ADMIN - Registro desde panel admin
+//Registro desde panel admin
 async function SP_REGISTRAR_USUARIO_PANEL_ADMIN(nombre_completo, correo, telefono, rol, registradoPor = null) {
   try {
     // Verificar si el email ya existe

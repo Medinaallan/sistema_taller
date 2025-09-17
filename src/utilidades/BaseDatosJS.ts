@@ -13,28 +13,41 @@ export let clientesRegistrados: Client[] = [];
 // Función para cargar clientes desde CSV vía API
 async function cargarClientesDesdeCSV(): Promise<Client[]> {
   try {
+    console.log('🔄 Cargando clientes desde API:', `${API_BASE_URL}/clients`);
     const response = await fetch(`${API_BASE_URL}/clients`);
-    const data = await response.json();
     
-    if (data.success) {
+    if (!response.ok) {
+      console.error('❌ Error HTTP:', response.status);
+      return [];
+    }
+    
+    const data = await response.json();
+    console.log('📊 Respuesta de API:', data);
+    
+    if (data.success && data.data) {
+      console.log('✅ API exitosa, procesando', data.data.length, 'clientes');
       
       // Convertir los datos del CSV al formato Client
-      const clientesConvertidos = data.clients.map((cliente: any) => ({
+      const clientesConvertidos = data.data.map((cliente: any) => ({
         id: cliente.id,
-        name: cliente.nombre,
+        name: cliente.name,           // Usar 'name' directamente
         email: cliente.email,
-        phone: cliente.telefono,
-        address: cliente.direccion,
-        password: cliente.password,
+        phone: cliente.phone,         // Usar 'phone' directamente  
+        address: cliente.address,     // Usar 'address' directamente
+        password: cliente.password_hash || '', // El backend usa 'password_hash'
         vehicles: [], // Los vehículos se cargarían por separado
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date(cliente.created_at || cliente.registration_date || new Date()),
+        updatedAt: new Date(cliente.updated_at || new Date())
       }));
+      
+      console.log('🎯 Clientes convertidos:', clientesConvertidos.length);
       return clientesConvertidos;
     } else {
+      console.warn('⚠️ API no exitosa o sin datos');
       return [];
     }
   } catch (error) {
+    console.error('❌ Error cargando clientes desde API:', error);
     return [];
   }
 }

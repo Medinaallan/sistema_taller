@@ -1,53 +1,87 @@
- const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
+const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const socketIo = require('socket.io');
+const cors = require('cors');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+
+// Servicios CSV
+const csvService = require('./services/csvService');
+
+// Configuración del servidor
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Middleware de logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Configuración de multer para subida de imágenes
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, 'SaveImages');
-    cb(null, uploadPath);
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'SaveImages');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(file.originalname)}`;
+  filename: function (req, file, cb) {
+    const uniqueName = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
   }
 });
 
-const upload = multer({
+const upload = multer({ 
   storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB límite
-  },
   fileFilter: (req, file, cb) => {
-    // Solo aceptar imágenes
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
     } else {
-      cb(new Error('Solo se permiten archivos de imagen'), false);
+      cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, gif)'));
     }
   }
 });
 
-// Middleware básico
-app.use(express.json());
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    message: 'Servidor funcionando correctamente' 
+  });
 });
 
-// Servir archivos estáticos de la carpeta SaveImages
-app.use('/images', express.static(path.join(__dirname, 'SaveImages')));
+// 👥 IMPORTAR Y CONFIGURAR RUTAS DE API CSV
+try {
+  console.log('🔄 Cargando rutas de API CSV...');
+  const clientsApiRouter = require('./routes/clientsApi');
+  app.use('/api/clients', clientsApiRouter);
+  console.log('✅ Rutas de API CSV cargadas exitosamente');
+  console.log('   📍 /api/clients/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de API CSV:', error.message);
+  console.error('   Stack:', error.stack);
+  console.warn('⚠️  El servidor continuará sin las rutas de clientes CSV');
+}
 
 // Cargar stored procedures
 let storedProcedures;
@@ -173,7 +207,50 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Rutas para manejo de clientes en CSV
+// ==============================================
+// RUTAS DE ADMINISTRACIÓN DE DATOS
+// ==============================================
+
+const dataResetService = require('./services/dataResetService');
+
+// Obtener estadísticas de datos
+app.get('/api/admin/data-stats', async (req, res) => {
+  try {
+    console.log('📊 Solicitando estadísticas de datos...');
+    const stats = await dataResetService.getDataStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('❌ Error obteniendo estadísticas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error obteniendo estadísticas de datos',
+      error: error.message
+    });
+  }
+});
+
+// Restablecer todos los datos
+app.post('/api/admin/reset-data', async (req, res) => {
+  try {
+    console.log('🔄 Iniciando restablecimiento de datos desde API...');
+    const result = await dataResetService.resetAllData();
+    console.log('✅ Restablecimiento completado desde API');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error restableciendo datos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error restableciendo datos',
+      error: error.message
+    });
+  }
+});
+
+// NOTA: Los endpoints de clientes ahora se manejan en routes/clientsApi.js
+// Los endpoints duplicados fueron removidos para evitar conflictos
+
+/*
+// Rutas para manejo de clientes en el CSV (ENDPOINTS VIEJOS COMENTADOS)
 const CSV_PATH = path.join(__dirname, '../src/Client_Database.csv');
 
 // Obtener clientes desde CSV
@@ -181,7 +258,7 @@ app.get('/api/clients', async (req, res) => {
   try {
     console.log('Obteniendo clientes desde CSV');
     const csvContent = await fs.readFile(CSV_PATH, 'utf-8');
-    console.log(' Contenido CSV raw:', csvContent.length, 'caracteres');
+    console.log('Contenido CSV raw:', csvContent.length, 'caracteres');
     
     const lines = csvContent.split('\n').filter(line => line.trim());
     console.log('Líneas totales después del filtro:', lines.length);
@@ -219,7 +296,7 @@ app.get('/api/clients', async (req, res) => {
     res.json({ success: true, clients });
   } catch (error) {
     console.error(' Error leyendo CSV:', error);
-    res.json({ success: false, error: 'Error leyendo base de datos de clientes' });
+        res.json({ allow: 0, msg: 'Error interno' });
   }
 });
 
@@ -247,6 +324,7 @@ app.post('/api/clients', async (req, res) => {
     res.json({ success: false, error: 'Error guardando cliente' });
   }
 });
+*/
 
 // 404
 app.use('*', (req, res) => {
@@ -264,14 +342,6 @@ process.on('unhandledRejection', (reason) => {
 });
 
 const PORT = process.env.PORT || 8080;
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
-});
 
 // ====== CHAT AVANZADO (rooms + historial en memoria) ======
 const { guardarMensaje, obtenerHistorial, marcarLeidos } = require('./chatStorage');
@@ -362,8 +432,16 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Servidor iniciado en puerto ${PORT}`);
-  console.log(`Health: http://localhost:${PORT}/api/health`);
+  console.log('\n🚀 ===============================================');
+  console.log(`   SERVIDOR TALLER INICIADO EN PUERTO ${PORT}`);
+  console.log('🚀 ===============================================');
+  console.log(`📍 Health Check:     http://localhost:${PORT}/api/health`);
+  console.log(`👥 API Clientes:     http://localhost:${PORT}/api/clients`);
+  console.log(`📷 Subir Imágenes:   http://localhost:${PORT}/api/upload-image`);
+  console.log(`🔐 Autenticación:    http://localhost:${PORT}/api/auth/*`);
+  console.log(`💬 Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);
+  console.log(`🌐 Frontend:         http://localhost:5173`);
+  console.log('===============================================\n');
 });
 
 server.on('error', (error) => {

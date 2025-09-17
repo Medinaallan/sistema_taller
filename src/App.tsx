@@ -31,7 +31,9 @@ import LogsPage from './paginas/logs/LogsPage';
 import RemindersPage from './paginas/administracion/RemindersPage';
 import ClientProfilePage from './paginas/administracion/ClientProfilePage';
 import { DebugPage } from './paginas/DebugPage';
+import TestConnectionPage from './paginas/TestConnectionPage';
 import { TestLogin } from './paginas/TestLogin';
+import { TestClientRegisterPage } from './paginas/sistema/TestClientRegisterPage';
 
 // Componente para proteger rutas autenticadas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -328,8 +330,16 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/test-connection"
+        element={<TestConnectionPage />}
+      />
+      <Route
         path="/test-login"
         element={<TestLogin />}
+      />
+      <Route
+        path="/test-client-register"
+        element={<TestClientRegisterPage />}
       />
       <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
     </Routes>
@@ -340,9 +350,7 @@ function App() {
   return (
     <AppProvider>
       <Router>
-        <div className="App">
-          <AppRoutes />
-        </div>
+        <AppRoutes />
       </Router>
     </AppProvider>
   );
