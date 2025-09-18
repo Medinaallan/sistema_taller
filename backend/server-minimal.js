@@ -83,6 +83,32 @@ try {
   console.warn('⚠️  El servidor continuará sin las rutas de clientes CSV');
 }
 
+//  IMPORTAR Y CONFIGURAR RUTAS DE SERVICIOS
+try {
+  console.log(' Cargando rutas de servicios...');
+  const servicesRouter = require('./routes/services');
+  app.use('/api/services', servicesRouter);
+  console.log(' Rutas de servicios cargadas exitosamente');
+  console.log('    /api/services/* endpoints disponibles');
+} catch (error) {
+  console.error(' Error cargando rutas de servicios:', error.message);
+  console.error('   Stack:', error.stack);
+  console.warn('  El servidor continuará sin las rutas de servicios');
+}
+
+//  IMPORTAR Y CONFIGURAR RUTAS DE VEHÍCULOS
+try {
+  console.log('🚗 Cargando rutas de vehículos...');
+  const vehiclesRouter = require('./routes/vehicles');
+  app.use('/api/vehicles', vehiclesRouter);
+  console.log('✅ Rutas de vehículos cargadas exitosamente');
+  console.log('    📍 /api/vehicles/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de vehículos:', error.message);
+  console.error('   Stack:', error.stack);
+  console.warn('⚠️  El servidor continuará sin las rutas de vehículos');
+}
+
 // Cargar stored procedures
 let storedProcedures;
 try {
@@ -437,7 +463,9 @@ server.listen(PORT, () => {
   console.log('🚀 ===============================================');
   console.log(`📍 Health Check:     http://localhost:${PORT}/api/health`);
   console.log(`👥 API Clientes:     http://localhost:${PORT}/api/clients`);
-  console.log(`📷 Subir Imágenes:   http://localhost:${PORT}/api/upload-image`);
+  console.log(`� API Servicios:    http://localhost:${PORT}/api/services`);
+  console.log(`🚗 API Vehículos:    http://localhost:${PORT}/api/vehicles`);
+  console.log(`�📷 Subir Imágenes:   http://localhost:${PORT}/api/upload-image`);
   console.log(`🔐 Autenticación:    http://localhost:${PORT}/api/auth/*`);
   console.log(`💬 Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);
   console.log(`🌐 Frontend:         http://localhost:5173`);

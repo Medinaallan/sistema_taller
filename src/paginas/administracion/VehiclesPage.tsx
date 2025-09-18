@@ -3,18 +3,19 @@ import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/ou
 import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
-import { mockVehicles, mockClients, mockServiceTypes, generateId, formatDate } from '../../utilidades/globalMockDatabase';
-import type { Vehicle, Client, ServiceType } from '../../tipos';
+import { mockVehicles, mockClients, formatDate } from '../../utilidades/globalMockDatabase';
+import { servicesService, vehiclesService } from '../../servicios/apiService';
+import type { Vehicle, Client, Service } from '../../tipos';
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
   clients: Client[];
-  serviceTypes: ServiceType[];
+  services: Service[];
   onSubmit: (vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'workOrders' | 'reminders'>) => void;
   onCancel: () => void;
 }
 
-function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: VehicleFormProps) {
+function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: VehicleFormProps) {
   const [formData, setFormData] = useState({
     clientId: vehicle?.clientId || '',
     brand: vehicle?.brand || '',
@@ -60,8 +61,8 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
     
     if (!validateForm()) return;
 
-    const selectedServiceType = serviceTypes.find(st => st.id === formData.serviceTypeId);
-    if (!selectedServiceType) return;
+    const selectedService = services.find(s => s.id === formData.serviceTypeId);
+    if (!selectedService) return;
 
     onSubmit({
       clientId: formData.clientId,
@@ -71,7 +72,13 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
       licensePlate: formData.licensePlate.trim(),
       color: formData.color.trim(),
       mileage: formData.mileage > 0 ? formData.mileage : undefined,
-      serviceType: selectedServiceType,
+      serviceType: {
+        id: selectedService.id,
+        name: selectedService.name,
+        description: selectedService.description || '',
+        basePrice: selectedService.basePrice,
+        estimatedDuration: 1, // Default duration in hours, can be adjusted
+      },
     });
   };
 
@@ -85,9 +92,9 @@ function VehicleForm({ vehicle, clients, serviceTypes, onSubmit, onCancel }: Veh
 
   const serviceTypeOptions = [
     { value: '', label: 'Selecciona un tipo de servicio...' },
-    ...serviceTypes.map(serviceType => ({
-      value: serviceType.id,
-      label: serviceType.name
+    ...services.map(service => ({
+      value: service.id,
+      label: service.name
     }))
   ];
 
@@ -198,14 +205,80 @@ export function VehiclesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Cargar servicios desde la API
+  const loadServices = async () => {
+    try {
+      const response = await servicesService.getAll();
+      if (response.success) {
+        const mappedServices = response.data.map((csvService: any) => ({
+          id: csvService.id,
+          name: csvService.nombre,
+          description: csvService.descripcion || '',
+          basePrice: parseFloat(csvService.precio) || 0,
+          estimatedTime: csvService.duracion || '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+        setServices(mappedServices);
+      }
+    } catch (error) {
+      console.error('Error al cargar servicios:', error);
+    }
+  };
+
+  // Cargar vehículos desde la API
+  const loadVehicles = async () => {
+    try {
+      setLoading(true);
+      const response = await vehiclesService.getAll();
+      if (response.success) {
+        // Map CSV data to Vehicle format
+        const mappedVehicles = response.data.map((csvVehicle: any) => ({
+          id: csvVehicle.id,
+          clientId: csvVehicle.clienteId,
+          brand: csvVehicle.marca,
+          model: csvVehicle.modelo,
+          year: parseInt(csvVehicle.año),
+          licensePlate: csvVehicle.placa,
+          color: csvVehicle.color,
+          mileage: undefined, // Not in CSV yet
+          serviceType: {
+            id: 'default',
+            name: 'Servicio General',
+            description: 'Servicio general',
+            basePrice: 0,
+            estimatedDuration: 1,
+          },
+          workOrders: [],
+          reminders: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+        dispatch({ type: 'SET_VEHICLES', payload: mappedVehicles });
+      } else {
+        // Use mock data if API fails
+        dispatch({ type: 'SET_VEHICLES', payload: mockVehicles });
+      }
+    } catch (error) {
+      console.error('Error loading vehicles:', error);
+      dispatch({ type: 'SET_VEHICLES', payload: mockVehicles });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Cargar datos mock solo si no hay datos persistidos
-    dispatch({ type: 'SET_VEHICLES', payload: mockVehicles });
+    // Load data on component mount
+    loadServices();
+    loadVehicles();
+    
+    // Load clients if not already loaded
     if (!state.clients || state.clients.length === 0) {
       dispatch({ type: 'SET_CLIENTS', payload: mockClients });
     }
-    dispatch({ type: 'SET_SERVICE_TYPES', payload: mockServiceTypes });
   }, [dispatch, state.clients]);
 
   const filteredVehicles = state.vehicles.filter(vehicle => {
@@ -240,34 +313,100 @@ export function VehiclesPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteVehicle = (vehicle: Vehicle) => {
+  const handleDeleteVehicle = async (vehicle: Vehicle) => {
     if (confirm(`¿Estás seguro de que quieres eliminar el vehículo ${vehicle.brand} ${vehicle.model}?`)) {
-      data.deleteVehicleWithRelations(vehicle.id);
+      try {
+        setLoading(true);
+        const response = await vehiclesService.delete(vehicle.id);
+        
+        if (response.success) {
+          data.deleteVehicleWithRelations(vehicle.id);
+          alert('Vehículo eliminado exitosamente');
+        } else {
+          alert('Error al eliminar el vehículo: ' + response.message);
+        }
+      } catch (error) {
+        console.error('Error deleting vehicle:', error);
+        alert('Error al eliminar el vehículo');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const handleFormSubmit = (vehicleData: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'workOrders' | 'reminders'>) => {
-    if (modalType === 'edit' && selectedVehicle) {
-      dispatch({
-        type: 'UPDATE_VEHICLE',
-        payload: {
-          ...selectedVehicle,
-          ...vehicleData,
-          updatedAt: new Date(),
+  const handleFormSubmit = async (vehicleData: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'workOrders' | 'reminders'>) => {
+    try {
+      setLoading(true);
+      
+      if (modalType === 'edit' && selectedVehicle) {
+        // Update vehicle via API
+        const updateData = {
+          clienteId: vehicleData.clientId,
+          marca: vehicleData.brand,
+          modelo: vehicleData.model,
+          año: vehicleData.year,
+          placa: vehicleData.licensePlate,
+          color: vehicleData.color,
+        };
+        
+        const response = await vehiclesService.update(selectedVehicle.id, updateData);
+        
+        if (response.success) {
+          // Update local state
+          const updatedVehicle: Vehicle = {
+            ...selectedVehicle,
+            ...vehicleData,
+            updatedAt: new Date(),
+          };
+          dispatch({ type: 'UPDATE_VEHICLE', payload: updatedVehicle });
+          setIsModalOpen(false);
+          alert('Vehículo actualizado exitosamente');
+        } else {
+          alert('Error al actualizar el vehículo: ' + response.message);
         }
-      });
-    } else {
-      const newVehicle: Vehicle = {
-        ...vehicleData,
-        id: generateId(),
-        workOrders: [],
-        reminders: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      dispatch({ type: 'ADD_VEHICLE', payload: newVehicle });
+      } else {
+        // Create new vehicle via API
+        const createData = {
+          clienteId: vehicleData.clientId,
+          marca: vehicleData.brand,
+          modelo: vehicleData.model,
+          año: vehicleData.year,
+          placa: vehicleData.licensePlate,
+          color: vehicleData.color,
+        };
+        
+        const response = await vehiclesService.create(createData);
+        
+        if (response.success) {
+          // Add to local state
+          const newVehicle: Vehicle = {
+            id: response.data.id,
+            clientId: response.data.clienteId,
+            brand: response.data.marca,
+            model: response.data.modelo,
+            year: parseInt(response.data.año),
+            licensePlate: response.data.placa,
+            color: response.data.color,
+            mileage: undefined,
+            serviceType: vehicleData.serviceType,
+            workOrders: [],
+            reminders: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          dispatch({ type: 'ADD_VEHICLE', payload: newVehicle });
+          setIsModalOpen(false);
+          alert('Vehículo creado exitosamente');
+        } else {
+          alert('Error al crear el vehículo: ' + response.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error in vehicle operation:', error);
+      alert('Error al procesar la operación');
+    } finally {
+      setLoading(false);
     }
-    setIsModalOpen(false);
   };
 
   const clientOptions = [
@@ -488,7 +627,7 @@ export function VehiclesPage() {
           <VehicleForm
             vehicle={modalType === 'edit' ? selectedVehicle || undefined : undefined}
             clients={state.clients}
-            serviceTypes={state.serviceTypes}
+            services={services}
             onSubmit={handleFormSubmit}
             onCancel={() => setIsModalOpen(false)}
           />

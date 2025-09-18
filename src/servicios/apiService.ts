@@ -10,13 +10,26 @@ const fetchConfig = {
 
 // Función helper para manejar respuestas
 async function handleResponse(response: Response) {
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || `Error HTTP: ${response.status}`);
+  try {
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || `Error HTTP: ${response.status}`,
+        error: `HTTP ${response.status}`,
+        data: data
+      };
+    }
+    
+    return data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Error al procesar respuesta del servidor',
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    };
   }
-  
-  return data;
 }
 
 // Interfaces para los tipos de respuesta
@@ -140,6 +153,114 @@ export const healthService = {
   },
 };
 
+// Servicio para gestión de servicios
+export const servicesService = {
+  async getAll(): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/services`, {
+      ...fetchConfig,
+      method: 'GET',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async create(serviceData: { 
+    nombre: string; 
+    descripcion?: string; 
+    precio: number; 
+    duracion?: string; 
+    categoria?: string; 
+  }): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/services`, {
+      ...fetchConfig,
+      method: 'POST',
+      body: JSON.stringify(serviceData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async update(id: string, serviceData: Partial<{ 
+    nombre: string; 
+    descripcion: string; 
+    precio: number; 
+    duracion: string; 
+    categoria: string; 
+  }>): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/services/${id}`, {
+      ...fetchConfig,
+      method: 'PUT',
+      body: JSON.stringify(serviceData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async delete(id: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/services/${id}`, {
+      ...fetchConfig,
+      method: 'DELETE',
+    });
+    
+    return handleResponse(response);
+  },
+};
+
+// Servicio para gestión de vehículos
+export const vehiclesService = {
+  async getAll(): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/vehicles`, {
+      ...fetchConfig,
+      method: 'GET',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async create(vehicleData: { 
+    clienteId: string; 
+    marca: string; 
+    modelo: string; 
+    año: number; 
+    placa: string; 
+    color: string; 
+  }): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/vehicles`, {
+      ...fetchConfig,
+      method: 'POST',
+      body: JSON.stringify(vehicleData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async update(id: string, vehicleData: Partial<{ 
+    clienteId: string; 
+    marca: string; 
+    modelo: string; 
+    año: number; 
+    placa: string; 
+    color: string; 
+  }>): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
+      ...fetchConfig,
+      method: 'PUT',
+      body: JSON.stringify(vehicleData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async delete(id: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
+      ...fetchConfig,
+      method: 'DELETE',
+    });
+    
+    return handleResponse(response);
+  },
+};
+
 // Función para probar la conectividad con el backend
 export async function testBackendConnection(): Promise<boolean> {
   try {
@@ -156,5 +277,7 @@ export default {
   clientService,
   userService,
   healthService,
+  servicesService,
+  vehiclesService,
   testBackendConnection,
 };

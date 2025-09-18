@@ -10,6 +10,8 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/auth');
 const clientRoutes = require('./routes/clients');
 const userRoutes = require('./routes/users');
+const servicesRoutes = require('./routes/services');
+const vehiclesRoutes = require('./routes/vehicles');
 
 const app = express();
 const server = http.createServer(app);
@@ -47,6 +49,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/services', servicesRoutes);
+app.use('/api/vehicles', vehiclesRoutes);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {
