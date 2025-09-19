@@ -73,7 +73,7 @@ class ExcelImportService {
 
         for (const row of clientsData) {
             // Validar campos obligatorios
-            if (!row.name || !row.email || !row.phone || !row.address) {
+            if (!row.name || !row.email || !row.phone || !row.password) {
                 continue; // Saltar filas incompletas
             }
 
@@ -88,14 +88,14 @@ class ExcelImportService {
                 name: row.name.trim(),
                 email: row.email.trim().toLowerCase(),
                 phone: row.phone.trim(),
-                address: row.address.trim(),
-                password_hash: 'asdf1234', // Contraseña por defecto
+                address: row.address ? row.address.trim() : '', // Campo opcional
+                password_hash: row.password.trim(), // Usar la contraseña proporcionada
                 status: 'active',
                 registration_date: new Date().toISOString().split('T')[0],
                 last_visit: '',
                 total_visits: 0,
                 total_spent: 0,
-                notes: row.notes ? row.notes.trim() : 'Importado desde Excel',
+                notes: 'Importado desde Excel',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };

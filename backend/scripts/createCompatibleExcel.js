@@ -20,10 +20,10 @@ function createCompatibleExcelTemplate() {
     // Datos de ejemplo y headers para clientes
     const clientsData = [
         // Headers
-        ['name', 'email', 'phone', 'address', 'notes'],
+        ['name', 'email', 'phone', 'address', 'password'],
         // Ejemplos
-        ['Juan Pérez', 'juan.perez@email.com', '9999-1234', 'Col. Centro, Calle 5 #123', 'Cliente frecuente'],
-        ['María González', 'maria.gonzalez@email.com', '9999-5678', 'Barrio Norte, Av. Principal #456', 'Requiere servicios especializados']
+        ['Juan Pérez', 'juan.perez@email.com', '9999-1234', 'Col. Centro, Calle 5 #123', 'mipassword123'],
+        ['María González', 'maria.gonzalez@email.com', '9999-5678', 'Barrio Norte, Av. Principal #456', 'password456']
     ];
 
     // Datos de ejemplo y headers para vehículos
@@ -43,8 +43,8 @@ function createCompatibleExcelTemplate() {
         ['- name: Nombre completo del cliente (obligatorio)'],
         ['- email: Correo electrónico único (obligatorio)'],
         ['- phone: Número de teléfono (obligatorio)'],
-        ['- address: Dirección completa (obligatorio)'],
-        ['- notes: Notas adicionales (opcional)'],
+        ['- address: Dirección completa (opcional)'],
+        ['- password: Contraseña del cliente (obligatorio)'],
         [''],
         ['HOJA VEHICULOS:'],
         ['- clienteEmail: Email del cliente propietario (debe existir en hoja Clientes)'],
@@ -57,9 +57,12 @@ function createCompatibleExcelTemplate() {
         ['NOTAS IMPORTANTES:'],
         ['- No elimine las filas de encabezados'],
         ['- No cambie los nombres de las columnas'],
+        ['- Campos obligatorios para clientes: name, email, phone, password'],
+        ['- Campo opcional para clientes: address (puede dejarse vacío)'],
         ['- Los emails deben ser únicos y válidos'],
         ['- Las placas deben ser únicas'],
         ['- El año debe ser un número válido'],
+        ['- Las contraseñas se almacenarán tal como se escriban'],
         ['- Asegúrese de que el email del cliente existe antes de asignar vehículos']
     ];
 
@@ -76,7 +79,7 @@ function createCompatibleExcelTemplate() {
         { width: 30 },  // email
         { width: 15 },  // phone
         { width: 40 },  // address
-        { width: 30 }   // notes
+        { width: 15 }   // password
     ];
     
     vehiclesWs['!cols'] = [

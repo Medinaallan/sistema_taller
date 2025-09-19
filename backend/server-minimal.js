@@ -471,17 +471,17 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log('\n🚀 ===============================================');
+  console.log('\n===============================================');
   console.log(`   SERVIDOR TALLER INICIADO EN PUERTO ${PORT}`);
-  console.log('🚀 ===============================================');
-  console.log(`📍 Health Check:     http://localhost:${PORT}/api/health`);
-  console.log(`👥 API Clientes:     http://localhost:${PORT}/api/clients`);
-  console.log(`� API Servicios:    http://localhost:${PORT}/api/services`);
-  console.log(`🚗 API Vehículos:    http://localhost:${PORT}/api/vehicles`);
-  console.log(`�📷 Subir Imágenes:   http://localhost:${PORT}/api/upload-image`);
-  console.log(`🔐 Autenticación:    http://localhost:${PORT}/api/auth/*`);
-  console.log(`💬 Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);
-  console.log(`🌐 Frontend:         http://localhost:5173`);
+  console.log(' ===============================================');
+  console.log(` Health Check:     http://localhost:${PORT}/api/health`);
+  console.log(` API Clientes:     http://localhost:${PORT}/api/clients`);
+  console.log(` API Servicios:    http://localhost:${PORT}/api/services`);
+  console.log(` API Vehículos:    http://localhost:${PORT}/api/vehicles`);
+  console.log(` Subir Imágenes:   http://localhost:${PORT}/api/upload-image`);
+  console.log(` Autenticación:    http://localhost:${PORT}/api/auth/*`);
+  console.log(` Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);
+  console.log(` Frontend:         http://localhost:5173`);
   console.log('===============================================\n');
 });
 
