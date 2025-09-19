@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
 import { CSVDataManager } from '../../componentes/administracion/CSVDataManager';
+import ExcelImportModal from '../../componentes/gestion/ExcelImportModal';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { generateId, formatDate, formatCurrency } from '../../utilidades/globalMockDatabase';
@@ -132,6 +133,7 @@ export function ClientsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   useEffect(() => {
     // Los datos ya están disponibles a través del contexto interconectado
@@ -244,6 +246,13 @@ export function ClientsPage() {
     }
   };
 
+  const handleImportComplete = (result: any) => {
+    if (result.success) {
+      // Recargar datos después de una importación exitosa
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -251,10 +260,18 @@ export function ClientsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Clientes</h1>
           <p className="text-gray-600">Administra la información de los clientes</p>
         </div>
-        <Button onClick={handleCreateClient}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Nuevo Cliente
-        </Button>
+        <div className="flex space-x-3">
+          <Button 
+            onClick={() => setIsImportModalOpen(true)}
+            variant="outline"
+          >
+            📊 Importar Excel
+          </Button>
+          <Button onClick={handleCreateClient}>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Nuevo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* Gestor de datos CSV */}
@@ -430,6 +447,13 @@ export function ClientsPage() {
           />
         )}
       </Modal>
+
+      {/* Modal de importación Excel */}
+      <ExcelImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }

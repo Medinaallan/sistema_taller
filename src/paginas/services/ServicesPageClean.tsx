@@ -34,7 +34,7 @@ const ServicesPage = () => {
   };
 
   return (
-    <Card title="Servicios" actions={<Button onClick={() => alert('Nuevo servicio')}>Nuevo Scio</Button>}>
+    <Card title="Servicios" actions={<Button onClick={() => alert('Nuevo servicio')}>Nuevo Servicio</Button>}>
       <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
     </Card>
   );

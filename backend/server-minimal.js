@@ -109,6 +109,19 @@ try {
   console.warn('⚠️  El servidor continuará sin las rutas de vehículos');
 }
 
+// 📊 IMPORTAR Y CONFIGURAR RUTAS DE IMPORTACIÓN EXCEL
+try {
+  console.log('📊 Cargando rutas de importación Excel...');
+  const excelImportRouter = require('./routes/excelImport');
+  app.use('/api/excel-import', excelImportRouter);
+  console.log('✅ Rutas de importación Excel cargadas exitosamente');
+  console.log('    📍 /api/excel-import/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de importación Excel:', error.message);
+  console.error('   Stack:', error.stack);
+  console.warn('⚠️  El servidor continuará sin las rutas de importación Excel');
+}
+
 // Cargar stored procedures
 let storedProcedures;
 try {

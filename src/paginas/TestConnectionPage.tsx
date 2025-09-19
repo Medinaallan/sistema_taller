@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 
 export function TestConnectionPage() {
-  const [backendStatus, setBackendStatus] = useState<string>('⏳ Verificando...');
+  const [backendStatus, setBackendStatus] = useState<string>('Verificando...');
   const [apiClients, setApiClients] = useState<any>(null);
-  const [chatStatus, setChatStatus] = useState<string>('⏳ Verificando...');
+  const [chatStatus, setChatStatus] = useState<string>('Verificando...');
 
   useEffect(() => {
     testBackendConnection();
