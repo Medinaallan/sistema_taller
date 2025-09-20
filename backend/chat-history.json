@@ -466,5 +466,29 @@
       "enviado_en": "2025-09-12T14:18:43.042Z",
       "leido": false
     }
+  ],
+  "cliente1": [
+    {
+      "mensaje_id": 1758359220701,
+      "sala_id": "cliente1",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "asdasdas",
+      "es_sistema": false,
+      "enviado_en": "2025-09-20T09:07:00.090Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1758359646453,
+      "sala_id": "cliente1",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-20T09:14:06.306Z",
+      "leido": false,
+      "archivo_url": "http://localhost:8080/images/1758359646300-4c9d8e69-474d-4e97-8a8c-052d2e5630bf.jpg",
+      "tipo_archivo": "image/jpeg"
+    }
   ]
 }
