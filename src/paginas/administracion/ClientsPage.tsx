@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
 import { CSVDataManager } from '../../componentes/administracion/CSVDataManager';
 import ExcelImportModal from '../../componentes/gestion/ExcelImportModal';
@@ -127,26 +127,94 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
 }
 
 export function ClientsPage() {
+  console.log(' ClientsPage: Iniciando componente...');
+  
   const { dispatch } = useApp();
+  console.log(' ClientsPage: useApp hook ejecutado');
+  
   const data = useInterconnectedData();
+  console.log(' ClientsPage: useInterconnectedData hook ejecutado, clientes:', data?.clients?.length || 0);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [forceRefresh, setForceRefresh] = useState(0);
+
+  console.log(' ClientsPage: Estados inicializados');
 
   useEffect(() => {
-    // Los datos ya están disponibles a través del contexto interconectado
-    // No necesitamos cargar mock data aquí
-    console.log('👥 ClientsPage: Clientes disponibles:', data.clients.length);
-    console.log('📋 ClientsPage: Lista de clientes:', data.clients.map(c => ({ id: c.id, name: c.name, email: c.email })));
-  }, [data.clients]);
+    console.log(' ClientsPage useEffect: Ejecutando...');
+    try {
+      console.log(' ClientsPage: Clientes disponibles:', data?.clients?.length || 0);
+      if (data?.clients && data.clients.length > 0) {
+        console.log(' ClientsPage: Lista de clientes:', data.clients.map(c => ({ id: c.id, name: c.name, email: c.email })));
+      }
+    } catch (effectError) {
+      console.error(' ClientsPage useEffect error:', effectError);
+    }
+  }, [data.clients, forceRefresh]);
 
-  const filteredClients = data.clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.phone.includes(searchTerm)
+  console.log(' ClientsPage: useEffect configurado');
+
+  //  AGREGADO: Función para forzar recarga
+  const handleForceRefresh = async () => {
+    console.log(' Forzando recarga de clientes...');
+    try {
+      // Incrementar contador para forzar re-render
+      setForceRefresh(prev => prev + 1);
+      
+      // Mostrar mensaje temporal
+      const tempMsg = document.createElement('div');
+      tempMsg.textContent = ' Recargando datos...';
+      tempMsg.style.cssText = 'position:fixed; top:20px; right:20px; background:#3b82f6; color:white; padding:10px 20px; border-radius:8px; z-index:9999;';
+      document.body.appendChild(tempMsg);
+      
+      // Recargar la página después de un breve retraso
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
+    } catch (error) {
+      console.error(' Error forzando recarga:', error);
+    }
+  };
+
+  //  PROTEGIDO: Verificar que data.clients exista antes de filtrar
+  const filteredClients = (data?.clients || []).filter(client =>
+    client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client?.phone?.includes(searchTerm)
   );
+
+  console.log(' ClientsPage: Clientes filtrados:', filteredClients.length);
+
+  //  PROTECCIÓN: Verificar que el componente tenga datos válidos antes de renderizar
+  if (!data) {
+    console.log(' ClientsPage: No hay datos disponibles, mostrando loading...');
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando datos de clientes...</p>
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="outline"
+                className="mt-4"
+              >
+                 Recargar página
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  console.log(' ClientsPage: Datos disponibles, renderizando componente completo...');
 
   const handleCreateClient = () => {
     setSelectedClient(null);
@@ -218,7 +286,7 @@ export function ClientsPage() {
       };
       
       // Buscar y actualizar también el usuario correspondiente
-      const userToUpdate = data.users.find(u => u.email === selectedClient.email && u.role === 'client');
+      const userToUpdate = (data?.users || []).find(u => u.email === selectedClient.email && u.role === 'client');
       if (userToUpdate) {
         const updatedUser: User = {
           ...userToUpdate,
@@ -262,10 +330,18 @@ export function ClientsPage() {
         </div>
         <div className="flex space-x-3">
           <Button 
+            onClick={handleForceRefresh}
+            variant="outline"
+            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
+            <ArrowPathIcon className="h-4 w-4 mr-2" />
+             Recargar
+          </Button>
+          <Button 
             onClick={() => setIsImportModalOpen(true)}
             variant="outline"
           >
-            📊 Importar Excel
+             Importar Excel
           </Button>
           <Button onClick={handleCreateClient}>
             <PlusIcon className="h-4 w-4 mr-2" />

@@ -3,8 +3,8 @@ import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegisterForm';
-import { obtenerClientesActualizados } from '../../utilidades/BaseDatosJS';
-import { mockUsers } from '../../utilidades/mockData';
+// import { obtenerClientesActualizados } from '../../utilidades/BaseDatosJS'; // Ya no se usa
+import { mockUsers } from '../../utilidades/globalMockDatabaseFinal'; // ✅ CORREGIDO: usar el archivo con datos reales
 
 type ViewMode = 'login' | 'setup' | 'clientRegister';
 
@@ -66,49 +66,64 @@ export function LoginPage() {
     try {
       console.log('🔍 Intentando login con:', formData.email, formData.password);
       
-      // Obtener clientes actualizados desde la API del backend
-      const clientesActualizados = await obtenerClientesActualizados();
-      console.log('📊 Clientes obtenidos:', clientesActualizados.length);
-      console.log('📋 Lista de clientes:', clientesActualizados.map(c => ({
-        email: c.email,
-        password: c.password,
-        name: c.name
-      })));
+      // ========================================
+      // NUEVO MÉTODO: Usar endpoint de login del backend
+      // ========================================
       
-      // Buscar cliente que coincida con email y contraseña
-      const client = clientesActualizados.find(c => 
-        c.email === formData.email && c.password === formData.password
-      );
-      
-      console.log('🎯 Cliente encontrado:', client);
-      
-      if (client) {
-        // Cliente encontrado en la API
-        const user = {
-          id: client.id,
-          email: client.email,
-          password: client.password,
-          role: 'client' as const,
-          name: client.name,
-          phone: client.phone,
-          createdAt: client.createdAt || new Date(),
-          updatedAt: client.updatedAt || new Date(),
-        };
+      try {
+        console.log('� Probando login de cliente via API...');
+        const response = await fetch('http://localhost:8080/api/clients/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          })
+        });
         
-        console.log('✅ Cliente autenticado:', user);
-        dispatch({ type: 'LOGIN', payload: user });
-        return;
+        const data = await response.json();
+        console.log('📊 Respuesta del login:', data);
+        
+        if (data.success && data.data) {
+          // Cliente autenticado exitosamente
+          const user = {
+            id: data.data.id,
+            email: data.data.email,
+            password: formData.password, // Mantener password para compatibilidad
+            role: 'client' as const,
+            name: data.data.name,
+            phone: data.data.phone,
+            createdAt: new Date(data.data.created_at || new Date()),
+            updatedAt: new Date(data.data.updated_at || new Date()),
+          };
+          
+          console.log('✅ Cliente autenticado via API:', user);
+          dispatch({ type: 'LOGIN', payload: user });
+          return;
+        } else {
+          console.log('❌ Login de cliente fallido:', data.message);
+        }
+      } catch (clientError) {
+        console.log('⚠️ Error en login de cliente, probando usuarios del sistema:', (clientError as Error).message);
       }
 
       // Intentar autenticación con usuarios del sistema (admin, mecánico, recepcionista)
+      console.log('🔍 Probando login de usuarios del sistema...');
+      console.log('👥 Usuarios disponibles:', mockUsers);
+      console.log('🔑 Buscando:', { email: formData.email, password: formData.password });
+      
       const systemUser = mockUsers.find(u => u.email === formData.email && u.password === formData.password);
       
       if (systemUser) {
+        console.log('✅ Usuario del sistema autenticado:', systemUser);
         dispatch({ type: 'LOGIN', payload: systemUser });
         return;
       }
 
       // No se encontró usuario
+      console.log('❌ No se encontró usuario válido');
       setErrors({ general: 'Email o contraseña incorrectos' });
       
     } catch (error) {

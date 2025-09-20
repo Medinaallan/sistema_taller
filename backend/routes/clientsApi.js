@@ -1,5 +1,7 @@
 const express = require('express');
 const csvService = require('../services/csvService');
+// SQL Server temporalmente desactivado - Solo usar CSV
+// const { getConnection, sql } = require('../config/database');
 const router = express.Router();
 
 /**
@@ -57,7 +59,72 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * 🔍 GET /api/clients/search - Buscar clientes con filtros
+ * � POST /api/clients/login - Login de cliente (validación de credenciales)
+ */
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email y contraseña son requeridos'
+      });
+    }
+    
+    console.log(`🔐 POST /api/clients/login - Intentando login: ${email}`);
+    
+    // Buscar cliente en CSV
+    const clients = await csvService.readCSV(MODULE, CSV_FILE);
+    const client = clients.find(c => 
+      c.email.toLowerCase() === email.toLowerCase() && 
+      c.password_hash === password
+    );
+    
+    if (!client) {
+      console.log(`❌ Credenciales inválidas para: ${email}`);
+      return res.status(401).json({
+        success: false,
+        message: 'Email o contraseña incorrectos'
+      });
+    }
+    
+    // Cliente encontrado - devolver datos sin contraseña
+    const clientForFrontend = {
+      id: client.id,
+      name: client.name,
+      email: client.email,
+      phone: client.phone,
+      address: client.address,
+      status: client.status,
+      registration_date: client.registration_date,
+      last_visit: client.last_visit,
+      total_visits: client.total_visits,
+      total_spent: client.total_spent,
+      notes: client.notes,
+      created_at: client.created_at,
+      updated_at: client.updated_at
+    };
+    
+    console.log(`✅ Login exitoso para: ${client.name} (${client.email})`);
+    
+    res.json({
+      success: true,
+      message: 'Login exitoso',
+      data: clientForFrontend
+    });
+    
+  } catch (error) {
+    console.error('❌ Error en login:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+/**
+ * �🔍 GET /api/clients/search - Buscar clientes con filtros
  */
 router.get('/search', async (req, res) => {
   try {
@@ -167,14 +234,14 @@ router.post('/', async (req, res) => {
     console.log('➕ POST /api/clients - Creando nuevo cliente:', clientData.name);
     
     // Validaciones básicas
-    if (!clientData.name || !clientData.email) {
+    if (!clientData.name || !clientData.email || !clientData.phone) {
       return res.status(400).json({
         success: false,
-        error: 'Nombre y email son requeridos'
+        error: 'Nombre, email y teléfono son requeridos'
       });
     }
     
-    // Verificar email único
+    // Verificar email único en CSV
     const existingClients = await csvService.readCSV(MODULE, CSV_FILE);
     const emailExists = existingClients.some(c => c.email.toLowerCase() === clientData.email.toLowerCase());
     
@@ -186,12 +253,13 @@ router.post('/', async (req, res) => {
     }
     
     // Preparar datos del cliente
+    const clientPassword = clientData.password || 'default123';
     const newClient = {
       name: clientData.name,
       email: clientData.email.toLowerCase(),
-      phone: clientData.phone || '',
+      phone: clientData.phone,
       address: clientData.address || '',
-      password_hash: clientData.password || 'default123', // En producción usar hash real
+      password_hash: clientPassword, // Guardar contraseña en CSV
       status: 'active',
       registration_date: new Date().toISOString(),
       last_visit: '',
@@ -202,6 +270,40 @@ router.post('/', async (req, res) => {
     
     // Crear cliente en CSV
     const createdClient = await csvService.createRecord(MODULE, CSV_FILE, newClient, CLIENT_HEADERS);
+    
+    // ========================================
+    // SQL SERVER TEMPORALMENTE DESACTIVADO
+    // (Los stored procedures se mantienen para uso futuro)
+    // ========================================
+    
+    // También registrar en SQL Server para autenticación
+    // COMENTADO TEMPORALMENTE - Solo usar CSV por ahora
+    /*
+    try {
+      console.log('🔄 Registrando cliente en sistema de autenticación...');
+      const pool = await getConnection();
+      const sqlResult = await pool.request()
+        .input('Email', sql.VarChar(255), clientData.email)
+        .input('Password', sql.VarChar(255), clientPassword)
+        .input('FullName', sql.VarChar(255), clientData.name)
+        .input('Phone', sql.VarChar(20), clientData.phone)
+        .input('Address', sql.VarChar(500), clientData.address || '')
+        .input('CompanyName', sql.VarChar(255), '') // Campo opcional
+        .execute('SP_REGISTRAR_USUARIO_CLIENTE');
+
+      const authResult = sqlResult.recordset[0];
+      
+      if (authResult && authResult.Success) {
+        console.log('✅ Cliente registrado en sistema de autenticación');
+        console.log(`🔑 Código de seguridad: ${authResult.SecurityCode}`);
+      } else {
+        console.warn('⚠️ No se pudo registrar en sistema de autenticación:', authResult?.Message);
+      }
+    } catch (authError) {
+      console.error('❌ Error registrando en sistema de autenticación:', authError.message);
+      // Continuar sin fallar, ya que el cliente se guardó en CSV
+    }
+    */
     
     // Respuesta (sin password)
     const clientForFrontend = { ...createdClient, password_hash: undefined };

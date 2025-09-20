@@ -4,7 +4,7 @@ const fs = require('fs');
 
 // Crear nueva plantilla Excel con configuración específica para máxima compatibilidad
 function createCompatibleExcelTemplate() {
-    console.log('📊 Creando plantilla Excel compatible...\n');
+    console.log('Creando plantilla Excel compatible...\n');
 
     // Crear un nuevo libro de trabajo con configuración específica
     const workbook = XLSX.utils.book_new();
@@ -125,17 +125,17 @@ function createCompatibleExcelTemplate() {
         // Verificar que el archivo se escribió correctamente
         if (fs.existsSync(templatePath)) {
             const stats = fs.statSync(templatePath);
-            console.log(`✅ Plantilla Excel compatible creada: ${templatePath}`);
-            console.log(`📊 Tamaño: ${stats.size} bytes`);
-            console.log(`📋 Hojas: ${workbook.SheetNames.join(', ')}`);
+            console.log(`Plantilla Excel compatible creada: ${templatePath}`);
+            console.log(`Tamaño: ${stats.size} bytes`);
+            console.log(`Hojas: ${workbook.SheetNames.join(', ')}`);
             
             // Verificar que se puede leer
             try {
                 const testRead = XLSX.readFile(templatePath);
-                console.log(`✅ Verificación de lectura exitosa`);
-                console.log(`📑 Hojas leídas: ${testRead.SheetNames.join(', ')}`);
+                console.log(`Verificación de lectura exitosa`);
+                console.log(`Hojas leídas: ${testRead.SheetNames.join(', ')}`);
             } catch (readError) {
-                console.error('❌ Error verificando lectura:', readError.message);
+                console.error('Error verificando lectura:', readError.message);
                 throw readError;
             }
             
@@ -146,7 +146,7 @@ function createCompatibleExcelTemplate() {
         return templatePath;
         
     } catch (error) {
-        console.error('❌ Error creando plantilla Excel:', error.message);
+        console.error('Error creando plantilla Excel:', error.message);
         throw error;
     }
 }
@@ -155,9 +155,9 @@ function createCompatibleExcelTemplate() {
 if (require.main === module) {
     try {
         createCompatibleExcelTemplate();
-        console.log('\n🎉 Plantilla Excel compatible creada exitosamente!');
+        console.log('\nPlantilla Excel compatible creada exitosamente!');
     } catch (error) {
-        console.error('\n❌ Error:', error.message);
+        console.error('\nError:', error.message);
         process.exit(1);
     }
 }

@@ -2,6 +2,8 @@ const XLSX = require('xlsx');
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+// SQL Server temporalmente desactivado - Solo usar CSV
+// const { getConnection, sql } = require('../config/database');
 
 class ExcelImportService {
     constructor() {
@@ -268,6 +270,41 @@ class ExcelImportService {
                     'status', 'registration_date', 'last_visit', 'total_visits', 
                     'total_spent', 'notes', 'created_at', 'updated_at'
                 ]);
+
+                // ========================================
+                // SQL SERVER TEMPORALMENTE DESACTIVADO
+                // (Los stored procedures se mantienen para uso futuro)
+                // ========================================
+                
+                // También registrar clientes en SQL Server para autenticación
+                // COMENTADO TEMPORALMENTE - Solo usar CSV por ahora
+                /*
+                for (const client of processedClients) {
+                    try {
+                        console.log(`🔄 Registrando cliente ${client.name} en sistema de autenticación...`);
+                        const pool = await getConnection();
+                        const sqlResult = await pool.request()
+                            .input('Email', sql.VarChar(255), client.email)
+                            .input('Password', sql.VarChar(255), client.password_hash)
+                            .input('FullName', sql.VarChar(255), client.name)
+                            .input('Phone', sql.VarChar(20), client.phone)
+                            .input('Address', sql.VarChar(500), client.address || '')
+                            .input('CompanyName', sql.VarChar(255), '') // Campo opcional
+                            .execute('SP_REGISTRAR_USUARIO_CLIENTE');
+
+                        const authResult = sqlResult.recordset[0];
+                        
+                        if (authResult && authResult.Success) {
+                            console.log(`✅ Cliente ${client.name} registrado en autenticación`);
+                        } else {
+                            console.warn(`⚠️ No se pudo registrar ${client.name} en autenticación:`, authResult?.Message);
+                        }
+                    } catch (authError) {
+                        console.error(`❌ Error registrando ${client.name} en autenticación:`, authError.message);
+                        // Continuar con el siguiente cliente
+                    }
+                }
+                */
             }
 
             // Guardar vehículos

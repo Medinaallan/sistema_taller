@@ -19,7 +19,7 @@ export const mockUsers: User[] = [
     email: 'admin@taller.com',
     password: 'admin123',
     role: 'admin',
-    name: 'Administrador Principal',
+    name: 'ADMIN ALLAN',
     phone: '+1234567890',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),

@@ -8,21 +8,12 @@ import {
   mockWorkOrders, 
   mockReminders, 
   mockDashboardStats
-} from '../utilidades/mockData';
+} from '../utilidades/globalMockDatabaseFinal'; // ✅ CORREGIDO: usar el archivo con datos reales
 
 // Función para obtener estado inicial con persistencia
 export const getInitialState = (): AppState => {
-  let user: import('../tipos').User = {
-    id: 'admin-test',
-    name: 'Admin Prueba',
-    email: 'admin@prueba.com',
-    role: 'admin',
-    password: '',
-    phone: '1111-1111',
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date(),
-  };
-  let isAuthenticated = true;
+  let user: import('../tipos').User | null = null; // ✅ CORREGIDO: Permitir null
+  let isAuthenticated = false; // ✅ CORREGIDO: Iniciar como NO autenticado por defecto
   let clients = mockClients; // Datos del CSV
   let serviceTypes = mockServiceTypes;
   let users = mockUsers; // Usuarios del sistema
@@ -34,9 +25,14 @@ export const getInitialState = (): AppState => {
     const savedServiceTypes = localStorage.getItem('tallerApp_serviceTypes');
     const savedUsers = localStorage.getItem('tallerApp_users');
     
+    // ✅ CORREGIDO: Solo autenticar si AMBAS condiciones se cumplen
     if (savedUser && savedAuth === 'true') {
       user = JSON.parse(savedUser);
       isAuthenticated = true;
+    } else {
+      // Si no hay autenticación válida, asegurar que esté limpio
+      user = null;
+      isAuthenticated = false;
     }
     if (savedClients) {
       clients = JSON.parse(savedClients);

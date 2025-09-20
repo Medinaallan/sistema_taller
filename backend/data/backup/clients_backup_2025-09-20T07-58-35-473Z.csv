@@ -1,0 +1,13 @@
+id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
+client-1,Andre Vargas,avargas@taller.com,9999-9999,Col. Los arbolitos,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.883Z
+client-2,Gerardo Medina,gmedina@taller.com,9999-9999,Col. Los maestros,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.883Z
+client-3,Natanael Cano,ncano@taller.com,9999-1002,Barrio z,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.883Z
+client-4,Katy Ramos,kramos@taller.com,9999-1003,Barrio A,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.883Z
+client-5,Katy hernanez,khernandez@taller.com,9999-1023,Barrio A,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.883Z
+client-6,Alex Ramos,aramos@taller.com,9993-1600,Barrio x,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.883Z
+client-7,Holi,holi@taller.com,9996-1245,asdf,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.883Z
+client-8,WILMER M,wmedina@taller.com,9995-9999,Col. Los maestros,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.884Z
+client-9,Andre Martinez,amartinez@taller.com,9999-9999,Col. Los arbolitos,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.884Z,2025-09-17T14:47:58.884Z
+client-10,Katy Quintero,kquintero@taller.com,9999-1003,Barrio A,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.884Z,2025-09-17T14:47:58.884Z
+client-11,Katerin Marquez,kmarquez@taller.com,9995-9999,Col. Los maestros,asdf1234,active,2025-09-17,,0,0,Migrado desde Client_Database.csv,2025-09-17T14:47:58.883Z,2025-09-17T14:47:58.884Z
+clients-1758124218986-7e4e87d6,marvin garcia,mgarcia@taller.com,(504) 978-9622,zxczvz,asdf1234,active,2025-09-17T15:50:18.985Z,,0,0,,2025-09-17T15:50:18.987Z,2025-09-17T15:50:18.987Z
