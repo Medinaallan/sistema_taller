@@ -1,6 +1,8 @@
 // Simulación de stored procedures según especificaciones exactas
 // Esto permite que el backend funcione mientras configuramos la base de datos real
 
+const csvService = require('../services/csvService');
+
 let mockUsers = [
   {
     userId: 1,
@@ -79,10 +81,21 @@ async function SP_VALIDAR_CORREO_USUARIO(correo) {
 // SP_REGISTRAR_USUARIO_CLIENTE - Registro de cliente (paso 1)
 async function SP_REGISTRAR_USUARIO_CLIENTE(nombre_completo, correo, telefono) {
   try {
-    // Verificar si el email ya existe
+    // Verificar si el email ya existe en memoria
     const existingUser = [...mockUsers, ...mockClients].find(u => u.email === correo);
     
     if (existingUser) {
+      return {
+        msg: 'El email ya está registrado',
+        allow: 0
+      };
+    }
+
+    // Verificar si el email ya existe en CSV
+    const existingClients = await csvService.readCSV('clients', 'clients.csv');
+    const emailExistsInCSV = existingClients.some(c => c.email && c.email.toLowerCase() === correo.toLowerCase());
+    
+    if (emailExistsInCSV) {
       return {
         msg: 'El email ya está registrado',
         allow: 0
@@ -118,6 +131,7 @@ async function SP_REGISTRAR_USUARIO_CLIENTE(nombre_completo, correo, telefono) {
       codigo_seguridad: codigo_seguridad
     };
   } catch (error) {
+    console.error('Error en SP_REGISTRAR_USUARIO_CLIENTE:', error);
     return {
       msg: 'Error al registrar usuario cliente',
       allow: 0
@@ -178,11 +192,43 @@ async function SP_REGISTRAR_PASSWORD(correo, password) {
     client.isActive = true;
     client.updatedAt = new Date();
 
+    // GUARDAR EN CSV - Este es el paso final del registro
+    try {
+      const CLIENT_HEADERS = [
+        'id', 'name', 'email', 'phone', 'address', 'password_hash', 
+        'status', 'registration_date', 'last_visit', 'total_visits', 
+        'total_spent', 'notes', 'created_at', 'updated_at'
+      ];
+
+      const newClientCSV = {
+        name: client.fullName,
+        email: client.email.toLowerCase(),
+        phone: client.phone || '',
+        address: client.address || '',
+        password_hash: password, // Guardar contraseña en CSV
+        status: 'active',
+        registration_date: new Date().toISOString(),
+        last_visit: '',
+        total_visits: 0,
+        total_spent: 0,
+        notes: 'Registrado desde login'
+      };
+
+      // Crear cliente en CSV
+      await csvService.createRecord('clients', 'clients.csv', newClientCSV, CLIENT_HEADERS);
+      console.log(`✅ Cliente guardado en CSV: ${client.fullName} (${client.email})`);
+
+    } catch (csvError) {
+      console.error('❌ Error guardando cliente en CSV:', csvError);
+      // No fallar el registro si hay error en CSV, pero logearlo
+    }
+
     return {
       msg: 'Contraseña registrada con éxito',
       allow: 1
     };
   } catch (error) {
+    console.error('Error en SP_REGISTRAR_PASSWORD:', error);
     return {
       msg: 'Error al registrar contraseña',
       allow: 0
@@ -209,7 +255,7 @@ async function SP_LOGIN(correo, password) {
       };
     }
 
-    // Buscar en clientes
+    // Buscar en clientes en memoria
     const client = mockClients.find(c => c.email === correo && c.password === password && c.isActive);
     
     if (client) {
@@ -225,11 +271,37 @@ async function SP_LOGIN(correo, password) {
       };
     }
 
+    // Buscar en clientes del CSV
+    try {
+      const csvClients = await csvService.readCSV('clients', 'clients.csv');
+      const csvClient = csvClients.find(c => 
+        c.email && c.email.toLowerCase() === correo.toLowerCase() && 
+        c.password_hash === password && 
+        c.status === 'active'
+      );
+
+      if (csvClient) {
+        return {
+          allow: 1,
+          usuario: {
+            usuario_id: csvClient.id,
+            nombre_completo: csvClient.name,
+            correo: csvClient.email,
+            telefono: csvClient.phone || '',
+            rol: 'client'
+          }
+        };
+      }
+    } catch (csvError) {
+      console.error('Error consultando CSV en login:', csvError);
+    }
+
     return {
       allow: 0,
       msg: 'Usuario o contraseña incorrectos'
     };
   } catch (error) {
+    console.error('Error en SP_LOGIN:', error);
     return {
       allow: 0,
       msg: 'Usuario o contraseña incorrectos'
@@ -284,7 +356,8 @@ async function SP_REGISTRAR_USUARIO_PANEL_ADMIN(nombre_completo, correo, telefon
 // SP_OBTENER_CLIENTES_REGISTRADOS - Obtener lista de clientes
 async function SP_OBTENER_CLIENTES_REGISTRADOS() {
   try {
-    return mockClients.filter(c => c.isActive).map(client => ({
+    // Clientes de memoria
+    const memoryClients = mockClients.filter(c => c.isActive).map(client => ({
       userId: client.userId,
       email: client.email,
       fullName: client.fullName,
@@ -294,6 +367,34 @@ async function SP_OBTENER_CLIENTES_REGISTRADOS() {
       isActive: client.isActive,
       createdAt: client.createdAt
     }));
+
+    // Clientes del CSV
+    let csvClients = [];
+    try {
+      const csvData = await csvService.readCSV('clients', 'clients.csv');
+      csvClients = csvData.filter(c => c.status === 'active').map(client => ({
+        userId: client.id,
+        email: client.email,
+        fullName: client.name,
+        phone: client.phone,
+        address: client.address,
+        companyName: '',
+        isActive: true,
+        createdAt: client.created_at || client.registration_date
+      }));
+    } catch (csvError) {
+      console.error('Error consultando CSV:', csvError);
+    }
+
+    // Combinar y evitar duplicados (priorizar CSV sobre memoria)
+    const allClients = [...csvClients];
+    memoryClients.forEach(memClient => {
+      if (!csvClients.find(csvClient => csvClient.email === memClient.email)) {
+        allClients.push(memClient);
+      }
+    });
+
+    return allClients;
   } catch (error) {
     console.error('Error en SP_OBTENER_CLIENTES_REGISTRADOS:', error);
     return [];

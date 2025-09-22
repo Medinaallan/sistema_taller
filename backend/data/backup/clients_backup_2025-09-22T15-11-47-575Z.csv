@@ -1,0 +1,4 @@
+id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
+cliente1,andre,andre@taller.com,983542675,asdfsdfa,default123,active,2024-01-01T00:00:00Z,,0,0,,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z
+cliente2,ALLAN MEDINA,amedina@taller.com,97896227,,asdf1234,active,2025-09-22T14:12:20.245Z,,0,0,Registrado desde login,2025-09-22T14:12:20.247Z,2025-09-22T14:12:20.247Z
+cliente3,Juan Prueba,prueba@test.com,123456789,,test123,active,2025-09-22T14:56:38.670Z,,0,0,Registrado desde login,2025-09-22T14:56:38.673Z,2025-09-22T14:56:38.673Z

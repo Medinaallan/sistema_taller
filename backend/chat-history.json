@@ -490,5 +490,51 @@
       "archivo_url": "http://localhost:8080/images/1758359646300-4c9d8e69-474d-4e97-8a8c-052d2e5630bf.jpg",
       "tipo_archivo": "image/jpeg"
     }
+  ],
+  "cliente2": [
+    {
+      "mensaje_id": 1758553194222,
+      "sala_id": "cliente2",
+      "usuario_id": "cliente2",
+      "rol": "client",
+      "contenido": "hola como estan",
+      "es_sistema": false,
+      "enviado_en": "2025-09-22T14:59:53.866Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1758553211095,
+      "sala_id": "cliente2",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "bien y tu ?",
+      "es_sistema": false,
+      "enviado_en": "2025-09-22T15:00:10.439Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1758554047381,
+      "sala_id": "cliente2",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-22T15:14:06.409Z",
+      "leido": false,
+      "archivo_url": "http://localhost:8080/images/1758554046403-432abaf4-38ce-47d1-bbbb-5774240a9289.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1758554072189,
+      "sala_id": "cliente2",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-22T15:14:31.253Z",
+      "leido": false,
+      "archivo_url": "http://localhost:8080/images/1758554071251-eea2e726-4385-4a2d-b82c-1791a6e0a233.jpeg",
+      "tipo_archivo": "image/jpeg"
+    }
   ]
 }

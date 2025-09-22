@@ -25,6 +25,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Servir archivos estáticos de imágenes
+app.use('/images', express.static(path.join(__dirname, 'SaveImages')));
+
 // Middleware de logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -479,6 +482,7 @@ server.listen(PORT, () => {
   console.log(` API Servicios:    http://localhost:${PORT}/api/services`);
   console.log(` API Vehículos:    http://localhost:${PORT}/api/vehicles`);
   console.log(` Subir Imágenes:   http://localhost:${PORT}/api/upload-image`);
+  console.log(` Servir Imágenes:  http://localhost:${PORT}/images/<filename>`);
   console.log(` Autenticación:    http://localhost:${PORT}/api/auth/*`);
   console.log(` Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);
   console.log(` Frontend:         http://localhost:5173`);
