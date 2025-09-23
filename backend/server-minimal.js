@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const spacesService = require('./services/spacesService');
 
 // Servicios CSV
 const csvService = require('./services/csvService');
@@ -25,34 +26,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir archivos estáticos de imágenes
-app.use('/images', express.static(path.join(__dirname, 'SaveImages')));
-
 // Middleware de logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
 
-// Configuración de multer para subida de imágenes
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'SaveImages');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
-
+// Configuración de multer para subida de imágenes a memoria (para Spaces)
 const upload = multer({ 
-  storage: storage,
+  storage: multer.memoryStorage(), // Usar memoria en lugar de disco
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
@@ -141,25 +125,66 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Endpoint para subir imágenes de chat
-app.post('/api/upload-image', upload.single('image'), (req, res) => {
+// Endpoint para subir imágenes de chat a Digital Ocean Spaces
+app.post('/api/upload-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No se recibió ningún archivo' });
     }
 
-    const imageUrl = `http://localhost:8080/images/${req.file.filename}`;
-    console.log('📷 Imagen subida exitosamente:', imageUrl);
+    console.log(' Subiendo imagen a Spaces...', req.file.originalname);
     
-    res.json({
-      success: true,
-      imageUrl: imageUrl,
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      size: req.file.size
-    });
+    // Subir a Digital Ocean Spaces
+    const result = await spacesService.uploadImage(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      'chat-images'
+    );
+
+    if (result.success) {
+      console.log(' Imagen subida exitosamente a Spaces:', result.url);
+      
+      res.json({
+        success: true,
+        imageUrl: result.url,
+        filename: result.fileName,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        key: result.key // Para poder eliminar después si es necesario
+      });
+    } else {
+      console.error(' Error subiendo a Spaces:', result.error);
+      res.status(500).json({ success: false, error: result.error });
+    }
   } catch (error) {
-    console.error('❌ Error subiendo imagen:', error);
+    console.error(' Error subiendo imagen:', error);
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// Endpoint para eliminar imágenes de Spaces
+app.delete('/api/delete-image/:key(*)', async (req, res) => {
+  try {
+    const key = req.params.key;
+    
+    if (!key) {
+      return res.status(400).json({ success: false, error: 'Key de imagen requerida' });
+    }
+
+    console.log('🗑️ Eliminando imagen de Spaces:', key);
+    
+    const result = await spacesService.deleteImage(key);
+    
+    if (result.success) {
+      console.log('✅ Imagen eliminada exitosamente de Spaces');
+      res.json({ success: true, message: 'Imagen eliminada exitosamente' });
+    } else {
+      console.error('❌ Error eliminando de Spaces:', result.error);
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('❌ Error eliminando imagen:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -481,8 +506,8 @@ server.listen(PORT, () => {
   console.log(` API Clientes:     http://localhost:${PORT}/api/clients`);
   console.log(` API Servicios:    http://localhost:${PORT}/api/services`);
   console.log(` API Vehículos:    http://localhost:${PORT}/api/vehicles`);
-  console.log(` Subir Imágenes:   http://localhost:${PORT}/api/upload-image`);
-  console.log(` Servir Imágenes:  http://localhost:${PORT}/images/<filename>`);
+  console.log(` Subir Imágenes:   http://localhost:${PORT}/api/upload-image (Digital Ocean Spaces)`);
+  console.log(` Eliminar Imagen:  http://localhost:${PORT}/api/delete-image/:key`);
   console.log(` Autenticación:    http://localhost:${PORT}/api/auth/*`);
   console.log(` Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);
   console.log(` Frontend:         http://localhost:5173`);

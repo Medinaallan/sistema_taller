@@ -536,5 +536,71 @@
       "archivo_url": "http://localhost:8080/images/1758554071251-eea2e726-4385-4a2d-b82c-1791a6e0a233.jpeg",
       "tipo_archivo": "image/jpeg"
     }
+  ],
+  "clients-1758553907575-44cd2c41": [
+    {
+      "mensaje_id": 1758629170597,
+      "sala_id": "clients-1758553907575-44cd2c41",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-09-23T12:06:10.372Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1758629180583,
+      "sala_id": "clients-1758553907575-44cd2c41",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "esta es una prueba de chat de admin a cliente",
+      "es_sistema": false,
+      "enviado_en": "2025-09-23T12:06:19.766Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1758629200484,
+      "sala_id": "clients-1758553907575-44cd2c41",
+      "usuario_id": "clients-1758553907575-44cd2c41",
+      "rol": "client",
+      "contenido": "esta es una prueba de chat de cliente a admin",
+      "es_sistema": false,
+      "enviado_en": "2025-09-23T12:06:39.965Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1758629209031,
+      "sala_id": "clients-1758553907575-44cd2c41",
+      "usuario_id": "clients-1758553907575-44cd2c41",
+      "rol": "client",
+      "contenido": "exitosa",
+      "es_sistema": false,
+      "enviado_en": "2025-09-23T12:06:48.592Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1758629228963,
+      "sala_id": "clients-1758553907575-44cd2c41",
+      "usuario_id": "clients-1758553907575-44cd2c41",
+      "rol": "client",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-23T12:07:08.759Z",
+      "leido": true,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1758629227372-fc183358-e0a2-47ec-a15d-88ff399fe043.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1758629249978,
+      "sala_id": "clients-1758553907575-44cd2c41",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-09-23T12:07:29.162Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1758629247844-59db7eda-39bf-4292-837d-c3ced8a22143.jpg",
+      "tipo_archivo": "image/jpeg"
+    }
   ]
 }

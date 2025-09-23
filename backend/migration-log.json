@@ -1,0 +1,17 @@
+{
+  "startTime": "2025-09-23T11:51:46.966Z",
+  "endTime": "2025-09-23T11:52:07.455Z",
+  "totalFiles": 7,
+  "successful": 7,
+  "failed": 0,
+  "errors": [],
+  "fileMap": {
+    "1758554071251-eea2e726-4385-4a2d-b82c-1791a6e0a233.jpeg": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/migrated-images/1758628307060-c6a94c4e-1de3-4f29-ba83-7bf8ba2e3395.jpeg",
+    "17d3a0d1-3bb5-40e5-abde-8354e7018bfa-1757596160333.jpg": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/migrated-images/1758628307062-8a8e6aa1-5c45-4bf3-bac9-b4d63a79697f.jpg",
+    "81dfe2f6-4c16-45b3-84b3-506c64e951ab-1757593521091.jpg": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/migrated-images/1758628307064-b71eb408-cd33-462b-959c-6ed9a4b4ee91.jpg",
+    "1758359646300-4c9d8e69-474d-4e97-8a8c-052d2e5630bf.jpg": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/migrated-images/1758628307002-bba5c020-90e7-43cb-99a8-7e8375120f06.jpg",
+    "1758554046403-432abaf4-38ce-47d1-bbbb-5774240a9289.jpg": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/migrated-images/1758628307056-1959aaa2-b902-44af-8816-cfd06495696d.jpg",
+    "9e9cf193-cc85-4db1-af37-9defa659253d-1757510153248.jpg": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/migrated-images/1758628309467-96df329d-293e-43f7-b9f4-9edeef3e6d08.jpg",
+    "e8afa181-2e6b-4874-bf56-3dac140c6e08-1757599233209.png": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/migrated-images/1758628309470-4d7eab34-87b2-4983-95f7-bf2d0ae4c34f.png"
+  }
+}
