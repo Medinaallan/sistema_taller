@@ -2,11 +2,11 @@ const { getConnection, sql } = require('../config/database');
 
 async function setupDatabase() {
   try {
-    console.log('🔧 Configurando base de datos...');
+    console.log(' Configurando base de datos...');
     const pool = await getConnection();
     
     // Crear tabla Users
-    console.log('📋 Creando tabla Users...');
+    console.log(' Creando tabla Users...');
     await pool.request().query(`
       IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Users' AND xtype='U')
       BEGIN
@@ -30,7 +30,7 @@ async function setupDatabase() {
     `);
     
     // Insertar usuario administrador por defecto
-    console.log('👤 Creando usuario administrador por defecto...');
+    console.log(' Creando usuario administrador por defecto...');
     await pool.request().query(`
       IF NOT EXISTS (SELECT * FROM Users WHERE Email = 'admin@taller.com')
       BEGIN
@@ -41,7 +41,7 @@ async function setupDatabase() {
     `);
 
     // Crear stored procedure SP_LOGIN
-    console.log('🔐 Creando SP_LOGIN...');
+    console.log(' Creando SP_LOGIN...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_LOGIN')
         DROP PROCEDURE SP_LOGIN
@@ -90,7 +90,7 @@ async function setupDatabase() {
     `);
 
     // Crear stored procedure SP_REGISTRAR_USUARIO_CLIENTE
-    console.log('📝 Creando SP_REGISTRAR_USUARIO_CLIENTE...');
+    console.log(' Creando SP_REGISTRAR_USUARIO_CLIENTE...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_REGISTRAR_USUARIO_CLIENTE')
         DROP PROCEDURE SP_REGISTRAR_USUARIO_CLIENTE
@@ -139,7 +139,7 @@ async function setupDatabase() {
     `);
 
     // Crear stored procedure SP_VERIFICAR_CODIGO_SEGURIDAD
-    console.log('🔒 Creando SP_VERIFICAR_CODIGO_SEGURIDAD...');
+    console.log(' Creando SP_VERIFICAR_CODIGO_SEGURIDAD...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_VERIFICAR_CODIGO_SEGURIDAD')
         DROP PROCEDURE SP_VERIFICAR_CODIGO_SEGURIDAD
@@ -183,7 +183,7 @@ async function setupDatabase() {
     `);
 
     // Crear otros stored procedures útiles
-    console.log('📊 Creando procedures adicionales...');
+    console.log(' Creando procedures adicionales...');
     
     // SP_OBTENER_CLIENTES_REGISTRADOS
     await pool.request().query(`
@@ -212,14 +212,14 @@ async function setupDatabase() {
       END
     `);
 
-    console.log('✅ Base de datos configurada exitosamente');
+    console.log(' Base de datos configurada exitosamente');
     
     // Verificar las tablas creadas
     const result = await pool.request().query('SELECT name FROM sys.tables');
-    console.log('📋 Tablas en la base de datos:', result.recordset.map(r => r.name));
+    console.log(' Tablas en la base de datos:', result.recordset.map(r => r.name));
     
   } catch (error) {
-    console.error('❌ Error configurando la base de datos:', error);
+    console.error(' Error configurando la base de datos:', error);
     throw error;
   }
 }
@@ -228,11 +228,11 @@ async function setupDatabase() {
 if (require.main === module) {
   setupDatabase()
     .then(() => {
-      console.log('🎉 Configuración completada');
+      console.log(' Configuración completada');
       process.exit(0);
     })
     .catch(err => {
-      console.error('💥 Error en la configuración:', err);
+      console.error(' Error en la configuración:', err);
       process.exit(1);
     });
 }

@@ -5,7 +5,7 @@ const csvService = require('../services/csvService');
 const router = express.Router();
 
 /**
- * 👥 API ENDPOINTS PARA CLIENTES - CRUD COMPLETO
+ *  API ENDPOINTS PARA CLIENTES - CRUD COMPLETO
  * 
  * Endpoints que trabajan directamente con CSV:
  * GET    /api/clients        - Obtener todos los clientes
@@ -28,11 +28,11 @@ const CSV_FILE = 'clients.csv';
 const MODULE = 'clients';
 
 /**
- * 📋 GET /api/clients - Obtener todos los clientes
+ *  GET /api/clients - Obtener todos los clientes
  */
 router.get('/', async (req, res) => {
   try {
-    console.log('📋 GET /api/clients - Obteniendo todos los clientes');
+    console.log(' GET /api/clients - Obteniendo todos los clientes');
     
     const clients = await csvService.readCSV(MODULE, CSV_FILE);
     
@@ -48,9 +48,9 @@ router.get('/', async (req, res) => {
       total: clientsForFrontend.length
     });
     
-    console.log(`✅ Enviados ${clientsForFrontend.length} clientes`);
+    console.log(` Enviados ${clientsForFrontend.length} clientes`);
   } catch (error) {
-    console.error('❌ Error obteniendo clientes:', error);
+    console.error(' Error obteniendo clientes:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * � POST /api/clients/login - Login de cliente (validación de credenciales)
+ *  POST /api/clients/login - Login de cliente (validación de credenciales)
  */
 router.post('/login', async (req, res) => {
   try {
@@ -72,7 +72,7 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    console.log(`🔐 POST /api/clients/login - Intentando login: ${email}`);
+    console.log(` POST /api/clients/login - Intentando login: ${email}`);
     
     // Buscar cliente en CSV
     const clients = await csvService.readCSV(MODULE, CSV_FILE);
@@ -82,7 +82,7 @@ router.post('/login', async (req, res) => {
     );
     
     if (!client) {
-      console.log(`❌ Credenciales inválidas para: ${email}`);
+      console.log(` Credenciales inválidas para: ${email}`);
       return res.status(401).json({
         success: false,
         message: 'Email o contraseña incorrectos'
@@ -106,7 +106,7 @@ router.post('/login', async (req, res) => {
       updated_at: client.updated_at
     };
     
-    console.log(`✅ Login exitoso para: ${client.name} (${client.email})`);
+    console.log(` Login exitoso para: ${client.name} (${client.email})`);
     
     res.json({
       success: true,
@@ -115,7 +115,7 @@ router.post('/login', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Error en login:', error);
+    console.error(' Error en login:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -124,12 +124,12 @@ router.post('/login', async (req, res) => {
 });
 
 /**
- * �🔍 GET /api/clients/search - Buscar clientes con filtros
+ *  GET /api/clients/search - Buscar clientes con filtros
  */
 router.get('/search', async (req, res) => {
   try {
     const filters = req.query;
-    console.log('🔍 GET /api/clients/search - Buscando clientes con filtros:', filters);
+    console.log(' GET /api/clients/search - Buscando clientes con filtros:', filters);
     
     const clients = await csvService.searchRecords(MODULE, CSV_FILE, filters);
     
@@ -146,9 +146,9 @@ router.get('/search', async (req, res) => {
       filters: filters
     });
     
-    console.log(`✅ Encontrados ${clientsForFrontend.length} clientes`);
+    console.log(` Encontrados ${clientsForFrontend.length} clientes`);
   } catch (error) {
-    console.error('❌ Error buscando clientes:', error);
+    console.error(' Error buscando clientes:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -157,11 +157,11 @@ router.get('/search', async (req, res) => {
 });
 
 /**
- * 📊 GET /api/clients/stats - Estadísticas de clientes
+ *  GET /api/clients/stats - Estadísticas de clientes
  */
 router.get('/stats', async (req, res) => {
   try {
-    console.log('📊 GET /api/clients/stats - Obteniendo estadísticas');
+    console.log(' GET /api/clients/stats - Obteniendo estadísticas');
     
     const stats = await csvService.getStats(MODULE, CSV_FILE);
     const clients = await csvService.readCSV(MODULE, CSV_FILE);
@@ -179,9 +179,9 @@ router.get('/stats', async (req, res) => {
       data: extendedStats
     });
     
-    console.log('✅ Estadísticas enviadas');
+    console.log(' Estadísticas enviadas');
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error);
+    console.error(' Error obteniendo estadísticas:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -190,12 +190,12 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
- * 🔍 GET /api/clients/:id - Obtener un cliente específico
+ *  GET /api/clients/:id - Obtener un cliente específico
  */
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`🔍 GET /api/clients/${id} - Obteniendo cliente específico`);
+    console.log(` GET /api/clients/${id} - Obteniendo cliente específico`);
     
     const clients = await csvService.readCSV(MODULE, CSV_FILE);
     const client = clients.find(c => c.id === id);
@@ -215,9 +215,9 @@ router.get('/:id', async (req, res) => {
       data: clientForFrontend
     });
     
-    console.log(`✅ Cliente encontrado: ${client.name}`);
+    console.log(` Cliente encontrado: ${client.name}`);
   } catch (error) {
-    console.error('❌ Error obteniendo cliente:', error);
+    console.error(' Error obteniendo cliente:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -226,12 +226,12 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * ➕ POST /api/clients - Crear nuevo cliente
+ *  POST /api/clients - Crear nuevo cliente
  */
 router.post('/', async (req, res) => {
   try {
     const clientData = req.body;
-    console.log('➕ POST /api/clients - Creando nuevo cliente:', clientData.name);
+    console.log(' POST /api/clients - Creando nuevo cliente:', clientData.name);
     
     // Validaciones básicas
     if (!clientData.name || !clientData.email || !clientData.phone) {
@@ -280,7 +280,7 @@ router.post('/', async (req, res) => {
     // COMENTADO TEMPORALMENTE - Solo usar CSV por ahora
     /*
     try {
-      console.log('🔄 Registrando cliente en sistema de autenticación...');
+      console.log(' Registrando cliente en sistema de autenticación...');
       const pool = await getConnection();
       const sqlResult = await pool.request()
         .input('Email', sql.VarChar(255), clientData.email)
@@ -294,13 +294,13 @@ router.post('/', async (req, res) => {
       const authResult = sqlResult.recordset[0];
       
       if (authResult && authResult.Success) {
-        console.log('✅ Cliente registrado en sistema de autenticación');
-        console.log(`🔑 Código de seguridad: ${authResult.SecurityCode}`);
+        console.log(' Cliente registrado en sistema de autenticación');
+        console.log(` Código de seguridad: ${authResult.SecurityCode}`);
       } else {
-        console.warn('⚠️ No se pudo registrar en sistema de autenticación:', authResult?.Message);
+        console.warn(' No se pudo registrar en sistema de autenticación:', authResult?.Message);
       }
     } catch (authError) {
-      console.error('❌ Error registrando en sistema de autenticación:', authError.message);
+      console.error(' Error registrando en sistema de autenticación:', authError.message);
       // Continuar sin fallar, ya que el cliente se guardó en CSV
     }
     */
@@ -314,9 +314,9 @@ router.post('/', async (req, res) => {
       message: 'Cliente creado exitosamente'
     });
     
-    console.log(`✅ Cliente creado: ${createdClient.name} (${createdClient.id})`);
+    console.log(` Cliente creado: ${createdClient.name} (${createdClient.id})`);
   } catch (error) {
-    console.error('❌ Error creando cliente:', error);
+    console.error(' Error creando cliente:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -325,13 +325,13 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * 📝 PUT /api/clients/:id - Actualizar cliente
+ *  PUT /api/clients/:id - Actualizar cliente
  */
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    console.log(`📝 PUT /api/clients/${id} - Actualizando cliente`);
+    console.log(` PUT /api/clients/${id} - Actualizando cliente`);
     
     // Validaciones
     if (updates.email) {
@@ -364,7 +364,7 @@ router.put('/:id', async (req, res) => {
       message: 'Cliente actualizado exitosamente'
     });
     
-    console.log(`✅ Cliente actualizado: ${updatedClient.name}`);
+    console.log(` Cliente actualizado: ${updatedClient.name}`);
   } catch (error) {
     if (error.message.includes('no encontrado')) {
       return res.status(404).json({
@@ -373,7 +373,7 @@ router.put('/:id', async (req, res) => {
       });
     }
     
-    console.error('❌ Error actualizando cliente:', error);
+    console.error(' Error actualizando cliente:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -382,12 +382,12 @@ router.put('/:id', async (req, res) => {
 });
 
 /**
- * 🗑️ DELETE /api/clients/:id - Eliminar cliente
+ *  DELETE /api/clients/:id - Eliminar cliente
  */
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`🗑️ DELETE /api/clients/${id} - Eliminando cliente`);
+    console.log(` DELETE /api/clients/${id} - Eliminando cliente`);
     
     await csvService.deleteRecord(MODULE, CSV_FILE, id, CLIENT_HEADERS);
     
@@ -396,7 +396,7 @@ router.delete('/:id', async (req, res) => {
       message: 'Cliente eliminado exitosamente'
     });
     
-    console.log(`✅ Cliente eliminado: ${id}`);
+    console.log(` Cliente eliminado: ${id}`);
   } catch (error) {
     if (error.message.includes('no encontrado')) {
       return res.status(404).json({
@@ -405,7 +405,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
     
-    console.error('❌ Error eliminando cliente:', error);
+    console.error(' Error eliminando cliente:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'

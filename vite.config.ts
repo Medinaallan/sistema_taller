@@ -7,7 +7,14 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true, // Falla si el puerto no está disponible
-    host: true
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   build: {
     outDir: 'dist',

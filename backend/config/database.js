@@ -29,11 +29,11 @@ const getConnection = () => {
   if (!poolPromise) {
     poolPromise = new sql.ConnectionPool(config).connect()
       .then(pool => {
-        console.log('✅ Conectado a SQL Server');
+        console.log(' Conectado a SQL Server');
         return pool;
       })
       .catch(err => {
-        console.error('❌ Error conectando a SQL Server:', err);
+        console.error(' Error conectando a SQL Server:', err);
         poolPromise = null;
         throw err;
       });
