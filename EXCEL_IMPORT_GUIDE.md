@@ -2,7 +2,7 @@
 
 ## Funcionalidades Implementadas
 
-### 1. 🔄 Barra de Progreso con Timeout
+### 1.  Barra de Progreso con Timeout
 - **Ubicación**: `src/componentes/ui/ProgressBar.tsx`
 - **Características**:
   - Animación fluida de 0 a 100%
@@ -10,7 +10,7 @@
   - Duración configurable (por defecto 3 segundos)
   - Indicadores visuales y contadores de tiempo
 
-### 2. 👁️ Modal de Vista Previa de Datos
+### 2.  Modal de Vista Previa de Datos
 - **Ubicación**: `src/componentes/gestion/DataPreviewModal.tsx`
 - **Características**:
   - Tabla interactiva con datos de clientes y vehículos
