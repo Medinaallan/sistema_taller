@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Button } from '../comunes/UI';
 import { TanStackCrudTable } from '../comunes/TanStackCrudTable';
+import NewAppointmentModal from '../appointments/NewAppointmentModal';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkOrder, Appointment, Quotation, Invoice } from '../../tipos';
 import { mockWorkOrders, mockAppointments, mockQuotations, mockInvoices } from '../../utilidades/globalMockDatabase';
@@ -75,6 +76,7 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
   const [invoices, setInvoices] = useState(mockInvoices);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
 
   // Función para filtrar los datos
   const filterData = (data: any[]) => {
@@ -139,7 +141,25 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
     }
   };
 
+  const handleCreateAppointment = (newAppointment: Omit<Appointment, 'id'>) => {
+    const appointmentWithId: Appointment = {
+      ...newAppointment,
+      id: `app-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
+    
+    setAppointments(prevData => [...prevData, appointmentWithId]);
+  };
+
+  const handleNewRecord = () => {
+    if (type === 'appointments') {
+      setIsNewAppointmentModalOpen(true);
+    } else {
+      alert('Nuevo registro');
+    }
+  };
+
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={config.title} size="xl" className="sm:max-w-7xl">
       <div className="space-y-6">
         {/* Header con estadísticas */}
@@ -214,7 +234,7 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
                 Filtrar
               </Button>
             </div>
-            <Button onClick={() => alert('Nuevo registro')}>
+            <Button onClick={handleNewRecord}>
               Nuevo {config.title.slice(0, -1)}
             </Button>
           </div>
@@ -246,5 +266,15 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
         </div>
       </div>
     </Modal>
+
+    {/* Modal de nueva cita - solo se muestra si el tipo es appointments */}
+    {type === 'appointments' && (
+      <NewAppointmentModal
+        isOpen={isNewAppointmentModalOpen}
+        onClose={() => setIsNewAppointmentModalOpen(false)}
+        onSubmit={handleCreateAppointment}
+      />
+    )}
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
+import NewAppointmentModal from '../../componentes/appointments/NewAppointmentModal';
 import { mockAppointments } from '../../utilidades/globalMockDatabase';
 import type { Appointment } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -33,6 +34,7 @@ const columns: ColumnDef<Appointment>[] = [
 
 const AppointmentsPage = () => {
   const [data, setData] = useState<Appointment[]>(mockAppointments);
+  const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
 
   const handleEdit = (item: Appointment) => {
     alert('Editar cita: ' + item.id);
@@ -42,10 +44,39 @@ const AppointmentsPage = () => {
     setData(data.filter(d => d.id !== item.id));
   };
 
+  const handleCreateAppointment = (newAppointment: Omit<Appointment, 'id'>) => {
+    const appointmentWithId: Appointment = {
+      ...newAppointment,
+      id: `app-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
+    
+    setData(prevData => [...prevData, appointmentWithId]);
+  };
+
   return (
-    <Card title="Citas" actions={<Button onClick={() => alert('Nueva cita')}>Nueva Cita</Button>}>
-      <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
-    </Card>
+    <>
+      <Card 
+        title="Citas" 
+        actions={
+          <Button onClick={() => setIsNewAppointmentModalOpen(true)}>
+            Nueva Cita
+          </Button>
+        }
+      >
+        <TanStackCrudTable 
+          columns={columns} 
+          data={data} 
+          onEdit={handleEdit} 
+          onDelete={handleDelete} 
+        />
+      </Card>
+
+      <NewAppointmentModal
+        isOpen={isNewAppointmentModalOpen}
+        onClose={() => setIsNewAppointmentModalOpen(false)}
+        onSubmit={handleCreateAppointment}
+      />
+    </>
   );
 };
 

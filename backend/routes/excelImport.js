@@ -55,8 +55,105 @@ async function ensureUploadDir() {
 ensureUploadDir();
 
 /**
+ * POST /api/excel-import/preview
+ * Subir archivo Excel y obtener vista previa sin procesarlo
+ */
+router.post('/preview', upload.single('excelFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No se subió ningún archivo'
+            });
+        }
+
+        console.log(`Generando vista previa para: ${req.file.filename}`);
+
+        // Procesar el archivo Excel para vista previa
+        const result = await excelImportService.previewExcelFile(req.file.path);
+
+        // Mantener el archivo temporalmente para procesamiento posterior
+        // Agregar la ruta del archivo al resultado para uso posterior
+        result.tempFilePath = req.file.path;
+        result.tempFileName = req.file.filename;
+
+        // Responder con el resultado
+        res.json(result);
+
+    } catch (error) {
+        console.error('Error generando vista previa:', error);
+
+        // Limpiar archivo temporal en caso de error
+        if (req.file) {
+            try {
+                await fs.unlink(req.file.path);
+            } catch (cleanupError) {
+                console.warn('No se pudo eliminar archivo temporal:', cleanupError.message);
+            }
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/excel-import/confirm
+ * Confirmar y procesar archivo Excel previamente validado
+ */
+router.post('/confirm', async (req, res) => {
+    try {
+        const { tempFilePath } = req.body;
+
+        if (!tempFilePath) {
+            return res.status(400).json({
+                success: false,
+                message: 'No se proporcionó ruta de archivo temporal'
+            });
+        }
+
+        // Verificar que el archivo temporal existe
+        try {
+            await fs.access(tempFilePath);
+        } catch {
+            return res.status(404).json({
+                success: false,
+                message: 'Archivo temporal no encontrado o expirado'
+            });
+        }
+
+        console.log(`Procesando archivo confirmado: ${tempFilePath}`);
+
+        // Procesar el archivo Excel completamente
+        const result = await excelImportService.processExcelFile(tempFilePath);
+
+        // Limpiar archivo temporal
+        try {
+            await fs.unlink(tempFilePath);
+        } catch (error) {
+            console.warn('No se pudo eliminar archivo temporal:', error.message);
+        }
+
+        // Responder con el resultado
+        res.json(result);
+
+    } catch (error) {
+        console.error('Error procesando archivo confirmado:', error);
+
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+});
+
+/**
  * POST /api/excel-import/upload
- * Subir y procesar archivo Excel con clientes y vehículos
+ * Subir y procesar archivo Excel con clientes y vehículos (método original mantenido para compatibilidad)
  */
 router.post('/upload', upload.single('excelFile'), async (req, res) => {
     try {

@@ -12,6 +12,192 @@ class ExcelImportService {
     }
 
     /**
+     * Procesa un archivo Excel para vista previa sin guardarlo
+     * @param {string} filePath - Ruta al archivo Excel
+     * @returns {Object} - Datos para vista previa
+     */
+    async previewExcelFile(filePath) {
+        try {
+            // Leer el archivo Excel
+            const workbook = XLSX.readFile(filePath);
+            
+            // Verificar que las hojas necesarias existan
+            if (!workbook.SheetNames.includes('Clientes')) {
+                throw new Error('La hoja "Clientes" no fue encontrada en el archivo Excel');
+            }
+            
+            if (!workbook.SheetNames.includes('Vehiculos')) {
+                throw new Error('La hoja "Vehiculos" no fue encontrada en el archivo Excel');
+            }
+
+            // Extraer datos de las hojas
+            const clientsSheet = workbook.Sheets['Clientes'];
+            const vehiclesSheet = workbook.Sheets['Vehiculos'];
+
+            const clientsData = XLSX.utils.sheet_to_json(clientsSheet);
+            const vehiclesData = XLSX.utils.sheet_to_json(vehiclesSheet);
+
+            // Validar datos sin procesarlos completamente
+            const validationResult = await this.validateDataForPreview(clientsData, vehiclesData);
+
+            return {
+                success: true,
+                clients: validationResult.validClients,
+                vehicles: validationResult.validVehicles,
+                validationErrors: validationResult.errors,
+                warnings: validationResult.warnings,
+                totalClientsInFile: clientsData.length,
+                totalVehiclesInFile: vehiclesData.length
+            };
+
+        } catch (error) {
+            return {
+                success: false,
+                message: 'Error procesando archivo Excel para vista previa',
+                error: error.message,
+                clients: [],
+                vehicles: [],
+                validationErrors: [error.message],
+                warnings: []
+            };
+        }
+    }
+
+    /**
+     * Valida datos para vista previa
+     * @param {Array} clientsData - Datos de clientes
+     * @param {Array} vehiclesData - Datos de vehículos
+     * @returns {Object} - Resultado de validación
+     */
+    async validateDataForPreview(clientsData, vehiclesData) {
+        const errors = [];
+        const warnings = [];
+        const validClients = [];
+        const validVehicles = [];
+
+        // Obtener datos existentes para validación
+        const existingClients = await this.getExistingClients();
+        const existingVehicles = await this.getExistingVehicles();
+        const existingEmails = new Set(existingClients.map(c => c.email.toLowerCase()));
+        const existingPlates = new Set(existingVehicles.map(v => v.placa.toLowerCase()));
+
+        // Validar clientes
+        const processedEmails = new Set();
+        for (let i = 0; i < clientsData.length; i++) {
+            const row = clientsData[i];
+            const rowNum = i + 2; // +2 porque empezamos en fila 2 (después del header)
+
+            // Validar campos obligatorios
+            if (!row.name || !row.email || !row.phone || !row.password) {
+                const missingFields = [];
+                if (!row.name) missingFields.push('name');
+                if (!row.email) missingFields.push('email');
+                if (!row.phone) missingFields.push('phone');
+                if (!row.password) missingFields.push('password');
+                
+                errors.push(`Fila ${rowNum} (Clientes): Campos obligatorios faltantes: ${missingFields.join(', ')}`);
+                continue;
+            }
+
+            const email = row.email.trim().toLowerCase();
+            
+            // Validar email único en archivo existente
+            if (existingEmails.has(email)) {
+                warnings.push(`Fila ${rowNum} (Clientes): El email "${row.email}" ya existe en el sistema`);
+                continue;
+            }
+
+            // Validar email único en el mismo archivo
+            if (processedEmails.has(email)) {
+                errors.push(`Fila ${rowNum} (Clientes): Email duplicado en el archivo: "${row.email}"`);
+                continue;
+            }
+
+            // Validar formato de email básico
+            if (!email.includes('@') || !email.includes('.')) {
+                errors.push(`Fila ${rowNum} (Clientes): Formato de email inválido: "${row.email}"`);
+                continue;
+            }
+
+            processedEmails.add(email);
+            validClients.push({
+                name: row.name.trim(),
+                email: row.email.trim(),
+                phone: row.phone.trim(),
+                address: row.address ? row.address.trim() : '',
+                password: '••••••••' // Ocultar contraseña en vista previa
+            });
+        }
+
+        // Validar vehículos
+        const processedPlates = new Set();
+        for (let i = 0; i < vehiclesData.length; i++) {
+            const row = vehiclesData[i];
+            const rowNum = i + 2;
+
+            // Validar campos obligatorios
+            if (!row.clienteEmail || !row.marca || !row.modelo || !row.año || !row.placa || !row.color) {
+                const missingFields = [];
+                if (!row.clienteEmail) missingFields.push('clienteEmail');
+                if (!row.marca) missingFields.push('marca');
+                if (!row.modelo) missingFields.push('modelo');
+                if (!row.año) missingFields.push('año');
+                if (!row.placa) missingFields.push('placa');
+                if (!row.color) missingFields.push('color');
+                
+                errors.push(`Fila ${rowNum} (Vehículos): Campos obligatorios faltantes: ${missingFields.join(', ')}`);
+                continue;
+            }
+
+            const clientEmail = row.clienteEmail.toLowerCase();
+            const placa = row.placa.trim().toUpperCase();
+            
+            // Validar que el cliente existe (en datos procesados o existentes)
+            const clientExists = processedEmails.has(clientEmail) || existingEmails.has(clientEmail);
+            if (!clientExists) {
+                errors.push(`Fila ${rowNum} (Vehículos): Cliente con email "${row.clienteEmail}" no encontrado`);
+                continue;
+            }
+
+            // Validar placa única en sistema
+            if (existingPlates.has(placa.toLowerCase())) {
+                warnings.push(`Fila ${rowNum} (Vehículos): La placa "${row.placa}" ya existe en el sistema`);
+                continue;
+            }
+
+            // Validar placa única en archivo
+            if (processedPlates.has(placa.toLowerCase())) {
+                errors.push(`Fila ${rowNum} (Vehículos): Placa duplicada en el archivo: "${row.placa}"`);
+                continue;
+            }
+
+            // Validar año
+            const year = parseInt(row.año);
+            if (isNaN(year) || year < 1900 || year > new Date().getFullYear() + 1) {
+                errors.push(`Fila ${rowNum} (Vehículos): Año inválido: "${row.año}"`);
+                continue;
+            }
+
+            processedPlates.add(placa.toLowerCase());
+            validVehicles.push({
+                clienteEmail: row.clienteEmail.trim(),
+                marca: row.marca.trim(),
+                modelo: row.modelo.trim(),
+                año: year,
+                placa: placa,
+                color: row.color.trim()
+            });
+        }
+
+        return {
+            validClients,
+            validVehicles,
+            errors,
+            warnings
+        };
+    }
+
+    /**
      * Procesa un archivo Excel y extrae datos de clientes y vehículos
      * @param {string} filePath - Ruta al archivo Excel
      * @returns {Object} - Resultado del procesamiento
