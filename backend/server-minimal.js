@@ -433,6 +433,7 @@ io.on('connection', (socket) => {
   });
 
   // Mensaje genérico compat (legacy)
+  
   socket.on('chatMessage', (msg) => {
     // Adaptar msg a estructura estándar y guardar
     const mensaje = {
