@@ -1,19 +1,55 @@
-id,client_id,vehicle_id,title,description,status,priority,estimated_cost,actual_cost,start_date,estimated_completion,actual_completion,mechanic_id,notes,created_at,updated_at
-order-client-1-1,client-1,vehicle-client-1-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.914Z,2025-09-13T06:36:35.914Z,,,,2025-09-13T06:36:35.914Z,2025-09-13T06:36:35.914Z
-order-client-1-2,client-1,vehicle-client-1-1,Orden de trabajo #2,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.914Z,2025-09-13T06:36:35.914Z,,,,2025-09-13T06:36:35.914Z,2025-09-13T06:36:35.914Z
-order-client-2-1,client-2,vehicle-client-2-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-3-1,client-3,vehicle-client-3-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-3-2,client-3,vehicle-client-3-1,Orden de trabajo #2,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-3-3,client-3,vehicle-client-3-1,Orden de trabajo #3,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-4-1,client-4,vehicle-client-4-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-4-2,client-4,vehicle-client-4-1,Orden de trabajo #2,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-5-1,client-5,vehicle-client-5-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-5-2,client-5,vehicle-client-5-1,Orden de trabajo #2,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-6-1,client-6,vehicle-client-6-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-7-1,client-7,vehicle-client-7-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-7-2,client-7,vehicle-client-7-1,Orden de trabajo #2,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-8-1,client-8,vehicle-client-8-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-9-1,client-9,vehicle-client-9-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-9-2,client-9,vehicle-client-9-1,Orden de trabajo #2,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-10-1,client-10,vehicle-client-10-1,Orden de trabajo #1,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
-order-client-10-2,client-10,vehicle-client-10-1,Orden de trabajo #2,Orden migrada desde sistema anterior,pending,medium,0,0,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z,,,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+id,vehicleId,serviceId,date,status,notes,created_at,updated_at
+order-client-1-1,,,,pending,,2025-09-13T06:36:35.914Z,2025-09-13T06:36:35.914Z
+order-client-1-2,,,,pending,,2025-09-13T06:36:35.914Z,2025-09-13T06:36:35.914Z
+order-client-2-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-3-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-3-2,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-3-3,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-4-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-4-2,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-5-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-5-2,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-6-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-7-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-7-2,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-8-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-9-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-9-2,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-10-1,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-client-10-2,,,,pending,,2025-09-13T06:36:35.915Z,2025-09-13T06:36:35.915Z
+order-1759852203373v8b4b3z9p,vehicle-1759852203373ltyo24fco,1759764570767y975elqug,45876,completed,{"B":45876,"C":931381,"D":941381,"E":"interbrand "},2025-10-07T15:50:03.373Z,2025-10-07T15:50:03.373Z
+order-17598522033744fpt9moxd,vehicle-1759852203374rmmvzku5o,1759764570767y975elqug,29/07/25,completed,{"B":"29/07/25","C":770285,"D":780285,"E":"interbrand "},2025-10-07T15:50:03.374Z,2025-10-07T15:50:03.374Z
+order-1759852203374nyb24d9rv,vehicle-1759852203374z6o0qzszb,1759764570767y975elqug,25/8/2025,completed,{"B":"25/8/2025","C":76800,"D":77800,"E":"interbrand "},2025-10-07T15:50:03.374Z,2025-10-07T15:50:03.374Z
+order-1759852203375psyeetpcg,vehicle-1759852203375qa3wc46el,1759764570767y975elqug,23/07/25,completed,{"B":"23/07/25","C":739290,"D":749290,"E":"incolbest"},2025-10-07T15:50:03.375Z,2025-10-07T15:50:03.375Z
+order-1759852203375chk0xtbj8,vehicle-1759852203375vyi5b7800,1759764570767y975elqug,45693,completed,{"B":45693,"C":653000,"D":663000,"E":"frasle"},2025-10-07T15:50:03.375Z,2025-10-07T15:50:03.375Z
+order-1759852203376ph7275sb1,vehicle-1759852203376e5oh6rky5,1759764570767y975elqug,45845,completed,{"B":45845,"C":644071,"D":654071,"E":"frasle"},2025-10-07T15:50:03.376Z,2025-10-07T15:50:03.376Z
+order-1759852203376f5p8cn82o,vehicle-1759852203376p35v21noj,1759764570767y975elqug,45999,completed,{"B":45999,"C":620817,"D":630817,"E":"frasle"},2025-10-07T15:50:03.376Z,2025-10-07T15:50:03.376Z
+order-1759852203377grkmmtp7p,vehicle-1759852203377raa8nkgqs,1759764570767y975elqug,15/0725,completed,{"B":"15/0725","C":404197,"D":414197,"E":"frasle"},2025-10-07T15:50:03.377Z,2025-10-07T15:50:03.377Z
+order-1759852203377bu1ur1bpb,vehicle-1759852203377ry5ita0e4,1759764570767y975elqug,45937,completed,{"B":45937,"C":508554,"D":518554,"E":"frasle"},2025-10-07T15:50:03.377Z,2025-10-07T15:50:03.377Z
+order-17598522033784pub3plon,vehicle-17598522033789umrxxsnn,1759764570767y975elqug,29/09/2025,completed,{"B":"29/09/2025","C":293214,"D":284346,"E":"frasle"},2025-10-07T15:50:03.378Z,2025-10-07T15:50:03.378Z
+order-17598522033781a8q8rymw,vehicle-17598522033783ax8pzogg,1759764570767y975elqug,45999,completed,{"B":45999,"C":313548,"D":323548,"E":"frasle"},2025-10-07T15:50:03.378Z,2025-10-07T15:50:03.378Z
+order-1759852203379343b34eea,vehicle-17598522033796kewestpr,1759764570767y975elqug,29/09/25,completed,{"B":"29/09/25","C":335429,"D":325438,"E":"frasle"},2025-10-07T15:50:03.379Z,2025-10-07T15:50:03.379Z
+order-17598522033795e8lu8i44,vehicle-1759852203379mxy213czj,1759764570767y975elqug,20/06/2025,completed,{"B":"20/06/2025","C":191650,"D":201650,"E":"brake pak"},2025-10-07T15:50:03.379Z,2025-10-07T15:50:03.379Z
+order-1759852203380dw63ws81w,vehicle-1759852203380q2q207xys,1759764570767y975elqug,29/06/25,completed,{"B":"29/06/25","C":2414.47,"D":251447,"E":"frasle"},2025-10-07T15:50:03.380Z,2025-10-07T15:50:03.380Z
+order-1759852203380k4w0zmu7n,vehicle-17598522033802biwumfn6,1759764570767y975elqug,25/4/2025,completed,{"B":"25/4/2025","C":198192,"D":208190,"E":"frsle"},2025-10-07T15:50:03.380Z,2025-10-07T15:50:03.380Z
+order-17598522033811tuvwi7pp,vehicle-1759852203381o9g96tevy,1759764570767y975elqug,45754,completed,{"B":45754,"C":1852.26,"D":195226,"E":"frasle"},2025-10-07T15:50:03.381Z,2025-10-07T15:50:03.381Z
+order-1759852203381noj4d75tj,vehicle-1759852203381clm4nl9db,1759764570767y975elqug,20/06/25,completed,{"B":"20/06/25","C":1576.64,"D":167663,"E":"frasle"},2025-10-07T15:50:03.381Z,2025-10-07T15:50:03.381Z
+order-17598522033826vuyl2rmc,vehicle-1759852203382xufg7orpm,1759764570767y975elqug,15/07/25,completed,{"B":"15/07/25","C":142702,"D":152702,"E":"frasle"},2025-10-07T15:50:03.382Z,2025-10-07T15:50:03.382Z
+order-1759852203382ldbqabqmq,vehicle-17598522033822j52scyj5,1759764570767y975elqug,19/05/25,completed,{"B":"19/05/25","C":85107,"D":95107,"E":"incolbes"},2025-10-07T15:50:03.382Z,2025-10-07T15:50:03.382Z
+order-17598522033887z1ofkj25,vehicle-1759852203388km3m6156g,1759764522172scynkrghv,45845,completed,{"B":45845,"C":"derecha "},2025-10-07T15:50:03.388Z,2025-10-07T15:50:03.388Z
+order-1759852203389bpwojjzk8,vehicle-17598522033894no6yp8sf,1759764522172scynkrghv,26/09/25,completed,{"B":"26/09/25","C":"derecha ","D":"Kos"},2025-10-07T15:50:03.389Z,2025-10-07T15:50:03.389Z
+order-1759852203389tugxmq186,vehicle-1759852203389qf7qdib03,1759764522172scynkrghv,45937,completed,{"B":45937,"C":"derecha ","D":"luman"},2025-10-07T15:50:03.389Z,2025-10-07T15:50:03.389Z
+order-1759852203390mtcfr5sj1,vehicle-1759852203390o7m50mmcq,1759764522172scynkrghv,15/07/25,completed,{"B":"15/07/25","C":"derecho ","D":"luman "},2025-10-07T15:50:03.390Z,2025-10-07T15:50:03.390Z
+order-1759852203390p2rs0e475,vehicle-175985220339030mueyofs,1759764522172scynkrghv,18/08/25,completed,{"B":"18/08/25","C":"derecha","D":"luman"},2025-10-07T15:50:03.390Z,2025-10-07T15:50:03.390Z
+order-1759852203391pgkixqyzp,vehicle-1759852203390sh6ef0mr1,1759764522172scynkrghv,45999,completed,{"B":45999,"C":"derecho ","D":"luman"},2025-10-07T15:50:03.391Z,2025-10-07T15:50:03.391Z
+order-1759852203391w1yh1er0d,vehicle-17598522033910j39loxy2,1759764522172scynkrghv,17/09/25,completed,{"B":"17/09/25","C":"derecha ","D":"luman"},2025-10-07T15:50:03.391Z,2025-10-07T15:50:03.391Z
+order-1759852203391syhblmz0k,vehicle-1759852203391spjweono2,1759764522172scynkrghv,45966,completed,{"B":45966,"C":"derecha","D":"luman"},2025-10-07T15:50:03.391Z,2025-10-07T15:50:03.391Z
+order-1759852203392jmo892dfz,vehicle-17598522033927m3vpqeka,1759764522172scynkrghv,29/07/26,completed,{"B":"29/07/26","C":"derecha ","D":"luman"},2025-10-07T15:50:03.392Z,2025-10-07T15:50:03.392Z
+order-1759852203392s6or77wmj,vehicle-17598522033929239gcplz,1759764522172scynkrghv,45909,completed,{"B":45909,"C":"derecha ","D":"luman"},2025-10-07T15:50:03.392Z,2025-10-07T15:50:03.392Z
+order-1759852203392r5av8wvxj,vehicle-1759852203392gd8aahyq7,1759764522172scynkrghv,14/08/25,completed,{"B":"14/08/25","C":"derecha ","D":"luman"},2025-10-07T15:50:03.392Z,2025-10-07T15:50:03.392Z
+order-1759852203393167etxnnn,vehicle-1759852203393lremd48o8,1759764522172scynkrghv,30/09/25,completed,{"B":"30/09/25","C":"derecha ","D":"luman "},2025-10-07T15:50:03.393Z,2025-10-07T15:50:03.393Z
+order-1759852203393jg4sogl17,vehicle-1759852203393v76bp4iub,1759764522172scynkrghv,29/06/25,completed,{"B":"29/06/25","C":"derecha ","D":"luman"},2025-10-07T15:50:03.393Z,2025-10-07T15:50:03.393Z
+order-17598522033930k3brzg7b,vehicle-1759852203393i24z3e2ok,1759764522172scynkrghv,45782,completed,{"B":45782,"C":"derecha","D":"luman "},2025-10-07T15:50:03.393Z,2025-10-07T15:50:03.393Z
+order-175985220339461fzhqgdu,vehicle-175985220339438z0hxq11,1759764522172scynkrghv,18/09/25,completed,{"B":"18/09/25","C":"derecha ","D":"luman"},2025-10-07T15:50:03.394Z,2025-10-07T15:50:03.394Z
+order-1759852203394mj1jk1ztt,vehicle-1759852203394mxqebl8ze,1759764522172scynkrghv,24/07/25,completed,{"B":"24/07/25","C":"derecha ","D":"luman "},2025-10-07T15:50:03.394Z,2025-10-07T15:50:03.394Z
+order-1759852203394abz0w03an,vehicle-175985220339489cah6okt,1759764522172scynkrghv,45909,completed,{"B":45909,"C":"derecha ","D":"luman"},2025-10-07T15:50:03.394Z,2025-10-07T15:50:03.394Z
