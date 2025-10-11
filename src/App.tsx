@@ -30,6 +30,7 @@ import ServicesPage from './paginas/services/ServicesPage';
 import LogsPage from './paginas/logs/LogsPage';
 import RemindersPage from './paginas/administracion/RemindersPage';
 import ClientProfilePage from './paginas/administracion/ClientProfilePage';
+import { AdminHistorialPage } from './paginas/administracion/AdminHistorialPage';
 import { DebugPage } from './paginas/DebugPage';
 import TestConnectionPage from './paginas/TestConnectionPage';
 import { TestLogin } from './paginas/TestLogin';
@@ -219,6 +220,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin-historial"
+        element={
+          <ProtectedRoute>
+            <AdminHistorialPage />
           </ProtectedRoute>
         }
       />

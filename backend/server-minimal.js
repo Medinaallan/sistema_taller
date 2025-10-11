@@ -109,6 +109,19 @@ try {
   console.warn('⚠️  El servidor continuará sin las rutas de importación Excel');
 }
 
+// 📋 IMPORTAR Y CONFIGURAR RUTAS DE HISTORIAL DE SERVICIOS
+try {
+  console.log('📋 Cargando rutas de historial de servicios...');
+  const serviceHistoryRouter = require('./routes/serviceHistory');
+  app.use('/api/service-history', serviceHistoryRouter);
+  console.log('✅ Rutas de historial de servicios cargadas exitosamente');
+  console.log('    📍 /api/service-history/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de historial de servicios:', error.message);
+  console.error('   Stack:', error.stack);
+  console.warn('⚠️  El servidor continuará sin las rutas de historial de servicios');
+}
+
 // Cargar stored procedures
 let storedProcedures;
 try {

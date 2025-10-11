@@ -49,6 +49,7 @@ const navigationItems: NavigationItem[] = [
   { name: 'Recordatorios', href: '/reminders', icon: BellIcon, roles: ['admin', 'receptionist'] },
   { name: 'Mis Recordatorios', href: '/client-reminders', icon: BellIcon, roles: ['client'] },
   { name: 'Historial de Servicios', href: '/client-service-history', icon: DocumentTextIcon, roles: ['client'] },
+  { name: 'Historial Global', href: '/admin-historial', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },
   { name: 'Chat con Taller', href: '/client-chat', icon: BellIcon, roles: ['client'] },
   { name: 'Reportes', href: '/reports', icon: ChartBarIcon, roles: ['admin'] },
   { name: 'Chat con Cliente', href: '/admin-chat', icon: BellIcon, roles: ['admin', 'receptionist', 'mechanic'] },

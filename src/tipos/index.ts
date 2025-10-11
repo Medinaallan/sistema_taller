@@ -359,3 +359,48 @@ export interface ReportFilters {
   serviceTypeId?: string;
   status?: 'completed' | 'in-progress' | 'pending' | 'rejected';
 }
+
+// Historial de servicios
+export interface ServiceHistoryRecord {
+  id: string;
+  orderId: string;
+  clientId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  vehicleId: string;
+  vehicleName: string;
+  vehiclePlate: string;
+  vehicleColor: string;
+  serviceId: string;
+  serviceName: string;
+  serviceDescription: string;
+  servicePrice: number;
+  serviceDuration: string;
+  serviceCategory: string;
+  date: string;
+  status: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServiceHistoryStats {
+  totalRecords: number;
+  totalClients: number;
+  totalVehicles: number;
+  totalServices: number;
+  statusBreakdown: { [key: string]: number };
+}
+
+export interface ClientServiceStats {
+  totalServices: number;
+  totalSpent: number;
+  averageServiceCost: number;
+  lastServiceDate: string | null;
+  favoriteServiceType: string | null;
+  vehiclesServiced: number;
+  servicesByStatus: { [key: string]: number };
+  servicesByCategory: { [key: string]: number };
+  monthlyActivity: { [key: string]: number };
+}

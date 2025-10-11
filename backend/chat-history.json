@@ -602,5 +602,155 @@
       "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1758629247844-59db7eda-39bf-4292-837d-c3ced8a22143.jpg",
       "tipo_archivo": "image/jpeg"
     }
+  ],
+  "clients-1759762003123-21890207": [
+    {
+      "mensaje_id": 1760089758168,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "clients-1759762003123-21890207",
+      "rol": "client",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:49:17.661Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1760089761810,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:49:21.310Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1760089876552,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:16.207Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089873330-30721351-8968-4e99-af75-736956c034f6.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760089877711,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:17.414Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089874590-1df16b7b-cf5e-4773-9d5b-28345eeb7be9.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760089878582,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:17.930Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089875144-567500eb-824a-470d-8e44-e341e7eb8d98.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760089878803,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:18.317Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089875474-c93a924a-82b1-48b6-ba98-1cd292f5c851.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760089879444,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:18.554Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089875315-a551683c-d46a-4e19-85bb-1d73579b147c.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760089880170,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:19.226Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089875860-4e25bba6-ab79-442e-9971-eea53f2f9d0e.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760089879512,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:19.269Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089876204-489955b9-36f6-4c2b-ad54-59c23390117d.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760089881152,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T09:51:20.869Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760089877416-504df370-46cf-4790-b2c3-58b30f8fe22f.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760108374554,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T14:59:34.548Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1760108371679-2a92465a-f2ed-4490-84c8-568650b30c87.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1760108409008,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "user-admin-001",
+      "rol": "admin",
+      "contenido": "sdfsdfs",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T15:00:08.225Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1760108412199,
+      "sala_id": "clients-1759762003123-21890207",
+      "usuario_id": "clients-1759762003123-21890207",
+      "rol": "client",
+      "contenido": "sdfgsdfg",
+      "es_sistema": false,
+      "enviado_en": "2025-10-10T15:00:11.686Z",
+      "leido": true
+    }
   ]
 }

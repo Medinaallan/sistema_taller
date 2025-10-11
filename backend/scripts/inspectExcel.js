@@ -37,7 +37,7 @@ function inspectExcel() {
                 console.log(`Fila ${rowNum + 1}: [${row.join(', ')}]`);
             }
             
-            // Convertir a JSON desde la fila 3 (omitiendo filas 1 y 2)
+            // Convertir a JSON desde la fila 3 (omitiendo filas 1 y 2 jsjs)
             console.log('\nDatos desde fila 3 (JSON):');
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
                 range: `A3:${XLSX.utils.encode_col(range.e.c)}${range.e.r + 1}`,

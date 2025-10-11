@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TruckIcon,
   WrenchScrewdriverIcon,
@@ -11,9 +11,13 @@ import {
   EyeIcon,
   PhotoIcon,
   XMarkIcon,
-  CheckIcon
+  CheckIcon,
+  ClockIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+import { serviceHistoryService } from '../../servicios/serviceHistoryService';
+import type { ServiceHistoryRecord, ClientServiceStats } from '../../tipos';
 
 interface Vehicle {
   id: string;
@@ -72,6 +76,46 @@ interface Appointment {
 export function ClientDashboardPage() {
   const { state } = useApp();
   const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'appointments' | 'orders' | 'quotations' | 'history' | 'payments'>('overview');
+  
+  // Estado para el historial de servicios
+  const [serviceHistoryRecords, setServiceHistoryRecords] = useState<ServiceHistoryRecord[]>([]);
+  const [clientStats, setClientStats] = useState<ClientServiceStats | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  // Cargar historial de servicios del cliente
+  useEffect(() => {
+    const loadServiceHistory = async () => {
+      if (!state.user?.id) return;
+      
+      setHistoryLoading(true);
+      setHistoryError(null);
+      
+      try {
+        const [historyResponse, statsResponse] = await Promise.all([
+          serviceHistoryService.getClientServiceHistory(state.user.id),
+          serviceHistoryService.getClientStats(state.user.id)
+        ]);
+        
+        if (historyResponse.success) {
+          setServiceHistoryRecords(historyResponse.data);
+        } else {
+          setHistoryError(historyResponse.message || 'Error cargando historial');
+        }
+        
+        if (statsResponse.success) {
+          setClientStats(statsResponse.data);
+        }
+      } catch (error) {
+        console.error('Error cargando historial de servicios:', error);
+        setHistoryError('Error de conexión');
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    loadServiceHistory();
+  }, [state.user?.id]);
 
   // Funciones para modales (implementación futura)
   const handleAddVehicle = () => {
@@ -573,43 +617,129 @@ export function ClientDashboardPage() {
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Historial de Servicios</h1>
-          <p className="mt-2 text-sm text-gray-700">Todos tus servicios completados</p>
+          <p className="mt-2 text-sm text-gray-700">Todos tus servicios completados desde Excel</p>
         </div>
       </div>
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul role="list" className="divide-y divide-gray-200">
-          {serviceHistory.map((record) => (
-            <li key={record.id}>
-              <div className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <CheckCircleIcon className="h-6 w-6 text-green-400" />
+      {/* Estadísticas del cliente */}
+      {clientStats && (
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white mb-6">
+          <h3 className="text-lg font-semibold mb-4">Resumen de Servicios</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white/10 rounded-lg p-3">
+              <div className="text-2xl font-bold">{clientStats.totalServices}</div>
+              <div className="text-green-100 text-sm">Servicios Totales</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3">
+              <div className="text-2xl font-bold">{formatCurrency(clientStats.totalSpent)}</div>
+              <div className="text-green-100 text-sm">Total Invertido</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3">
+              <div className="text-2xl font-bold">{clientStats.vehiclesServiced}</div>
+              <div className="text-green-100 text-sm">Vehículos Atendidos</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3">
+              <div className="text-2xl font-bold">{formatCurrency(clientStats.averageServiceCost)}</div>
+              <div className="text-green-100 text-sm">Costo Promedio</div>
+            </div>
+          </div>
+          
+          {clientStats.favoriteServiceType && (
+            <div className="mt-4 bg-white/10 rounded-lg p-3">
+              <p className="text-sm text-green-100">Servicio más frecuente:</p>
+              <p className="font-semibold">{clientStats.favoriteServiceType}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lista de servicios */}
+      {historyLoading ? (
+        <div className="bg-white shadow rounded-lg p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <span className="ml-3 text-gray-600">Cargando historial de servicios...</span>
+          </div>
+        </div>
+      ) : historyError ? (
+        <div className="bg-white shadow rounded-lg p-8">
+          <div className="flex items-center justify-center text-red-600">
+            <ExclamationTriangleIcon className="h-6 w-6 mr-2" />
+            <span>{historyError}</span>
+          </div>
+        </div>
+      ) : serviceHistoryRecords.length > 0 ? (
+        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <ul role="list" className="divide-y divide-gray-200">
+            {serviceHistoryRecords.map((record) => {
+              const statusIcon = record.status === 'completed' ? CheckCircleIcon : ClockIcon;
+              const statusColor = record.status === 'completed' ? 'text-green-400' : 'text-yellow-400';
+              
+              return (
+                <li key={record.id}>
+                  <div className="px-4 py-4 sm:px-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                          {React.createElement(statusIcon, { className: `h-6 w-6 ${statusColor}` })}
+                        </div>
+                        <div className="ml-4">
+                          <p className="text-sm font-medium text-gray-900">
+                            {record.serviceName}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {record.vehicleName} • {record.vehiclePlate}
+                          </p>
+                          {record.serviceDescription && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {record.serviceDescription}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatCurrency(record.servicePrice)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(record.date || record.createdAt).toLocaleDateString('es-ES')}
+                        </p>
+                        <div className="mt-1">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            record.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            record.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {record.status === 'completed' ? 'Completado' :
+                             record.status === 'pending' ? 'Pendiente' :
+                             record.status}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-900">
-                        {record.service}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {record.vehicle}
-                      </p>
-                    </div>
+                    
+                    {record.notes && (
+                      <div className="mt-3 ml-10">
+                        <p className="text-sm text-gray-600">
+                          <strong>Notas:</strong> {record.notes}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatCurrency(record.cost)}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {record.date}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg p-8 text-center">
+          <CheckCircleIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Sin historial de servicios</h3>
+          <p className="text-gray-500">
+            No se encontraron servicios completados para tu cuenta.
+          </p>
+        </div>
+      )}
     </div>
   );
 

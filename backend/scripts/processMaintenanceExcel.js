@@ -341,7 +341,7 @@ module.exports = { processMaintenanceExcel };
 if (require.main === module) {
     processMaintenanceExcel()
         .then(() => {
-            console.log('\n🎉 Procesamiento completado exitosamente');
+            console.log('\nProcesamiento completado exitosamente');
             process.exit(0);
         })
         .catch((error) => {

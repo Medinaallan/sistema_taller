@@ -1,2 +1,2 @@
-id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
-clients-1759762003123-21890207,GRUPO INCOVA - PRUEBA 061025,incova@taller.com,9999-9999,col. los helechos,asdf1234,active,2025-10-06T14:46:43.122Z,,0,0,,2025-10-06T14:46:43.123Z,2025-10-06T14:46:43.123Z
+id,nombre,email,telefono,direccion,vehiculos
+
