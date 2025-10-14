@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Select, TextArea, Button } from '../comunes/UI';
 import type { Appointment } from '../../tipos';
+import { obtenerClientes, type Cliente } from '../../servicios/clientesApiService';
 
 interface NewAppointmentModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [loadingClientes, setLoadingClientes] = useState(false);
 
   // Limpiar formulario al cerrar
   useEffect(() => {
@@ -38,6 +41,26 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         status: 'pending',
       });
       setErrors({});
+    }
+  }, [isOpen]);
+
+  // Cargar clientes cuando se abra el modal
+  useEffect(() => {
+    if (isOpen) {
+      const cargarClientes = async () => {
+        setLoadingClientes(true);
+        try {
+          const clientesData = await obtenerClientes();
+          setClientes(clientesData);
+        } catch (error) {
+          console.error('Error cargando clientes:', error);
+          setClientes([]);
+        } finally {
+          setLoadingClientes(false);
+        }
+      };
+
+      cargarClientes();
     }
   }, [isOpen]);
 
@@ -134,14 +157,19 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Cliente ID"
-            type="text"
+          <Select
+            label="Cliente"
             value={formData.clientId}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('clientId', e.target.value)}
-            placeholder="ej: client-001"
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('clientId', e.target.value)}
             error={errors.clientId}
             required
+            options={[
+              { value: "", label: loadingClientes ? "Cargando clientes..." : "Seleccionar cliente..." },
+              ...clientes.map(cliente => ({
+                value: cliente.id,
+                label: `${cliente.name} - ${cliente.email}`
+              }))
+            ]}
           />
 
           <Input

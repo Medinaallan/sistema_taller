@@ -77,7 +77,7 @@ router.post('/login', async (req, res) => {
     // Buscar cliente en CSV
     const clients = await csvService.readCSV(MODULE, CSV_FILE);
     const client = clients.find(c => 
-      c.email.toLowerCase() === email.toLowerCase() && 
+      c.email && c.email.toLowerCase() === email.toLowerCase() && 
       c.password_hash === password
     );
     
@@ -243,7 +243,7 @@ router.post('/', async (req, res) => {
     
     // Verificar email único en CSV
     const existingClients = await csvService.readCSV(MODULE, CSV_FILE);
-    const emailExists = existingClients.some(c => c.email.toLowerCase() === clientData.email.toLowerCase());
+    const emailExists = existingClients.some(c => c.email && c.email.toLowerCase() === clientData.email.toLowerCase());
     
     if (emailExists) {
       return res.status(400).json({
@@ -336,7 +336,7 @@ router.put('/:id', async (req, res) => {
     // Validaciones
     if (updates.email) {
       const existingClients = await csvService.readCSV(MODULE, CSV_FILE);
-      const emailExists = existingClients.some(c => c.email.toLowerCase() === updates.email.toLowerCase() && c.id !== id);
+      const emailExists = existingClients.some(c => c.email && c.email.toLowerCase() === updates.email.toLowerCase() && c.id !== id);
       
       if (emailExists) {
         return res.status(400).json({
