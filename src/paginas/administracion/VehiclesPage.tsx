@@ -4,18 +4,17 @@ import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/com
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { mockVehicles, mockClients, formatDate } from '../../utilidades/globalMockDatabase';
-import { servicesService, vehiclesService } from '../../servicios/apiService';
-import type { Vehicle, Client, Service } from '../../tipos';
+import { vehiclesService } from '../../servicios/apiService';
+import type { Vehicle, Client } from '../../tipos';
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
   clients: Client[];
-  services: Service[];
   onSubmit: (vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'workOrders' | 'reminders'>) => void;
   onCancel: () => void;
 }
 
-function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: VehicleFormProps) {
+function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps) {
   const [formData, setFormData] = useState({
     clientId: vehicle?.clientId || '',
     brand: vehicle?.brand || '',
@@ -24,7 +23,6 @@ function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: Vehicle
     licensePlate: vehicle?.licensePlate || '',
     color: vehicle?.color || '',
     mileage: vehicle?.mileage || 0,
-    serviceTypeId: vehicle?.serviceType.id || '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -50,7 +48,6 @@ function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: Vehicle
     }
     if (!formData.licensePlate.trim()) newErrors.licensePlate = 'La placa es requerida';
     if (!formData.color.trim()) newErrors.color = 'El color es requerido';
-    if (!formData.serviceTypeId) newErrors.serviceTypeId = 'Debe seleccionar un tipo de servicio';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -61,9 +58,6 @@ function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: Vehicle
     
     if (!validateForm()) return;
 
-    const selectedService = services.find(s => s.id === formData.serviceTypeId);
-    if (!selectedService) return;
-
     onSubmit({
       clientId: formData.clientId,
       brand: formData.brand.trim(),
@@ -73,11 +67,11 @@ function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: Vehicle
       color: formData.color.trim(),
       mileage: formData.mileage > 0 ? formData.mileage : undefined,
       serviceType: {
-        id: selectedService.id,
-        name: selectedService.name,
-        description: selectedService.description || '',
-        basePrice: selectedService.basePrice,
-        estimatedDuration: 1, // Default duration in hours, can be adjusted
+        id: 'default',
+        name: 'Servicio General',
+        description: 'Servicio general',
+        basePrice: 0,
+        estimatedDuration: 1,
       },
     });
   };
@@ -87,14 +81,6 @@ function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: Vehicle
     ...clients.map(client => ({
       value: client.id,
       label: client.name
-    }))
-  ];
-
-  const serviceTypeOptions = [
-    { value: '', label: 'Selecciona un tipo de servicio...' },
-    ...services.map(service => ({
-      value: service.id,
-      label: service.name
     }))
   ];
 
@@ -175,16 +161,6 @@ function VehicleForm({ vehicle, clients, services, onSubmit, onCancel }: Vehicle
         />
       </div>
 
-      <Select
-        label="Tipo de Servicio"
-        name="serviceTypeId"
-        value={formData.serviceTypeId}
-        onChange={handleInputChange}
-        options={serviceTypeOptions}
-        error={errors.serviceTypeId}
-        required
-      />
-
       <div className="flex justify-end space-x-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
@@ -205,29 +181,7 @@ export function VehiclesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
-  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Cargar servicios desde la API
-  const loadServices = async () => {
-    try {
-      const response = await servicesService.getAll();
-      if (response.success) {
-        const mappedServices = response.data.map((csvService: any) => ({
-          id: csvService.id,
-          name: csvService.nombre,
-          description: csvService.descripcion || '',
-          basePrice: parseFloat(csvService.precio) || 0,
-          estimatedTime: csvService.duracion || '',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }));
-        setServices(mappedServices);
-      }
-    } catch (error) {
-      console.error('Error al cargar servicios:', error);
-    }
-  };
 
   // Cargar vehículos desde la API
   const loadVehicles = async () => {
@@ -272,7 +226,6 @@ export function VehiclesPage() {
 
   useEffect(() => {
     // Load data on component mount
-    loadServices();
     loadVehicles();
     
     // Load clients if not already loaded
@@ -627,7 +580,6 @@ export function VehiclesPage() {
           <VehicleForm
             vehicle={modalType === 'edit' ? selectedVehicle || undefined : undefined}
             clients={state.clients}
-            services={services}
             onSubmit={handleFormSubmit}
             onCancel={() => setIsModalOpen(false)}
           />

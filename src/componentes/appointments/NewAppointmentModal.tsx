@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Input, Select, TextArea, Button } from '../comunes/UI';
 import type { Appointment } from '../../tipos';
 import { obtenerClientes, type Cliente } from '../../servicios/clientesApiService';
+import { servicesService } from '../../servicios/apiService';
 
 interface NewAppointmentModalProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loadingClientes, setLoadingClientes] = useState(false);
+  const [servicios, setServicios] = useState<any[]>([]);
+  const [loadingServicios, setLoadingServicios] = useState(false);
 
   // Limpiar formulario al cerrar
   useEffect(() => {
@@ -61,6 +64,35 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       };
 
       cargarClientes();
+    }
+  }, [isOpen]);
+
+  // Cargar servicios cuando se abra el modal
+  useEffect(() => {
+    if (isOpen) {
+      const cargarServicios = async () => {
+        setLoadingServicios(true);
+        try {
+          const response = await servicesService.getAll();
+          if (response.success) {
+            const mappedServices = response.data.map((csvService: any) => ({
+              id: csvService.id,
+              name: csvService.nombre,
+              description: csvService.descripcion || '',
+              basePrice: parseFloat(csvService.precio) || 0,
+              estimatedTime: csvService.duracion || '',
+            }));
+            setServicios(mappedServices);
+          }
+        } catch (error) {
+          console.error('Error cargando servicios:', error);
+          setServicios([]);
+        } finally {
+          setLoadingServicios(false);
+        }
+      };
+
+      cargarServicios();
     }
   }, [isOpen]);
 
@@ -190,17 +222,11 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
           error={errors.serviceTypeId}
           required
           options={[
-            { value: "", label: "Seleccionar servicio..." },
-            { value: "mantenimiento", label: "Mantenimiento preventivo" },
-            { value: "reparacion", label: "Reparación" },
-            { value: "revision", label: "Revisión técnica" },
-            { value: "diagnostico", label: "Diagnóstico" },
-            { value: "cambio-aceite", label: "Cambio de aceite" },
-            { value: "alineacion", label: "Alineación y balanceo" },
-            { value: "frenos", label: "Revisión de frenos" },
-            { value: "suspension", label: "Revisión de suspensión" },
-            { value: "electrico", label: "Sistema eléctrico" },
-            { value: "otro", label: "Otro" }
+            { value: "", label: loadingServicios ? "Cargando servicios..." : "Seleccionar servicio..." },
+            ...servicios.map(servicio => ({
+              value: servicio.id,
+              label: `${servicio.name} - $${servicio.basePrice}`
+            }))
           ]}
         />
 
