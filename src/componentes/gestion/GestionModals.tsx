@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Button } from '../comunes/UI';
 import { TanStackCrudTable } from '../comunes/TanStackCrudTable';
 import NewAppointmentModal from '../appointments/NewAppointmentModal';
+import EditAppointmentModal from '../appointments/EditAppointmentModal';
+import AppointmentActions from '../appointments/AppointmentActions';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkOrder, Appointment, Quotation, Invoice } from '../../tipos';
-import { mockWorkOrders, mockAppointments, mockQuotations, mockInvoices } from '../../utilidades/globalMockDatabase';
+import { mockWorkOrders, mockQuotations, mockInvoices } from '../../utilidades/globalMockDatabase';
+import { appointmentsService, servicesService } from '../../servicios/apiService';
+import { obtenerClientes } from '../../servicios/clientesApiService';
 import { FunnelIcon, ArrowPathIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { formatCurrency } from '../../utilidades/globalMockDatabase';
 
@@ -24,19 +28,6 @@ const workOrderColumns: ColumnDef<WorkOrder>[] = [
     header: 'Costo Total',
     cell: (info) => formatCurrency(info.getValue() as number)
   },
-];
-
-const appointmentColumns: ColumnDef<Appointment>[] = [
-  { accessorKey: 'id', header: 'ID' },
-  { accessorKey: 'clientId', header: 'Cliente' },
-  { accessorKey: 'serviceTypeId', header: 'Servicio' },
-  { 
-    accessorKey: 'date', 
-    header: 'Fecha',
-    cell: (info) => new Date(info.getValue() as string).toLocaleDateString()
-  },
-  { accessorKey: 'time', header: 'Hora' },
-  { accessorKey: 'status', header: 'Estado' },
 ];
 
 const quotationColumns: ColumnDef<Quotation>[] = [
@@ -71,12 +62,141 @@ interface GestionModalProps {
 
 export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
   const [workOrders, setWorkOrders] = useState(mockWorkOrders);
-  const [appointments, setAppointments] = useState(mockAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [quotations, setQuotations] = useState(mockQuotations);
   const [invoices, setInvoices] = useState(mockInvoices);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
+  const [isEditAppointmentModalOpen, setIsEditAppointmentModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [servicios, setServicios] = useState<any[]>([]);
+
+  // Función para buscar el nombre del cliente por ID
+  const getClienteName = (clienteId: string) => {
+    const cliente = clientes.find(c => c.id === clienteId);
+    return cliente ? cliente.name : clienteId;
+  };
+
+  // Función para buscar el nombre del servicio por ID
+  const getServiceName = (servicioId: string) => {
+    const servicio = servicios.find(s => s.id === servicioId);
+    return servicio ? servicio.name || servicio.nombre : servicioId;
+  };
+
+  // Función para cargar clientes
+  const loadClientes = async () => {
+    try {
+      const clientesData = await obtenerClientes();
+      setClientes(clientesData);
+    } catch (error) {
+      console.error('Error cargando clientes:', error);
+    }
+  };
+
+  // Función para cargar servicios
+  const loadServicios = async () => {
+    try {
+      const response = await servicesService.getAll();
+      if (response.success) {
+        const mappedServices = response.data.map((csvService: any) => ({
+          id: csvService.id,
+          name: csvService.nombre,
+          nombre: csvService.nombre,
+        }));
+        setServicios(mappedServices);
+      }
+    } catch (error) {
+      console.error('Error cargando servicios:', error);
+    }
+  };
+
+  // Columnas dinámicas para appointments que usan las funciones helper
+  const appointmentColumns: ColumnDef<Appointment>[] = [
+    { accessorKey: 'id', header: 'ID', size: 120 },
+    { 
+      accessorKey: 'clientId', 
+      header: 'Cliente',
+      cell: (info) => getClienteName(info.getValue() as string),
+      size: 180
+    },
+    { 
+      accessorKey: 'serviceTypeId', 
+      header: 'Servicio',
+      cell: (info) => getServiceName(info.getValue() as string),
+      size: 150
+    },
+    { 
+      accessorKey: 'date', 
+      header: 'Fecha',
+      cell: (info) => new Date(info.getValue() as string).toLocaleDateString(),
+      size: 100
+    },
+    { accessorKey: 'time', header: 'Hora', size: 80 },
+    { 
+      id: 'actions',
+      header: 'Estado y Acciones',
+      cell: (info) => (
+        <AppointmentActions
+          appointment={info.row.original}
+          clientName={getClienteName(info.row.original.clientId)}
+          serviceName={getServiceName(info.row.original.serviceTypeId)}
+          onUpdate={loadAppointments}
+        />
+      ),
+      size: 200
+    },
+  ];
+
+  // Función para cargar citas desde el backend
+  const loadAppointments = async () => {
+    if (type !== 'appointments') return;
+    
+    try {
+      setLoadingAppointments(true);
+      const response = await appointmentsService.getAll();
+      
+      if (response.success) {
+        // Convertir los datos del CSV al formato esperado por el frontend
+        const appointmentsData = response.data.map((csvAppointment: any) => ({
+          id: csvAppointment.id,
+          date: new Date(csvAppointment.fecha),
+          time: csvAppointment.hora,
+          clientId: csvAppointment.clienteId,
+          vehicleId: csvAppointment.vehiculoId,
+          serviceTypeId: csvAppointment.servicio,
+          status: csvAppointment.estado,
+          notes: (csvAppointment.notas || '').replace(/^"|"$/g, ''), // Remover comillas extras
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+        
+        setAppointments(appointmentsData);
+      } else {
+        console.error('Error cargando citas:', response.message);
+      }
+    } catch (error) {
+      console.error('Error cargando citas:', error);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
+  // Cargar citas cuando se abre el modal de tipo 'appointments'
+  useEffect(() => {
+    if (isOpen && type === 'appointments') {
+      const loadAllData = async () => {
+        await Promise.all([
+          loadAppointments(),
+          loadClientes(),
+          loadServicios()
+        ]);
+      };
+      loadAllData();
+    }
+  }, [isOpen, type]);
 
   // Función para filtrar los datos
   const filterData = (data: any[]) => {
@@ -120,34 +240,62 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
   const config = modalConfig[type];
 
   const handleEdit = (item: any) => {
-    console.log('Editar:', item);
-  };
-
-  const handleDelete = (item: any) => {
-    const updatedData = config.data.filter(d => d.id !== item.id);
-    switch (type) {
-      case 'workOrders':
-        setWorkOrders(updatedData as WorkOrder[]);
-        break;
-      case 'appointments':
-        setAppointments(updatedData as Appointment[]);
-        break;
-      case 'quotations':
-        setQuotations(updatedData as Quotation[]);
-        break;
-      case 'invoices':
-        setInvoices(updatedData as Invoice[]);
-        break;
+    if (type === 'appointments') {
+      setSelectedAppointment(item);
+      setIsEditAppointmentModalOpen(true);
+    } else {
+      console.log('Editar:', item);
     }
   };
 
-  const handleCreateAppointment = (newAppointment: Omit<Appointment, 'id'>) => {
-    const appointmentWithId: Appointment = {
-      ...newAppointment,
-      id: `app-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    };
-    
-    setAppointments(prevData => [...prevData, appointmentWithId]);
+  const handleDelete = async (item: any) => {
+    if (type === 'appointments') {
+      if (window.confirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
+        try {
+          const response = await appointmentsService.delete(item.id);
+          if (response.success) {
+            // Recargar la lista después de eliminar
+            await loadAppointments();
+          } else {
+            alert('Error al eliminar la cita: ' + response.message);
+          }
+        } catch (error) {
+          console.error('Error eliminando cita:', error);
+          alert('Error al eliminar la cita');
+        }
+      }
+    } else {
+      // Para otros tipos, usar la lógica original
+      const updatedData = config.data.filter((d: any) => d.id !== item.id);
+      switch (type) {
+        case 'workOrders':
+          setWorkOrders(updatedData as WorkOrder[]);
+          break;
+        case 'quotations':
+          setQuotations(updatedData as Quotation[]);
+          break;
+        case 'invoices':
+          setInvoices(updatedData as Invoice[]);
+          break;
+      }
+    }
+  };
+
+  const handleCreateAppointment = async (_newAppointment: Omit<Appointment, 'id'>) => {
+    // La cita ya se creó en el backend desde el modal NewAppointmentModal
+    // Solo necesitamos recargar la lista para mostrar la nueva cita
+    await loadAppointments();
+  };
+
+  const handleEditAppointment = async () => {
+    // La cita ya se actualizó en el backend desde el modal EditAppointmentModal
+    // Solo necesitamos recargar la lista para mostrar los cambios
+    await loadAppointments();
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditAppointmentModalOpen(false);
+    setSelectedAppointment(null);
   };
 
   const handleNewRecord = () => {
@@ -181,7 +329,7 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-600">Pendientes</p>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {config.data.filter(item => item.status === 'pending').length}
+                  {config.data.filter((item: any) => item.status === 'pending').length}
                 </p>
               </div>
               <div className="p-3 bg-yellow-100 rounded-full">
@@ -195,7 +343,7 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-600">Completados</p>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {config.data.filter(item => item.status === 'completed').length}
+                  {config.data.filter((item: any) => item.status === 'completed').length}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
@@ -242,12 +390,18 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
 
         {/* Tabla */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-          <TanStackCrudTable
-            columns={config.columns}
-            data={filterData(config.data)}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {type === 'appointments' && loadingAppointments ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="text-gray-600">Cargando citas...</div>
+            </div>
+          ) : (
+            <TanStackCrudTable
+              columns={config.columns}
+              data={filterData(config.data)}
+              onEdit={type === 'appointments' ? undefined : handleEdit}
+              onDelete={type === 'appointments' ? undefined : handleDelete}
+            />
+          )}
         </div>
 
         {/* Footer con resumen */}
@@ -257,10 +411,10 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
               {config.data.length} {config.title.toLowerCase()} en total
             </div>
             <div className="flex space-x-4">
-              <span>{config.data.filter(item => item.status === 'pending').length} pendientes</span>
-              <span>{config.data.filter(item => item.status === 'in-progress').length} en progreso</span>
-              <span>{config.data.filter(item => item.status === 'completed').length} completados</span>
-              <span>{config.data.filter(item => item.status === 'cancelled').length} cancelados</span>
+              <span>{config.data.filter((item: any) => item.status === 'pending').length} pendientes</span>
+              <span>{config.data.filter((item: any) => item.status === 'in-progress').length} en progreso</span>
+              <span>{config.data.filter((item: any) => item.status === 'completed').length} completados</span>
+              <span>{config.data.filter((item: any) => item.status === 'cancelled').length} cancelados</span>
             </div>
           </div>
         </div>
@@ -269,11 +423,20 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
 
     {/* Modal de nueva cita - solo se muestra si el tipo es appointments */}
     {type === 'appointments' && (
-      <NewAppointmentModal
-        isOpen={isNewAppointmentModalOpen}
-        onClose={() => setIsNewAppointmentModalOpen(false)}
-        onSubmit={handleCreateAppointment}
-      />
+      <>
+        <NewAppointmentModal
+          isOpen={isNewAppointmentModalOpen}
+          onClose={() => setIsNewAppointmentModalOpen(false)}
+          onSubmit={handleCreateAppointment}
+        />
+        
+        <EditAppointmentModal
+          isOpen={isEditAppointmentModalOpen}
+          onClose={handleCloseEditModal}
+          onSubmit={handleEditAppointment}
+          appointment={selectedAppointment}
+        />
+      </>
     )}
     </>
   );

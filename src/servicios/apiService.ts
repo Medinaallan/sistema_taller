@@ -261,6 +261,122 @@ export const vehiclesService = {
   },
 };
 
+// Servicio para gestión de citas
+export const appointmentsService = {
+  async getAll(): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/appointments`, {
+      ...fetchConfig,
+      method: 'GET',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async create(appointmentData: { 
+    clienteId: string; 
+    vehiculoId: string; 
+    fecha: string; 
+    hora: string; 
+    servicio: string; 
+    estado?: string;
+    notas?: string;
+  }): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/appointments`, {
+      ...fetchConfig,
+      method: 'POST',
+      body: JSON.stringify(appointmentData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async update(id: string, appointmentData: Partial<{ 
+    clienteId: string; 
+    vehiculoId: string; 
+    fecha: string; 
+    hora: string; 
+    servicio: string; 
+    estado: string;
+    notas: string;
+  }>): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      ...fetchConfig,
+      method: 'PUT',
+      body: JSON.stringify(appointmentData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async delete(id: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      ...fetchConfig,
+      method: 'DELETE',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async getById(id: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      ...fetchConfig,
+      method: 'GET',
+    });
+    
+    return handleResponse(response);
+  },
+};
+
+// Servicio para gestión de cotizaciones
+export const quotationsService = {
+  async getAll(): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/quotations`, {
+      ...fetchConfig,
+      method: 'GET',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async create(quotationData: any): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/quotations`, {
+      ...fetchConfig,
+      method: 'POST',
+      body: JSON.stringify(quotationData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async update(id: string, quotationData: any): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/quotations/${id}`, {
+      ...fetchConfig,
+      method: 'PUT',
+      body: JSON.stringify(quotationData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async delete(id: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/quotations/${id}`, {
+      ...fetchConfig,
+      method: 'DELETE',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async getById(id: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/quotations/${id}`, {
+      ...fetchConfig,
+      method: 'GET',
+    });
+    
+    return handleResponse(response);
+  },
+};
+
 // Función para probar la conectividad con el backend
 export async function testBackendConnection(): Promise<boolean> {
   try {
@@ -279,5 +395,7 @@ export default {
   healthService,
   servicesService,
   vehiclesService,
+  appointmentsService,
+  quotationsService,
   testBackendConnection,
 };

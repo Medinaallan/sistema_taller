@@ -14,6 +14,7 @@ const servicesRoutes = require('./routes/services');
 const vehiclesRoutes = require('./routes/vehicles');
 const excelImportRoutes = require('./routes/excelImport');
 const serviceHistoryRoutes = require('./routes/serviceHistory');
+const appointmentsRoutes = require('./routes/appointments');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/vehicles', vehiclesRoutes);
 app.use('/api/excel-import', excelImportRoutes);
 app.use('/api/service-history', serviceHistoryRoutes);
+app.use('/api/appointments', appointmentsRoutes);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {

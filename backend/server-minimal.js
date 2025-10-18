@@ -85,41 +85,67 @@ try {
 
 //  IMPORTAR Y CONFIGURAR RUTAS DE VEHÍCULOS
 try {
-  console.log('🚗 Cargando rutas de vehículos...');
+  console.log('Cargando rutas de vehículos...');
   const vehiclesRouter = require('./routes/vehicles');
   app.use('/api/vehicles', vehiclesRouter);
-  console.log('✅ Rutas de vehículos cargadas exitosamente');
-  console.log('    📍 /api/vehicles/* endpoints disponibles');
+  console.log('Rutas de vehículos cargadas exitosamente');
+  console.log('/api/vehicles/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de vehículos:', error.message);
+  console.error('Error cargando rutas de vehículos:', error.message);
   console.error('   Stack:', error.stack);
-  console.warn('⚠️  El servidor continuará sin las rutas de vehículos');
+  console.warn(' El servidor continuará sin las rutas de vehículos');
 }
 
-// 📊 IMPORTAR Y CONFIGURAR RUTAS DE IMPORTACIÓN EXCEL
+// IMPORTAR Y CONFIGURAR RUTAS DE IMPORTACIÓN EXCEL
 try {
-  console.log('📊 Cargando rutas de importación Excel...');
+  console.log('Cargando rutas de importación Excel...');
   const excelImportRouter = require('./routes/excelImport');
   app.use('/api/excel-import', excelImportRouter);
-  console.log('✅ Rutas de importación Excel cargadas exitosamente');
-  console.log('    📍 /api/excel-import/* endpoints disponibles');
+  console.log('Rutas de importación Excel cargadas exitosamente');
+  console.log('/api/excel-import/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de importación Excel:', error.message);
+  console.error(' Error cargando rutas de importación Excel:', error.message);
   console.error('   Stack:', error.stack);
-  console.warn('⚠️  El servidor continuará sin las rutas de importación Excel');
+  console.warn('El servidor continuará sin las rutas de importación Excel');
 }
 
-// 📋 IMPORTAR Y CONFIGURAR RUTAS DE HISTORIAL DE SERVICIOS
+//IMPORTAR Y CONFIGURAR RUTAS DE HISTORIAL DE SERVICIOS
 try {
-  console.log('📋 Cargando rutas de historial de servicios...');
+  console.log('📅 Cargando rutas de historial de servicios...');
   const serviceHistoryRouter = require('./routes/serviceHistory');
   app.use('/api/service-history', serviceHistoryRouter);
   console.log('✅ Rutas de historial de servicios cargadas exitosamente');
-  console.log('    📍 /api/service-history/* endpoints disponibles');
+  console.log('/api/service-history/* endpoints disponibles');
 } catch (error) {
   console.error('❌ Error cargando rutas de historial de servicios:', error.message);
-  console.error('   Stack:', error.stack);
-  console.warn('⚠️  El servidor continuará sin las rutas de historial de servicios');
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de historial de servicios');
+}
+
+//IMPORTAR Y CONFIGURAR RUTAS DE CITAS
+try {
+  console.log('📅 Cargando rutas de citas...');
+  const appointmentsRouter = require('./routes/appointments');
+  app.use('/api/appointments', appointmentsRouter);
+  console.log('✅ Rutas de citas cargadas exitosamente');
+  console.log('/api/appointments/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de citas:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de citas');
+}
+
+//IMPORTAR Y CONFIGURAR RUTAS DE COTIZACIONES
+try {
+  console.log('💰 Cargando rutas de cotizaciones...');
+  const quotationsRouter = require('./routes/quotations');
+  app.use('/api/quotations', quotationsRouter);
+  console.log('✅ Rutas de cotizaciones cargadas exitosamente');
+  console.log('/api/quotations/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de cotizaciones:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de cotizaciones');
 }
 
 // Cargar stored procedures

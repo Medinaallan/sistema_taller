@@ -4,16 +4,18 @@ import type { Appointment } from '../../tipos';
 import { obtenerClientes, type Cliente } from '../../servicios/clientesApiService';
 import { servicesService, vehiclesService, appointmentsService } from '../../servicios/apiService';
 
-interface NewAppointmentModalProps {
+interface EditAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (appointment: Omit<Appointment, 'id'>) => void;
+  onSubmit: () => void;
+  appointment: Appointment | null;
 }
 
-const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
+const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  appointment,
 }) => {
   const [formData, setFormData] = useState({
     date: '',
@@ -22,7 +24,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
     vehicleId: '',
     serviceTypeId: '',
     notes: '',
-    status: 'pending' as const,
+    status: 'pending' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -33,6 +35,22 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   const [vehiculos, setVehiculos] = useState<any[]>([]);
   const [loadingVehiculos, setLoadingVehiculos] = useState(false);
   const [vehiculosCliente, setVehiculosCliente] = useState<any[]>([]);
+
+  // Cargar datos del appointment cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && appointment) {
+      setFormData({
+        date: appointment.date instanceof Date ? appointment.date.toISOString().split('T')[0] : appointment.date,
+        time: appointment.time,
+        clientId: appointment.clientId,
+        vehicleId: appointment.vehicleId,
+        serviceTypeId: appointment.serviceTypeId,
+        notes: appointment.notes || '',
+        status: appointment.status,
+      });
+      setErrors({});
+    }
+  }, [isOpen, appointment]);
 
   // Limpiar formulario al cerrar
   useEffect(() => {
@@ -128,13 +146,12 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       const vehiculosFiltrados = vehiculos.filter(vehiculo => vehiculo.clienteId === formData.clientId);
       setVehiculosCliente(vehiculosFiltrados);
       
-      // Limpiar selección de vehículo si ya no está disponible
+      // Si el vehículo actual no pertenece al nuevo cliente, limpiar selección
       if (formData.vehicleId && !vehiculosFiltrados.some(v => v.id === formData.vehicleId)) {
         setFormData(prev => ({ ...prev, vehicleId: '' }));
       }
     } else {
       setVehiculosCliente([]);
-      setFormData(prev => ({ ...prev, vehicleId: '' }));
     }
   }, [formData.clientId, vehiculos]);
 
@@ -161,7 +178,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       newErrors.serviceTypeId = 'El tipo de servicio es requerido';
     }
 
-    // Validar que la fecha no sea en el pasado
+    // Validar que la fecha no sea en el pasado (excepto si es hoy)
     if (formData.date) {
       const selectedDate = new Date(formData.date);
       const today = new Date();
@@ -179,7 +196,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || !appointment) {
       return;
     }
 
@@ -195,26 +212,18 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         notas: formData.notes
       };
 
-      // Guardar en el backend
-      const response = await appointmentsService.create(appointmentData);
+      // Actualizar en el backend
+      const response = await appointmentsService.update(appointment.id, appointmentData);
       
       if (response.success) {
-        // Llamar al callback para notificar al componente padre
-        onSubmit({
-          ...formData,
-          date: new Date(formData.date),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-        
+        onSubmit(); // Notificar al componente padre para que recargue la lista
         onClose();
       } else {
-        // Mostrar error si no se pudo guardar
-        setErrors({ submit: 'Error al crear la cita. Intente nuevamente.' });
+        setErrors({ submit: 'Error al actualizar la cita. Intente nuevamente.' });
       }
     } catch (error) {
-      console.error('Error creando cita:', error);
-      setErrors({ submit: 'Error al crear la cita. Intente nuevamente.' });
+      console.error('Error actualizando cita:', error);
+      setErrors({ submit: 'Error al actualizar la cita. Intente nuevamente.' });
     }
   };
 
@@ -227,11 +236,13 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
     }
   };
 
+  if (!appointment) return null;
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Nueva Cita"
+      title="Editar Cita"
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -312,12 +323,16 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
           ]}
         />
 
-        <Input
+        <Select
           label="Estado"
-          type="text"
-          value="Pendiente"
-          disabled={true}
-          className="bg-gray-50"
+          value={formData.status}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('status', e.target.value as 'pending' | 'confirmed' | 'cancelled' | 'completed')}
+          options={[
+            { value: "pending", label: "Pendiente" },
+            { value: "confirmed", label: "Confirmada" },
+            { value: "cancelled", label: "Cancelada" },
+            { value: "completed", label: "Completada" }
+          ]}
         />
 
         <TextArea
@@ -346,7 +361,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
             type="submit"
             variant="primary"
           >
-            Crear Cita
+            Actualizar Cita
           </Button>
         </div>
       </form>
@@ -354,4 +369,4 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   );
 };
 
-export default NewAppointmentModal;
+export default EditAppointmentModal;
