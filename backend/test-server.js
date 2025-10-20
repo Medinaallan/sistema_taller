@@ -19,24 +19,24 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// 👥 PROBAR IMPORTACIÓN DE CLIENTES API
+// PROBAR IMPORTACIÓN DE CLIENTES API
 try {
-  console.log('🔄 Intentando cargar clientsApi...');
+  console.log('Intentando cargar clientsApi...');
   const clientsApiRouter = require('./routes/clientsApi');
-  console.log('✅ clientsApi cargado exitosamente');
+  console.log('clientsApi cargado exitosamente');
   
   // Usar rutas
   app.use('/api/clients', clientsApiRouter);
-  console.log('✅ Rutas de clientes registradas');
+  console.log('Rutas de clientes registradas');
   
 } catch (error) {
-  console.error('❌ Error cargando clientsApi:', error.message);
+  console.error('Error cargando clientsApi:', error.message);
   console.error('Stack:', error.stack);
 }
 
 const PORT = 8081;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor de prueba iniciado en puerto ${PORT}`);
+  console.log(`Servidor de prueba iniciado en puerto ${PORT}`);
   console.log(`Health: http://localhost:${PORT}/api/health`);
   console.log(`Clientes: http://localhost:${PORT}/api/clients`);
 });
