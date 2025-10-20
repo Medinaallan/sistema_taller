@@ -51,21 +51,21 @@ async function testCreateAppointment() {
 // Función para obtener todas las citas
 async function testGetAppointments() {
   try {
-    console.log('\n🧪 Probando obtención de citas...');
+    console.log('\n Probando obtención de citas...');
     
     const response = await fetch(`${API_BASE_URL}/appointments`);
     const result = await response.json();
     
     if (result.success) {
-      console.log(`✅ Se encontraron ${result.data.length} citas:`);
+      console.log(` Se encontraron ${result.data.length} citas:`);
       result.data.forEach((appointment, index) => {
         console.log(`${index + 1}. ID: ${appointment.id} | Cliente: ${appointment.clienteId} | Fecha: ${appointment.fecha} | Hora: ${appointment.hora}`);
       });
     } else {
-      console.log('❌ Error obteniendo citas:', result.message);
+      console.log(' Error obteniendo citas:', result.message);
     }
   } catch (error) {
-    console.error('❌ Error en la prueba:', error.message);
+    console.error(' Error en la prueba:', error.message);
   }
 }
 
