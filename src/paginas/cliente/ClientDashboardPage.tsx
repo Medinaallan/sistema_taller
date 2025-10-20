@@ -318,7 +318,7 @@ export function ClientDashboardPage() {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Cotizaciones</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {quotations.filter(q => q.status === 'pending').length}
+                    {quotations.filter(q => q.status === 'pending' || q.status === 'sent').length}
                   </dd>
                 </dl>
               </div>
@@ -563,7 +563,9 @@ export function ClientDashboardPage() {
                   </p>
                 </div>
                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(quotation.status)}`}>
-                  {quotation.status === 'pending' ? 'Pendiente de Aprobación' : 'Aprobada'}
+                  {quotation.status === 'pending' ? 'Pendiente de Aprobación' : 
+                   quotation.status === 'sent' ? 'Enviada a Cliente' :
+                   quotation.status === 'approved' ? 'Aprobada' : 'Rechazada'}
                 </div>
               </div>
             </div>
@@ -592,7 +594,7 @@ export function ClientDashboardPage() {
                   </div>
                 </div>
 
-                {quotation.status === 'pending' && (
+                {(quotation.status === 'pending' || quotation.status === 'sent') && (
                   <div className="mt-6 flex space-x-3">
                     <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
                       <CheckIcon className="h-4 w-4 mr-2" />
@@ -880,7 +882,7 @@ export function ClientDashboardPage() {
                 <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
                 <div className="ml-2 sm:ml-3">
                   <p className="text-xs sm:text-sm text-blue-200">Cotizaciones</p>
-                  <p className="text-lg sm:text-xl font-semibold text-white">{quotations.filter(q => q.status === 'pending').length}</p>
+                  <p className="text-lg sm:text-xl font-semibold text-white">{quotations.filter(q => q.status === 'pending' || q.status === 'sent').length}</p>
                 </div>
               </div>
             </div>

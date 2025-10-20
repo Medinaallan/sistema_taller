@@ -24,8 +24,128 @@ export const mockQuotations: Quotation[] = [];
 export const mockInvoices: Invoice[] = [];
 export const mockPayments: Payment[] = [];
 export const mockServices: Service[] = [];
-export const mockProducts: Product[] = [];
-export const mockInventory: InventoryItem[] = [];
+
+export const mockProducts: Product[] = [
+  {
+    id: 'prod-001',
+    name: 'Aceite de Motor 5W-30',
+    description: 'Aceite sintético para motor de alta calidad',
+    brand: 'Mobil 1',
+    model: '5W-30',
+    price: 85000,
+    cost: 65000,
+    stock: 25,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'prod-002',
+    name: 'Filtro de Aceite',
+    description: 'Filtro de aceite universal para vehículos',
+    brand: 'Mann Filter',
+    model: 'W712/75',
+    price: 25000,
+    cost: 18000,
+    stock: 40,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'prod-003',
+    name: 'Pastillas de Freno Delanteras',
+    description: 'Pastillas de freno cerámicas para freno delantero',
+    brand: 'Brembo',
+    model: 'P85020',
+    price: 120000,
+    cost: 95000,
+    stock: 15,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'prod-004',
+    name: 'Llanta 205/55R16',
+    description: 'Llanta radial para automóviles',
+    brand: 'Michelin',
+    model: 'Energy Saver',
+    price: 180000,
+    cost: 140000,
+    stock: 8,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
+  {
+    id: 'prod-005',
+    name: 'Batería 12V 60Ah',
+    description: 'Batería para automóvil libre de mantenimiento',
+    brand: 'Bosch',
+    model: 'S4024',
+    price: 250000,
+    cost: 200000,
+    stock: 12,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  }
+];
+
+export const mockInventory: InventoryItem[] = [
+  {
+    id: 'inv-001',
+    productId: 'prod-001',
+    quantity: 25,
+    minStock: 10,
+    maxStock: 50,
+    location: 'Estante A-1',
+    lastEntryDate: new Date('2024-10-01'),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-10-01'),
+  },
+  {
+    id: 'inv-002',
+    productId: 'prod-002',
+    quantity: 40,
+    minStock: 15,
+    maxStock: 60,
+    location: 'Estante A-2',
+    lastEntryDate: new Date('2024-09-15'),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-09-15'),
+  },
+  {
+    id: 'inv-003',
+    productId: 'prod-003',
+    quantity: 15,
+    minStock: 8,
+    maxStock: 30,
+    location: 'Estante B-1',
+    lastEntryDate: new Date('2024-10-05'),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-10-05'),
+  },
+  {
+    id: 'inv-004',
+    productId: 'prod-004',
+    quantity: 8,
+    minStock: 4,
+    maxStock: 20,
+    location: 'Bodega Principal',
+    lastEntryDate: new Date('2024-09-20'),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-09-20'),
+  },
+  {
+    id: 'inv-005',
+    productId: 'prod-005',
+    quantity: 12,
+    minStock: 5,
+    maxStock: 25,
+    location: 'Estante C-1',
+    lastEntryDate: new Date('2024-10-10'),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-10-10'),
+  }
+];
+
 export const mockSuppliers: Supplier[] = [];
 export const mockLogs: Log[] = [];
 
@@ -83,6 +203,7 @@ export function getStatusColor(status: string): string {
     case 'completed':
     case 'active':
     case 'confirmed':
+    case 'approved':
       return 'green';
     case 'pending':
     case 'in-progress':
@@ -90,9 +211,12 @@ export function getStatusColor(status: string): string {
     case 'cancelled':
     case 'failed':
     case 'overdue':
+    case 'rejected':
       return 'red';
     case 'draft':
     case 'scheduled':
+      return 'blue';
+    case 'sent':
       return 'blue';
     default:
       return 'gray';
@@ -120,6 +244,12 @@ export function getStatusText(status: string): string {
       return 'Vencido';
     case 'draft':
       return 'Borrador';
+    case 'sent':
+      return 'Enviada a Cliente';
+    case 'approved':
+      return 'Aprobada';
+    case 'rejected':
+      return 'Rechazada';
     case 'scheduled':
       return 'Programado';
     default:

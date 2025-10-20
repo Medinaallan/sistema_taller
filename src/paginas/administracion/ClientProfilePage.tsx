@@ -715,11 +715,12 @@ export function ClientProfilePage() {
                                 <Badge
                                   variant={
                                     quotation.status === 'approved' ? 'success' :
-                                    quotation.status === 'pending' ? 'warning' : 'danger'
+                                    quotation.status === 'pending' ? 'warning' :
+                                    quotation.status === 'sent' ? 'primary' : 'danger'
                                   }
                                   size="sm"
                                 >
-                                  {quotation.status}
+                                  {quotation.status === 'sent' ? 'Enviada a Cliente' : quotation.status}
                                 </Badge>
                               </div>
                               <p className="text-sm text-gray-600">

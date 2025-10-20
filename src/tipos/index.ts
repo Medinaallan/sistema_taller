@@ -272,7 +272,7 @@ export interface Quotation {
   vehicleId: string;
   items: QuotationItem[];
   total: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'sent' | 'approved' | 'rejected';
   createdAt: Date;
   updatedAt: Date;
 }

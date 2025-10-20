@@ -206,6 +206,65 @@ export const servicesService = {
   },
 };
 
+// Servicio para gestión de productos/inventario
+export const productsService = {
+  async getAll(): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/products`, {
+      ...fetchConfig,
+      method: 'GET',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async create(productData: { 
+    name: string; 
+    description?: string; 
+    brand?: string;
+    model?: string;
+    price: number; 
+    cost?: number;
+    stock: number;
+    supplierId?: string;
+  }): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/products`, {
+      ...fetchConfig,
+      method: 'POST',
+      body: JSON.stringify(productData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async update(id: string, productData: Partial<{ 
+    name: string; 
+    description: string; 
+    brand: string;
+    model: string;
+    price: number; 
+    cost: number;
+    stock: number;
+    supplierId: string;
+  }>): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+      ...fetchConfig,
+      method: 'PUT',
+      body: JSON.stringify(productData),
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async delete(id: string): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+      ...fetchConfig,
+      method: 'DELETE',
+    });
+    
+    return handleResponse(response);
+  },
+};
+
 // Servicio para gestión de vehículos
 export const vehiclesService = {
   async getAll(): Promise<ApiResponse> {
@@ -394,6 +453,7 @@ export default {
   userService,
   healthService,
   servicesService,
+  productsService,
   vehiclesService,
   appointmentsService,
   quotationsService,
