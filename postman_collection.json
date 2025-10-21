@@ -1,0 +1,455 @@
+{
+  "info": {
+    "name": "Sistema Taller API",
+    "description": "API para el sistema de gestión de taller automotriz",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@ejemplo.com\",\n  \"password\": \"contraseña123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Autenticar usuario en el sistema"
+          }
+        },
+        {
+          "name": "Verify Security Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@ejemplo.com\",\n  \"securityCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-security-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-security-code"]
+            },
+            "description": "Verificar código de seguridad del usuario"
+          }
+        },
+        {
+          "name": "Register Client",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@ejemplo.com\",\n  \"password\": \"contraseña123\",\n  \"fullName\": \"Juan Pérez\",\n  \"phone\": \"+1234567890\",\n  \"address\": \"Calle Principal 123\",\n  \"companyName\": \"Empresa ABC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register-client",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register-client"]
+            },
+            "description": "Registrar nuevo cliente en el sistema"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "Get All Registered Clients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/registered",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", "registered"]
+            },
+            "description": "Obtener todos los clientes registrados"
+          }
+        },
+        {
+          "name": "Get Client by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/:clientId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", ":clientId"],
+              "variable": [
+                {
+                  "key": "clientId",
+                  "value": "1",
+                  "description": "ID del cliente"
+                }
+              ]
+            },
+            "description": "Obtener información de un cliente específico"
+          }
+        },
+        {
+          "name": "Update Client",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Juan Pérez Actualizado\",\n  \"phone\": \"+1234567890\",\n  \"address\": \"Nueva Dirección 456\",\n  \"companyName\": \"Nueva Empresa XYZ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/:clientId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", ":clientId"],
+              "variable": [
+                {
+                  "key": "clientId",
+                  "value": "1",
+                  "description": "ID del cliente"
+                }
+              ]
+            },
+            "description": "Actualizar información de un cliente"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        {
+          "name": "Get All Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vehicles"]
+            },
+            "description": "Obtener todos los vehículos"
+          }
+        },
+        {
+          "name": "Create Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"CLI-123\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Corolla\",\n  \"año\": 2020,\n  \"placa\": \"ABC-123\",\n  \"color\": \"Blanco\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vehicles"]
+            },
+            "description": "Crear un nuevo vehículo"
+          }
+        },
+        {
+          "name": "Update Vehicle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"CLI-123\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Camry\",\n  \"año\": 2021,\n  \"placa\": \"ABC-123\",\n  \"color\": \"Negro\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vehicles", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "VEH-123",
+                  "description": "ID del vehículo"
+                }
+              ]
+            },
+            "description": "Actualizar un vehículo existente"
+          }
+        },
+        {
+          "name": "Delete Vehicle",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/vehicles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vehicles", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "VEH-123",
+                  "description": "ID del vehículo"
+                }
+              ]
+            },
+            "description": "Eliminar un vehículo"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "Get All Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services"]
+            },
+            "description": "Obtener todos los servicios"
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cambio de aceite\",\n  \"descripcion\": \"Cambio de aceite y filtro\",\n  \"precio\": 25.00,\n  \"duracion\": \"30 minutos\",\n  \"categoria\": \"Mantenimiento\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services"]
+            },
+            "description": "Crear un nuevo servicio"
+          }
+        },
+        {
+          "name": "Update Service",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cambio de aceite premium\",\n  \"descripcion\": \"Cambio de aceite sintético y filtro\",\n  \"precio\": 35.00,\n  \"duracion\": \"45 minutos\",\n  \"categoria\": \"Mantenimiento Premium\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "service123",
+                  "description": "ID del servicio"
+                }
+              ]
+            },
+            "description": "Actualizar un servicio existente"
+          }
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "service123",
+                  "description": "ID del servicio"
+                }
+              ]
+            },
+            "description": "Eliminar un servicio"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Get All Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            },
+            "description": "Obtener todas las citas"
+          }
+        },
+        {
+          "name": "Get Appointment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "APPT-123",
+                  "description": "ID de la cita"
+                }
+              ]
+            },
+            "description": "Obtener una cita específica"
+          }
+        },
+        {
+          "name": "Create Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"CLI-123\",\n  \"vehiculoId\": \"VEH-456\",\n  \"fecha\": \"2024-01-15\",\n  \"hora\": \"10:00\",\n  \"servicio\": \"Cambio de aceite\",\n  \"estado\": \"pending\",\n  \"notas\": \"Cliente prefiere aceite sintético\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            },
+            "description": "Crear una nueva cita"
+          }
+        },
+        {
+          "name": "Update Appointment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fecha\": \"2024-01-16\",\n  \"hora\": \"14:00\",\n  \"estado\": \"confirmed\",\n  \"notas\": \"Cita reprogramada por solicitud del cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "APPT-123",
+                  "description": "ID de la cita"
+                }
+              ]
+            },
+            "description": "Actualizar una cita existente"
+          }
+        },
+        {
+          "name": "Delete Appointment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "APPT-123",
+                  "description": "ID de la cita"
+                }
+              ]
+            },
+            "description": "Eliminar una cita"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        },
+        "description": "Verificar el estado de la API"
+      }
+    }
+  ]
+}

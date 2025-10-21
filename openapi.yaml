@@ -1,0 +1,975 @@
+openapi: 3.0.0
+info:
+  title: Sistema Taller API
+  description: API para el sistema de gestión de taller automotriz
+  version: 1.0.0
+  contact:
+    name: Sistema Taller
+    email: admin@taller.com
+
+servers:
+  - url: http://localhost:5000
+    description: Servidor de desarrollo
+  - url: https://your-production-url.com
+    description: Servidor de producción
+
+paths:
+  /api/health:
+    get:
+      summary: Verificar estado de la API
+      description: Endpoint para verificar que la API esté funcionando correctamente
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API funcionando correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  environment:
+                    type: string
+                    example: "development"
+                  database:
+                    type: string
+                    example: "workshop_db"
+
+  /api/auth/login:
+    post:
+      summary: Autenticar usuario
+      description: Iniciar sesión en el sistema
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "usuario@ejemplo.com"
+                password:
+                  type: string
+                  example: "contraseña123"
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/verify-security-code:
+    post:
+      summary: Verificar código de seguridad
+      description: Verificar el código de seguridad del usuario
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - securityCode
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "usuario@ejemplo.com"
+                securityCode:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Código verificado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/auth/register-client:
+    post:
+      summary: Registrar nuevo cliente
+      description: Registrar un nuevo cliente en el sistema
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - fullName
+                - phone
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "cliente@ejemplo.com"
+                password:
+                  type: string
+                  example: "contraseña123"
+                fullName:
+                  type: string
+                  example: "Juan Pérez"
+                phone:
+                  type: string
+                  example: "+1234567890"
+                address:
+                  type: string
+                  example: "Calle Principal 123"
+                companyName:
+                  type: string
+                  example: "Empresa ABC"
+      responses:
+        '201':
+          description: Cliente registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientRegistrationResponse'
+        '400':
+          description: Error en la validación de datos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clients/registered:
+    get:
+      summary: Obtener todos los clientes registrados
+      description: Listar todos los clientes registrados en el sistema
+      tags:
+        - Clients
+      responses:
+        '200':
+          description: Lista de clientes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Client'
+                  count:
+                    type: integer
+                    example: 10
+
+  /api/clients/{clientId}:
+    get:
+      summary: Obtener cliente por ID
+      description: Obtener información de un cliente específico
+      tags:
+        - Clients
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del cliente
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Client'
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Actualizar cliente
+      description: Actualizar información de un cliente existente
+      tags:
+        - Clients
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  example: "Juan Pérez Actualizado"
+                phone:
+                  type: string
+                  example: "+1234567890"
+                address:
+                  type: string
+                  example: "Nueva Dirección 456"
+                companyName:
+                  type: string
+                  example: "Nueva Empresa XYZ"
+      responses:
+        '200':
+          description: Cliente actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/services:
+    get:
+      summary: Obtener todos los servicios
+      description: Listar todos los servicios disponibles
+      tags:
+        - Services
+      responses:
+        '200':
+          description: Lista de servicios obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
+
+    post:
+      summary: Crear nuevo servicio
+      description: Registrar un nuevo servicio en el sistema
+      tags:
+        - Services
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+                - precio
+              properties:
+                nombre:
+                  type: string
+                  example: "Cambio de aceite"
+                descripcion:
+                  type: string
+                  example: "Cambio de aceite y filtro"
+                precio:
+                  type: number
+                  format: float
+                  example: 25.00
+                duracion:
+                  type: string
+                  example: "30 minutos"
+                categoria:
+                  type: string
+                  example: "Mantenimiento"
+      responses:
+        '200':
+          description: Servicio creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Servicio creado exitosamente"
+                  data:
+                    $ref: '#/components/schemas/Service'
+
+  /api/services/{id}:
+    put:
+      summary: Actualizar servicio
+      description: Actualizar información de un servicio existente
+      tags:
+        - Services
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del servicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  example: "Cambio de aceite premium"
+                descripcion:
+                  type: string
+                  example: "Cambio de aceite sintético y filtro"
+                precio:
+                  type: number
+                  format: float
+                  example: 35.00
+                duracion:
+                  type: string
+                  example: "45 minutos"
+                categoria:
+                  type: string
+                  example: "Mantenimiento Premium"
+      responses:
+        '200':
+          description: Servicio actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Servicio actualizado exitosamente"
+                  data:
+                    $ref: '#/components/schemas/Service'
+
+    delete:
+      summary: Eliminar servicio
+      description: Eliminar un servicio del sistema
+      tags:
+        - Services
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del servicio
+      responses:
+        '200':
+          description: Servicio eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Servicio eliminado exitosamente"
+                  data:
+                    $ref: '#/components/schemas/Service'
+
+  /api/appointments:
+    get:
+      summary: Obtener todas las citas
+      description: Listar todas las citas programadas
+      tags:
+        - Appointments
+      responses:
+        '200':
+          description: Lista de citas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Appointment'
+                  message:
+                    type: string
+                    example: "5 citas encontradas"
+
+    post:
+      summary: Crear nueva cita
+      description: Programar una nueva cita en el sistema
+      tags:
+        - Appointments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - clienteId
+                - vehiculoId
+                - fecha
+                - hora
+                - servicio
+              properties:
+                clienteId:
+                  type: string
+                  example: "CLI-123"
+                vehiculoId:
+                  type: string
+                  example: "VEH-456"
+                fecha:
+                  type: string
+                  format: date
+                  example: "2024-01-15"
+                hora:
+                  type: string
+                  example: "10:00"
+                servicio:
+                  type: string
+                  example: "Cambio de aceite"
+                estado:
+                  type: string
+                  enum: [pending, confirmed, completed, cancelled]
+                  example: "pending"
+                notas:
+                  type: string
+                  example: "Cliente prefiere aceite sintético"
+      responses:
+        '201':
+          description: Cita creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Appointment'
+                  message:
+                    type: string
+                    example: "Cita creada exitosamente"
+
+  /api/appointments/{id}:
+    get:
+      summary: Obtener cita por ID
+      description: Obtener información de una cita específica
+      tags:
+        - Appointments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID de la cita
+      responses:
+        '200':
+          description: Cita encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Appointment'
+                  message:
+                    type: string
+                    example: "Cita encontrada"
+
+    put:
+      summary: Actualizar cita
+      description: Actualizar información de una cita existente
+      tags:
+        - Appointments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID de la cita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clienteId:
+                  type: string
+                  example: "CLI-123"
+                vehiculoId:
+                  type: string
+                  example: "VEH-456"
+                fecha:
+                  type: string
+                  format: date
+                  example: "2024-01-16"
+                hora:
+                  type: string
+                  example: "14:00"
+                servicio:
+                  type: string
+                  example: "Cambio de aceite"
+                estado:
+                  type: string
+                  enum: [pending, confirmed, completed, cancelled]
+                  example: "confirmed"
+                notas:
+                  type: string
+                  example: "Cita reprogramada por solicitud del cliente"
+      responses:
+        '200':
+          description: Cita actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Appointment'
+                  message:
+                    type: string
+                    example: "Cita actualizada exitosamente"
+
+    delete:
+      summary: Eliminar cita
+      description: Eliminar una cita del sistema
+      tags:
+        - Appointments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID de la cita
+      responses:
+        '200':
+          description: Cita eliminada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Cita eliminada exitosamente"
+
+  /api/vehicles:
+    get:
+      summary: Obtener todos los vehículos
+      description: Listar todos los vehículos registrados
+      tags:
+        - Vehicles
+      responses:
+        '200':
+          description: Lista de vehículos obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vehicle'
+                  message:
+                    type: string
+                    example: "10 vehículos encontrados"
+
+    post:
+      summary: Crear nuevo vehículo
+      description: Registrar un nuevo vehículo en el sistema
+      tags:
+        - Vehicles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - clienteId
+                - marca
+                - modelo
+                - año
+                - placa
+                - color
+              properties:
+                clienteId:
+                  type: string
+                  example: "CLI-123"
+                marca:
+                  type: string
+                  example: "Toyota"
+                modelo:
+                  type: string
+                  example: "Corolla"
+                año:
+                  type: integer
+                  example: 2020
+                placa:
+                  type: string
+                  example: "ABC-123"
+                color:
+                  type: string
+                  example: "Blanco"
+      responses:
+        '201':
+          description: Vehículo creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Vehicle'
+                  message:
+                    type: string
+                    example: "Vehículo creado exitosamente"
+
+  /api/vehicles/{id}:
+    put:
+      summary: Actualizar vehículo
+      description: Actualizar información de un vehículo existente
+      tags:
+        - Vehicles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del vehículo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - clienteId
+                - marca
+                - modelo
+                - año
+                - placa
+                - color
+              properties:
+                clienteId:
+                  type: string
+                  example: "CLI-123"
+                marca:
+                  type: string
+                  example: "Toyota"
+                modelo:
+                  type: string
+                  example: "Camry"
+                año:
+                  type: integer
+                  example: 2021
+                placa:
+                  type: string
+                  example: "ABC-123"
+                color:
+                  type: string
+                  example: "Negro"
+      responses:
+        '200':
+          description: Vehículo actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Vehicle'
+                  message:
+                    type: string
+                    example: "Vehículo actualizado exitosamente"
+
+    delete:
+      summary: Eliminar vehículo
+      description: Eliminar un vehículo del sistema
+      tags:
+        - Vehicles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID del vehículo
+      responses:
+        '200':
+          description: Vehículo eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Vehicle'
+                  message:
+                    type: string
+                    example: "Vehículo eliminado exitosamente"
+
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operación exitosa"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error en la operación"
+        error:
+          type: string
+          example: "Detalles del error"
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Login exitoso"
+        data:
+          type: object
+          properties:
+            userId:
+              type: integer
+              example: 1
+            email:
+              type: string
+              example: "usuario@ejemplo.com"
+            fullName:
+              type: string
+              example: "Juan Pérez"
+            userType:
+              type: string
+              example: "client"
+
+    ClientRegistrationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Cliente registrado exitosamente"
+        data:
+          type: object
+          properties:
+            userId:
+              type: integer
+              example: 1
+            securityCode:
+              type: string
+              example: "123456"
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: "cliente@ejemplo.com"
+        fullName:
+          type: string
+          example: "Juan Pérez"
+        phone:
+          type: string
+          example: "+1234567890"
+        address:
+          type: string
+          example: "Calle Principal 123"
+        companyName:
+          type: string
+          example: "Empresa ABC"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1640995200000abc123def"
+        nombre:
+          type: string
+          example: "Cambio de aceite"
+        descripcion:
+          type: string
+          example: "Cambio de aceite y filtro"
+        precio:
+          type: number
+          format: float
+          example: 25.00
+        duracion:
+          type: string
+          example: "30 minutos"
+        categoria:
+          type: string
+          example: "Mantenimiento"
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "APPT-1640995200000-abc123def"
+        clienteId:
+          type: string
+          example: "CLI-123"
+        vehiculoId:
+          type: string
+          example: "VEH-456"
+        fecha:
+          type: string
+          format: date
+          example: "2024-01-15"
+        hora:
+          type: string
+          example: "10:00"
+        servicio:
+          type: string
+          example: "Cambio de aceite"
+        estado:
+          type: string
+          enum: [pending, confirmed, completed, cancelled]
+          example: "pending"
+        notas:
+          type: string
+          example: "Cliente prefiere aceite sintético"
+
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "VEH-1640995200000-abc123def"
+        clienteId:
+          type: string
+          example: "CLI-123"
+        marca:
+          type: string
+          example: "Toyota"
+        modelo:
+          type: string
+          example: "Corolla"
+        año:
+          type: integer
+          example: 2020
+        placa:
+          type: string
+          example: "ABC-123"
+        color:
+          type: string
+          example: "Blanco"
+
+tags:
+  - name: Health
+    description: Endpoints para verificar el estado de la API
+  - name: Authentication
+    description: Endpoints para autenticación y registro de usuarios
+  - name: Clients
+    description: Gestión de clientes
+  - name: Vehicles
+    description: Gestión de vehículos
+  - name: Services
+    description: Gestión de servicios del taller
+  - name: Appointments
+    description: Gestión de citas y programación
