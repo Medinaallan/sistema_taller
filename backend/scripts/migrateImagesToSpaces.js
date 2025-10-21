@@ -98,7 +98,7 @@ class ImageMigration {
         this.migrationLog.totalFiles = imageFiles.length;
 
         if (imageFiles.length === 0) {
-            console.log('No hay imágenes para migrar');
+            console.log('ℹ No hay imágenes para migrar');
             return this.migrationLog;
         }
 
@@ -145,6 +145,7 @@ class ImageMigration {
             console.log(` Log de migración guardado en: ${MIGRATION_LOG_FILE}`);
         } catch (error) {
             console.error(' Error guardando log de migración:', error);
+            console.log(' Log de migración:', JSON.stringify(this.migrationLog, null, 2));
         }
     }
 

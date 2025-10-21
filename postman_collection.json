@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:5000",
+      "value": "http://localhost:8080",
       "type": "string"
     }
   ],
@@ -28,7 +28,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"usuario@ejemplo.com\",\n  \"password\": \"contraseña123\"\n}"
+              "raw": "{\n  \"email\": \"admin@taller.com\",\n  \"password\": \"admin123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
@@ -50,7 +50,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"usuario@ejemplo.com\",\n  \"securityCode\": \"123456\"\n}"
+              "raw": "{\n  \"email\": \"admin@taller.com\",\n  \"securityCode\": \"123456\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/verify-security-code",

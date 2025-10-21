@@ -8,8 +8,8 @@ info:
     email: admin@taller.com
 
 servers:
-  - url: http://localhost:5000
-    description: Servidor de desarrollo
+  - url: http://localhost:8080
+    description: Servidor de desarrollo (server-minimal.js)
   - url: https://your-production-url.com
     description: Servidor de producción
 
@@ -60,10 +60,10 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: "usuario@ejemplo.com"
+                  example: "admin@taller.com"
                 password:
                   type: string
-                  example: "contraseña123"
+                  example: "admin123"
       responses:
         '200':
           description: Login exitoso
@@ -103,7 +103,7 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: "usuario@ejemplo.com"
+                  example: "admin@taller.com"
                 securityCode:
                   type: string
                   example: "123456"
@@ -826,13 +826,13 @@ components:
               example: 1
             email:
               type: string
-              example: "usuario@ejemplo.com"
+              example: "admin@taller.com"
             fullName:
               type: string
-              example: "Juan Pérez"
+              example: "Administrador"
             userType:
               type: string
-              example: "client"
+              example: "admin"
 
     ClientRegistrationResponse:
       type: object
