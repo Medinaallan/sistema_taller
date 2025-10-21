@@ -752,5 +752,17 @@
       "enviado_en": "2025-10-10T15:00:11.686Z",
       "leido": true
     }
+  ],
+  "clients-1761061706659-cb00067f": [
+    {
+      "mensaje_id": 1761061761636,
+      "sala_id": "clients-1761061706659-cb00067f",
+      "usuario_id": "clients-1761061706659-cb00067f",
+      "rol": "client",
+      "contenido": "hola como estan",
+      "es_sistema": false,
+      "enviado_en": "2025-10-21T15:49:20.705Z",
+      "leido": true
+    }
   ]
 }
