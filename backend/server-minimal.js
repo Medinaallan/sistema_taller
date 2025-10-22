@@ -135,6 +135,19 @@ try {
   console.warn(' El servidor continuará sin las rutas de citas');
 }
 
+//IMPORTAR Y CONFIGURAR RUTAS DE USUARIOS
+try {
+  console.log('👥 Cargando rutas de usuarios...');
+  const usersRouter = require('./routes/users');
+  app.use('/api/users', usersRouter);
+  console.log('✅ Rutas de usuarios cargadas exitosamente');
+  console.log('   📍 /api/users/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de usuarios:', error.message);
+  console.error('   Stack:', error.stack);
+  console.warn('⚠️  El servidor continuará sin las rutas de usuarios');
+}
+
 //IMPORTAR Y CONFIGURAR RUTAS DE COTIZACIONES
 try {
   console.log('💰 Cargando rutas de cotizaciones...');
@@ -148,15 +161,8 @@ try {
   console.warn('⚠️ El servidor continuará sin las rutas de cotizaciones');
 }
 
-// Cargar stored procedures
-let storedProcedures;
-try {
-  storedProcedures = require('./simulation/storedProcedures');
-  console.log('Stored procedures cargados correctamente');
-} catch (error) {
-  console.error('Error cargando stored procedures:', error.message);
-  process.exit(1);
-}
+// 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
+const { getConnection, sql } = require('./config/database');
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -228,7 +234,7 @@ app.delete('/api/delete-image/:key(*)', async (req, res) => {
   }
 });
 
-// Validar email (Paso 1)
+// Validar email (Paso 1) - USANDO SP REAL
 app.post('/api/auth/validate-email', async (req, res) => {
   console.log('Validar email:', req.body);
   try {
@@ -236,16 +242,22 @@ app.post('/api/auth/validate-email', async (req, res) => {
     if (!correo) {
       return res.json({ msg: 'Correo requerido', allow: 0 });
     }
-    const result = await storedProcedures.SP_VALIDAR_CORREO_USUARIO(correo);
-    console.log('Resultado:', result);
-    res.json(result);
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('correo', sql.VarChar(100), correo)
+      .execute('SP_VALIDAR_CORREO_USUARIO');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    res.json(response);
   } catch (error) {
     console.error('Error validando email:', error);
     res.json({ msg: 'Error interno', allow: 0 });
   }
 });
 
-// Registrar usuario (Paso 2)
+// Registrar usuario (Paso 2) - USANDO SP REAL
 app.post('/api/auth/register-user-info', async (req, res) => {
   console.log('👤 Registrar usuario:', req.body);
   try {
@@ -253,16 +265,26 @@ app.post('/api/auth/register-user-info', async (req, res) => {
     if (!nombre_completo || !correo || !telefono) {
       return res.json({ msg: 'Todos los campos son requeridos', allow: 0 });
     }
-    const result = await storedProcedures.SP_REGISTRAR_USUARIO_CLIENTE(nombre_completo, correo, telefono);
-    console.log('Resultado:', result);
-    res.json(result);
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('nombre_completo', sql.VarChar(100), nombre_completo)
+      .input('correo', sql.VarChar(100), correo)
+      .input('telefono', sql.VarChar(30), telefono)
+      .input('rol', sql.VarChar(50), 'Cliente')
+      .input('registradoPor', sql.Int, 1)
+      .execute('SP_REGISTRAR_USUARIO_CLIENTE');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    res.json(response);
   } catch (error) {
     console.error('Error registrando usuario:', error);
     res.json({ msg: 'Error interno', allow: 0 });
   }
 });
 
-// Verificar código (Paso 3)
+// Verificar código (Paso 3) - USANDO SP REAL (NOTA: Este SP no existe, necesita ser creado)
 app.post('/api/auth/verify-security-code', async (req, res) => {
   console.log('🔑 Verificar código:', req.body);
   try {
@@ -270,16 +292,16 @@ app.post('/api/auth/verify-security-code', async (req, res) => {
     if (!correo || !codigo_seguridad) {
       return res.json({ msg: 'Correo y código requeridos', allow: 0 });
     }
-    const result = await storedProcedures.SP_VERIFICAR_CODIGO_SEGURIDAD(correo, codigo_seguridad);
-    console.log('Resultado:', result);
-    res.json(result);
+    
+    // NOTA: Este SP no existe en la BD, necesita ser implementado
+    res.json({ msg: 'SP_VERIFICAR_CODIGO_SEGURIDAD no implementado', allow: 0 });
   } catch (error) {
     console.error('Error verificando código:', error);
     res.json({ msg: 'Error interno', allow: 0 });
   }
 });
 
-// Registrar password (Paso 4)
+// Registrar password (Paso 4) - USANDO SP REAL (NOTA: Este SP no existe, necesita ser creado)
 app.post('/api/auth/register-password', async (req, res) => {
   console.log('Registrar password:', req.body);
   try {
@@ -287,16 +309,16 @@ app.post('/api/auth/register-password', async (req, res) => {
     if (!correo || !password) {
       return res.json({ msg: 'Correo y password requeridos', allow: 0 });
     }
-    const result = await storedProcedures.SP_REGISTRAR_PASSWORD(correo, password);
-    console.log('Resultado:', result);
-    res.json(result);
+    
+    // NOTA: Este SP no existe en la BD, necesita ser implementado
+    res.json({ msg: 'SP_REGISTRAR_PASSWORD no implementado', allow: 0 });
   } catch (error) {
     console.error('Error registrando password:', error);
     res.json({ msg: 'Error interno', allow: 0 });
   }
 });
 
-// Login
+// Login - USANDO SP REAL (NOTA: Este SP no existe, necesita ser creado)
 app.post('/api/auth/login', async (req, res) => {
   console.log('Login:', req.body);
   try {
@@ -304,9 +326,9 @@ app.post('/api/auth/login', async (req, res) => {
     if (!correo || !password) {
       return res.json({ allow: 0, msg: 'Credenciales requeridas' });
     }
-    const result = await storedProcedures.SP_LOGIN(correo, password);
-    console.log('Resultado:', result);
-    res.json(result);
+    
+    // NOTA: Este SP no existe en la BD, necesita ser implementado
+    res.json({ allow: 0, msg: 'SP_LOGIN no implementado' });
   } catch (error) {
     console.error('Error en login:', error);
     res.json({ allow: 0, msg: 'Error interno' });
