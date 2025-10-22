@@ -271,8 +271,6 @@ app.post('/api/auth/register-user-info', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), nombre_completo)
       .input('correo', sql.VarChar(100), correo)
       .input('telefono', sql.VarChar(30), telefono)
-      .input('rol', sql.VarChar(50), 'Cliente')
-      .input('registradoPor', sql.Int, 1)
       .execute('SP_REGISTRAR_USUARIO_CLIENTE');
     
     const response = result.recordset[0];
@@ -284,7 +282,7 @@ app.post('/api/auth/register-user-info', async (req, res) => {
   }
 });
 
-// Verificar código (Paso 3) - USANDO SP REAL (NOTA: Este SP no existe, necesita ser creado)
+// Verificar código (Paso 3) - USANDO SP REAL
 app.post('/api/auth/verify-security-code', async (req, res) => {
   console.log('🔑 Verificar código:', req.body);
   try {
@@ -293,42 +291,63 @@ app.post('/api/auth/verify-security-code', async (req, res) => {
       return res.json({ msg: 'Correo y código requeridos', allow: 0 });
     }
     
-    // NOTA: Este SP no existe en la BD, necesita ser implementado
-    res.json({ msg: 'SP_VERIFICAR_CODIGO_SEGURIDAD no implementado', allow: 0 });
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('correo', sql.VarChar(100), correo)
+      .input('codigo_seguridad', sql.VarChar(10), codigo_seguridad)
+      .execute('SP_VERIFICAR_CODIGO_SEGURIDAD');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    res.json(response);
   } catch (error) {
     console.error('Error verificando código:', error);
     res.json({ msg: 'Error interno', allow: 0 });
   }
 });
 
-// Registrar password (Paso 4) - USANDO SP REAL (NOTA: Este SP no existe, necesita ser creado)
+// Registrar password (Paso 4) - USANDO SP REAL
 app.post('/api/auth/register-password', async (req, res) => {
-  console.log('Registrar password:', req.body);
+  console.log('🔒 Registrar password:', req.body);
   try {
     const { correo, password } = req.body;
     if (!correo || !password) {
       return res.json({ msg: 'Correo y password requeridos', allow: 0 });
     }
     
-    // NOTA: Este SP no existe en la BD, necesita ser implementado
-    res.json({ msg: 'SP_REGISTRAR_PASSWORD no implementado', allow: 0 });
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('correo', sql.VarChar(100), correo)
+      .input('password', sql.VarChar(255), password)
+      .execute('SP_REGISTRAR_PASSWORD');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    res.json(response);
   } catch (error) {
     console.error('Error registrando password:', error);
     res.json({ msg: 'Error interno', allow: 0 });
   }
 });
 
-// Login - USANDO SP REAL (NOTA: Este SP no existe, necesita ser creado)
+// Login - USANDO SP REAL
 app.post('/api/auth/login', async (req, res) => {
-  console.log('Login:', req.body);
+  console.log('🔐 Login:', req.body);
   try {
     const { correo, password } = req.body;
     if (!correo || !password) {
       return res.json({ allow: 0, msg: 'Credenciales requeridas' });
     }
     
-    // NOTA: Este SP no existe en la BD, necesita ser implementado
-    res.json({ allow: 0, msg: 'SP_LOGIN no implementado' });
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('correo', sql.VarChar(100), correo)
+      .input('password', sql.VarChar(255), password)
+      .execute('SP_LOGIN');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    res.json(response);
   } catch (error) {
     console.error('Error en login:', error);
     res.json({ allow: 0, msg: 'Error interno' });

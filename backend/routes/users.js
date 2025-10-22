@@ -94,4 +94,87 @@ router.post('/admin', async (req, res) => {
   }
 });
 
+// Crear usuario mecánico
+router.post('/mecanico', async (req, res) => {
+  try {
+    const { nombre_completo, correo, telefono, registradoPor } = req.body;
+
+    if (!nombre_completo || !correo || !telefono) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nombre completo, correo y teléfono son requeridos'
+      });
+    }
+
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('nombre_completo', sql.VarChar(100), nombre_completo)
+      .input('correo', sql.VarChar(100), correo)
+      .input('telefono', sql.VarChar(30), telefono)
+      .input('rol', sql.VarChar(50), 'Mecánico')
+      .input('registradoPor', sql.Int, registradoPor || 1)
+      .execute('SP_REGISTRAR_USUARIO_PANEL_ADMIN');
+
+    res.status(201).json({
+      success: true,
+      message: 'Usuario mecánico creado exitosamente',
+      data: result.recordset[0] || null
+    });
+
+  } catch (error) {
+    console.error('Error creando mecánico:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Crear usuario de cualquier tipo para el panel (endpoint genérico)
+router.post('/panel', async (req, res) => {
+  try {
+    const { nombre_completo, correo, telefono, rol, registradoPor } = req.body;
+
+    if (!nombre_completo || !correo || !telefono || !rol) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nombre completo, correo, teléfono y rol son requeridos'
+      });
+    }
+
+    // Validar que el rol sea válido para el panel
+    const rolesValidos = ['Administrador', 'Mecánico', 'Recepcionista'];
+    if (!rolesValidos.includes(rol)) {
+      return res.status(400).json({
+        success: false,
+        message: `Rol inválido. Roles válidos: ${rolesValidos.join(', ')}`
+      });
+    }
+
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('nombre_completo', sql.VarChar(100), nombre_completo)
+      .input('correo', sql.VarChar(100), correo)
+      .input('telefono', sql.VarChar(30), telefono)
+      .input('rol', sql.VarChar(50), rol)
+      .input('registradoPor', sql.Int, registradoPor || 1)
+      .execute('SP_REGISTRAR_USUARIO_PANEL_ADMIN');
+
+    res.status(201).json({
+      success: true,
+      message: `Usuario ${rol.toLowerCase()} creado exitosamente`,
+      data: result.recordset[0] || null
+    });
+
+  } catch (error) {
+    console.error('Error creando usuario del panel:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 module.exports = router;
