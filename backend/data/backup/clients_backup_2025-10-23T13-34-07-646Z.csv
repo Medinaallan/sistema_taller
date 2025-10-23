@@ -2,5 +2,3 @@ id,name,email,phone,address,password_hash,status,registration_date,last_visit,to
 clients-1759762003123-21890207,GRUPO INCOVA - PRUEBA 061025,incova@taller.com,9899-9999,col. los helechos,asdf1234,active,2025-10-06T14:46:43.122Z,,0,0,,2025-10-06T14:46:43.123Z,2025-10-06T14:46:43.123Zclient-1760081368203-w69nhegg5
 clients-1761061706659-cb00067f,wilmer ,wilmer@taller.com,(504) 978-9622,,asdf1234,active,2025-10-21T15:48:26.658Z,,0,0,Registrado desde login,2025-10-21T15:48:26.659Z,2025-10-21T15:48:26.659Z
 clients-1761219625983-f37027ab,ALLAN MEDINA,amedina@taller.com,+504 99999999,,asdf1234,active,2025-10-23T11:40:25.982Z,,0,0,,2025-10-23T11:40:25.984Z,2025-10-23T11:40:25.984Z
-clients-1761226447646-f9fd5321,xiomara garcia,xiomara@taller.com,(504) 97896227,,asdf1234,active,2025-10-23T13:34:07.645Z,,0,0,,2025-10-23T13:34:07.646Z,2025-10-23T13:34:07.646Z
-clients-1761227903710-b545737d,aldo garcia,aldo@taller.com,+504 99999999,,asdf1234,active,2025-10-23T13:58:23.709Z,,0,0,,2025-10-23T13:58:23.710Z,2025-10-23T13:58:23.710Z
