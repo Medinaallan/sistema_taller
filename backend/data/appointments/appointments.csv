@@ -1,3 +1,1 @@
 id,clienteId,vehiculoId,fecha,hora,servicio,estado,notas
-APPT-1760627789992-ifpvowqaj,clients-1759762003123-21890207,VEH-1760535827717-qds15iimi,2025-10-17T00:00:00.000Z,20:19,service-002,cancelled,""""""
-APPT-1760715574806-s3lrk67ix,clients-1759762003123-21890207,VEH-1760535827717-qds15iimi,2025-10-18T00:00:00.000Z,19:41,service-008,completed,""

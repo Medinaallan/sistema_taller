@@ -283,6 +283,8 @@ export const vehiclesService = {
     año: number; 
     placa: string; 
     color: string; 
+    vin?: string;
+    mileage?: number;
   }): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/vehicles`, {
       ...fetchConfig,
@@ -300,6 +302,8 @@ export const vehiclesService = {
     año: number; 
     placa: string; 
     color: string; 
+    vin: string;
+    mileage: number;
   }>): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
       ...fetchConfig,

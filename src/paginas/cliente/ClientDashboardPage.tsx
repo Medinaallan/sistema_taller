@@ -126,31 +126,8 @@ export function ClientDashboardPage() {
     alert(`Ver detalles de ${vehicle.brand} ${vehicle.model} - En desarrollo`);
   };
 
-  // Datos simulados del cliente
-  const clientVehicles: Vehicle[] = [
-    {
-      id: '1',
-      brand: 'Toyota',
-      model: 'Corolla',
-      year: 2020,
-      color: 'Blanco',
-      vin: '1HGBH41JXMN109186',
-      licensePlate: 'HTN-0123',
-      mileage: 45000,
-      photo: undefined
-    },
-    {
-      id: '2',
-      brand: 'Honda',
-      model: 'Civic',
-      year: 2019,
-      color: 'Negro',
-      vin: '2HGFC2F59HH123456',
-      licensePlate: 'HTN-4567',
-      mileage: 38000,
-      photo: undefined
-    }
-  ];
+  // Datos simulados del cliente - removidos para empezar en blanco
+  const clientVehicles: Vehicle[] = [];
 
   const workOrders: WorkOrder[] = [
     {
@@ -376,56 +353,75 @@ export function ClientDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {clientVehicles.map((vehicle) => (
-          <div key={vehicle.id} className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {vehicle.brand} {vehicle.model}
-                  </h3>
-                  <p className="text-sm text-gray-500">Año {vehicle.year}</p>
+      {clientVehicles.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+            <TruckIcon className="h-12 w-12 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            No tienes vehículos registrados
+          </h3>
+          <p className="text-gray-500 mb-8">
+            Comienza registrando tu primer vehículo para acceder a nuestros servicios
+          </p>
+          <button
+            onClick={handleAddVehicle}
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Registrar Primer Vehículo
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {clientVehicles.map((vehicle) => (
+            <div key={vehicle.id} className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {vehicle.brand} {vehicle.model}
+                    </h3>
+                    <p className="text-sm text-gray-500">Año {vehicle.year}</p>
+                  </div>
+                  <button
+                    onClick={() => handleViewVehicle(vehicle)}
+                    className="text-blue-600 hover:text-blue-500"
+                  >
+                    <EyeIcon className="h-5 w-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleViewVehicle(vehicle)}
-                  className="text-blue-600 hover:text-blue-500"
-                >
-                  <EyeIcon className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Placa:</span>
-                  <span className="text-gray-900">{vehicle.licensePlate}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Color:</span>
-                  <span className="text-gray-900">{vehicle.color}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Kilometraje:</span>
-                  <span className="text-gray-900">{vehicle.mileage.toLocaleString()} km</span>
-                </div>
-              </div>
 
-              {!vehicle.photo && (
-                <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-4">
-                  <div className="text-center">
-                    <PhotoIcon className="mx-auto h-8 w-8 text-gray-400" />
-                    <p className="mt-1 text-xs text-gray-500">Agregar foto del vehículo</p>
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Placa:</span>
+                    <span className="text-gray-900">{vehicle.licensePlate}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Color:</span>
+                    <span className="text-gray-900">{vehicle.color}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Kilometraje:</span>
+                    <span className="text-gray-900">{vehicle.mileage.toLocaleString()} km</span>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
-  const renderAppointmentsTab = () => (
+                {!vehicle.photo && (
+                  <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <div className="text-center">
+                      <PhotoIcon className="mx-auto h-8 w-8 text-gray-400" />
+                      <p className="mt-1 text-xs text-gray-500">Agregar foto del vehículo</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );  const renderAppointmentsTab = () => (
     <div className="space-y-6">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">

@@ -10,7 +10,7 @@ function readVehiclesCSV() {
   try {
     if (!fs.existsSync(CSV_FILE_PATH)) {
       // Crear el archivo con headers si no existe
-      const headers = 'id,clienteId,marca,modelo,año,placa,color\n';
+      const headers = 'id,clienteId,marca,modelo,año,placa,color,vin,mileage\n';
       fs.writeFileSync(CSV_FILE_PATH, headers);
       return [];
     }
@@ -24,11 +24,14 @@ function readVehiclesCSV() {
     const vehicles = [];
     
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',');
-      if (values.length === headers.length) {
+      const line = lines[i].trim();
+      if (line === '') continue; // Saltar líneas vacías
+      
+      const values = line.split(',');
+      if (values.length >= 6) { // Al menos los campos básicos requeridos
         const vehicle = {};
         headers.forEach((header, index) => {
-          vehicle[header] = values[index];
+          vehicle[header] = values[index] || ''; // Usar string vacío si el valor no existe
         });
         vehicles.push(vehicle);
       }
@@ -44,9 +47,9 @@ function readVehiclesCSV() {
 // Función para escribir al CSV de vehículos
 function writeVehiclesCSV(vehicles) {
   try {
-    const headers = 'id,clienteId,marca,modelo,año,placa,color\n';
+    const headers = 'id,clienteId,marca,modelo,año,placa,color,vin,mileage\n';
     const csvContent = headers + vehicles.map(vehicle => 
-      `${vehicle.id},${vehicle.clienteId},${vehicle.marca},${vehicle.modelo},${vehicle.año},${vehicle.placa},${vehicle.color}`
+      `${vehicle.id},${vehicle.clienteId},${vehicle.marca},${vehicle.modelo},${vehicle.año},${vehicle.placa},${vehicle.color},${vehicle.vin || ''},${vehicle.mileage || 0}`
     ).join('\n');
     
     fs.writeFileSync(CSV_FILE_PATH, csvContent);
@@ -84,13 +87,13 @@ router.get('/', (req, res) => {
 // POST /api/vehicles - Crear nuevo vehículo
 router.post('/', (req, res) => {
   try {
-    const { clienteId, marca, modelo, año, placa, color } = req.body;
+    const { clienteId, marca, modelo, año, placa, color, vin, mileage } = req.body;
     
     // Validaciones básicas
     if (!clienteId || !marca || !modelo || !año || !placa || !color) {
       return res.status(400).json({
         success: false,
-        message: 'Todos los campos son requeridos'
+        message: 'Los campos clienteId, marca, modelo, año, placa y color son requeridos'
       });
     }
     
@@ -101,12 +104,14 @@ router.post('/', (req, res) => {
       modelo,
       año: parseInt(año),
       placa,
-      color
+      color,
+      vin: vin || '',
+      mileage: parseInt(mileage) || 0
     };
     
     // Escribir directamente al CSV sin leer primero
     try {
-      const csvLine = `\n${newVehicle.id},${newVehicle.clienteId},${newVehicle.marca},${newVehicle.modelo},${newVehicle.año},${newVehicle.placa},${newVehicle.color}`;
+      const csvLine = `\n${newVehicle.id},${newVehicle.clienteId},${newVehicle.marca},${newVehicle.modelo},${newVehicle.año},${newVehicle.placa},${newVehicle.color},${newVehicle.vin},${newVehicle.mileage}`;
       fs.appendFileSync(CSV_FILE_PATH, csvLine);
       
       res.status(201).json({
@@ -135,7 +140,7 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { clienteId, marca, modelo, año, placa, color } = req.body;
+    const { clienteId, marca, modelo, año, placa, color, vin, mileage } = req.body;
     
     const vehicles = readVehiclesCSV();
     const vehicleIndex = vehicles.findIndex(v => v.id === id);
@@ -163,7 +168,9 @@ router.put('/:id', (req, res) => {
       modelo,
       año: parseInt(año),
       placa,
-      color
+      color,
+      vin: vin || vehicles[vehicleIndex].vin || '',
+      mileage: parseInt(mileage) || vehicles[vehicleIndex].mileage || 0
     };
     
     if (writeVehiclesCSV(vehicles)) {

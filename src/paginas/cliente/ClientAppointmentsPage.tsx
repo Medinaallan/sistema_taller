@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -9,6 +9,7 @@ import {
   WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+import { servicesService, vehiclesService, appointmentsService } from '../../servicios/apiService';
 
 interface Appointment {
   id: string;
@@ -40,7 +41,12 @@ export function ClientAppointmentsPage() {
   const { state } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
-
+  const [serviceTypes, setServiceTypes] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [clientVehicles, setClientVehicles] = useState<any[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
 
   const [formData, setFormData] = useState<AppointmentForm>({
     vehicleId: '',
@@ -53,68 +59,159 @@ export function ClientAppointmentsPage() {
     additionalNotes: '',
   });
 
-  // Datos de ejemplo
-  const clientVehicles = [
-    { id: '1', brand: 'Toyota', model: 'Corolla', year: 2020, licensePlate: 'HTN-0123' },
-    { id: '2', brand: 'Honda', model: 'Civic', year: 2019, licensePlate: 'HTN-4567' },
-    { id: '3', brand: 'Nissan', model: 'Sentra', year: 2021, licensePlate: 'HTN-8910' }
-  ];
+  // useEffect para cargar servicios desde la API
+  useEffect(() => {
+    const loadServices = async () => {
+      setLoadingServices(true);
+      try {
+        const response = await servicesService.getAll();
+        if (response.success && response.data) {
+          // Mapear los servicios del CSV al formato esperado
+          const mappedServices = response.data.map((service: any) => ({
+            id: service.id || service.codigo,
+            name: service.nombre || service.name,
+            description: service.descripcion || service.description || 'Servicio disponible',
+            precio: service.precio || 0,
+            categoria: service.categoria || 'general'
+          }));
+          
+          // Si no hay servicios en el CSV, usar servicios básicos
+          if (mappedServices.length === 0) {
+            setServiceTypes([
+              { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado'},
+              { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas'},
+              { id: 'repair', name: 'Reparación', description: 'Arreglo de componentes específicos'},
+              { id: 'other', name: 'Otro', description: 'Otro tipo de servicio'}
+            ]);
+          } else {
+            setServiceTypes(mappedServices);
+          }
+        } else {
+          console.error('Error cargando servicios:', response.message);
+          // Mantener algunos servicios básicos como fallback
+          setServiceTypes([
+            { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado'},
+            { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas'},
+            { id: 'repair', name: 'Reparación', description: 'Arreglo de componentes específicos'},
+            { id: 'other', name: 'Otro', description: 'Otro tipo de servicio'}
+          ]);
+        }
+      } catch (error) {
+        console.error('Error cargando servicios:', error);
+        // Servicios básicos como fallback
+        setServiceTypes([
+          { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado'},
+          { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas'},
+          { id: 'repair', name: 'Reparación', description: 'Arreglo de componentes específicos'},
+          { id: 'other', name: 'Otro', description: 'Otro tipo de servicio'}
+        ]);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
 
-  const appointments: Appointment[] = [
-    {
-      id: 'APP-001',
-      vehicleId: '1',
-      vehicleName: 'Toyota Corolla 2020',
-      serviceType: 'Diagnóstico General',
-      date: '2025-09-05',
-      time: '09:00',
-      status: 'confirmed',
-      priority: 'medium',
-      problem: 'Ruido extraño en el motor al acelerar',
-      contactPhone: '9876-5432',
-      createdDate: '2025-08-28'
-    },
-    {
-      id: 'APP-002',
-      vehicleId: '2',
-      vehicleName: 'Honda Civic 2019',
-      serviceType: 'Mantenimiento Preventivo',
-      date: '2025-09-10',
-      time: '14:30',
-      status: 'pending',
-      priority: 'low',
-      problem: 'Mantenimiento rutinario programado',
-      contactPhone: '9876-5432',
-      notes: 'Cambio de aceite y filtros',
-      createdDate: '2025-08-29'
-    },
-    {
-      id: 'APP-003',
-      vehicleId: '1',
-      vehicleName: 'Toyota Corolla 2020',
-      serviceType: 'Reparación de frenos',
-      date: '2025-08-25',
-      time: '10:00',
-      status: 'completed',
-      priority: 'high',
-      problem: 'Frenos chirriando y pedal esponjoso',
-      contactPhone: '9876-5432',
-      createdDate: '2025-08-20'
+    loadServices();
+  }, []);
+
+  // useEffect para cargar vehículos del cliente desde la API
+  useEffect(() => {
+    const loadClientVehicles = async () => {
+      if (!state?.user?.id) return;
+      
+      setLoadingVehicles(true);
+      try {
+        const response = await vehiclesService.getAll();
+        if (response.success && response.data) {
+          // Filtrar solo los vehículos del cliente actual
+          const userVehicles = response.data
+            .filter((vehicle: any) => vehicle.clienteId === state.user?.id)
+            .map((vehicle: any) => ({
+              id: vehicle.id,
+              brand: vehicle.marca,
+              model: vehicle.modelo,
+              year: parseInt(vehicle.año),
+              color: vehicle.color,
+              licensePlate: vehicle.placa,
+              vin: vehicle.vin || '',
+              mileage: parseInt(vehicle.mileage) || 0
+            }));
+          setClientVehicles(userVehicles);
+        } else {
+          console.error('Error cargando vehículos:', response.message);
+          setClientVehicles([]);
+        }
+      } catch (error) {
+        console.error('Error cargando vehículos:', error);
+        setClientVehicles([]);
+      } finally {
+        setLoadingVehicles(false);
+      }
+    };
+
+    loadClientVehicles();
+  }, [state?.user?.id]);
+
+  // useEffect para cargar citas del cliente desde la API
+  useEffect(() => {
+    const loadClientAppointments = async () => {
+      if (!state?.user?.id) return;
+      
+      setLoadingAppointments(true);
+      try {
+        const response = await appointmentsService.getAll();
+        if (response.success && response.data) {
+          // Filtrar solo las citas del cliente actual y mapear a formato frontend
+          const userAppointments = response.data
+            .filter((appointment: any) => appointment.clienteId === state.user?.id)
+            .map((appointment: any) => {
+              // Encontrar el vehículo correspondiente
+              const vehicle = clientVehicles.find(v => v.id === appointment.vehiculoId);
+              const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})` : appointment.vehiculoId;
+              
+              // Parsear las notas que vienen como JSON string
+              let problemText = 'Sin descripción';
+              let notesText = '';
+              try {
+                const notesData = JSON.parse(appointment.notas?.replace(/^"|"$/g, '') || '{}');
+                problemText = notesData.problem || 'Sin descripción';
+                notesText = notesData.additionalNotes || '';
+              } catch (e) {
+                problemText = appointment.notas?.replace(/^"|"$/g, '') || 'Sin descripción';
+              }
+
+              return {
+                id: appointment.id,
+                vehicleId: appointment.vehiculoId,
+                vehicleName: vehicleName,
+                serviceType: appointment.servicio,
+                date: appointment.fecha,
+                time: appointment.hora,
+                status: appointment.estado as any,
+                priority: 'medium' as any, // Default priority desde notas si está disponible
+                problem: problemText,
+                contactPhone: state.user?.phone || '',
+                notes: notesText,
+                createdDate: appointment.fecha
+              };
+            });
+          setAppointments(userAppointments);
+        } else {
+          console.error('Error cargando citas:', response.message);
+          setAppointments([]);
+        }
+      } catch (error) {
+        console.error('Error cargando citas:', error);
+        setAppointments([]);
+      } finally {
+        setLoadingAppointments(false);
+      }
+    };
+
+    // Solo cargar citas si ya tenemos los vehículos cargados
+    if (clientVehicles.length >= 0) {
+      loadClientAppointments();
     }
-  ];
-
-  const serviceTypes = [
-    { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado'},
-    { id: 'diagnostic', name: 'Diagnóstico', description: 'Revisión y detección de problemas'},
-    { id: 'repair', name: 'Reparación',  description: 'Arreglo de componentes específicos'},
-    { id: 'oil-change', name: 'Cambio de Aceite',  description: 'Cambio de aceite y filtros'},
-    { id: 'tire-service', name: 'Servicio de Llantas',  description: 'Cambio, rotación o alineación'},
-    { id: 'brake-service', name: 'Servicio de Frenos', description: 'Pastillas, discos y sistema de frenos'},
-    { id: 'battery', name: 'Batería', description: 'Cambio o revisión de batería'},
-    { id: 'air-conditioning', name: 'Aire Acondicionado', description: 'Servicio del sistema A/C'},
-    { id: 'transmission', name: 'Transmisión', description: 'Servicio del sistema de transmisión'},
-    { id: 'other', name: 'Otro', description: 'Otro tipo de servicio'}
-  ];
+  }, [state?.user?.id, clientVehicles]);
 
   const timeSlots = [
     '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
@@ -157,21 +254,94 @@ export function ClientAppointmentsPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Nueva cita:', formData);
-    setShowForm(false);
-    // Reset form
-    setFormData({
-      vehicleId: '',
-      serviceType: '',
-      preferredDate: '',
-      preferredTime: '',
-      problem: '',
-      priority: 'medium',
-      contactPhone: state.user?.phone || '',
-      additionalNotes: '',
-    });
+
+    if (!state?.user?.id) {
+      alert('No se puede agendar la cita: usuario no identificado');
+      return;
+    }
+
+    if (!formData.vehicleId) {
+      alert('Selecciona un vehículo antes de agendar la cita');
+      return;
+    }
+
+    if (!formData.serviceType) {
+      alert('Selecciona un tipo de servicio');
+      return;
+    }
+
+    if (!formData.preferredDate || !formData.preferredTime) {
+      alert('Selecciona fecha y hora preferida');
+      return;
+    }
+
+    try {
+      // Construir notas con información relevante
+      const notas = JSON.stringify({
+        problem: formData.problem,
+        additionalNotes: formData.additionalNotes,
+        priority: formData.priority,
+        contactPhone: formData.contactPhone,
+      });
+
+      const payload = {
+        clienteId: state.user.id,
+        vehiculoId: formData.vehicleId,
+        fecha: formData.preferredDate,
+        hora: formData.preferredTime,
+        servicio: formData.serviceType,
+        estado: 'pending',
+        notas,
+      };
+
+      const res = await appointmentsService.create(payload as any);
+      if (res.success) {
+        alert('Cita creada correctamente. El administrador la verá para confirmar.');
+        
+        // Agregar la nueva cita al estado local inmediatamente
+        const vehicle = clientVehicles.find(v => v.id === formData.vehicleId);
+        const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})` : formData.vehicleId;
+        const serviceTypeName = serviceTypes.find(s => s.id === formData.serviceType)?.name || formData.serviceType;
+        
+        const newAppointment: Appointment = {
+          id: res.data.id,
+          vehicleId: formData.vehicleId,
+          vehicleName: vehicleName,
+          serviceType: serviceTypeName,
+          date: formData.preferredDate,
+          time: formData.preferredTime,
+          status: 'pending',
+          priority: formData.priority,
+          problem: formData.problem,
+          contactPhone: formData.contactPhone,
+          notes: formData.additionalNotes,
+          createdDate: formData.preferredDate
+        };
+        
+        setAppointments(prev => [newAppointment, ...prev]);
+        
+        // cerrar modal y resetear
+        setShowForm(false);
+        setFormData({
+          vehicleId: '',
+          serviceType: '',
+          preferredDate: '',
+          preferredTime: '',
+          problem: '',
+          priority: 'medium',
+          contactPhone: state.user?.phone || '',
+          additionalNotes: '',
+        });
+      } else {
+        console.error('Error creando cita:', res.message, res);
+        alert('Error al crear la cita: ' + (res.message || 'Error desconocido'));
+      }
+    } catch (error) {
+      console.error('Error creando cita:', error);
+      alert('No se pudo conectar con el servidor al crear la cita');
+    }
   };
 
   const renderAppointmentCard = (appointment: Appointment) => {
@@ -269,33 +439,47 @@ export function ClientAppointmentsPage() {
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Selecciona tu vehículo *
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {clientVehicles.map((vehicle) => (
-                <div
-                  key={vehicle.id}
-                  onClick={() => setFormData({...formData, vehicleId: vehicle.id})}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    formData.vehicleId === vehicle.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <TruckIcon className={`h-5 w-5 mr-3 ${
-                      formData.vehicleId === vehicle.id ? 'text-blue-600' : 'text-gray-400'
-                    }`} />
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {vehicle.brand} {vehicle.model}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {vehicle.year} • {vehicle.licensePlate}
-                      </p>
+            {loadingVehicles ? (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-500 mb-2">Cargando tus vehículos...</p>
+                <p className="text-sm text-gray-400">Por favor espera un momento</p>
+              </div>
+            ) : clientVehicles.length === 0 ? (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                <TruckIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 mb-2">No tienes vehículos registrados</p>
+                <p className="text-sm text-gray-400">Primero necesitas registrar un vehículo en tu perfil</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {clientVehicles.map((vehicle) => (
+                  <div
+                    key={vehicle.id}
+                    onClick={() => setFormData({...formData, vehicleId: vehicle.id})}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      formData.vehicleId === vehicle.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <TruckIcon className={`h-5 w-5 mr-3 ${
+                        formData.vehicleId === vehicle.id ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {vehicle.brand} {vehicle.model}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {vehicle.year} • {vehicle.licensePlate}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Tipo de servicio */}
@@ -303,27 +487,40 @@ export function ClientAppointmentsPage() {
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Tipo de servicio *
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {serviceTypes.map((service) => (
-                <div
-                  key={service.id}
-                  onClick={() => setFormData({...formData, serviceType: service.id})}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    formData.serviceType === service.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-start">
-                    <span className="text-2xl mr-3"></span>
-                    <div>
-                      <p className="font-medium text-gray-900">{service.name}</p>
-                      <p className="text-sm text-gray-500">{service.description}</p>
+            {loadingServices ? (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-500">Cargando servicios disponibles...</p>
+              </div>
+            ) : serviceTypes.length === 0 ? (
+              <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                <WrenchScrewdriverIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 mb-2">No hay servicios disponibles</p>
+                <p className="text-sm text-gray-400">Contacta al administrador para configurar los servicios</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {serviceTypes.map((service) => (
+                  <div
+                    key={service.id}
+                    onClick={() => setFormData({...formData, serviceType: service.id})}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      formData.serviceType === service.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start">
+                      <span className="text-2xl mr-3"></span>
+                      <div>
+                        <p className="font-medium text-gray-900">{service.name}</p>
+                        <p className="text-sm text-gray-500">{service.description}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Fecha y hora preferida */}
@@ -401,7 +598,7 @@ export function ClientAppointmentsPage() {
                 value={formData.contactPhone}
                 onChange={(e) => setFormData({...formData, contactPhone: e.target.value})}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="9876-5432"
+                placeholder="Ingresa tu número de teléfono"
                 required
               />
             </div>
@@ -525,7 +722,19 @@ export function ClientAppointmentsPage() {
         </div>
 
         {/* Lista de citas */}
-        {filteredAppointments.length > 0 ? (
+        {loadingAppointments ? (
+          <div className="text-center py-16">
+            <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Cargando tus citas...
+            </h3>
+            <p className="text-gray-500 mb-8">
+              Por favor espera mientras cargamos tu información
+            </p>
+          </div>
+        ) : filteredAppointments.length > 0 ? (
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             {filteredAppointments.map(renderAppointmentCard)}
           </div>

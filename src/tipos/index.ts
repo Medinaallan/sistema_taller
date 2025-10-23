@@ -31,6 +31,7 @@ export interface Vehicle {
   year: number;
   licensePlate: string;
   color: string;
+  vin?: string;
   mileage?: number;
   serviceType: ServiceType;
   workOrders: WorkOrder[];

@@ -198,7 +198,8 @@ export function VehiclesPage() {
           year: parseInt(csvVehicle.año),
           licensePlate: csvVehicle.placa,
           color: csvVehicle.color,
-          mileage: undefined, // Not in CSV yet
+          mileage: parseInt(csvVehicle.mileage) || 0,
+          vin: csvVehicle.vin || '',
           serviceType: {
             id: 'default',
             name: 'Servicio General',
@@ -300,6 +301,8 @@ export function VehiclesPage() {
           año: vehicleData.year,
           placa: vehicleData.licensePlate,
           color: vehicleData.color,
+          vin: vehicleData.vin || '',
+          mileage: vehicleData.mileage || 0,
         };
         
         const response = await vehiclesService.update(selectedVehicle.id, updateData);
@@ -326,6 +329,8 @@ export function VehiclesPage() {
           año: vehicleData.year,
           placa: vehicleData.licensePlate,
           color: vehicleData.color,
+          vin: vehicleData.vin || '',
+          mileage: vehicleData.mileage || 0,
         };
         
         const response = await vehiclesService.create(createData);
@@ -340,7 +345,8 @@ export function VehiclesPage() {
             year: parseInt(response.data.año),
             licensePlate: response.data.placa,
             color: response.data.color,
-            mileage: undefined,
+            vin: response.data.vin || '',
+            mileage: parseInt(response.data.mileage) || 0,
             serviceType: vehicleData.serviceType,
             workOrders: [],
             reminders: [],

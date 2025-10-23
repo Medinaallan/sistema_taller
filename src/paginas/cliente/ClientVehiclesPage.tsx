@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TruckIcon,
   PlusIcon,
@@ -13,6 +13,7 @@ import {
   CameraIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+import { vehiclesService } from '../../servicios/apiService';
 
 interface Vehicle {
   id: string;
@@ -39,13 +40,16 @@ interface VehicleForm {
 }
 
 export function ClientVehiclesPage() {
-  const { } = useApp();
+  const { state } = useApp();
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [activeView, setActiveView] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [clientVehicles, setClientVehicles] = useState<Vehicle[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(true);
 
   const [vehicleForm, setVehicleForm] = useState<VehicleForm>({
     brand: '',
@@ -57,51 +61,51 @@ export function ClientVehiclesPage() {
     mileage: 0
   });
 
-  // Datos de ejemplo con servicios
-  const clientVehicles: Vehicle[] = [
-    {
-      id: '1',
-      brand: 'Toyota',
-      model: 'Corolla',
-      year: 2020,
-      color: 'Blanco',
-      vin: '1HGBH41JXMN109186',
-      licensePlate: 'HTN-0123',
-      mileage: 45000,
-      nextService: '2025-09-15',
-      lastServiceDate: '2025-07-15'
-    },
-    {
-      id: '2',
-      brand: 'Honda',
-      model: 'Civic',
-      year: 2019,
-      color: 'Negro',
-      vin: '2HGFC2F59HH123456',
-      licensePlate: 'HTN-4567',
-      mileage: 38000,
-      nextService: '2025-10-01',
-      lastServiceDate: '2025-06-10'
-    },
-    {
-      id: '3',
-      brand: 'Nissan',
-      model: 'Sentra',
-      year: 2021,
-      color: 'Rojo',
-      vin: '3N1AB7AP8HY123456',
-      licensePlate: 'HTN-8910',
-      mileage: 25000,
-      nextService: '2025-11-20',
-      lastServiceDate: '2025-08-20'
-    }
-  ];
+  // Datos de ejemplo con servicios - removidos para empezar en blanco
+  // Los vehículos ahora se cargan desde la API
 
-  const workOrders = [
-    { id: 'OT-001', vehicleId: '1', service: 'Mantenimiento General', status: 'in-progress', date: '2025-08-25' },
-    { id: 'OT-002', vehicleId: '2', service: 'Reparación de frenos', status: 'pending-parts', date: '2025-08-28' },
-    { id: 'OT-003', vehicleId: '1', service: 'Cambio de aceite', status: 'completed', date: '2025-07-15' }
-  ];
+  const workOrders: any[] = [];
+
+  // useEffect para cargar vehículos del cliente desde la API
+  useEffect(() => {
+    const loadClientVehicles = async () => {
+      if (!state?.user?.id) return;
+      
+      setLoadingVehicles(true);
+      try {
+        const response = await vehiclesService.getAll();
+        if (response.success && response.data) {
+          // Filtrar solo los vehículos del cliente actual
+          const userVehicles = response.data
+            .filter((vehicle: any) => vehicle.clienteId === state.user?.id)
+            .map((vehicle: any) => ({
+              id: vehicle.id,
+              brand: vehicle.marca,
+              model: vehicle.modelo,
+              year: parseInt(vehicle.año),
+              color: vehicle.color,
+              vin: vehicle.vin || '',
+              licensePlate: vehicle.placa,
+              mileage: parseInt(vehicle.mileage) || 0,
+              photo: vehicle.photo,
+              nextService: vehicle.nextService,
+              lastServiceDate: vehicle.lastServiceDate
+            }));
+          setClientVehicles(userVehicles);
+        } else {
+          console.error('Error cargando vehículos:', response.message);
+          setClientVehicles([]);
+        }
+      } catch (error) {
+        console.error('Error cargando vehículos:', error);
+        setClientVehicles([]);
+      } finally {
+        setLoadingVehicles(false);
+      }
+    };
+
+    loadClientVehicles();
+  }, [state?.user?.id]);
 
   const filteredVehicles = clientVehicles.filter(vehicle =>
     vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -137,19 +141,71 @@ export function ClientVehiclesPage() {
     return { type: 'up-to-date', text: 'Al día', color: 'bg-gray-100 text-gray-800' };
   };
 
-  const handleAddVehicle = () => {
-    // Aquí iría la lógica para agregar el vehículo
-    console.log('Agregando vehículo:', vehicleForm);
-    setShowAddModal(false);
-    setVehicleForm({
-      brand: '',
-      model: '',
-      year: new Date().getFullYear(),
-      color: '',
-      vin: '',
-      licensePlate: '',
-      mileage: 0
-    });
+  const handleAddVehicle = async () => {
+    if (!state?.user?.id) {
+      alert('Error: Usuario no identificado');
+      return;
+    }
+
+    // Validaciones básicas
+    if (!vehicleForm.brand || !vehicleForm.model || !vehicleForm.licensePlate || !vehicleForm.color) {
+      alert('Por favor, completa todos los campos obligatorios');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Preparar datos para la API (mapear campo nombres)
+      const vehicleData = {
+        clienteId: state.user.id,
+        marca: vehicleForm.brand,
+        modelo: vehicleForm.model,
+        año: vehicleForm.year,
+        placa: vehicleForm.licensePlate,
+        color: vehicleForm.color,
+        vin: vehicleForm.vin,
+        mileage: vehicleForm.mileage
+      };
+
+      const response = await vehiclesService.create(vehicleData);
+      
+      if (response.success) {
+        // Agregar el nuevo vehículo al estado local
+        const newVehicle: Vehicle = {
+          id: response.data.id,
+          brand: response.data.marca,
+          model: response.data.modelo,
+          year: parseInt(response.data.año),
+          color: response.data.color,
+          vin: response.data.vin || '',
+          licensePlate: response.data.placa,
+          mileage: parseInt(response.data.mileage) || 0
+        };
+        
+        setClientVehicles(prev => [...prev, newVehicle]);
+        setShowAddModal(false);
+        
+        // Resetear formulario
+        setVehicleForm({
+          brand: '',
+          model: '',
+          year: new Date().getFullYear(),
+          color: '',
+          vin: '',
+          licensePlate: '',
+          mileage: 0
+        });
+
+        alert('¡Vehículo registrado exitosamente!');
+      } else {
+        alert('Error al registrar el vehículo: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error registrando vehículo:', error);
+      alert('Error de conexión al registrar el vehículo');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditVehicle = () => {
@@ -424,10 +480,20 @@ export function ClientVehiclesPage() {
           </button>
           <button
             onClick={handleAddVehicle}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center"
+            disabled={loading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
-            <CheckCircleIcon className="h-5 w-5 mr-2" />
-            Registrar Vehículo
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Registrando...
+              </>
+            ) : (
+              <>
+                <CheckCircleIcon className="h-5 w-5 mr-2" />
+                Registrar Vehículo
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -529,7 +595,19 @@ export function ClientVehiclesPage() {
         </div>
 
         {/* Grid de vehículos responsivo */}
-        {filteredVehicles.length > 0 ? (
+        {loadingVehicles ? (
+          <div className="text-center py-12 sm:py-16">
+            <div className="bg-gray-100 rounded-full p-4 sm:p-6 w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+              Cargando vehículos...
+            </h3>
+            <p className="text-sm sm:text-base text-gray-500 mb-6 sm:mb-8 px-4">
+              Por favor espera mientras cargamos tu información
+            </p>
+          </div>
+        ) : filteredVehicles.length > 0 ? (
           <div className={`grid gap-4 sm:gap-6 ${
             activeView === 'grid' 
               ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
