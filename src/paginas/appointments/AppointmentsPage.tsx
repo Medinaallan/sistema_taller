@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
-import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import NewAppointmentModal from '../../componentes/appointments/NewAppointmentModal';
 import EditAppointmentModal from '../../componentes/appointments/EditAppointmentModal';
+import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
 import { appointmentsService, servicesService } from '../../servicios/apiService';
 import { obtenerClientes } from '../../servicios/clientesApiService';
 import type { Appointment } from '../../tipos';
-import type { ColumnDef } from '@tanstack/react-table';
 
 const AppointmentsPage = () => {
   const [data, setData] = useState<Appointment[]>([]);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
   const [isEditAppointmentModalOpen, setIsEditAppointmentModalOpen] = useState(false);
+  const [isCreateQuotationModalOpen, setIsCreateQuotationModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,41 +30,7 @@ const AppointmentsPage = () => {
     return servicio ? servicio.name || servicio.nombre : servicioId;
   };
 
-  // Definir columnas dentro del componente para acceder a las funciones
-  const columns: ColumnDef<Appointment>[] = [
-    { accessorKey: 'id', header: 'ID' },
-    { 
-      accessorKey: 'date', 
-      header: 'Fecha',
-      cell: ({ getValue }) => new Date(getValue() as string).toLocaleDateString('es-ES')
-    },
-    { accessorKey: 'time', header: 'Hora' },
-    { 
-      accessorKey: 'clientId', 
-      header: 'Cliente',
-      cell: ({ getValue }) => getClienteName(getValue() as string)
-    },
-    { accessorKey: 'vehicleId', header: 'Vehículo' },
-    { 
-      accessorKey: 'serviceTypeId', 
-      header: 'Servicio',
-      cell: ({ getValue }) => getServiceName(getValue() as string)
-    },
-    { 
-      accessorKey: 'status', 
-      header: 'Estado',
-      cell: ({ getValue }) => {
-        const status = getValue() as string;
-        const statusMap = {
-          pending: 'Pendiente',
-          confirmed: 'Confirmada',
-          cancelled: 'Cancelada',
-          completed: 'Completada'
-        };
-        return statusMap[status as keyof typeof statusMap] || status;
-      }
-    },
-  ];
+
 
   // Función para cargar clientes
   const loadClientes = async () => {
@@ -145,6 +111,16 @@ const AppointmentsPage = () => {
     setSelectedAppointment(item);
     setIsEditAppointmentModalOpen(true);
   };
+
+  const handleCreateQuotation = (item: Appointment) => {
+    setSelectedAppointment(item);
+    setIsCreateQuotationModalOpen(true);
+  };
+
+  const handleQuotationSuccess = () => {
+    // Recargar citas después de crear cotización
+    loadAppointments();
+  };
   
   const handleDelete = async (item: Appointment) => {
     if (window.confirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
@@ -209,12 +185,82 @@ const AppointmentsPage = () => {
         )}
         
         {!loading && !error && (
-          <TanStackCrudTable 
-            columns={columns} 
-            data={data} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete} 
-          />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3">Fecha</th>
+                  <th className="px-6 py-3">Hora</th>
+                  <th className="px-6 py-3">Cliente</th>
+                  <th className="px-6 py-3">Vehículo</th>
+                  <th className="px-6 py-3">Servicio</th>
+                  <th className="px-6 py-3">Estado</th>
+                  <th className="px-6 py-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                      No hay citas disponibles
+                    </td>
+                  </tr>
+                ) : (
+                  data.map((appointment) => (
+                    <tr key={appointment.id} className="bg-white border-b hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        {appointment.date.toLocaleDateString('es-ES')}
+                      </td>
+                      <td className="px-6 py-4">{appointment.time}</td>
+                      <td className="px-6 py-4">{getClienteName(appointment.clientId)}</td>
+                      <td className="px-6 py-4">{appointment.vehicleId}</td>
+                      <td className="px-6 py-4">{getServiceName(appointment.serviceTypeId)}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          appointment.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                          appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {appointment.status === 'pending' ? 'Pendiente' :
+                           appointment.status === 'confirmed' ? 'Confirmada' :
+                           appointment.status === 'completed' ? 'Completada' :
+                           appointment.status === 'cancelled' ? 'Cancelada' :
+                           appointment.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => handleEdit(appointment)}
+                          >
+                            Editar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="danger"
+                            onClick={() => handleDelete(appointment)}
+                          >
+                            Eliminar
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleCreateQuotation(appointment)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            💰 Cotizar
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
 
@@ -229,6 +275,13 @@ const AppointmentsPage = () => {
         onClose={handleCloseEditModal}
         onSubmit={handleEditAppointment}
         appointment={selectedAppointment}
+      />
+
+      <CreateQuotationModal
+        isOpen={isCreateQuotationModalOpen}
+        onClose={() => setIsCreateQuotationModalOpen(false)}
+        appointment={selectedAppointment}
+        onSuccess={handleQuotationSuccess}
       />
     </>
   );

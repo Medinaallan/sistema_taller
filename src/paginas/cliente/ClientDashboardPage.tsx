@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
+import { vehiclesService } from '../../servicios/apiService';
 import type { ServiceHistoryRecord, ClientServiceStats } from '../../tipos';
 
 interface Vehicle {
@@ -83,6 +84,10 @@ export function ClientDashboardPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
 
+  // Estado para los vehículos del cliente
+  const [clientVehicles, setClientVehicles] = useState<Vehicle[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+
   // Cargar historial de servicios del cliente
   useEffect(() => {
     const loadServiceHistory = async () => {
@@ -126,90 +131,59 @@ export function ClientDashboardPage() {
     alert(`Ver detalles de ${vehicle.brand} ${vehicle.model} - En desarrollo`);
   };
 
-  // Datos simulados del cliente - removidos para empezar en blanco
-  const clientVehicles: Vehicle[] = [];
+  // Cargar vehículos del cliente desde la API
+  useEffect(() => {
+    const loadClientVehicles = async () => {
+      if (!state?.user?.id) return;
+      
+      setVehiclesLoading(true);
+      try {
+        const response = await vehiclesService.getAll();
+        if (response.success && response.data) {
+          // Filtrar solo los vehículos del cliente actual
+          const userVehicles = response.data
+            .filter((vehicle: any) => vehicle.clienteId === state.user?.id)
+            .map((vehicle: any) => ({
+              id: vehicle.id,
+              brand: vehicle.marca,
+              model: vehicle.modelo,
+              year: parseInt(vehicle.año),
+              color: vehicle.color,
+              licensePlate: vehicle.placa,
+              vin: vehicle.vin || '',
+              mileage: parseInt(vehicle.mileage) || 0
+            }));
+          setClientVehicles(userVehicles);
+        } else {
+          console.error('Error cargando vehículos:', response.message);
+          setClientVehicles([]);
+        }
+      } catch (error) {
+        console.error('Error cargando vehículos:', error);
+        setClientVehicles([]);
+      } finally {
+        setVehiclesLoading(false);
+      }
+    };
+
+    loadClientVehicles();
+  }, [state?.user?.id]);
 
   const workOrders: WorkOrder[] = [
-    {
-      id: 'OT-001',
-      vehicleId: '1',
-      vehicleName: 'Toyota Corolla 2020',
-      status: 'in-progress',
-      statusText: 'En Proceso',
-      service: 'Mantenimiento General',
-      createdDate: '2025-08-25',
-      estimatedDelivery: '2025-08-30',
-      progress: 60,
-      description: 'Cambio de aceite, filtros y revisión general',
-      photos: []
-    },
-    {
-      id: 'OT-002',
-      vehicleId: '2',
-      vehicleName: 'Honda Civic 2019',
-      status: 'pending-parts',
-      statusText: 'Esperando Repuestos',
-      service: 'Reparación de frenos',
-      createdDate: '2025-08-28',
-      estimatedDelivery: '2025-09-02',
-      progress: 30,
-      description: 'Cambio de pastillas y discos de freno delanteros',
-      photos: []
-    }
+    
   ];
 
   const quotations: Quotation[] = [
-    {
-      id: 'COT-001',
-      workOrderId: 'OT-003',
-      vehicle: 'Toyota Corolla 2020',
-      status: 'pending',
-      total: 15000,
-      services: [
-        { description: 'Cambio de transmisión', price: 8000, quantity: 1 },
-        { description: 'Mano de obra especializada', price: 5000, quantity: 1 },
-        { description: 'Filtro de transmisión', price: 2000, quantity: 1 }
-      ],
-      createdDate: '2025-08-29'
-    }
+    
   ];
 
   const serviceHistory: ServiceRecord[] = [
-    {
-      id: 'SH-001',
-      date: '2025-07-15',
-      vehicle: 'Toyota Corolla 2020',
-      service: 'Mantenimiento Preventivo',
-      cost: 8500,
-      status: 'completed'
-    },
-    {
-      id: 'SH-002',
-      date: '2025-06-10',
-      vehicle: 'Honda Civic 2019',
-      service: 'Cambio de Aceite',
-      cost: 3500,
-      status: 'completed'
-    }
+    
+    
   ];
 
   const appointments: Appointment[] = [
-    {
-      id: 'APP-001',
-      date: '2025-09-05',
-      time: '09:00',
-      vehicle: 'Toyota Corolla 2020',
-      service: 'Diagnóstico General',
-      status: 'confirmed'
-    },
-    {
-      id: 'APP-002',
-      date: '2025-09-10',
-      time: '14:30',
-      vehicle: 'Honda Civic 2019',
-      service: 'Mantenimiento Preventivo',
-      status: 'pending'
-    }
+    
   ];
 
   const getStatusColor = (status: string) => {
@@ -353,7 +327,19 @@ export function ClientDashboardPage() {
         </div>
       </div>
 
-      {clientVehicles.length === 0 ? (
+      {vehiclesLoading ? (
+        <div className="text-center py-16">
+          <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Cargando tus vehículos...
+          </h3>
+          <p className="text-gray-500 mb-8">
+            Por favor espera mientras cargamos tu información
+          </p>
+        </div>
+      ) : clientVehicles.length === 0 ? (
         <div className="text-center py-16">
           <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-6 flex items-center justify-center">
             <TruckIcon className="h-12 w-12 text-gray-400" />

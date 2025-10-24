@@ -10,7 +10,6 @@ import { DashboardPage } from './paginas/administracion/DashboardPage';
 import AdminPage from './paginas/administracion/AdminPage';
 import { ClientsPage } from './paginas/administracion/ClientsPage';
 import { VehiclesPage } from './paginas/administracion/VehiclesPage';
-import GestionPage from './paginas/administracion/GestionPage';
 import { ClientDashboardPage } from './paginas/cliente/ClientDashboardPage';
 import { ClientVehiclesPage } from './paginas/cliente/ClientVehiclesPage';
 import { ClientAppointmentsPage } from './paginas/cliente/ClientAppointmentsPage';
@@ -21,6 +20,7 @@ import { ReportsPage } from './paginas/administracion/ReportsPage';
 import { WorkOrdersPage } from './paginas/administracion/WorkOrdersPage';
 import AppointmentsPage from './paginas/appointments/AppointmentsPage';
 import QuotationsPage from './paginas/quotations/QuotationsPage';
+import ClientQuotationsPage from './paginas/quotations/ClientQuotationsPage';
 import InvoicesPage from './paginas/invoices/InvoicesPage';
 import PaymentsPage from './paginas/payments/PaymentsPage';
 import InventoryPage from './paginas/inventory/InventoryPage';
@@ -89,15 +89,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/gestion"
-        element={
-          <ProtectedRoute>
-            <GestionPage />
-          </ProtectedRoute>
-        }
-      />
-      
       {/* Rutas para clientes */}
       <Route
         path="/client-dashboard"
@@ -128,6 +119,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ClientAppointmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client-quotations"
+        element={
+          <ProtectedRoute>
+            <ClientQuotationsPage />
           </ProtectedRoute>
         }
       />

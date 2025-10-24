@@ -1,0 +1,168 @@
+import { useState } from 'react';
+import { Modal, Button, Input, TextArea } from '../comunes/UI';
+import quotationsService from '../../servicios/quotationsService';
+import type { Appointment } from '../../tipos';
+
+interface CreateQuotationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  appointment: Appointment | null;
+  onSuccess: () => void;
+}
+
+const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: CreateQuotationModalProps) => {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    descripcion: '',
+    precio: '',
+    notas: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!appointment) return;
+    
+    try {
+      setLoading(true);
+      
+      const cotizacionData = {
+        appointmentId: appointment.id,
+        clienteId: appointment.clientId,
+        vehiculoId: appointment.vehicleId,
+        servicioId: appointment.serviceTypeId,
+        descripcion: formData.descripcion,
+        precio: parseFloat(formData.precio) || 0,
+        notas: formData.notas,
+        estado: 'sent' as const // Enviarla directamente al cliente
+      };
+      
+      await quotationsService.createQuotation(cotizacionData);
+      
+      // Limpiar formulario
+      setFormData({
+        descripcion: '',
+        precio: '',
+        notas: ''
+      });
+      
+      alert('Cotización creada y enviada al cliente exitosamente');
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Error creando cotización:', error);
+      alert('Error creando cotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  if (!appointment) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Crear Cotización - Cita #${appointment.id.substring(0, 8)}`}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Información de la cita */}
+        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <h4 className="font-medium text-gray-700 mb-2">Información de la cita:</h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500">Cliente ID:</span>
+              <div className="font-mono">{appointment.clientId}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Vehículo ID:</span>
+              <div className="font-mono">{appointment.vehicleId}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Servicio:</span>
+              <div>{appointment.serviceTypeId}</div>
+            </div>
+            <div>
+              <span className="text-gray-500">Fecha:</span>
+              <div>{appointment.date.toLocaleDateString('es-ES')} - {appointment.time}</div>
+            </div>
+          </div>
+          {appointment.notes && (
+            <div className="mt-2">
+              <span className="text-gray-500">Notas de la cita:</span>
+              <div className="bg-white p-2 rounded text-sm">{appointment.notes}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Formulario de cotización */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Descripción del trabajo *
+          </label>
+          <TextArea
+            value={formData.descripcion}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('descripcion', e.target.value)}
+            placeholder="Describe detalladamente el trabajo a realizar..."
+            rows={4}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Precio (Lempiras) *
+          </label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={formData.precio}
+            onChange={(e) => handleChange('precio', e.target.value)}
+            placeholder="0.00"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Notas adicionales
+          </label>
+          <TextArea
+            value={formData.notas}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('notas', e.target.value)}
+            placeholder="Información adicional para el cliente..."
+            rows={3}
+          />
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4 border-t">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={loading || !formData.descripcion || !formData.precio}
+          >
+            {loading ? 'Creando...' : 'Crear y Enviar Cotización'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+export default CreateQuotationModal;

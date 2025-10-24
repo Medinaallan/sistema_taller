@@ -257,7 +257,7 @@ app.post('/api/auth/validate-email', async (req, res) => {
   }
 });
 
-// Registrar usuario (Paso 2) - USANDO SP REAL
+// Registrar usuario (Paso 2) 
 app.post('/api/auth/register-user-info', async (req, res) => {
   console.log('👤 Registrar usuario:', req.body);
   try {
@@ -282,7 +282,7 @@ app.post('/api/auth/register-user-info', async (req, res) => {
   }
 });
 
-// Verificar código (Paso 3) - USANDO SP REAL
+// Verificar código (Paso 3) 
 app.post('/api/auth/verify-security-code', async (req, res) => {
   console.log('🔑 Verificar código:', req.body);
   try {

@@ -5,6 +5,31 @@ const router = express.Router();
 
 const CSV_FILE_PATH = path.join(__dirname, '../data/appointments/appointments.csv');
 
+// Función simplificada para parsear CSV - maneja campos con exactamente 8 columnas
+function parseCSVLine(line) {
+  // Para las citas sabemos que tenemos exactamente 8 campos:
+  // id,clienteId,vehiculoId,fecha,hora,servicio,estado,notas
+  
+  // Dividir por coma, pero reunir todo después del 7mo campo como 'notas'
+  const parts = line.split(',');
+  if (parts.length < 8) return parts; // Si hay menos de 8, devolver tal cual
+  
+  // Los primeros 7 campos son simples
+  const fields = parts.slice(0, 7);
+  
+  // El campo 'notas' puede contener comas, así que reunir todo lo que resta
+  const notas = parts.slice(7).join(',');
+  
+  // Limpiar comillas externas del campo notas
+  const cleanNotas = notas.startsWith('"') && notas.endsWith('"') 
+    ? notas.slice(1, -1) 
+    : notas;
+  
+  fields.push(cleanNotas);
+  
+  return fields;
+}
+
 // Función para leer el CSV de citas
 function readAppointmentsCSV() {
   try {
@@ -20,15 +45,19 @@ function readAppointmentsCSV() {
     
     if (lines.length <= 1) return []; // Solo headers o archivo vacío
     
-    const headers = lines[0].split(',');
+    const headers = parseCSVLine(lines[0]);
     const appointments = [];
     
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',');
-      if (values.length === headers.length) {
+      const line = lines[i].trim();
+      if (line === '') continue; // Saltar líneas vacías
+      
+      const values = parseCSVLine(line);
+      
+      if (values.length >= headers.length) {
         const appointment = {};
         headers.forEach((header, index) => {
-          appointment[header] = values[index];
+          appointment[header] = values[index] || '';
         });
         appointments.push(appointment);
       }

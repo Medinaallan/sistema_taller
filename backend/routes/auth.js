@@ -100,7 +100,7 @@ router.post('/register-client', async (req, res) => {
     // Validaciones básicas
     if (!email || !password || !fullName || !phone) {
       return res.status(400).json({
-        success: false,
+         success: false,
         message: 'Email, contraseña, nombre completo y teléfono son requeridos'
       });
     }

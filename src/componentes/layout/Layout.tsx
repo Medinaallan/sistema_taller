@@ -27,20 +27,39 @@ interface LayoutProps {
 
 interface NavigationItem {
   name: string;
-  href: string;
+  href?: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   roles: string[];
+  children?: NavigationItem[];
 }
 
 const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, roles: ['admin', 'mechanic', 'receptionist'] },
   { name: 'Mi Panel', href: '/client-dashboard', icon: HomeIcon, roles: ['client'] },
-  { name: 'Gestión', href: '/gestion', icon: ClipboardDocumentListIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Perfil del Cliente', href: '/client-profile', icon: ChartBarIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Clientes', href: '/clients', icon: UsersIcon, roles: ['admin', 'receptionist'] },
+  { 
+    name: 'Gestión', 
+    icon: ClipboardDocumentListIcon, 
+    roles: ['admin', 'receptionist'], 
+    children: [
+      { name: 'Citas', href: '/appointments', icon: CalendarDaysIcon, roles: ['admin', 'receptionist', 'mechanic'] },
+      { name: 'Cotizaciones', href: '/quotations', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },
+      { name: 'Órdenes de Trabajo', href: '/work-orders', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
+      { name: 'Facturas', href: '/invoices', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },
+    ]
+  },
+  { 
+    name: 'Clientes', 
+    icon: UsersIcon, 
+    roles: ['admin', 'receptionist'], 
+    children: [
+      { name: 'Ver y Añadir', href: '/clients', icon: UsersIcon, roles: ['admin', 'receptionist'] },
+      { name: 'Perfil de Cliente', href: '/client-profile', icon: ChartBarIcon, roles: ['admin', 'receptionist'] },
+    ]
+  },
   { name: 'Vehículos', href: '/vehicles', icon: TruckIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Mis Vehículos', href: '/client-vehicles', icon: TruckIcon, roles: ['client'] },
   { name: 'Solicitar Cita', href: '/client-appointments', icon: CalendarDaysIcon, roles: ['client'] },
+  { name: 'Mis Cotizaciones', href: '/client-quotations', icon: DocumentTextIcon, roles: ['client'] },
   { name: 'Inventario', href: '/inventory', icon: TruckIcon, roles: ['admin', 'receptionist'] },
   { name: 'Proveedores', href: '/suppliers', icon: UsersIcon, roles: ['admin', 'receptionist'] },
   { name: 'Productos', href: '/products', icon: TruckIcon, roles: ['admin', 'receptionist'] },
@@ -60,6 +79,7 @@ const navigationItems: NavigationItem[] = [
 export function Layout({ children }: LayoutProps) {
   const { state, dispatch } = useApp();
   const location = useLocation();
+  const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
 
   const handleLogout = () => {
     dispatch({ type: 'LOGOUT' });
@@ -67,6 +87,16 @@ export function Layout({ children }: LayoutProps) {
 
   const handleToggleNav = () => {
     dispatch({ type: 'TOGGLE_NAV' });
+  };
+
+  const handleToggleExpanded = (itemName: string) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(itemName)) {
+      newExpanded.delete(itemName);
+    } else {
+      newExpanded.add(itemName);
+    }
+    setExpandedItems(newExpanded);
   };
 
   const filteredNavigation = navigationItems.filter(item => 
@@ -105,11 +135,86 @@ export function Layout({ children }: LayoutProps) {
         )}>
           <ul className="space-y-2">
             {filteredNavigation.map((item) => {
+              // Si tiene hijos, es un dropdown
+              if (item.children) {
+                const isExpanded = expandedItems.has(item.name);
+                const hasActiveChild = item.children.some(child => location.pathname === child.href);
+                
+                return (
+                  <li key={item.name}>
+                    <button
+                      onClick={() => handleToggleExpanded(item.name)}
+                      className={clsx(
+                        'w-full flex items-center justify-between text-sm font-medium rounded-lg transition-colors duration-200',
+                        state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2',
+                        hasActiveChild 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+                      )}
+                      title={state.isNavCollapsed ? item.name : undefined}
+                    >
+                      <div className="flex items-center">
+                        <item.icon 
+                          className={clsx(
+                            'h-5 w-5',
+                            hasActiveChild ? 'text-blue-600' : '',
+                            !state.isNavCollapsed && 'mr-3'
+                          )} 
+                          aria-hidden="true" 
+                        />
+                        {!state.isNavCollapsed && <span>{item.name}</span>}
+                      </div>
+                      {!state.isNavCollapsed && (
+                        <ChevronRightIcon 
+                          className={clsx(
+                            'h-4 w-4 transition-transform duration-200',
+                            isExpanded ? 'rotate-90' : ''
+                          )}
+                        />
+                      )}
+                    </button>
+                    
+                    {/* Submenú */}
+                    {isExpanded && !state.isNavCollapsed && (
+                      <ul className="mt-2 ml-6 space-y-1">
+                        {item.children.filter(child => 
+                          state.user ? child.roles.includes(state.user.role) : false
+                        ).map((child) => {
+                          const isChildActive = location.pathname === child.href;
+                          return (
+                            <li key={child.name}>
+                              <Link
+                                to={child.href!}
+                                className={clsx(
+                                  'flex items-center px-3 py-2 text-sm rounded-lg transition-colors duration-200',
+                                  isChildActive 
+                                    ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-600' 
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                                )}
+                              >
+                                <child.icon 
+                                  className={clsx(
+                                    'h-4 w-4 mr-3',
+                                    isChildActive ? 'text-blue-600' : 'text-gray-400'
+                                  )} 
+                                />
+                                {child.name}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                );
+              }
+              
+              // Elemento normal sin hijos
               const isActive = location.pathname === item.href;
               return (
                 <li key={item.name}>
                   <Link
-                    to={item.href}
+                    to={item.href!}
                     className={clsx(
                       'flex items-center text-sm font-medium rounded-lg transition-colors duration-200',
                       state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2',
