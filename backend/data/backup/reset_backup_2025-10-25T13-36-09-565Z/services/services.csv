@@ -1,0 +1,9 @@
+id,nombre,descripcion,precio,duracion,categoria
+service-001,Mantenimiento Preventivo,Revisión general del vehículo,150.00,2 horas,mantenimiento
+service-002,Cambio de Aceite,Cambio de aceite y filtro,80.00,1 hora,mantenimiento
+service-003,Revisión de Frenos,Inspección y ajuste del sistema de frenos,120.00,1.5 horas,seguridad
+service-004,Alineación y Balanceo,Alineación de ruedas y balanceo,100.00,1 hora,ruedas
+service-005,Diagnóstico Computarizado,Diagnóstico con escáner automotriz,75.00,0.5 horas,diagnostico
+service-006,Reparación de Motor,Reparación general del motor,500.00,8 horas,motor
+service-007,Sistema Eléctrico,Revisión del sistema eléctrico,90.00,2 horas,electrico
+service-008,Suspensión,Revisión y reparación de suspensión,200.00,3 horas,suspension

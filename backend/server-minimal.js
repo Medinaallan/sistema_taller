@@ -332,7 +332,8 @@ app.post('/api/auth/register-password', async (req, res) => {
 
 // Login - USANDO SP REAL
 app.post('/api/auth/login', async (req, res) => {
-  console.log('🔐 Login:', req.body);
+  console.log(' Login:', req.body);
+  
   try {
     const { correo, password } = req.body;
     if (!correo || !password) {

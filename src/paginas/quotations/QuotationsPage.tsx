@@ -41,6 +41,34 @@ const QuotationsPage = () => {
     }
   };
 
+  const handleApprove = async (item: QuotationData) => {
+    if (!confirm(`¿Está seguro de aprobar la cotización ${item.id?.substring(0, 12)}?`)) {
+      return;
+    }
+    
+    try {
+      await quotationsService.approveQuotation(item.id!);
+      alert('Cotización aprobada exitosamente');
+      await loadQuotations(); // Recargar datos
+    } catch (err) {
+      alert('Error aprobando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+    }
+  };
+
+  const handleReject = async (item: QuotationData) => {
+    if (!confirm(`¿Está seguro de rechazar la cotización ${item.id?.substring(0, 12)}?`)) {
+      return;
+    }
+    
+    try {
+      await quotationsService.rejectQuotation(item.id!);
+      alert('Cotización rechazada exitosamente');
+      await loadQuotations(); // Recargar datos
+    } catch (err) {
+      alert('Error rechazando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+    }
+  };
+
   if (loading) {
     return (
       <Card title="Cotizaciones">
@@ -114,7 +142,65 @@ const QuotationsPage = () => {
                     {new Date(quotation.fechaCreacion || '').toLocaleDateString('es-ES')}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-2">
+                      {/* Botones según el estado de la cotización */}
+                      {quotation.estado === 'sent' && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => handleApprove(quotation)}
+                          >
+                            ✅ Aprobar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => handleReject(quotation)}
+                          >
+                            ❌ Rechazar
+                          </Button>
+                        </>
+                      )}
+                      
+                      {quotation.estado === 'approved' && (
+                        <span className="text-green-600 text-sm font-medium px-2 py-1">
+                          ✅ Aprobada
+                        </span>
+                      )}
+                      
+                      {quotation.estado === 'rejected' && (
+                        <span className="text-red-600 text-sm font-medium px-2 py-1">
+                          ❌ Rechazada
+                        </span>
+                      )}
+                      
+                      {quotation.estado === 'completed' && (
+                        <span className="text-purple-600 text-sm font-medium px-2 py-1">
+                          🏁 Completada
+                        </span>
+                      )}
+                      
+                      {quotation.estado === 'draft' && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            onClick={() => handleApprove(quotation)}
+                          >
+                            ✅ Aprobar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => handleReject(quotation)}
+                          >
+                            ❌ Rechazar
+                          </Button>
+                        </>
+                      )}
+                      
+                      {/* Botones universales */}
                       <Button 
                         size="sm" 
                         variant="secondary"

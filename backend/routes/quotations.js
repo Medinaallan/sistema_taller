@@ -25,6 +25,29 @@ function ensureCSVFile() {
   }
 }
 
+// Función para parsear línea CSV con comillas
+function parseCSVLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  values.push(current.trim());
+  return values;
+}
+
 // Función para leer cotizaciones del CSV
 function readQuotationsCSV() {
   try {
@@ -41,7 +64,7 @@ function readQuotationsCSV() {
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line) {
-        const values = line.split(',').map(value => value.trim());
+        const values = parseCSVLine(line);
         
         if (values.length >= CSV_HEADERS.length) {
           quotations.push({
@@ -68,6 +91,22 @@ function readQuotationsCSV() {
   }
 }
 
+// Función para escapar valores CSV
+function escapeCSVValue(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  
+  const stringValue = String(value);
+  
+  // Si contiene comas, comillas o saltos de línea, envolver en comillas
+  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+    return '"' + stringValue.replace(/"/g, '""') + '"';
+  }
+  
+  return stringValue;
+}
+
 // Función para escribir cotizaciones al CSV
 function writeQuotationsCSV(quotations) {
   try {
@@ -77,17 +116,17 @@ function writeQuotationsCSV(quotations) {
     
     quotations.forEach(quotation => {
       const values = [
-        quotation.id,
-        quotation.appointmentId,
-        quotation.clienteId,
-        quotation.vehiculoId,
-        quotation.servicioId,
-        quotation.descripcion,
-        quotation.precio,
-        quotation.notas || '',
-        quotation.estado,
-        quotation.fechaCreacion,
-        quotation.fechaActualizacion
+        escapeCSVValue(quotation.id),
+        escapeCSVValue(quotation.appointmentId),
+        escapeCSVValue(quotation.clienteId),
+        escapeCSVValue(quotation.vehiculoId),
+        escapeCSVValue(quotation.servicioId),
+        escapeCSVValue(quotation.descripcion),
+        escapeCSVValue(quotation.precio),
+        escapeCSVValue(quotation.notas || ''),
+        escapeCSVValue(quotation.estado),
+        escapeCSVValue(quotation.fechaCreacion),
+        escapeCSVValue(quotation.fechaActualizacion)
       ];
       csvContent += values.join(',') + '\n';
     });

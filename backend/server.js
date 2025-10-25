@@ -15,6 +15,7 @@ const vehiclesRoutes = require('./routes/vehicles');
 const excelImportRoutes = require('./routes/excelImport');
 const serviceHistoryRoutes = require('./routes/serviceHistory');
 const appointmentsRoutes = require('./routes/appointments');
+const quotationsRoutes = require('./routes/quotations');
 
 const app = express();
 const server = http.createServer(app);

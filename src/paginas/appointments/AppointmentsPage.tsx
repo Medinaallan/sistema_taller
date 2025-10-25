@@ -117,9 +117,82 @@ const AppointmentsPage = () => {
     setIsCreateQuotationModalOpen(true);
   };
 
-  const handleQuotationSuccess = () => {
+  const handleQuotationSuccess = async () => {
+    // Marcar la cita como completada después de crear cotización
+    if (selectedAppointment) {
+      try {
+        await appointmentsService.update(selectedAppointment.id, {
+          clienteId: selectedAppointment.clientId,
+          vehiculoId: selectedAppointment.vehicleId,
+          fecha: selectedAppointment.date.toISOString().split('T')[0],
+          hora: selectedAppointment.time,
+          servicio: selectedAppointment.serviceTypeId,
+          estado: 'completed',
+          notas: selectedAppointment.notes || ''
+        });
+      } catch (error) {
+        console.error('Error actualizando estado de cita:', error);
+      }
+    }
+    
     // Recargar citas después de crear cotización
     loadAppointments();
+  };
+
+  const handleApproveAppointment = async (appointment: Appointment) => {
+    if (!confirm('¿Está seguro de aprobar esta cita?')) {
+      return;
+    }
+    
+    try {
+      const response = await appointmentsService.update(appointment.id, {
+        clienteId: appointment.clientId,
+        vehiculoId: appointment.vehicleId,
+        fecha: appointment.date.toISOString().split('T')[0],
+        hora: appointment.time,
+        servicio: appointment.serviceTypeId,
+        estado: 'confirmed',
+        notas: appointment.notes || ''
+      });
+      
+      if (response.success) {
+        alert('Cita aprobada exitosamente');
+        loadAppointments(); // Recargar datos
+      } else {
+        alert('Error aprobando cita: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error aprobando cita:', error);
+      alert('Error aprobando cita');
+    }
+  };
+
+  const handleRejectAppointment = async (appointment: Appointment) => {
+    if (!confirm('¿Está seguro de rechazar esta cita?')) {
+      return;
+    }
+    
+    try {
+      const response = await appointmentsService.update(appointment.id, {
+        clienteId: appointment.clientId,
+        vehiculoId: appointment.vehicleId,
+        fecha: appointment.date.toISOString().split('T')[0],
+        hora: appointment.time,
+        servicio: appointment.serviceTypeId,
+        estado: 'cancelled',
+        notas: appointment.notes || ''
+      });
+      
+      if (response.success) {
+        alert('Cita rechazada exitosamente');
+        loadAppointments(); // Recargar datos
+      } else {
+        alert('Error rechazando cita: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error rechazando cita:', error);
+      alert('Error rechazando cita');
+    }
   };
   
   const handleDelete = async (item: Appointment) => {
@@ -232,6 +305,58 @@ const AppointmentsPage = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2">
+                          {/* Botones según el estado de la cita */}
+                          {appointment.status === 'pending' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => handleApproveAppointment(appointment)}
+                              >
+                                ✅ Aprobar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={() => handleRejectAppointment(appointment)}
+                              >
+                                ❌ Rechazar
+                              </Button>
+                            </>
+                          )}
+                          
+                          {appointment.status === 'confirmed' && (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => handleCreateQuotation(appointment)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                              >
+                                💰 Cotizar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                onClick={() => handleRejectAppointment(appointment)}
+                              >
+                                ❌ Cancelar
+                              </Button>
+                            </>
+                          )}
+                          
+                          {appointment.status === 'completed' && (
+                            <span className="text-green-600 text-sm font-medium">
+                              ✅ Completada
+                            </span>
+                          )}
+                          
+                          {appointment.status === 'cancelled' && (
+                            <span className="text-red-600 text-sm font-medium">
+                              ❌ Cancelada
+                            </span>
+                          )}
+                          
+                          {/* Botones universales */}
                           <Button 
                             size="sm" 
                             variant="secondary"
@@ -245,13 +370,6 @@ const AppointmentsPage = () => {
                             onClick={() => handleDelete(appointment)}
                           >
                             Eliminar
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleCreateQuotation(appointment)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            💰 Cotizar
                           </Button>
                         </div>
                       </td>

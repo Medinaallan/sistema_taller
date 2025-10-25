@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Modal, Button, Input, TextArea } from '../comunes/UI';
+﻿import { useState, useEffect } from 'react';
+import { Modal, Button, TextArea } from '../comunes/UI';
 import quotationsService from '../../servicios/quotationsService';
+import { servicesService } from '../../servicios/apiService';
 import type { Appointment } from '../../tipos';
 
 interface CreateQuotationModalProps {
@@ -12,11 +13,43 @@ interface CreateQuotationModalProps {
 
 const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: CreateQuotationModalProps) => {
   const [loading, setLoading] = useState(false);
+  const [servicePrecio, setServicePrecio] = useState<number>(0);
+  const [serviceName, setServiceName] = useState<string>('');
+  const [loadingService, setLoadingService] = useState(false);
   const [formData, setFormData] = useState({
     descripcion: '',
-    precio: '',
     notas: ''
   });
+
+  // Cargar precio del servicio cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && appointment?.serviceTypeId) {
+      loadServicePrice(appointment.serviceTypeId);
+    }
+  }, [isOpen, appointment?.serviceTypeId]);
+
+  const loadServicePrice = async (serviceId: string) => {
+    try {
+      setLoadingService(true);
+      const response = await servicesService.getAll();
+      if (response.success && response.data) {
+        const service = response.data.find((s: any) => s.id === serviceId);
+        if (service) {
+          setServicePrecio(parseFloat(service.precio) || 0);
+          setServiceName(service.nombre || service.name || 'Servicio');
+        } else {
+          setServicePrecio(500); // Precio por defecto
+          setServiceName('Servicio no encontrado');
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando precio del servicio:', error);
+      setServicePrecio(500); // Precio por defecto en caso de error
+      setServiceName('Error cargando servicio');
+    } finally {
+      setLoadingService(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,26 +65,24 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         vehiculoId: appointment.vehicleId,
         servicioId: appointment.serviceTypeId,
         descripcion: formData.descripcion,
-        precio: parseFloat(formData.precio) || 0,
+        precio: servicePrecio,
         notas: formData.notas,
-        estado: 'sent' as const // Enviarla directamente al cliente
+        estado: 'sent' as const
       };
       
       await quotationsService.createQuotation(cotizacionData);
       
-      // Limpiar formulario
       setFormData({
         descripcion: '',
-        precio: '',
         notas: ''
       });
       
-      alert('Cotización creada y enviada al cliente exitosamente');
+      alert('Cotización creada exitosamente');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error creando cotización:', error);
-      alert('Error creando cotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      console.error('Error:', error);
+      alert('Error creando cotización');
     } finally {
       setLoading(false);
     }
@@ -73,7 +104,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       title={`Crear Cotización - Cita #${appointment.id.substring(0, 8)}`}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Información de la cita */}
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
           <h4 className="font-medium text-gray-700 mb-2">Información de la cita:</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -94,15 +124,8 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
               <div>{appointment.date.toLocaleDateString('es-ES')} - {appointment.time}</div>
             </div>
           </div>
-          {appointment.notes && (
-            <div className="mt-2">
-              <span className="text-gray-500">Notas de la cita:</span>
-              <div className="bg-white p-2 rounded text-sm">{appointment.notes}</div>
-            </div>
-          )}
         </div>
 
-        {/* Formulario de cotización */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Descripción del trabajo *
@@ -110,7 +133,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
           <TextArea
             value={formData.descripcion}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('descripcion', e.target.value)}
-            placeholder="Describe detalladamente el trabajo a realizar..."
+            placeholder="Describe detalladamente el trabajo..."
             rows={4}
             required
           />
@@ -118,17 +141,22 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Precio (Lempiras) *
+            Precio del Servicio (Lempiras)
           </label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={formData.precio}
-            onChange={(e) => handleChange('precio', e.target.value)}
-            placeholder="0.00"
-            required
-          />
+          <div className="bg-gray-50 p-3 rounded-lg border">
+            {loadingService ? (
+              <div className="text-gray-500">Cargando precio...</div>
+            ) : (
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  L {servicePrecio.toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {serviceName}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
@@ -138,7 +166,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
           <TextArea
             value={formData.notas}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('notas', e.target.value)}
-            placeholder="Información adicional para el cliente..."
+            placeholder="Información adicional..."
             rows={3}
           />
         </div>
@@ -155,9 +183,9 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
           <Button
             type="submit"
             loading={loading}
-            disabled={loading || !formData.descripcion || !formData.precio}
+            disabled={loading || !formData.descripcion || servicePrecio <= 0}
           >
-            {loading ? 'Creando...' : 'Crear y Enviar Cotización'}
+            {loading ? 'Creando...' : 'Crear Cotización'}
           </Button>
         </div>
       </form>

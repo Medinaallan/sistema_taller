@@ -1,6 +1,2 @@
 id,clienteId,vehiculoId,fecha,hora,servicio,estado,notas
-APPT-1761225923395-ps6thlsca,clients-1759762003123-21890207,VEH-1760535827717-qds15iimi,2025-10-24T00:00:00.000Z,17:26,service-002,confirmed,"""acasdfas"""
-APPT-1761227516979-yeu5j1xz0,clients-1759762003123-21890207,VEH-1760535827717-qds15iimi,2025-10-24T00:00:00.000Z,17:52,service-005,completed,"asdafad"
-APPT-1761227730624-pi39kpiwh,clients-1759762003123-21890207,VEH-1760535827717-qds15iimi,2025-10-24,10:00,service-001,pending,"{"problem":"rsfdgvzdfgs","additionalNotes":"fasegart","priority":"high","contactPhone":"9899-9999"}"
-APPT-1761319464302-5cwxcpom5,clients-1761227903710-b545737d,VEH-1761227966066-8nv3ahgok,2025-10-25,10:00,service-005,pending,"{"problem":"asdcasda<sda<wsdQWDqw","additionalNotes":"dfgsdrt","priority":"low","contactPhone":"+504 99999999"}"
-APPT-1761319978838-4ehp586wz,clients-1761227903710-b545737d,VEH-1761227966066-8nv3ahgok,2025-10-24T00:00:00.000Z,10:30,service-008,completed,"{"problem":"prueba despues del error","additionalNotes":"","priority":"urgent","contactPhone":"+504 99999999"}"
+APPT-1761407235178-cohpt13kn,clients-1761407171283-0313b557,VEH-1761407197726-mhevf5d4l,2025-10-26,09:00,1761407142549gbjofzg1r,completed,"ES NECESARIO"

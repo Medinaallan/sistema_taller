@@ -1,0 +1,3 @@
+id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
+,,,,,,,,,,,,,
+clients-1761399458573-7abf229a,GRUPO INCOVA - PRUEBA 251025,incova@taller.com,+504 97896227,DIRECCION DE PRUEBA,asdf1234,active,2025-10-25T13:37:38.572Z,,0,0,,2025-10-25T13:37:38.574Z,2025-10-25T13:37:38.574Z
