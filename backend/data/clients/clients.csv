@@ -1,3 +1,3 @@
 id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
 ,,,,,,,,,,,,,
-clients-1761407171283-0313b557,GRUPO INCOVA - PRUEBA 251025,incova@taller.com,+504 97896227,col. los helechos,asdf1234,active,2025-10-25T15:46:11.282Z,,0,0,,2025-10-25T15:46:11.283Z,2025-10-25T15:46:11.283Z
+clients-1761578533049-05e81b62,GRUPO INCOVA - PRUEBA 271025,incova@taller.com,+504 97896227,col. los helechos,asdf1234,active,2025-10-27T15:22:13.048Z,,0,0,,2025-10-27T15:22:13.050Z,2025-10-27T15:22:13.050Z

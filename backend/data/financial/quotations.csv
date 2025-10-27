@@ -1,2 +1,2 @@
 id,appointmentId,clienteId,vehiculoId,servicioId,descripcion,precio,notas,estado,fechaCreacion,fechaActualizacion
-QUOT-mh6gehd886p7661bt3o,APPT-1761407235178-cohpt13kn,clients-1761407171283-0313b557,VEH-1761407197726-mhevf5d4l,1761407142549gbjofzg1r,ES NECESARIO ,500,NOTA ADICIONAL,sent,2025-10-25,2025-10-25
+QUOT-mh9af49ug7hmez33ehg,APPT-1761578589258-e2dcagpvd,clients-1761578533049-05e81b62,VEH-1761578553698-izs0zc4hg,1761578469541tzux7jqj5,es urgente,500,sdfgsadfasdfas,approved,2025-10-27,2025-10-27

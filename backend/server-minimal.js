@@ -161,6 +161,19 @@ try {
   console.warn('⚠️ El servidor continuará sin las rutas de cotizaciones');
 }
 
+//IMPORTAR Y CONFIGURAR RUTAS DE ÓRDENES DE TRABAJO
+try {
+  console.log('🔧 Cargando rutas de órdenes de trabajo...');
+  const workOrdersRouter = require('./routes/workOrders');
+  app.use('/api/workorders', workOrdersRouter);
+  console.log('✅ Rutas de órdenes de trabajo cargadas exitosamente');
+  console.log('📍 /api/workorders/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de órdenes de trabajo:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de órdenes de trabajo');
+}
+
 // 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
 const { getConnection, sql } = require('./config/database');
 
