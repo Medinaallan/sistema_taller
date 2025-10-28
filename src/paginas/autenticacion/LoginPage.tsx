@@ -360,7 +360,7 @@ export function LoginPage() {
                   className="text-sm text-green-600 hover:text-green-500 font-medium"
                   onClick={() => setViewMode('initialSetup')}
                 >
-                  🚀 Configuración Inicial del Sistema
+                   Configuración Inicial del Sistema
                 </button>
               </div>
               
