@@ -3,10 +3,28 @@ import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegisterForm';
+import { InitialSetupPage } from './InitialSetupPage';
 // import { obtenerClientesActualizados } from '../../utilidades/BaseDatosJS'; // Ya no se usa
-import { mockUsers } from '../../utilidades/globalMockDatabaseFinal'; // ✅ CORREGIDO: usar el archivo con datos reales
+// import { mockUsers } from '../../utilidades/globalMockDatabaseFinal'; // Ya no necesario - ahora usa SP_LOGIN real
 
-type ViewMode = 'login' | 'setup' | 'clientRegister';
+type ViewMode = 'login' | 'setup' | 'clientRegister' | 'initialSetup';
+
+// Función para mapear roles del SP al formato del frontend
+const mapRoleFromSP = (roleSP: string): 'admin' | 'client' | 'mechanic' | 'receptionist' => {
+  const roleMap: Record<string, 'admin' | 'client' | 'mechanic' | 'receptionist'> = {
+    'Administrador': 'admin',
+    'Mecánico': 'mechanic', 
+    'Recepcionista': 'receptionist',
+    'Cliente': 'client',
+    // Fallbacks en inglés
+    'admin': 'admin',
+    'mechanic': 'mechanic',
+    'receptionist': 'receptionist', 
+    'client': 'client'
+  };
+  
+  return roleMap[roleSP] || 'client';
+};
 
 export function LoginPage() {
   const { state, dispatch } = useApp();
@@ -64,71 +82,71 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      console.log('🔍 Intentando login con:', formData.email, formData.password);
+      console.log('🔍 Autenticando con SP_LOGIN:', formData.email, formData.password);
       
       // ========================================
-      // NUEVO MÉTODO: Usar endpoint de login del backend
+      // USAR EXCLUSIVAMENTE SP_LOGIN REAL (REQUIERE VPN)
       // ========================================
       
-      try {
-        console.log('� Probando login de cliente via API...');
-        const response = await fetch('http://localhost:8080/api/clients/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password
-          })
-        });
-        
-        const data = await response.json();
-        console.log('📊 Respuesta del login:', data);
-        
-        if (data.success && data.data) {
-          // Cliente autenticado exitosamente
-          const user = {
-            id: data.data.id,
-            email: data.data.email,
-            password: formData.password, // Mantener password para compatibilidad
-            role: 'client' as const,
-            name: data.data.name,
-            phone: data.data.phone,
-            createdAt: new Date(data.data.created_at || new Date()),
-            updatedAt: new Date(data.data.updated_at || new Date()),
-          };
-          
-          console.log('✅ Cliente autenticado via API:', user);
-          dispatch({ type: 'LOGIN', payload: user });
-          return;
-        } else {
-          console.log('❌ Login de cliente fallido:', data.message);
-        }
-      } catch (clientError) {
-        console.log('⚠️ Error en login de cliente, probando usuarios del sistema:', (clientError as Error).message);
-      }
-
-      // Intentar autenticación con usuarios del sistema (admin, mecánico, recepcionista)
-      console.log('🔍 Probando login de usuarios del sistema...');
-      console.log('👥 Usuarios disponibles:', mockUsers);
-      console.log('🔑 Buscando:', { email: formData.email, password: formData.password });
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          correo: formData.email,
+          password: formData.password
+        })
+      });
       
-      const systemUser = mockUsers.find(u => u.email === formData.email && u.password === formData.password);
+      const data = await response.json();
+      console.log('📊 Respuesta del SP_LOGIN:', data);
       
-      if (systemUser) {
-        console.log('✅ Usuario del sistema autenticado:', systemUser);
-        dispatch({ type: 'LOGIN', payload: systemUser });
+      // Verificar si la respuesta tiene formato nuevo (directo del SP) o formato anterior (con allow)
+      const isDirectSPResponse = data.usuario_id && data.correo && data.nombre_completo;
+      const isOldFormatResponse = data.allow === 1 && data.usuario;
+      
+      if (isDirectSPResponse || isOldFormatResponse) {
+        // Normalizar datos del usuario según el formato de respuesta
+        const userData = isDirectSPResponse ? data : data.usuario;
+        
+        const user = {
+          id: userData.usuario_id.toString(),
+          email: userData.correo,
+          password: formData.password,
+          role: mapRoleFromSP(userData.rol),
+          name: userData.nombre_completo,
+          phone: userData.telefono || '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        
+        console.log('✅ Usuario autenticado via SP_LOGIN:', user);
+        dispatch({ type: 'LOGIN', payload: user });
+        return;
+      } else {
+        console.log('❌ Credenciales inválidas:', data.msg || 'Usuario o contraseña incorrectos');
+        setErrors({ general: data.msg || 'Usuario o contraseña incorrectos' });
         return;
       }
-
-      // No se encontró usuario
-      console.log('❌ No se encontró usuario válido');
-      setErrors({ general: 'Email o contraseña incorrectos' });
       
     } catch (error) {
-      console.error('Error en login:', error);
-      setErrors({ general: 'Error al iniciar sesión. Inténtalo de nuevo.' });
+      console.error('❌ Error conectando con SP_LOGIN:', error);
+      
+      // Determinar tipo de error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setErrors({ 
+          general: 'Error de conexión: No se puede conectar con el servidor backend (puerto 8080)' 
+        });
+      } else if (error instanceof Error && error.message.includes('NetworkError')) {
+        setErrors({ 
+          general: 'Error de red: Verifique su conexión VPN e intente nuevamente' 
+        });
+      } else {
+        setErrors({ 
+          general: 'Error de conexión con la base de datos. Verifique su VPN.' 
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -175,6 +193,7 @@ export function LoginPage() {
     switch (viewMode) {
       case 'setup': return 'Configuración Inicial';
       case 'clientRegister': return 'Registro de Cliente';
+      case 'initialSetup': return 'Configuración del Sistema';
       default: return 'Iniciar Sesión';
     }
   };
@@ -183,6 +202,7 @@ export function LoginPage() {
     switch (viewMode) {
       case 'setup': return 'Crear el primer usuario administrador del sistema';
       case 'clientRegister': return 'Crear una cuenta de cliente';
+      case 'initialSetup': return 'Registrar usuarios usando stored procedures reales';
       default: return 'Sistema de Gestión para Talleres Mecánicos';
     }
   };
@@ -206,6 +226,15 @@ export function LoginPage() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (viewMode === 'initialSetup') {
+    return (
+      <InitialSetupPage
+        onComplete={() => setViewMode('login')}
+        onCancel={() => setViewMode('login')}
+      />
     );
   }
 
@@ -294,13 +323,11 @@ export function LoginPage() {
           )}
 
           {viewMode === 'login' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <div className="text-xs text-blue-700 space-y-1">
-                <div className="text-xs text-blue-600 mt-2 italic">
-                  * Usuarios de prueba:
-                  <div>Admin: admin@taller.com / admin123</div>
-                  <div>Recep: recep@taller.com / recep123</div>
-                  <div>Mec: mecanico@taller.com / mec123</div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <div className="text-xs text-yellow-700 space-y-1">
+                <div className="text-xs text-yellow-600 mt-2 italic">
+                  <div>admin@taller.com</div>
+                  <div>admin123</div>
                 </div>
               </div>
             </div>
@@ -326,6 +353,16 @@ export function LoginPage() {
               >
                 ¿Eres cliente? Registra tu cuenta aquí
               </button>
+
+              <div>
+                <button
+                  type="button"
+                  className="text-sm text-green-600 hover:text-green-500 font-medium"
+                  onClick={() => setViewMode('initialSetup')}
+                >
+                  🚀 Configuración Inicial del Sistema
+                </button>
+              </div>
               
               {state.users.length > 0 && (
                 <div>

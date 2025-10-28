@@ -42,16 +42,22 @@ const QuotationsPage = () => {
   };
 
   const handleApprove = async (item: QuotationData) => {
-    if (!confirm(`¿Está seguro de aprobar la cotización ${item.id?.substring(0, 12)}?`)) {
+    if (!confirm(`¿Está seguro de aprobar la cotización ${item.id?.substring(0, 12)}? Esto creará automáticamente una orden de trabajo.`)) {
       return;
     }
     
     try {
+      // Paso 1: Aprobar la cotización
       await quotationsService.approveQuotation(item.id!);
-      alert('Cotización aprobada exitosamente');
+      
+      // Paso 2: Crear orden de trabajo automáticamente
+      const { workOrdersService } = await import('../../servicios/workOrdersService');
+      const workOrder = await workOrdersService.createWorkOrderFromQuotation(item);
+      
+      alert(`Cotización aprobada exitosamente y orden de trabajo #${workOrder.id?.substring(0, 12)} creada automáticamente.`);
       await loadQuotations(); // Recargar datos
     } catch (err) {
-      alert('Error aprobando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      alert('Error en el proceso de aprobación: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
