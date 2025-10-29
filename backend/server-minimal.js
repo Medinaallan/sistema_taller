@@ -487,6 +487,31 @@ app.post('/api/clients', async (req, res) => {
 });
 */
 
+// Obtener clientes registrados en la BD (para el panel de admin)
+app.get('/api/clients/registered', async (req, res) => {
+  try {
+    console.log('🔍 Obteniendo clientes registrados en BD...');
+    const pool = await getConnection();
+    const result = await pool.request()
+      .execute('SP_OBTENER_CLIENTES_REGISTRADOS');
+
+    console.log(`✅ Encontrados ${result.recordset.length} clientes registrados en BD`);
+    res.json({
+      success: true,
+      data: result.recordset,
+      count: result.recordset.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo clientes registrados:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // 404
 app.use('*', (req, res) => {
   console.log('Ruta no encontrada:', req.originalUrl);

@@ -67,7 +67,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
           setFormData(prev => ({ ...prev, role: adminRole.nombre }));
         }
       } else {
-        console.error('❌ Error obteniendo roles:', data.message);
+        console.error(' Error obteniendo roles:', data.message);
         // Fallback roles si no se pueden cargar desde la DB
         setRoles([
           { rol_id: 1, nombre: 'Administrador', descripcion: 'Acceso completo al sistema' },
@@ -77,7 +77,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
         setFormData(prev => ({ ...prev, role: 'Administrador' }));
       }
     } catch (error) {
-      console.error('⚠️ Error de conexión cargando roles, usando fallback:', error);
+      console.error(' Error de conexión cargando roles, usando fallback:', error);
       // Roles de emergencia si no hay conexión
       setRoles([
         { rol_id: 1, nombre: 'Administrador', descripcion: 'Acceso completo al sistema' },

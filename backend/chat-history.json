@@ -764,5 +764,17 @@
       "enviado_en": "2025-10-21T15:49:20.705Z",
       "leido": true
     }
+  ],
+  "client-fallback": [
+    {
+      "mensaje_id": 1761748876443,
+      "sala_id": "client-fallback",
+      "usuario_id": "client-fallback",
+      "rol": "client",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2025-10-29T14:41:15.614Z",
+      "leido": false
+    }
   ]
 }

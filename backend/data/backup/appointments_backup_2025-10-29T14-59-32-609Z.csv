@@ -1,0 +1,3 @@
+id,clienteId,vehiculoId,fecha,hora,servicio,estado,notas
+APPT-1761578589258-e2dcagpvd,clients-1761578533049-05e81b62,VEH-1761578553698-izs0zc4hg,2025-11-02,17:26,1761578469541tzux7jqj5,completed,"es urgente"
+APPT-1761656065317-i550vybl9,clients-1761578533049-05e81b62,VEH-1761578553698-izs0zc4hg,2025-10-29,15:57,1761578469541tzux7jqj5,completed,"zxczxczx"

@@ -245,7 +245,7 @@ export async function SP_REGISTRAR_USUARIO_PANEL_ADMIN(
 // SP_OBTENER_CLIENTES_REGISTRADOS - Obtener clientes
 export async function SP_OBTENER_CLIENTES_REGISTRADOS(): Promise<ClientData[]> {
   try {
-    const response = await fetch(API_ENDPOINTS.clients, {
+    const response = await fetch(`${API_ENDPOINTS.clients}/registered`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

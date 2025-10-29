@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chatService, ChatMensajeDTO } from '../servicios/chatService';
 import { obtenerClientesActualizados } from '../utilidades/BaseDatosJS';
+import { SP_OBTENER_CLIENTES_REGISTRADOS } from '../utilidades/storedProceduresBackend';
 
 export interface ChatClienteItem {
   id: string;              // client.id
@@ -32,6 +33,61 @@ export function useAdminChat() {
   const generarAvatar = (nombre: string) => {
     const encoded = encodeURIComponent(nombre);
     return `https://ui-avatars.com/api/?name=${encoded}&background=random&rounded=true&size=64`;
+  };
+
+  // Función para obtener TODOS los clientes (CSV + BD registrados)
+  const obtenerTodosLosClientes = async (): Promise<ChatClienteItem[]> => {
+    try {
+      console.log('🔄 Cargando clientes para chat admin...');
+      
+      // 1. Clientes del CSV local
+      const clientesCSV = await obtenerClientesActualizados();
+      console.log('📋 Clientes CSV:', clientesCSV.length);
+      
+      // 2. Clientes registrados en BD
+      const clientesBD = await SP_OBTENER_CLIENTES_REGISTRADOS();
+      console.log('💾 Clientes BD:', clientesBD.length);
+      
+      // 3. Combinar y evitar duplicados (priorizar BD sobre CSV)
+      const clientesUnicos = new Map<string, ChatClienteItem>();
+      
+      // Primero agregar clientes CSV
+      clientesCSV.forEach(cliente => {
+        clientesUnicos.set(cliente.email, {
+          id: cliente.id,
+          nombre: cliente.name,
+          avatar: generarAvatar(cliente.name),
+          noLeidos: 0
+        });
+      });
+      
+      // Después agregar clientes BD (sobrescribe si hay email duplicado)
+      clientesBD.forEach(cliente => {
+        // Generar ID compatible con el sistema de chat
+        const chatId = `client-bd-${cliente.userId}`;
+        clientesUnicos.set(cliente.email, {
+          id: chatId,
+          nombre: cliente.fullName,
+          avatar: generarAvatar(cliente.fullName),
+          noLeidos: 0
+        });
+      });
+      
+      const clientesFinales = Array.from(clientesUnicos.values());
+      console.log('✅ Total clientes únicos:', clientesFinales.length);
+      
+      return clientesFinales;
+    } catch (error) {
+      console.error('❌ Error cargando clientes:', error);
+      // Fallback a solo CSV si falla la BD
+      const clientesCSV = await obtenerClientesActualizados();
+      return clientesCSV.map(c => ({
+        id: c.id,
+        nombre: c.name,
+        avatar: generarAvatar(c.name),
+        noLeidos: 0
+      }));
+    }
   };
 
   const seleccionarSala = useCallback(async (clientId: string) => {
@@ -152,17 +208,11 @@ export function useAdminChat() {
     return () => { unsubTyping(); };
   }, []);
 
-  // Cargar clientes al montar
+  // Cargar clientes al montar - AHORA incluye clientes de BD
   useEffect(() => {
     (async () => {
-      const lista = await obtenerClientesActualizados();
-      const adaptados: ChatClienteItem[] = lista.map(c => ({
-        id: c.id,
-        nombre: c.name,
-        avatar: generarAvatar(c.name),
-        noLeidos: 0
-      }));
-      setClientes(adaptados);
+      const clientesCombinados = await obtenerTodosLosClientes();
+      setClientes(clientesCombinados);
     })();
   }, []);
 
