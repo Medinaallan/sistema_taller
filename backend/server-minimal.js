@@ -629,7 +629,7 @@ server.listen(PORT, () => {
   console.log(` Subir Imágenes:   http://localhost:${PORT}/api/upload-image (Digital Ocean Spaces)`);
   console.log(` Eliminar Imagen:  http://localhost:${PORT}/api/delete-image/:key`);
   console.log(` Autenticación:    http://localhost:${PORT}/api/auth/*`);
-  console.log(` Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);
+  console.log(` Socket.IO:        http://localhost:${PORT} (chat en tiempo real)`);  
   console.log(` Frontend:         http://localhost:5173`);
   console.log('===============================================\n');
 });
