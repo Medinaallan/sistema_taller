@@ -18,6 +18,7 @@ import {
 import { useApp } from '../../contexto/useApp';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 import { vehiclesService } from '../../servicios/apiService';
+import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 import type { ServiceHistoryRecord, ClientServiceStats } from '../../tipos';
 
 interface Vehicle {
@@ -76,7 +77,7 @@ interface Appointment {
 
 export function ClientDashboardPage() {
   const { state } = useApp();
-  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'appointments' | 'orders' | 'quotations' | 'history' | 'payments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'appointments' | 'orders' | 'quotations' | 'subcotizaciones' | 'history' | 'payments'>('overview');
   
   // Estado para el historial de servicios
   const [serviceHistoryRecords, setServiceHistoryRecords] = useState<ServiceHistoryRecord[]>([]);
@@ -87,6 +88,7 @@ export function ClientDashboardPage() {
   // Estado para los vehículos del cliente
   const [clientVehicles, setClientVehicles] = useState<Vehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [additionalQuotations, setAdditionalQuotations] = useState<AdditionalQuotation[]>([]);
 
   // Cargar historial de servicios del cliente
   useEffect(() => {
@@ -169,6 +171,18 @@ export function ClientDashboardPage() {
     loadClientVehicles();
   }, [state?.user?.id]);
 
+  // Cargar subcotizaciones del cliente
+  useEffect(() => {
+    const loadAdditionalQuotations = async () => {
+      if (state?.user?.id) {
+        const clientQuotations = await additionalQuotationsService.getByClientId(state.user.id);
+        setAdditionalQuotations(clientQuotations);
+      }
+    };
+
+    loadAdditionalQuotations();
+  }, [state?.user?.id]);
+
   const workOrders: WorkOrder[] = [
     
   ];
@@ -203,6 +217,29 @@ export function ClientDashboardPage() {
       currency: 'HNL',
       minimumFractionDigits: 2
     }).format(amount);
+  };
+
+  // Manejar respuesta a subcotizaciones
+  const handleQuotationResponse = async (quotationId: string, response: 'aprobada' | 'rechazada') => {
+    try {
+      const approved = response === 'aprobada';
+      await additionalQuotationsService.respondToQuotation(quotationId, approved, state?.user?.id || 'cliente');
+      
+      // Recargar las subcotizaciones para actualizar la UI
+      if (state?.user?.id) {
+        const updatedQuotations = await additionalQuotationsService.getByClientId(state.user.id);
+        setAdditionalQuotations(updatedQuotations);
+      }
+
+      // Mostrar mensaje de confirmación
+      alert(response === 'aprobada' ? 
+        'Subcotización aprobada exitosamente. Los servicios se añadirán a tu orden de trabajo.' :
+        'Subcotización rechazada.'
+      );
+    } catch (error) {
+      console.error('Error respondiendo a subcotización:', error);
+      alert('Error al procesar la respuesta. Por favor intenta de nuevo.');
+    }
   };
 
   const renderOverviewTab = () => (
@@ -596,6 +633,159 @@ export function ClientDashboardPage() {
     </div>
   );
 
+  const renderSubcotizacionesTab = () => (
+    <div className="space-y-6">
+      <div className="sm:flex sm:items-center">
+        <div className="sm:flex-auto">
+          <h1 className="text-xl font-semibold text-gray-900">Subcotizaciones</h1>
+          <p className="mt-2 text-sm text-gray-700">Servicios adicionales recomendados durante las reparaciones</p>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {additionalQuotations.length === 0 ? (
+          <div className="bg-white shadow rounded-lg p-8 text-center">
+            <ExclamationTriangleIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay subcotizaciones</h3>
+            <p className="text-gray-500">Cuando encontremos servicios adicionales durante las reparaciones, aparecerán aquí</p>
+          </div>
+        ) : (
+          additionalQuotations.map((quotation) => (
+            <div key={quotation.id} className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-4 py-5 sm:px-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Subcotización #{quotation.id.slice(0, 8)}
+                    </h3>
+                    <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                      Orden de Trabajo #{quotation.workOrderId} • {new Date(quotation.fechaCreacion).toLocaleDateString('es-ES')}
+                    </p>
+                  </div>
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    quotation.estado === 'pendiente-aprobacion' ? 'bg-yellow-100 text-yellow-800' :
+                    quotation.estado === 'aprobada' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {quotation.estado === 'pendiente-aprobacion' ? 'Pendiente de Respuesta' : 
+                     quotation.estado === 'aprobada' ? 'Aprobada' : 'Rechazada'}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200">
+                <div className="px-4 py-5 sm:px-6">
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Servicios Adicionales Encontrados</h4>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+                    <div className="flex">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 flex-shrink-0" />
+                      <div className="ml-3">
+                        <h4 className="text-sm font-medium text-yellow-800">
+                          Servicios adicionales detectados
+                        </h4>
+                        <p className="mt-2 text-sm text-yellow-700">
+                          {quotation.descripcionProblema}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      <h5 className="font-medium text-gray-900 mb-2">Servicios Encontrados:</h5>
+                      <p className="text-sm text-gray-700 mb-3">{quotation.serviciosEncontrados}</p>
+                      
+                      <h5 className="font-medium text-gray-900 mb-2">Servicios Recomendados:</h5>
+                      <p className="text-sm text-gray-700 mb-3">{quotation.serviciosRecomendados}</p>
+                      
+                      {quotation.notas && (
+                        <>
+                          <h5 className="font-medium text-gray-900 mb-2">Notas Adicionales:</h5>
+                          <p className="text-sm text-gray-700">{quotation.notas}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">Costo Estimado</p>
+                        <p className={`text-sm ${
+                          quotation.urgencia === 'alta' ? 'text-red-600' :
+                          quotation.urgencia === 'media' ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`}>
+                          Urgencia: {quotation.urgencia}
+                        </p>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900">
+                        ${quotation.costoEstimado.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {quotation.estado === 'pendiente-aprobacion' && (
+                    <div className="mt-6 flex space-x-3">
+                      <button
+                        onClick={() => handleQuotationResponse(quotation.id, 'aprobada')}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckIcon className="h-4 w-4 mr-2" />
+                        Aprobar Servicios
+                      </button>
+                      <button
+                        onClick={() => handleQuotationResponse(quotation.id, 'rechazada')}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <XMarkIcon className="h-4 w-4 mr-2" />
+                        Rechazar
+                      </button>
+                    </div>
+                  )}
+
+                  {quotation.estado === 'aprobada' && (
+                    <div className="mt-6 bg-green-50 border border-green-200 rounded-md p-4">
+                      <div className="flex">
+                        <CheckCircleIcon className="h-5 w-5 text-green-400 flex-shrink-0" />
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-green-800">
+                            Servicios Aprobados
+                          </p>
+                          <p className="mt-1 text-sm text-green-700">
+                            Los servicios han sido aprobados y se añadirán a tu orden de trabajo.
+                            {quotation.fechaRespuesta && ` (${new Date(quotation.fechaRespuesta).toLocaleDateString('es-ES')})`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {quotation.estado === 'rechazada' && (
+                    <div className="mt-6 bg-red-50 border border-red-200 rounded-md p-4">
+                      <div className="flex">
+                        <XMarkIcon className="h-5 w-5 text-red-400 flex-shrink-0" />
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-red-800">
+                            Servicios Rechazados
+                          </p>
+                          <p className="mt-1 text-sm text-red-700">
+                            Los servicios adicionales han sido rechazados.
+                            {quotation.fechaRespuesta && ` (${new Date(quotation.fechaRespuesta).toLocaleDateString('es-ES')})`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
   const renderHistoryTab = () => (
     <div className="space-y-6">
       <div className="sm:flex sm:items-center">
@@ -794,6 +984,7 @@ export function ClientDashboardPage() {
       case 'appointments': return renderAppointmentsTab();
       case 'orders': return renderWorkOrdersTab();
       case 'quotations': return renderQuotationsTab();
+      case 'subcotizaciones': return renderSubcotizacionesTab();
       case 'history': return renderHistoryTab();
       case 'payments': return renderPaymentsTab();
       default: return renderOverviewTab();
@@ -886,6 +1077,7 @@ export function ClientDashboardPage() {
                 { id: 'appointments', name: 'Citas' },
                 { id: 'orders', name: 'Órdenes de Trabajo' },
                 { id: 'quotations', name: 'Cotizaciones' },
+                { id: 'subcotizaciones', name: 'Subcotizaciones' },
                 { id: 'history', name: 'Historial' },
                 { id: 'payments', name: 'Pagos' },
               ].map((tab) => (
@@ -903,6 +1095,7 @@ export function ClientDashboardPage() {
               { id: 'vehicles', name: 'Mis Vehículos', icon: TruckIcon },
               { id: 'orders', name: 'Órdenes de Trabajo', icon: WrenchScrewdriverIcon },
               { id: 'quotations', name: 'Cotizaciones', icon: DocumentTextIcon },
+              { id: 'subcotizaciones', name: 'Subcotizaciones', icon: ExclamationTriangleIcon },
               { id: 'history', name: 'Historial', icon: CheckCircleIcon },
               { id: 'payments', name: 'Pagos', icon: CreditCardIcon },
             ].map((tab) => (

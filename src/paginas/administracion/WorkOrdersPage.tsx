@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/comunes/UI';
+import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, DocumentPlusIcon } from '@heroicons/react/24/outline';
+import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../componentes/comunes/UI';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
+import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
+import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -12,6 +14,10 @@ const WorkOrdersPage = () => {
   const [clientFilter, setClientFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrderData | null>(null);
+  const [isAdditionalQuotationModalOpen, setIsAdditionalQuotationModalOpen] = useState(false);
+  const [selectedOrderForQuotation, setSelectedOrderForQuotation] = useState<WorkOrderData | null>(null);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
 
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
@@ -50,6 +56,23 @@ const WorkOrdersPage = () => {
   const handleViewWorkOrder = (order: WorkOrderData) => {
     setSelectedWorkOrder(order);
     setIsModalOpen(true);
+  };
+
+  const handleAdditionalQuotationAccess = (order: WorkOrderData) => {
+    setSelectedOrderForQuotation(order);
+    setShowPasswordPrompt(true);
+    setAdminPassword('');
+  };
+
+  const handlePasswordSubmit = () => {
+    if (adminPassword === 'admin123') {
+      setShowPasswordPrompt(false);
+      setIsAdditionalQuotationModalOpen(true);
+      setAdminPassword('');
+    } else {
+      alert('Contraseña incorrecta');
+      setAdminPassword('');
+    }
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
@@ -275,6 +298,13 @@ const WorkOrdersPage = () => {
                           </button>
                         )}
                         <button
+                          onClick={() => handleAdditionalQuotationAccess(order)}
+                          className="text-purple-600 hover:text-purple-900"
+                          title="Cotización adicional (Admin)"
+                        >
+                          <DocumentPlusIcon className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => {/* TODO: Implementar edición */}}
                           className="text-yellow-600 hover:text-yellow-900"
                           title="Editar"
@@ -304,7 +334,7 @@ const WorkOrdersPage = () => {
         </div>
       </Card>
 
-      {/* Modal */}
+      {/* Modal de detalles */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -312,6 +342,72 @@ const WorkOrdersPage = () => {
       >
         {selectedWorkOrder && (
           <WorkOrderDetails order={selectedWorkOrder} />
+        )}
+      </Modal>
+
+      {/* Modal de contraseña para cotización adicional */}
+      <Modal
+        isOpen={showPasswordPrompt}
+        onClose={() => {
+          setShowPasswordPrompt(false);
+          setAdminPassword('');
+          setSelectedOrderForQuotation(null);
+        }}
+        title="Acceso de Administrador"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Esta función está restringida a administradores. Ingresa la contraseña para continuar.
+          </p>
+          <Input
+            label="Contraseña de administrador"
+            type="password"
+            value={adminPassword}
+            onChange={(e) => setAdminPassword(e.target.value)}
+            placeholder="Ingresa la contraseña"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handlePasswordSubmit();
+              }
+            }}
+          />
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowPasswordPrompt(false);
+                setAdminPassword('');
+                setSelectedOrderForQuotation(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handlePasswordSubmit}>
+              Acceder
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal de cotización adicional */}
+      <Modal
+        isOpen={isAdditionalQuotationModalOpen}
+        onClose={() => {
+          setIsAdditionalQuotationModalOpen(false);
+          setSelectedOrderForQuotation(null);
+        }}
+        title="Cotización de Servicios Adicionales"
+        size="lg"
+      >
+        {selectedOrderForQuotation && (
+          <AdditionalQuotationForm 
+            workOrder={selectedOrderForQuotation}
+            onClose={() => {
+              setIsAdditionalQuotationModalOpen(false);
+              setSelectedOrderForQuotation(null);
+            }}
+          />
         )}
       </Modal>
     </div>
@@ -486,6 +582,243 @@ function WorkOrderDetails({ order }: WorkOrderDetailsProps) {
         </div>
       )}
     </div>
+  );
+}
+
+// Componente para el formulario de cotización adicional
+interface AdditionalQuotationFormProps {
+  workOrder: WorkOrderData;
+  onClose: () => void;
+}
+
+function AdditionalQuotationForm({ workOrder, onClose }: AdditionalQuotationFormProps) {
+  const [formData, setFormData] = useState({
+    serviciosEncontrados: '',
+    descripcionProblema: '',
+    serviciosRecomendados: '',
+    costoEstimado: '',
+    urgencia: 'media' as 'baja' | 'media' | 'alta',
+    requiereAprobacion: true,
+    notas: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (field: string, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Crear la cotización adicional usando el servicio
+      const quotationData = {
+        workOrderId: workOrder.id || '',
+        clienteId: workOrder.clienteId,
+        vehiculoId: workOrder.vehiculoId,
+        tipo: 'adicional' as const,
+        serviciosEncontrados: formData.serviciosEncontrados,
+        descripcionProblema: formData.descripcionProblema,
+        serviciosRecomendados: formData.serviciosRecomendados,
+        costoEstimado: parseFloat(formData.costoEstimado),
+        urgencia: formData.urgencia,
+        estado: 'pendiente-aprobacion' as const,
+        requiereAprobacion: formData.requiereAprobacion,
+        notas: formData.notas
+      };
+
+      const additionalQuotation = await additionalQuotationsService.createAdditionalQuotation(quotationData);
+
+      // Enviar notificación al chat del cliente
+      await sendQuotationToClientChat(additionalQuotation, workOrder);
+
+      alert('Cotización adicional creada y enviada al cliente exitosamente');
+      onClose();
+    } catch (error) {
+      console.error('Error creando cotización adicional:', error);
+      alert('Error al crear la cotización adicional');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendQuotationToClientChat = async (quotation: AdditionalQuotation, workOrder: WorkOrderData) => {
+    try {
+      // Crear mensaje estructurado para el chat
+      const mensaje = `🔧 SERVICIOS ADICIONALES ENCONTRADOS
+
+Orden de Trabajo: #${workOrder.id?.slice(-12)}
+Vehículo: ${workOrder.vehiculoId}
+
+Problemas encontrados:
+${quotation.serviciosEncontrados}
+
+Descripción del problema:
+${quotation.descripcionProblema}
+
+Servicios recomendados:
+${quotation.serviciosRecomendados}
+
+Costo estimado: L. ${quotation.costoEstimado.toFixed(2)}
+Urgencia: ${quotation.urgencia.toUpperCase()}
+
+${quotation.notas ? `Notas adicionales:\n${quotation.notas}` : ''}
+
+---
+Esta cotización requiere tu aprobación antes de proceder. Puedes aprobarla o rechazarla desde tu panel de cliente.
+
+Cotización ID: ${quotation.id}`;
+
+      // Crear mensaje para el chat
+      const chatMessage: Omit<ChatMensajeDTO, 'mensaje_id'> = {
+        sala_id: workOrder.clienteId,
+        usuario_id: 'admin-system',
+        rol: 'admin',
+        contenido: mensaje,
+        es_sistema: true,
+        enviado_en: new Date().toISOString(),
+        leido: false
+      };
+
+      console.log('Enviando cotización al chat del cliente...', chatMessage);
+      
+      // Intentar enviar usando el chatService real
+      try {
+        // Inicializar el servicio de chat si no está conectado
+        if (!chatService.estaConectado()) {
+          await chatService.conectar();
+        }
+        
+        // Unirse a la sala del cliente
+        chatService.unirseASala(workOrder.clienteId);
+        
+        // Enviar el mensaje
+        chatService.enviarMensaje(chatMessage);
+        
+        console.log('✅ Mensaje de cotización enviado exitosamente al chat');
+      } catch (chatError) {
+        console.error('⚠️ Error enviando al chat, guardando en localStorage como respaldo:', chatError);
+        
+        // Guardar en localStorage como respaldo si el chat falla
+        const backupMessages = JSON.parse(localStorage.getItem('backup-chat-messages') || '[]');
+        backupMessages.push({
+          ...chatMessage,
+          timestamp: Date.now(),
+          type: 'cotizacion-adicional',
+          quotationId: quotation.id
+        });
+        localStorage.setItem('backup-chat-messages', JSON.stringify(backupMessages));
+      }
+      
+    } catch (error) {
+      console.error('Error enviando cotización al chat:', error);
+      throw error;
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Información de la orden */}
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h3 className="font-semibold text-blue-900 mb-2">Información de la Orden</h3>
+        <div className="text-sm text-blue-800 space-y-1">
+          <p><strong>Orden:</strong> #{workOrder.id?.slice(-12)}</p>
+          <p><strong>Cliente:</strong> {workOrder.clienteId}</p>
+          <p><strong>Vehículo:</strong> {workOrder.vehiculoId}</p>
+          <p><strong>Estado actual:</strong> {workOrdersService.formatStatus(workOrder.estado)}</p>
+        </div>
+      </div>
+
+      {/* Servicios encontrados */}
+      <TextArea
+        label="Servicios/Problemas Encontrados Durante la Revisión"
+        value={formData.serviciosEncontrados}
+        onChange={(e) => handleInputChange('serviciosEncontrados', e.target.value)}
+        placeholder="Describe los problemas o servicios adicionales que se encontraron mientras se trabajaba en el vehículo..."
+        rows={3}
+        required
+      />
+
+      {/* Descripción del problema */}
+      <TextArea
+        label="Descripción Detallada del Problema"
+        value={formData.descripcionProblema}
+        onChange={(e) => handleInputChange('descripcionProblema', e.target.value)}
+        placeholder="Explica detalladamente el problema encontrado y por qué requiere atención..."
+        rows={3}
+        required
+      />
+
+      {/* Servicios recomendados */}
+      <TextArea
+        label="Servicios Recomendados"
+        value={formData.serviciosRecomendados}
+        onChange={(e) => handleInputChange('serviciosRecomendados', e.target.value)}
+        placeholder="Detalla los servicios específicos que se recomiendan para solucionar el problema..."
+        rows={3}
+        required
+      />
+
+      {/* Costo estimado */}
+      <Input
+        label="Costo Estimado (L.)"
+        type="number"
+        step="0.01"
+        min="0"
+        value={formData.costoEstimado}
+        onChange={(e) => handleInputChange('costoEstimado', e.target.value)}
+        placeholder="0.00"
+        required
+      />
+
+      {/* Nivel de urgencia */}
+      <Select
+        label="Nivel de Urgencia"
+        value={formData.urgencia}
+        onChange={(e) => handleInputChange('urgencia', e.target.value)}
+        options={[
+          { value: 'baja', label: 'Baja - Puede esperar' },
+          { value: 'media', label: 'Media - Recomendado pronto' },
+          { value: 'alta', label: 'Alta - Requiere atención inmediata' }
+        ]}
+      />
+
+      {/* Notas adicionales */}
+      <TextArea
+        label="Notas Adicionales"
+        value={formData.notas}
+        onChange={(e) => handleInputChange('notas', e.target.value)}
+        placeholder="Cualquier información adicional que el cliente deba saber..."
+        rows={2}
+      />
+
+      {/* Información importante */}
+      <div className="bg-yellow-50 p-4 rounded-lg">
+        <p className="text-sm text-yellow-800">
+          <strong>Nota:</strong> Esta cotización se enviará automáticamente al chat del cliente y requerirá su aprobación antes de proceder con los servicios adicionales.
+        </p>
+      </div>
+
+      {/* Botones */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onClose}
+          disabled={loading}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={loading}
+        >
+          {loading ? 'Creando...' : 'Crear y Enviar Cotización'}
+        </Button>
+      </div>
+    </form>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   WrenchScrewdriverIcon,
   EyeIcon,
@@ -11,6 +11,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 
 interface WorkOrder {
   id: string;
@@ -38,12 +39,45 @@ interface WorkOrder {
     name: string;
     phone: string;
   };
+  additionalQuotations?: AdditionalQuotation[];
 }
 
 export function ClientWorkOrdersPage() {
   const { state } = useApp();
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed'>('active');
+  const [selectedQuotation, setSelectedQuotation] = useState<AdditionalQuotation | null>(null);
+  const [showQuotationModal, setShowQuotationModal] = useState(false);
+  const [additionalQuotations, setAdditionalQuotations] = useState<AdditionalQuotation[]>([]);
+
+  // Cargar subcotizaciones del cliente actual
+  useEffect(() => {
+    const loadAdditionalQuotations = () => {
+      try {
+        // TODO: Obtener el ID del cliente actual desde el contexto o auth
+        // Por ahora usamos un ID de ejemplo
+        const currentClientId = state?.user?.id || 'client-example-id';
+        const clientQuotations = additionalQuotationsService.getByClientId(currentClientId);
+        setAdditionalQuotations(clientQuotations);
+        
+        console.log('Subcotizaciones cargadas para cliente:', currentClientId, clientQuotations);
+      } catch (error) {
+        console.error('Error cargando subcotizaciones:', error);
+      }
+    };
+
+    loadAdditionalQuotations();
+    
+    // Recargar cada 30 segundos para capturar nuevas subcotizaciones
+    const interval = setInterval(loadAdditionalQuotations, 30000);
+    
+    return () => clearInterval(interval);
+  }, [state?.user?.id]);
+
+  // Función para obtener subcotizaciones de una orden específica
+  const getQuotationsForOrder = (workOrderId: string): AdditionalQuotation[] => {
+    return additionalQuotations.filter(q => q.workOrderId === workOrderId);
+  };
 
   // Datos de ejemplo
   const workOrders: WorkOrder[] = [
@@ -208,9 +242,46 @@ export function ClientWorkOrdersPage() {
     }).format(amount);
   };
 
+  const handleQuotationResponse = async (quotationId: string, approved: boolean) => {
+    try {
+      // Usar el servicio real para actualizar el estado
+      const currentUser = state?.user?.id || 'cliente';
+      await additionalQuotationsService.respondToQuotation(quotationId, approved, currentUser);
+      
+      // Recargar las subcotizaciones
+      const currentClientId = state?.user?.id || 'client-example-id';
+      const updatedQuotations = additionalQuotationsService.getByClientId(currentClientId);
+      setAdditionalQuotations(updatedQuotations);
+      
+      alert(`Cotización ${approved ? 'aprobada' : 'rechazada'} exitosamente`);
+      
+      // Cerrar modal
+      setShowQuotationModal(false);
+      setSelectedQuotation(null);
+      
+      console.log(`✅ Cotización ${quotationId} ${approved ? 'aprobada' : 'rechazada'} por ${currentUser}`);
+    } catch (error) {
+      console.error('Error procesando respuesta de cotización:', error);
+      alert('Error procesando la respuesta: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    }
+  };
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'alta': return 'bg-red-100 text-red-800';
+      case 'media': return 'bg-yellow-100 text-yellow-800';
+      case 'baja': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const renderOrderCard = (order: WorkOrder) => {
     const statusConfig = getStatusConfig(order.status);
     const StatusIcon = statusConfig.icon;
+    
+    // Obtener subcotizaciones reales para esta orden
+    const orderQuotations = getQuotationsForOrder(order.id);
+    const pendingQuotations = orderQuotations.filter(q => q.estado === 'pendiente-aprobacion');
 
     return (
       <div key={order.id} className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden">
@@ -292,6 +363,64 @@ export function ClientWorkOrdersPage() {
                   <p className="text-sm text-blue-700">{order.updates[order.updates.length - 1].message}</p>
                   <p className="text-xs text-blue-600 mt-1">{order.updates[order.updates.length - 1].date}</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Cotizaciones adicionales pendientes */}
+          {pendingQuotations.length > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <ExclamationTriangleIcon className="h-4 w-4 text-orange-600 mr-2" />
+                  <div>
+                    <p className="text-sm font-medium text-orange-900">Servicios Adicionales Encontrados</p>
+                    <p className="text-xs text-orange-700">
+                      {pendingQuotations.length} cotización(es) requieren tu aprobación
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (pendingQuotations.length > 0) {
+                      setSelectedQuotation(pendingQuotations[0]);
+                      setShowQuotationModal(true);
+                    }
+                  }}
+                  className="text-orange-600 hover:text-orange-800 text-xs font-medium bg-white px-2 py-1 rounded"
+                >
+                  Ver Detalles
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Mostrar cotizaciones aprobadas/rechazadas también */}
+          {orderQuotations.filter(q => q.estado !== 'pendiente-aprobacion').length > 0 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <DocumentTextIcon className="h-4 w-4 text-gray-600 mr-2" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Cotizaciones Procesadas</p>
+                    <p className="text-xs text-gray-600">
+                      {orderQuotations.filter(q => q.estado === 'aprobada').length} aprobadas, {' '}
+                      {orderQuotations.filter(q => q.estado === 'rechazada').length} rechazadas
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const processedQuotation = orderQuotations.find(q => q.estado !== 'pendiente-aprobacion');
+                    if (processedQuotation) {
+                      setSelectedQuotation(processedQuotation);
+                      setShowQuotationModal(true);
+                    }
+                  }}
+                  className="text-gray-600 hover:text-gray-800 text-xs font-medium bg-white px-2 py-1 rounded"
+                >
+                  Ver Historial
+                </button>
               </div>
             </div>
           )}
@@ -568,6 +697,135 @@ export function ClientWorkOrdersPage() {
 
         {/* Modal de detalle */}
         {selectedOrder && renderOrderDetail()}
+
+        {/* Modal de cotización adicional */}
+        {showQuotationModal && selectedQuotation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="bg-white/20 p-2 rounded-lg mr-3">
+                      <DocumentTextIcon className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Servicios Adicionales Encontrados</h3>
+                      <p className="text-orange-100 text-sm">Cotización #{selectedQuotation.id}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowQuotationModal(false);
+                      setSelectedQuotation(null);
+                    }}
+                    className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+                  >
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Nivel de urgencia */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Nivel de Urgencia</h4>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyColor(selectedQuotation.urgencia)}`}>
+                      {selectedQuotation.urgencia.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Servicios encontrados */}
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Servicios Encontrados Durante la Revisión</h5>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">{selectedQuotation.serviciosEncontrados}</p>
+                  </div>
+                </div>
+
+                {/* Descripción del problema */}
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Descripción del Problema</h5>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-sm text-red-800">{selectedQuotation.descripcionProblema}</p>
+                  </div>
+                </div>
+
+                {/* Servicios recomendados */}
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Servicios Recomendados</h5>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">{selectedQuotation.serviciosRecomendados}</p>
+                  </div>
+                </div>
+
+                {/* Costo */}
+                <div className="mb-6">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-semibold text-green-800">Costo Estimado:</span>
+                      <span className="text-2xl font-bold text-green-900">{formatCurrency(selectedQuotation.costoEstimado)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notas adicionales */}
+                {selectedQuotation.notas && (
+                  <div className="mb-6">
+                    <h5 className="font-semibold text-gray-900 mb-2">Notas Adicionales</h5>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <p className="text-sm text-gray-700">{selectedQuotation.notas}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Información de fecha */}
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600">
+                    <strong>Fecha de creación:</strong> {new Date(selectedQuotation.fechaCreacion).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {/* Botones de acción */}
+                {selectedQuotation.estado === 'pendiente-aprobacion' && (
+                  <div className="flex space-x-4 pt-4 border-t">
+                    <button
+                      onClick={() => handleQuotationResponse(selectedQuotation.id, false)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                    >
+                      Rechazar Cotización
+                    </button>
+                    <button
+                      onClick={() => handleQuotationResponse(selectedQuotation.id, true)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                    >
+                      Aprobar y Continuar
+                    </button>
+                  </div>
+                )}
+
+                {selectedQuotation.estado !== 'pendiente-aprobacion' && (
+                  <div className="pt-4 border-t">
+                    <div className={`p-3 rounded-lg ${
+                      selectedQuotation.estado === 'aprobada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      <p className="font-medium">
+                        {selectedQuotation.estado === 'aprobada' ? '✅ Cotización Aprobada' : '❌ Cotización Rechazada'}
+                      </p>
+                      {selectedQuotation.fechaRespuesta && (
+                        <p className="text-sm mt-1">
+                          Respuesta enviada el: {new Date(selectedQuotation.fechaRespuesta).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

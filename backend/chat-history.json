@@ -776,5 +776,17 @@
       "enviado_en": "2025-10-29T14:41:15.614Z",
       "leido": false
     }
+  ],
+  "clients-1761839820730-d0cf4389": [
+    {
+      "mensaje_id": 1761931581654,
+      "sala_id": "clients-1761839820730-d0cf4389",
+      "usuario_id": "13",
+      "rol": "admin",
+      "contenido": "HOLA",
+      "es_sistema": false,
+      "enviado_en": "2025-10-31T17:26:21.592Z",
+      "leido": false
+    }
   ]
 }

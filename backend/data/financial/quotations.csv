@@ -1,4 +1,2 @@
 id,appointmentId,clienteId,vehiculoId,servicioId,descripcion,precio,notas,estado,fechaCreacion,fechaActualizacion
-QUOT-mh9af49ug7hmez33ehg,APPT-1761578589258-e2dcagpvd,clients-1761578533049-05e81b62,VEH-1761578553698-izs0zc4hg,1761578469541tzux7jqj5,es urgente,500,sdfgsadfasdfas,approved,2025-10-27,2025-10-27
-QUOT-mhakl816p409e7w7bn,APPT-1761656065317-i550vybl9,clients-1761578533049-05e81b62,VEH-1761578553698-izs0zc4hg,1761578469541tzux7jqj5,cambio de aceite,500,adsdadasd,approved,2025-10-28,2025-10-28
-QUOT-mhdlzpckq3k9e6amqk,APPT-1761839879910-g61cxtcd9,clients-1761839820730-d0cf4389,VEH-1761839850425-r5b1ra9ev,1761839792265h3dmtb1d1,es urgente,500,hola,approved,2025-10-30,2025-10-30
+QUOT-mhf4ip7jrl1s6mg2kc,APPT-1761931474806-ydn3eedgv,clients-1761839820730-d0cf4389,VEH-1761839850425-r5b1ra9ev,1761839792265h3dmtb1d1,asdasdasdasdasadaadasdasdasdasdasdasdadadadasdasdasdasdasdasdadada,500,sacsdcefsd,approved,2025-10-31,2025-10-31

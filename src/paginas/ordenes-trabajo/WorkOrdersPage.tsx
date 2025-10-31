@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/comunes/UI';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
+import additionalQuotationsService from '../../servicios/additionalQuotationsService';
+import { chatService } from '../../servicios/chatService';
+import AdditionalQuotationForm from '../../componentes/ordenes-trabajo/AdditionalQuotationForm';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -12,6 +15,12 @@ const WorkOrdersPage = () => {
   const [clientFilter, setClientFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrderData | null>(null);
+  
+  // Estados para subcotización
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showQuotationModal, setShowQuotationModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [selectedOrderForQuotation, setSelectedOrderForQuotation] = useState<WorkOrderData | null>(null);
 
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
@@ -73,6 +82,73 @@ const WorkOrdersPage = () => {
       } catch (err) {
         alert('Error eliminando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
+    }
+  };
+
+  // Funciones para subcotización
+  const handleAdditionalQuotationAccess = (order: WorkOrderData) => {
+    setSelectedOrderForQuotation(order);
+    setShowPasswordModal(true);
+  };
+
+  const handlePasswordSubmit = () => {
+    if (password === 'admin123') {
+      setShowPasswordModal(false);
+      setShowQuotationModal(true);
+      setPassword('');
+    } else {
+      alert('Contraseña incorrecta');
+    }
+  };
+
+  const handleQuotationSubmit = async (quotationData: any) => {
+    try {
+      if (!selectedOrderForQuotation || !selectedOrderForQuotation.id) return;
+
+      // Crear la subcotización
+      await additionalQuotationsService.createAdditionalQuotation({
+        workOrderId: selectedOrderForQuotation.id,
+        clienteId: selectedOrderForQuotation.clienteId,
+        vehiculoId: selectedOrderForQuotation.vehiculoId,
+        tipo: 'adicional',
+        serviciosEncontrados: quotationData.serviciosEncontrados,
+        descripcionProblema: quotationData.descripcionProblema,
+        serviciosRecomendados: quotationData.serviciosRecomendados,
+        costoEstimado: parseFloat(quotationData.costoEstimado),
+        urgencia: quotationData.urgencia,
+        estado: 'pendiente-aprobacion',
+        requiereAprobacion: true,
+        notas: quotationData.notas
+      });
+
+      // Enviar mensaje al chat del cliente
+      const chatMessage = `🔧 **Nueva Subcotización Detectada**
+
+Durante la revisión de su vehículo (${selectedOrderForQuotation.vehiculoId}), hemos encontrado servicios adicionales que requieren atención:
+
+**Servicios encontrados:** ${quotationData.serviciosEncontrados}
+**Problema detectado:** ${quotationData.descripcionProblema}
+**Servicios recomendados:** ${quotationData.serviciosRecomendados}
+**Costo estimado:** ${formatCurrency(parseFloat(quotationData.costoEstimado))}
+**Urgencia:** ${quotationData.urgencia.toUpperCase()}
+
+Por favor, revise esta cotización adicional en su panel de cliente y confirme si desea proceder con los servicios recomendados.`;
+
+      await chatService.sendMessage({
+        clientId: selectedOrderForQuotation.clienteId,
+        message: chatMessage,
+        sender: 'admin',
+        timestamp: new Date().toISOString(),
+        type: 'subcotizacion'
+      });
+
+      setShowQuotationModal(false);
+      setSelectedOrderForQuotation(null);
+      alert('Subcotización creada y enviada al cliente exitosamente');
+
+    } catch (error) {
+      console.error('Error creando subcotización:', error);
+      alert('Error creando subcotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   };
 
@@ -282,6 +358,13 @@ const WorkOrdersPage = () => {
                           <PencilIcon className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => handleAdditionalQuotationAccess(order)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Subcotización (Admin)"
+                        >
+                          <LockClosedIcon className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteWorkOrder(order.id!)}
                           className="text-red-600 hover:text-red-900"
                           title="Eliminar"
@@ -485,6 +568,37 @@ function WorkOrderDetails({ order }: WorkOrderDetailsProps) {
           </div>
         </div>
       )}
+
+      {/* Modal de contraseña para subcotización */}
+      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Acceso Admin - Subcotización">
+        <div className="space-y-4">
+          <p className="text-gray-700">Ingrese la contraseña de administrador para crear una subcotización:</p>
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Contraseña de admin"
+            onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+          />
+          <div className="flex space-x-2 justify-end">
+            <Button variant="secondary" onClick={() => setShowPasswordModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handlePasswordSubmit}>
+              Acceder
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal de formulario de subcotización */}
+      <Modal isOpen={showQuotationModal} onClose={() => setShowQuotationModal(false)} title="Nueva Subcotización">
+        <AdditionalQuotationForm
+          workOrder={selectedOrderForQuotation}
+          onSubmit={handleQuotationSubmit}
+          onCancel={() => setShowQuotationModal(false)}
+        />
+      </Modal>
     </div>
   );
 };
