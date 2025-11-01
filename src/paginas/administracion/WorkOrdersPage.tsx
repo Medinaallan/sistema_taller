@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, DocumentPlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, DocumentPlusIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../componentes/comunes/UI';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
+import { getDisplayNames, getClientDisplayName, getVehicleDisplayName } from '../../utilidades/dataMappers';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -18,6 +19,7 @@ const WorkOrdersPage = () => {
   const [selectedOrderForQuotation, setSelectedOrderForQuotation] = useState<WorkOrderData | null>(null);
   const [adminPassword, setAdminPassword] = useState('');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [workOrdersWithNames, setWorkOrdersWithNames] = useState<Map<string, { clientName: string; vehicleName: string }>>(new Map());
 
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
@@ -28,12 +30,67 @@ const WorkOrdersPage = () => {
       console.log(' Órdenes de trabajo cargadas:', orders);
       console.log(' Número de órdenes:', orders.length);
       setWorkOrders(orders);
+      
+      // Cargar nombres descriptivos para cada orden
+      await loadDisplayNamesForOrders(orders);
     } catch (err) {
       console.error(' Error cargando órdenes de trabajo:', err);
       alert('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
+  };
+
+  // Cargar nombres descriptivos para las órdenes
+  const loadDisplayNamesForOrders = async (orders: WorkOrderData[]) => {
+    try {
+      const namesMap = new Map<string, { clientName: string; vehicleName: string }>();
+      
+      // Procesar cada orden de trabajo
+      for (const order of orders) {
+        try {
+          const names = await getDisplayNames({
+            clientId: order.clienteId,
+            vehicleId: order.vehiculoId,
+            serviceId: undefined // No necesitamos servicios para órdenes de trabajo por ahora
+          });
+          
+          if (order.id) {
+            namesMap.set(order.id, {
+              clientName: names.clientName,
+              vehicleName: names.vehicleName
+            });
+          }
+        } catch (error) {
+          console.error(`Error cargando nombres para orden ${order.id}:`, error);
+          // Fallback a IDs si hay error
+          if (order.id) {
+            namesMap.set(order.id, {
+              clientName: `Cliente #${order.clienteId}`,
+              vehicleName: `Vehículo #${order.vehiculoId}`
+            });
+          }
+        }
+      }
+      
+      setWorkOrdersWithNames(namesMap);
+    } catch (error) {
+      console.error('Error cargando nombres descriptivos:', error);
+    }
+  };
+
+  // Helper para obtener el nombre del cliente
+  const getClientDisplayName = (order: WorkOrderData): string => {
+    if (!order.id) return `Cliente #${order.clienteId}`;
+    const names = workOrdersWithNames.get(order.id);
+    return names?.clientName || `Cliente #${order.clienteId}`;
+  };
+
+  // Helper para obtener el nombre del vehículo  
+  const getVehicleDisplayName = (order: WorkOrderData): string => {
+    if (!order.id) return `Vehículo #${order.vehiculoId}`;
+    const names = workOrdersWithNames.get(order.id);
+    return names?.vehicleName || `Vehículo #${order.vehiculoId}`;
   };
 
   useEffect(() => {
@@ -95,6 +152,30 @@ const WorkOrdersPage = () => {
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
         alert('Error eliminando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      }
+    }
+  };
+
+  const handleStartWorkOrder = async (orderId: string) => {
+    if (confirm('¿Estás seguro de que quieres iniciar esta orden de trabajo?')) {
+      try {
+        await workOrdersService.startWorkOrder(orderId);
+        alert('Orden de trabajo iniciada exitosamente');
+        await loadWorkOrders(); // Recargar datos
+      } catch (err) {
+        alert('Error iniciando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      }
+    }
+  };
+
+  const handlePauseWorkOrder = async (orderId: string) => {
+    if (confirm('¿Estás seguro de que quieres pausar esta orden de trabajo?')) {
+      try {
+        await workOrdersService.changeStatus(orderId, 'pending');
+        alert('Orden de trabajo pausada exitosamente');
+        await loadWorkOrders(); // Recargar datos
+      } catch (err) {
+        alert('Error pausando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
     }
   };
@@ -242,10 +323,10 @@ const WorkOrdersPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {order.clienteId?.substring(0, 20) || 'Cliente no encontrado'}
+                          {getClientDisplayName(order)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {order.vehiculoId?.substring(0, 20) || 'Vehículo no encontrado'}
+                          {getVehicleDisplayName(order)}
                         </div>
                       </div>
                     </td>
@@ -288,6 +369,30 @@ const WorkOrdersPage = () => {
                         >
                           <EyeIcon className="h-4 w-4" />
                         </button>
+
+                        {/* Botón Iniciar - solo para órdenes pendientes */}
+                        {order.estado === 'pending' && (
+                          <button
+                            onClick={() => handleStartWorkOrder(order.id!)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Iniciar orden de trabajo"
+                          >
+                            <PlayIcon className="h-4 w-4" />
+                          </button>
+                        )}
+
+                        {/* Botón Pausar - solo para órdenes en progreso */}
+                        {order.estado === 'in-progress' && (
+                          <button
+                            onClick={() => handlePauseWorkOrder(order.id!)}
+                            className="text-orange-600 hover:text-orange-900"
+                            title="Pausar orden de trabajo"
+                          >
+                            <StopIcon className="h-4 w-4" />
+                          </button>
+                        )}
+
+                        {/* Botón Completar - solo para órdenes en progreso */}
                         {order.estado === 'in-progress' && (
                           <button
                             onClick={() => handleCompleteWorkOrder(order.id!)}
@@ -297,20 +402,52 @@ const WorkOrdersPage = () => {
                             <CheckIcon className="h-4 w-4" />
                           </button>
                         )}
-                        <button
-                          onClick={() => handleAdditionalQuotationAccess(order)}
-                          className="text-purple-600 hover:text-purple-900"
-                          title="Cotización adicional (Admin)"
-                        >
-                          <DocumentPlusIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => {/* TODO: Implementar edición */}}
-                          className="text-yellow-600 hover:text-yellow-900"
-                          title="Editar"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
+
+                        {/* Botón Cotización Adicional - para órdenes en progreso o pendientes */}
+                        {(order.estado === 'in-progress' || order.estado === 'pending') && (
+                          <button
+                            onClick={() => handleAdditionalQuotationAccess(order)}
+                            className="text-purple-600 hover:text-purple-900"
+                            title="Cotización adicional (Admin)"
+                          >
+                            <DocumentPlusIcon className="h-4 w-4" />
+                          </button>
+                        )}
+
+                        {/* Botón Editar - para órdenes no completadas */}
+                        {order.estado !== 'completed' && (
+                          <button
+                            onClick={() => {/* TODO: Implementar edición */}}
+                            className="text-yellow-600 hover:text-yellow-900"
+                            title="Editar"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                        )}
+
+                        {/* Estados para órdenes completadas o canceladas */}
+                        {order.estado === 'completed' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ✅ Completada
+                          </span>
+                        )}
+
+                        {order.estado === 'cancelled' && (
+                          <>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              ❌ Cancelada
+                            </span>
+                            <button
+                              onClick={() => workOrdersService.changeStatus(order.id!, 'pending').then(() => loadWorkOrders())}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Reactivar orden"
+                            >
+                              <PlayIcon className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+
+                        {/* Botón Eliminar - siempre disponible */}
                         <button
                           onClick={() => handleDeleteWorkOrder(order.id!)}
                           className="text-red-600 hover:text-red-900"
@@ -341,7 +478,11 @@ const WorkOrdersPage = () => {
         title="Detalles de la Orden de Trabajo"
       >
         {selectedWorkOrder && (
-          <WorkOrderDetails order={selectedWorkOrder} />
+          <WorkOrderDetails 
+            order={selectedWorkOrder} 
+            clientName={getClientDisplayName(selectedWorkOrder)} 
+            vehicleName={getVehicleDisplayName(selectedWorkOrder)} 
+          />
         )}
       </Modal>
 
@@ -417,9 +558,11 @@ const WorkOrdersPage = () => {
 // Componente para mostrar detalles de la orden de trabajo
 interface WorkOrderDetailsProps {
   order: WorkOrderData;
+  clientName: string;
+  vehicleName: string;
 }
 
-function WorkOrderDetails({ order }: WorkOrderDetailsProps) {
+function WorkOrderDetails({ order, clientName, vehicleName }: WorkOrderDetailsProps) {
   return (
     <div className="space-y-6">
       {/* Información básica */}
@@ -469,12 +612,12 @@ function WorkOrderDetails({ order }: WorkOrderDetailsProps) {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Cliente y Vehículo</h3>
           <dl className="space-y-2">
             <div>
-              <dt className="text-sm font-medium text-gray-500">Cliente ID</dt>
-              <dd className="text-sm text-gray-900">{order.clienteId}</dd>
+              <dt className="text-sm font-medium text-gray-500">Cliente</dt>
+              <dd className="text-sm text-gray-900 font-medium">{clientName}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-gray-500">Vehículo ID</dt>
-              <dd className="text-sm text-gray-900">{order.vehiculoId}</dd>
+              <dt className="text-sm font-medium text-gray-500">Vehículo</dt>
+              <dd className="text-sm text-gray-900 font-medium">{vehicleName}</dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500">Servicio ID</dt>
@@ -602,6 +745,22 @@ function AdditionalQuotationForm({ workOrder, onClose }: AdditionalQuotationForm
     notas: ''
   });
   const [loading, setLoading] = useState(false);
+  const [displayNames, setDisplayNames] = useState({
+    clientName: '',
+    vehicleName: ''
+  });
+
+  // Cargar nombres de cliente y vehículo
+  useEffect(() => {
+    const loadDisplayNames = async () => {
+      const [clientName, vehicleName] = await Promise.all([
+        getClientDisplayName(workOrder.clienteId),
+        getVehicleDisplayName(workOrder.vehiculoId)
+      ]);
+      setDisplayNames({ clientName, vehicleName });
+    };
+    loadDisplayNames();
+  }, [workOrder]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -645,11 +804,18 @@ function AdditionalQuotationForm({ workOrder, onClose }: AdditionalQuotationForm
 
   const sendQuotationToClientChat = async (quotation: AdditionalQuotation, workOrder: WorkOrderData) => {
     try {
+      // Obtener nombres legibles para el mensaje
+      const [clientName, vehicleName] = await Promise.all([
+        getClientDisplayName(workOrder.clienteId),
+        getVehicleDisplayName(workOrder.vehiculoId)
+      ]);
+
       // Crear mensaje estructurado para el chat
       const mensaje = `🔧 SERVICIOS ADICIONALES ENCONTRADOS
 
 Orden de Trabajo: #${workOrder.id?.slice(-12)}
-Vehículo: ${workOrder.vehiculoId}
+Cliente: ${clientName}
+Vehículo: ${vehicleName}
 
 Problemas encontrados:
 ${quotation.serviciosEncontrados}
@@ -691,7 +857,7 @@ Cotización ID: ${quotation.id}`;
         }
         
         // Unirse a la sala del cliente
-        chatService.unirseASala(workOrder.clienteId);
+        chatService.unirSala(workOrder.clienteId);
         
         // Enviar el mensaje
         chatService.enviarMensaje(chatMessage);
@@ -724,8 +890,8 @@ Cotización ID: ${quotation.id}`;
         <h3 className="font-semibold text-blue-900 mb-2">Información de la Orden</h3>
         <div className="text-sm text-blue-800 space-y-1">
           <p><strong>Orden:</strong> #{workOrder.id?.slice(-12)}</p>
-          <p><strong>Cliente:</strong> {workOrder.clienteId}</p>
-          <p><strong>Vehículo:</strong> {workOrder.vehiculoId}</p>
+          <p><strong>Cliente:</strong> {displayNames.clientName || workOrder.clienteId}</p>
+          <p><strong>Vehículo:</strong> {displayNames.vehicleName || workOrder.vehiculoId}</p>
           <p><strong>Estado actual:</strong> {workOrdersService.formatStatus(workOrder.estado)}</p>
         </div>
       </div>

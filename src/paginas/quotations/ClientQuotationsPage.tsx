@@ -2,12 +2,60 @@ import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
+import { appointmentsService, servicesService } from '../../servicios/apiService';
 
 const ClientQuotationsPage = () => {
   const { state } = useApp();
   const user = state.user;
   const [data, setData] = useState<QuotationData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [servicios, setServicios] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+
+  // Funciones de mapeo
+  const getServiceName = (servicioId: string) => {
+    const servicio = servicios.find(s => s.id === servicioId);
+    return servicio ? servicio.name || servicio.nombre : servicioId;
+  };
+
+  const getAppointmentInfo = (appointmentId: string) => {
+    const appointment = appointments.find(a => a.id === appointmentId);
+    return appointment ? `Cita ${appointment.date} ${appointment.time}` : `Cita #${appointmentId?.substring(0, 8)}`;
+  };
+
+  // Función para cargar servicios
+  const loadServicios = async () => {
+    try {
+      const response = await servicesService.getAll();
+      if (response.success) {
+        const mappedServices = response.data.map((csvService: any) => ({
+          id: csvService.id,
+          name: csvService.nombre,
+          nombre: csvService.nombre,
+        }));
+        setServicios(mappedServices);
+      }
+    } catch (error) {
+      console.error('Error cargando servicios:', error);
+    }
+  };
+
+  // Función para cargar citas
+  const loadAppointments = async () => {
+    try {
+      const response = await appointmentsService.getAll();
+      if (response.success) {
+        const appointmentsData = response.data.map((csvAppointment: any) => ({
+          id: csvAppointment.id,
+          date: new Date(csvAppointment.fecha).toLocaleDateString('es-ES'),
+          time: csvAppointment.hora,
+        }));
+        setAppointments(appointmentsData);
+      }
+    } catch (error) {
+      console.error('Error cargando citas:', error);
+    }
+  };
 
   const loadClientQuotations = async () => {
     try {
@@ -25,7 +73,15 @@ const ClientQuotationsPage = () => {
   };
 
   useEffect(() => {
-    loadClientQuotations();
+    const loadAllData = async () => {
+      await Promise.all([
+        loadClientQuotations(),
+        loadServicios(),
+        loadAppointments()
+      ]);
+    };
+    
+    loadAllData();
   }, [user?.id]);
 
   const handleApprove = async (quotation: QuotationData) => {
@@ -86,10 +142,10 @@ const ClientQuotationsPage = () => {
                       Cotización #{quotation.id?.substring(0, 8)}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Cita: {quotation.appointmentId?.substring(0, 12)}...
+                      {getAppointmentInfo(quotation.appointmentId || '')}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Servicio: {quotation.servicioId}
+                      Servicio: {getServiceName(quotation.servicioId || '')}
                     </p>
                   </div>
                   <div className="text-right">

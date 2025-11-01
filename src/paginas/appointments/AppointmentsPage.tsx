@@ -3,7 +3,7 @@ import { Card, Button } from '../../componentes/comunes/UI';
 import NewAppointmentModal from '../../componentes/appointments/NewAppointmentModal';
 import EditAppointmentModal from '../../componentes/appointments/EditAppointmentModal';
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
-import { appointmentsService, servicesService } from '../../servicios/apiService';
+import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { obtenerClientes } from '../../servicios/clientesApiService';
 import type { Appointment } from '../../tipos';
 
@@ -17,6 +17,7 @@ const AppointmentsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [servicios, setServicios] = useState<any[]>([]);
+  const [vehiculos, setVehiculos] = useState<any[]>([]);
 
   // Función para buscar el nombre del cliente por ID
   const getClienteName = (clienteId: string) => {
@@ -28,6 +29,12 @@ const AppointmentsPage = () => {
   const getServiceName = (servicioId: string) => {
     const servicio = servicios.find(s => s.id === servicioId);
     return servicio ? servicio.name || servicio.nombre : servicioId;
+  };
+
+  // Función para buscar el nombre del vehículo por ID
+  const getVehicleName = (vehiculoId: string) => {
+    const vehiculo = vehiculos.find(v => v.id === vehiculoId);
+    return vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}` : vehiculoId;
   };
 
 
@@ -56,6 +63,18 @@ const AppointmentsPage = () => {
       }
     } catch (error) {
       console.error('Error cargando servicios:', error);
+    }
+  };
+
+  // Función para cargar vehículos
+  const loadVehiculos = async () => {
+    try {
+      const response = await vehiclesService.getAll();
+      if (response.success) {
+        setVehiculos(response.data);
+      }
+    } catch (error) {
+      console.error('Error cargando vehículos:', error);
     }
   };
 
@@ -100,7 +119,8 @@ const AppointmentsPage = () => {
       await Promise.all([
         loadAppointments(),
         loadClientes(),
-        loadServicios()
+        loadServicios(),
+        loadVehiculos()
       ]);
     };
     
@@ -286,7 +306,7 @@ const AppointmentsPage = () => {
                       </td>
                       <td className="px-6 py-4">{appointment.time}</td>
                       <td className="px-6 py-4">{getClienteName(appointment.clientId)}</td>
-                      <td className="px-6 py-4">{appointment.vehicleId}</td>
+                      <td className="px-6 py-4">{getVehicleName(appointment.vehicleId)}</td>
                       <td className="px-6 py-4">{getServiceName(appointment.serviceTypeId)}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 text-xs rounded-full ${

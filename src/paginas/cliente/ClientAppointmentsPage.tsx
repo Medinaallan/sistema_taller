@@ -9,6 +9,7 @@ import {
   WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+
 import { servicesService, vehiclesService, appointmentsService } from '../../servicios/apiService';
 
 interface Appointment {
@@ -179,11 +180,15 @@ export function ClientAppointmentsPage() {
                 problemText = appointment.notas?.replace(/^"|"$/g, '') || 'Sin descripción';
               }
 
+              // Encontrar el servicio correspondiente
+              const service = serviceTypes.find(s => s.id === appointment.servicio);
+              const serviceName = service ? service.name : 'Servicio no especificado';
+
               return {
                 id: appointment.id,
                 vehicleId: appointment.vehiculoId,
                 vehicleName: vehicleName,
-                serviceType: appointment.servicio,
+                serviceType: serviceName,
                 date: appointment.fecha,
                 time: appointment.hora,
                 status: appointment.estado as any,

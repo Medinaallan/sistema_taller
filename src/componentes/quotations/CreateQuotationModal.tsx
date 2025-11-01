@@ -2,6 +2,7 @@
 import { Modal, Button, TextArea } from '../comunes/UI';
 import quotationsService from '../../servicios/quotationsService';
 import { servicesService } from '../../servicios/apiService';
+import { getDisplayNames } from '../../utilidades/dataMappers';
 import type { Appointment } from '../../tipos';
 
 interface CreateQuotationModalProps {
@@ -20,6 +21,11 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     descripcion: '',
     notas: ''
   });
+  const [displayNames, setDisplayNames] = useState({
+    clientName: 'Cargando...',
+    vehicleName: 'Cargando...',
+    serviceName: 'Cargando...'
+  });
 
   // Cargar precio del servicio cuando se abre el modal
   useEffect(() => {
@@ -27,6 +33,31 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       loadServicePrice(appointment.serviceTypeId);
     }
   }, [isOpen, appointment?.serviceTypeId]);
+
+  // Cargar nombres descriptivos cuando se abre el modal
+  useEffect(() => {
+    const loadDisplayNames = async () => {
+      if (isOpen && appointment) {
+        try {
+          const names = await getDisplayNames({
+            clientId: appointment.clientId,
+            vehicleId: appointment.vehicleId,
+            serviceId: appointment.serviceTypeId
+          });
+          setDisplayNames(names);
+        } catch (error) {
+          console.error('Error cargando nombres descriptivos:', error);
+          setDisplayNames({
+            clientName: `Cliente #${appointment.clientId}`,
+            vehicleName: `Vehículo #${appointment.vehicleId}`,
+            serviceName: `Servicio #${appointment.serviceTypeId}`
+          });
+        }
+      }
+    };
+
+    loadDisplayNames();
+  }, [isOpen, appointment]);
 
   const loadServicePrice = async (serviceId: string) => {
     try {
@@ -106,18 +137,18 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
           <h4 className="font-medium text-gray-700 mb-2">Información de la cita:</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Cliente ID:</span>
-              <div className="font-mono">{appointment.clientId}</div>
+              <span className="text-gray-500">Cliente:</span>
+              <div className="font-medium">{displayNames.clientName}</div>
             </div>
             <div>
-              <span className="text-gray-500">Vehículo ID:</span>
-              <div className="font-mono">{appointment.vehicleId}</div>
+              <span className="text-gray-500">Vehículo:</span>
+              <div className="font-medium">{displayNames.vehicleName}</div>
             </div>
             <div>
               <span className="text-gray-500">Servicio:</span>
-              <div>{appointment.serviceTypeId}</div>
+              <div className="font-medium">{displayNames.serviceName}</div>
             </div>
             <div>
               <span className="text-gray-500">Fecha:</span>

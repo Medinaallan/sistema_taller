@@ -787,6 +787,16 @@
       "es_sistema": false,
       "enviado_en": "2025-10-31T17:26:21.592Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1762011343446,
+      "sala_id": "clients-1761839820730-d0cf4389",
+      "usuario_id": "admin-system",
+      "rol": "admin",
+      "contenido": "🔧 SERVICIOS ADICIONALES ENCONTRADOS\n\nOrden de Trabajo: #02-umv2o2uit\nCliente: aldo garcia\nVehículo: TOYOTA HIACE 2025 - PBT-9401\n\nProblemas encontrados:\nESCANER\n\nDescripción del problema:\nNO ESCANEA JAJAJA\n\nServicios recomendados:\nREMPLAZO DE ESCANER\n\nCosto estimado: L. 500.00\nUrgencia: ALTA\n\nNotas adicionales:\nDADADA\n\n---\nEsta cotización requiere tu aprobación antes de proceder. Puedes aprobarla o rechazarla desde tu panel de cliente.\n\nCotización ID: AQ-1762011343357-2mwdj71v3",
+      "es_sistema": false,
+      "enviado_en": "2025-11-01T15:35:45.665Z",
+      "leido": false
     }
   ]
 }

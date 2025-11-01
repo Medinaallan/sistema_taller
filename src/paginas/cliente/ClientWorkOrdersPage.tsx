@@ -13,6 +13,7 @@ import {
 import { useApp } from '../../contexto/useApp';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 
+
 interface WorkOrder {
   id: string;
   vehicleId: string;

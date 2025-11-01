@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Input, TextArea, Button } from '../comunes/UI';
 import type { Appointment, Product } from '../../tipos';
 import { servicesService, productsService } from '../../servicios/apiService';
+import { getDisplayNames } from '../../utilidades/dataMappers';
 
 interface CreateQuotationModalProps {
   isOpen: boolean;
@@ -39,6 +40,11 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
   const [productsFromInventory, setProductsFromInventory] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [showProductsSection, setShowProductsSection] = useState(false);
+  const [displayNames, setDisplayNames] = useState({
+    clientName: clientName || 'Cargando...',
+    vehicleName: 'Cargando...',
+    serviceName: serviceName || 'Cargando...'
+  });
 
   // Cargar precio del servicio desde la API cuando se abre el modal
   useEffect(() => {
@@ -102,6 +108,31 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 
     loadProducts();
   }, [isOpen]);
+
+  // Cargar nombres descriptivos cuando se abre el modal
+  useEffect(() => {
+    const loadDisplayNames = async () => {
+      if (isOpen && appointment) {
+        try {
+          const names = await getDisplayNames({
+            clientId: appointment.clientId,
+            vehicleId: appointment.vehicleId,
+            serviceId: appointment.serviceTypeId
+          });
+          setDisplayNames(names);
+        } catch (error) {
+          console.error('Error cargando nombres descriptivos:', error);
+          setDisplayNames({
+            clientName: clientName || `Cliente #${appointment.clientId}`,
+            vehicleName: `Vehículo #${appointment.vehicleId}`,
+            serviceName: serviceName || `Servicio #${appointment.serviceTypeId}`
+          });
+        }
+      }
+    };
+
+    loadDisplayNames();
+  }, [isOpen, appointment, clientName, serviceName]);
 
   // Funciones para manejar productos
   const handleAddProduct = (product: Product & { inventoryQuantity: number }) => {
@@ -254,10 +285,10 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
         <div className="bg-blue-50 p-4 rounded-lg">
           <h3 className="font-semibold text-blue-900 mb-2">Información de la Cita</h3>
           <div className="text-sm text-blue-800 space-y-1">
-            <p><strong>Cita:</strong> {appointment.id}</p>
-            <p><strong>Cliente:</strong> {clientName}</p>
-            <p><strong>Servicio:</strong> {serviceName}</p>
-            <p><strong>Vehículo:</strong> {appointment.vehicleId}</p>
+            <p><strong>Cita:</strong> #{appointment.id.slice(-8)}</p>
+            <p><strong>Cliente:</strong> {displayNames.clientName}</p>
+            <p><strong>Servicio:</strong> {displayNames.serviceName}</p>
+            <p><strong>Vehículo:</strong> {displayNames.vehicleName}</p>
             <p><strong>Fecha:</strong> {new Date(appointment.date).toLocaleDateString()}</p>
           </div>
         </div>

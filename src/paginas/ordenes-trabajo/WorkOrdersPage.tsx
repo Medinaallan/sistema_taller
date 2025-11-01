@@ -6,6 +6,8 @@ import workOrdersService, { type WorkOrderData } from '../../servicios/workOrder
 import additionalQuotationsService from '../../servicios/additionalQuotationsService';
 import { chatService } from '../../servicios/chatService';
 import AdditionalQuotationForm from '../../componentes/ordenes-trabajo/AdditionalQuotationForm';
+import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
+import { obtenerClientes } from '../../servicios/clientesApiService';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -21,6 +23,86 @@ const WorkOrdersPage = () => {
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [password, setPassword] = useState('');
   const [selectedOrderForQuotation, setSelectedOrderForQuotation] = useState<WorkOrderData | null>(null);
+  
+  // Estados para datos de mapeo
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [vehiculos, setVehiculos] = useState<any[]>([]);
+  const [servicios, setServicios] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+
+  // Funciones de mapeo
+  const getClienteName = (clienteId: string) => {
+    const cliente = clientes.find(c => c.id === clienteId);
+    return cliente ? cliente.name : clienteId?.substring(0, 20) || 'Cliente no encontrado';
+  };
+
+  const getVehicleName = (vehiculoId: string) => {
+    const vehiculo = vehiculos.find(v => v.id === vehiculoId);
+    return vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}` : vehiculoId?.substring(0, 20) || 'Vehículo no encontrado';
+  };
+
+  const getServiceName = (servicioId: string) => {
+    const servicio = servicios.find(s => s.id === servicioId);
+    return servicio ? servicio.name || servicio.nombre : servicioId;
+  };
+
+  const getAppointmentName = (appointmentId: string) => {
+    const appointment = appointments.find(a => a.id === appointmentId);
+    return appointment ? `Cita ${appointment.date} ${appointment.time}` : appointmentId;
+  };
+
+  // Funciones para cargar datos de referencia
+  const loadClientes = async () => {
+    try {
+      const clientesData = await obtenerClientes();
+      setClientes(clientesData);
+    } catch (error) {
+      console.error('Error cargando clientes:', error);
+    }
+  };
+
+  const loadVehiculos = async () => {
+    try {
+      const response = await vehiclesService.getAll();
+      if (response.success) {
+        setVehiculos(response.data);
+      }
+    } catch (error) {
+      console.error('Error cargando vehículos:', error);
+    }
+  };
+
+  const loadServicios = async () => {
+    try {
+      const response = await servicesService.getAll();
+      if (response.success) {
+        const mappedServices = response.data.map((csvService: any) => ({
+          id: csvService.id,
+          name: csvService.nombre,
+          nombre: csvService.nombre,
+        }));
+        setServicios(mappedServices);
+      }
+    } catch (error) {
+      console.error('Error cargando servicios:', error);
+    }
+  };
+
+  const loadAppointments = async () => {
+    try {
+      const response = await appointmentsService.getAll();
+      if (response.success) {
+        const appointmentsData = response.data.map((csvAppointment: any) => ({
+          id: csvAppointment.id,
+          date: new Date(csvAppointment.fecha).toLocaleDateString('es-ES'),
+          time: csvAppointment.hora,
+        }));
+        setAppointments(appointmentsData);
+      }
+    } catch (error) {
+      console.error('Error cargando citas:', error);
+    }
+  };
 
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
@@ -40,7 +122,17 @@ const WorkOrdersPage = () => {
   };
 
   useEffect(() => {
-    loadWorkOrders();
+    const loadAllData = async () => {
+      await Promise.all([
+        loadWorkOrders(),
+        loadClientes(),
+        loadVehiculos(),
+        loadServicios(),
+        loadAppointments()
+      ]);
+    };
+    
+    loadAllData();
   }, []);
 
   const filteredWorkOrders = workOrders.filter(order => {
@@ -295,10 +387,10 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {order.clienteId?.substring(0, 20) || 'Cliente no encontrado'}
+                          {getClienteName(order.clienteId)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {order.vehiculoId?.substring(0, 20) || 'Vehículo no encontrado'}
+                          {getVehicleName(order.vehiculoId)}
                         </div>
                       </div>
                     </td>
@@ -394,7 +486,14 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
         title="Detalles de la Orden de Trabajo"
       >
         {selectedWorkOrder && (
-          <WorkOrderDetails order={selectedWorkOrder} />
+          <WorkOrderDetails 
+            order={selectedWorkOrder} 
+            clientName={getClienteName(selectedWorkOrder.clienteId)} 
+            vehicleName={getVehicleName(selectedWorkOrder.vehiculoId)} 
+            serviceName={getServiceName(selectedWorkOrder.servicioId)} 
+            appointmentName={selectedWorkOrder.appointmentId ? getAppointmentName(selectedWorkOrder.appointmentId) : undefined}
+            quotationName={selectedWorkOrder.quotationId ? `COT-${selectedWorkOrder.quotationId?.substring(0, 8)}` : undefined}
+          />
         )}
       </Modal>
     </div>
@@ -404,9 +503,14 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
 // Componente para mostrar detalles de la orden de trabajo
 interface WorkOrderDetailsProps {
   order: WorkOrderData;
+  clientName?: string;
+  vehicleName?: string;
+  serviceName?: string;
+  appointmentName?: string;
+  quotationName?: string;
 }
 
-function WorkOrderDetails({ order }: WorkOrderDetailsProps) {
+function WorkOrderDetails({ order, clientName, vehicleName, serviceName, appointmentName, quotationName }: WorkOrderDetailsProps) {
   return (
     <div className="space-y-6">
       {/* Información básica */}
@@ -456,27 +560,27 @@ function WorkOrderDetails({ order }: WorkOrderDetailsProps) {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Cliente y Vehículo</h3>
           <dl className="space-y-2">
             <div>
-              <dt className="text-sm font-medium text-gray-500">Cliente ID</dt>
-              <dd className="text-sm text-gray-900">{order.clienteId}</dd>
+              <dt className="text-sm font-medium text-gray-500">Cliente</dt>
+              <dd className="text-sm text-gray-900">{clientName || order.clienteId}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-gray-500">Vehículo ID</dt>
-              <dd className="text-sm text-gray-900">{order.vehiculoId}</dd>
+              <dt className="text-sm font-medium text-gray-500">Vehículo</dt>
+              <dd className="text-sm text-gray-900">{vehicleName || order.vehiculoId}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-gray-500">Servicio ID</dt>
-              <dd className="text-sm text-gray-900">{order.servicioId}</dd>
+              <dt className="text-sm font-medium text-gray-500">Servicio</dt>
+              <dd className="text-sm text-gray-900">{serviceName || order.servicioId}</dd>
             </div>
             {order.quotationId && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Cotización de Origen</dt>
-                <dd className="text-sm text-gray-900">{order.quotationId}</dd>
+                <dd className="text-sm text-gray-900">{quotationName || `COT-${order.quotationId?.substring(0, 8)}`}</dd>
               </div>
             )}
             {order.appointmentId && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Cita de Origen</dt>
-                <dd className="text-sm text-gray-900">{order.appointmentId}</dd>
+                <dd className="text-sm text-gray-900">{appointmentName || order.appointmentId}</dd>
               </div>
             )}
           </dl>
@@ -569,36 +673,7 @@ function WorkOrderDetails({ order }: WorkOrderDetailsProps) {
         </div>
       )}
 
-      {/* Modal de contraseña para subcotización */}
-      <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} title="Acceso Admin - Subcotización">
-        <div className="space-y-4">
-          <p className="text-gray-700">Ingrese la contraseña de administrador para crear una subcotización:</p>
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Contraseña de admin"
-            onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-          />
-          <div className="flex space-x-2 justify-end">
-            <Button variant="secondary" onClick={() => setShowPasswordModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handlePasswordSubmit}>
-              Acceder
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
-      {/* Modal de formulario de subcotización */}
-      <Modal isOpen={showQuotationModal} onClose={() => setShowQuotationModal(false)} title="Nueva Subcotización">
-        <AdditionalQuotationForm
-          workOrder={selectedOrderForQuotation}
-          onSubmit={handleQuotationSubmit}
-          onCancel={() => setShowQuotationModal(false)}
-        />
-      </Modal>
     </div>
   );
 };

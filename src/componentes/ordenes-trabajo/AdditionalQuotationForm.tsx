@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Input, Select } from '../comunes/UI';
 import type { WorkOrderData } from '../../servicios/workOrdersService';
+import { getClientDisplayName, getVehicleDisplayName } from '../../utilidades/dataMappers';
 
 interface AdditionalQuotationFormProps {
   workOrder: WorkOrderData | null;
@@ -21,6 +22,24 @@ const AdditionalQuotationForm: React.FC<AdditionalQuotationFormProps> = ({
     urgencia: 'media' as 'baja' | 'media' | 'alta',
     notas: ''
   });
+
+  const [displayNames, setDisplayNames] = useState({
+    clientName: '',
+    vehicleName: ''
+  });
+
+  useEffect(() => {
+    const loadDisplayNames = async () => {
+      if (workOrder) {
+        const [clientName, vehicleName] = await Promise.all([
+          getClientDisplayName(workOrder.clienteId),
+          getVehicleDisplayName(workOrder.vehiculoId)
+        ]);
+        setDisplayNames({ clientName, vehicleName });
+      }
+    };
+    loadDisplayNames();
+  }, [workOrder]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,8 +70,8 @@ const AdditionalQuotationForm: React.FC<AdditionalQuotationFormProps> = ({
         <h4 className="font-semibold text-blue-900 mb-2">Orden de Trabajo</h4>
         <p className="text-sm text-blue-800">
           <strong>ID:</strong> {workOrder?.id}<br />
-          <strong>Cliente:</strong> {workOrder?.clienteId}<br />
-          <strong>Vehículo:</strong> {workOrder?.vehiculoId}<br />
+          <strong>Cliente:</strong> {displayNames.clientName}<br />
+          <strong>Vehículo:</strong> {displayNames.vehicleName}<br />
           <strong>Descripción:</strong> {workOrder?.descripcion}
         </p>
       </div>
