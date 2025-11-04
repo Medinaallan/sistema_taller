@@ -29,6 +29,12 @@ export function useAdminChat() {
   const [renderTick, setRenderTick] = useState(0);
   const [conectado, setConectado] = useState(false);
   const [typingMap, setTypingMap] = useState<Record<string, boolean>>({});
+  const salaActivaRef = useRef<string | null>(null);
+  
+  // Mantener la referencia actualizada
+  useEffect(() => {
+    salaActivaRef.current = salaActiva;
+  }, [salaActiva]);
 
   const generarAvatar = (nombre: string) => {
     const encoded = encodeURIComponent(nombre);
@@ -91,6 +97,11 @@ export function useAdminChat() {
   };
 
   const seleccionarSala = useCallback(async (clientId: string) => {
+    // Evitar re-seleccionar la misma sala
+    if (salaActiva === clientId) {
+      return;
+    }
+    
     setSalaActiva(clientId);
     setClientes(prev => prev.map(c => c.id === clientId ? { ...c, noLeidos: 0 } : c));
     let sala = salasRef.current.get(clientId);
@@ -160,7 +171,7 @@ export function useAdminChat() {
         unsubOnConnect2();
       });
     }
-  }, []);
+  }, [salaActiva]); // Agregar salaActiva como dependencia
 
   // Inicializar conexión socket una sola vez
   useEffect(() => {
@@ -181,7 +192,8 @@ export function useAdminChat() {
       // Actualizar datos de cliente (ultimo mensaje / no leidos)
       setClientes(prev => prev.map(c => {
         if (c.id === salaId) {
-          const esSalaActiva = salaActiva === salaId;
+          // Usar la referencia para obtener el valor actual de salaActiva
+          const esSalaActiva = salaActivaRef.current === salaId;
             return {
               ...c,
               ultimoMensaje: msg.contenido,
@@ -198,7 +210,7 @@ export function useAdminChat() {
       unsubDisconnect();
       unsubMensaje();
     };
-  }, [salaActiva]);
+  }, []); // Remover salaActiva de dependencias para evitar re-suscripciones
 
   // Typing listener separado para no recrear en cada salaActiva cambio
   useEffect(() => {
@@ -216,11 +228,19 @@ export function useAdminChat() {
     })();
   }, []);
 
+  // Auto-seleccionar primer cliente SOLO una vez cuando se cargan los clientes inicialmente
   useEffect(() => {
-    if (!salaActiva && clientes.length) {
-      seleccionarSala(clientes[0].id);
+    if (!salaActiva && clientes.length > 0) {
+      // Solo auto-seleccionar si no hay sala activa y hay clientes
+      // Usar setTimeout para evitar que se ejecute múltiples veces en el mismo tick
+      const timer = setTimeout(() => {
+        if (!salaActiva && clientes.length > 0) {
+          seleccionarSala(clientes[0].id);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [clientes, salaActiva, seleccionarSala]);
+  }, [clientes.length]); // Solo depende del length, no de clientes completo ni seleccionarSala
 
 
   const enviarMensaje = useCallback((contenido: string) => {

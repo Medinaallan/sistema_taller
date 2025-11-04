@@ -797,6 +797,26 @@
       "es_sistema": false,
       "enviado_en": "2025-11-01T15:35:45.665Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1762013899435,
+      "sala_id": "clients-1761839820730-d0cf4389",
+      "usuario_id": "admin-system",
+      "rol": "admin",
+      "contenido": "🔧 SERVICIOS ADICIONALES ENCONTRADOS\n\nOrden de Trabajo: #95-3g0p7q20q\nCliente: aldo garcia\nVehículo: TOYOTA HIACE 2025 - PBT-9401\n\nProblemas encontrados:\nADASDA\n\nDescripción del problema:\nAFSDFAFASGSD\n\nServicios recomendados:\nGHJK,TUIKLTU\n\nCosto estimado: L. 299.98\nUrgencia: BAJA\n\nNotas adicionales:\nHOLA\n\n---\nEsta cotización requiere tu aprobación antes de proceder. Puedes aprobarla o rechazarla desde tu panel de cliente.\n\nCotización ID: AQ-1762013898801-v36j3xiwz",
+      "es_sistema": false,
+      "enviado_en": "2025-11-01T16:18:20.286Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1762259542808,
+      "sala_id": "clients-1761839820730-d0cf4389",
+      "usuario_id": "admin-system",
+      "rol": "admin",
+      "contenido": "🔧 SERVICIOS ADICIONALES ENCONTRADOS\n\nOrden de Trabajo: #73-nfzkf08mg\nCliente: aldo garcia\nVehículo: TOYOTA HIACE 2025 - PBT-9401\n\nProblemas encontrados:\nsfdfsdf\n\nDescripción del problema:\nsdfsdfsd\n\nServicios recomendados:\nfsdfsfsdfs\n\nCosto estimado: L. 500.00\nUrgencia: MEDIA\n\nNotas adicionales:\nxvcvcxv\n\n---\nEsta cotización requiere tu aprobación antes de proceder. Puedes aprobarla o rechazarla desde tu panel de cliente.\n\nCotización ID: AQ-1762259542079-53hbldj9e",
+      "es_sistema": false,
+      "enviado_en": "2025-11-04T12:32:23.914Z",
+      "leido": false
     }
   ]
 }

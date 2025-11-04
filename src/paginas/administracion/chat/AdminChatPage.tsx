@@ -91,10 +91,14 @@ export default function AdminChatPage() {
               <button
                 key={c.id}
                 onClick={() => {
-                  seleccionarSala(c.id);
+                  // Solo seleccionar si no es la sala activa
+                  if (salaActiva !== c.id) {
+                    seleccionarSala(c.id);
+                  }
                   setShowClientList(false); // En móvil, ocultar lista después de seleccionar
                 }}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 border-b ${salaActiva === c.id ? 'bg-blue-50' : ''}`}
+                disabled={salaActiva === c.id} // Deshabilitar si ya está seleccionado
               >
                 <img src={c.avatar} alt={c.nombre} className="w-8 h-8 rounded-full object-cover" />
                 <div className="flex-1 min-w-0">
