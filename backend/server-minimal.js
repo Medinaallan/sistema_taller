@@ -26,11 +26,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Middleware de logging
+// Middleware de logging básico
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
+
+// Middleware de auditoría automática
+const { auditMiddleware } = require('./middleware/auditMiddleware');
+app.use(auditMiddleware);
 
 // Configuración de multer para subida de imágenes a memoria (para Spaces)
 const upload = multer({ 
@@ -172,6 +176,19 @@ try {
   console.error('❌ Error cargando rutas de órdenes de trabajo:', error.message);
   console.error('Stack:', error.stack);
   console.warn('⚠️ El servidor continuará sin las rutas de órdenes de trabajo');
+}
+
+//IMPORTAR Y CONFIGURAR RUTAS DE LOGS
+try {
+  console.log('📋 Cargando rutas de logs del sistema...');
+  const logsRouter = require('./routes/logs');
+  app.use('/api/logs', logsRouter);
+  console.log('✅ Rutas de logs cargadas exitosamente');
+  console.log('📍 /api/logs/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de logs:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de logs');
 }
 
 // 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
