@@ -300,11 +300,17 @@ export interface Role {
 export interface Log {
   id: string;
   userId: string;
-  action: string;
-  entity: string;
-  entityId: string;
-  description?: string;
-  timestamp: Date;
+  userName: string;
+  userRole: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'VIEW' | 'EXPORT' | 'IMPORT' | 'CUSTOM';
+  entity: string; // 'client', 'vehicle', 'workorder', 'user', etc.
+  entityId?: string;
+  description: string;
+  details?: any; // Objeto con detalles adicionales
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: string; // ISO string
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 }
 
 // Estadísticas y reportes
