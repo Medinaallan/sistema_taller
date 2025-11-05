@@ -817,6 +817,16 @@
       "es_sistema": false,
       "enviado_en": "2025-11-04T12:32:23.914Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1762350573347,
+      "sala_id": "clients-1761839820730-d0cf4389",
+      "usuario_id": "admin-system",
+      "rol": "admin",
+      "contenido": "🔧 SERVICIOS ADICIONALES ENCONTRADOS\n\nOrden de Trabajo: #96-3tspjjz3y\nCliente: aldo garcia\nVehículo: TOYOTA HIACE 2025 - PBT-9401\n\nProblemas encontrados:\nasdasda\n\nDescripción del problema:\nasdasdasda\n\nServicios recomendados:\nservicio de prueba\n\nCosto estimado: L. 350.00\nUrgencia: MEDIA\n\nNotas adicionales:\nes muy importante\n\n---\nEsta cotización requiere tu aprobación antes de proceder. Puedes aprobarla o rechazarla desde tu panel de cliente.\n\nCotización ID: AQ-1762350573211-k3b3tncs2",
+      "es_sistema": false,
+      "enviado_en": "2025-11-05T13:49:34.569Z",
+      "leido": false
     }
   ]
 }
