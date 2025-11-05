@@ -27,6 +27,34 @@ const actionColors = {
   LOGOUT: 'bg-gray-100 text-gray-800'
 };
 
+// Tipos de logs
+type LogCategory = 'system' | 'business';
+
+interface LogCategoryInfo {
+  id: LogCategory;
+  name: string;
+  description: string;
+  icon: string;
+  entities: string[];
+}
+
+const logCategories: LogCategoryInfo[] = [
+  {
+    id: 'system',
+    name: 'Logs del Sistema',
+    description: 'Auditoría informática: inicios de sesión, seguridad, sistema',
+    icon: '',
+    entities: ['auth', 'user', 'logs', 'system']
+  },
+  {
+    id: 'business',
+    name: 'Logs de Negocio',
+    description: 'Operaciones del taller: clientes, vehículos, citas, cotizaciones, órdenes',
+    icon: '',
+    entities: ['client', 'vehicle', 'appointment', 'quotation', 'workorder', 'service']
+  }
+];
+
 const LogsPage = () => {
   const [data, setData] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +63,7 @@ const LogsPage = () => {
   const [total, setTotal] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+  const [activeCategory, setActiveCategory] = useState<LogCategory>('system');
   
   // Filtros
   const [filters, setFilters] = useState<LogFilters>({
@@ -66,13 +95,42 @@ const LogsPage = () => {
     { 
       accessorKey: 'userName', 
       header: 'Usuario',
-      size: 120,
-      cell: ({ row }) => (
-        <div className="text-sm">
-          <div className="font-medium">{row.original.userName}</div>
-          <div className="text-gray-500">{row.original.userRole}</div>
-        </div>
-      )
+      size: 140,
+      cell: ({ row }) => {
+        const getUserDisplayName = (userName: string) => {
+          if (userName === 'Usuario Anónimo' || userName === 'anonymous') {
+            return 'Visitante';
+          }
+          if (userName === 'System') {
+            return 'Sistema';
+          }
+          return userName;
+        };
+
+        const getRoleDisplayName = (userRole: string) => {
+          const roleMap: { [key: string]: string } = {
+            'admin': 'Administrador',
+            'receptionist': 'Recepcionista', 
+            'mechanic': 'Mecánico',
+            'client': 'Cliente',
+            'guest': 'Invitado',
+            'system': 'Sistema',
+            'unknown': 'Desconocido'
+          };
+          return roleMap[userRole] || userRole;
+        };
+
+        return (
+          <div className="text-sm">
+            <div className="font-medium text-gray-900">
+              {getUserDisplayName(row.original.userName)}
+            </div>
+            <div className="text-xs text-gray-500">
+              {getRoleDisplayName(row.original.userRole)}
+            </div>
+          </div>
+        );
+      }
     },
     { 
       accessorKey: 'action', 
@@ -90,12 +148,49 @@ const LogsPage = () => {
     { 
       accessorKey: 'entity', 
       header: 'Entidad',
-      size: 80,
-      cell: ({ getValue }) => (
-        <span className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">
-          {getValue() as string}
-        </span>
-      )
+      size: 100,
+      cell: ({ getValue }) => {
+        const getEntityDisplayName = (entity: string) => {
+          const entityMap: { [key: string]: string } = {
+            'client': 'Cliente',
+            'user': 'Usuario',
+            'vehicle': 'Vehículo',
+            'service': 'Servicio',
+            'appointment': 'Cita',
+            'quotation': 'Cotización',
+            'workorder': 'Orden de Trabajo',
+            'auth': 'Autenticación',
+            'logs': 'Logs',
+            'test': 'Prueba',
+            'system': 'Sistema',
+            'unknown': 'Desconocido'
+          };
+          return entityMap[entity] || entity;
+        };
+
+        const getEntityColor = (entity: string) => {
+          const colorMap: { [key: string]: string } = {
+            'client': 'bg-blue-50 text-blue-700',
+            'user': 'bg-green-50 text-green-700',
+            'vehicle': 'bg-purple-50 text-purple-700',
+            'service': 'bg-orange-50 text-orange-700',
+            'appointment': 'bg-pink-50 text-pink-700',
+            'quotation': 'bg-indigo-50 text-indigo-700',
+            'workorder': 'bg-yellow-50 text-yellow-700',
+            'auth': 'bg-red-50 text-red-700',
+            'logs': 'bg-gray-50 text-gray-700',
+            'system': 'bg-slate-50 text-slate-700'
+          };
+          return colorMap[entity] || 'bg-blue-50 text-blue-700';
+        };
+
+        const entity = getValue() as string;
+        return (
+          <span className={`px-2 py-1 text-xs rounded-full ${getEntityColor(entity)}`}>
+            {getEntityDisplayName(entity)}
+          </span>
+        );
+      }
     },
     { 
       accessorKey: 'severity', 
@@ -113,36 +208,137 @@ const LogsPage = () => {
     { 
       accessorKey: 'description', 
       header: 'Descripción',
-      size: 300,
-      cell: ({ getValue }) => (
-        <div className="text-sm text-gray-900 truncate max-w-xs" title={getValue() as string}>
-          {getValue() as string}
-        </div>
-      )
+      size: 350,
+      cell: ({ getValue, row }) => {
+        const getReadableDescription = (description: string) => {
+          // Mapear términos técnicos a descripciones amigables
+          let readable = description;
+
+          // Reemplazar términos técnicos
+          readable = readable
+            .replace(/CREATE en/, 'Creó')
+            .replace(/UPDATE en/, 'Actualizó')
+            .replace(/DELETE en/, 'Eliminó')
+            .replace(/VIEW en/, 'Consultó')
+            .replace(/LOGIN/, 'Inició sesión')
+            .replace(/LOGOUT/, 'Cerró sesión')
+            .replace(/EXITOSO/, '✓')
+            .replace(/ERROR \d+/, '❌')
+            .replace(/client/, 'cliente')
+            .replace(/user/, 'usuario')
+            .replace(/vehicle/, 'vehículo')
+            .replace(/service/, 'servicio')
+            .replace(/appointment/, 'cita')
+            .replace(/quotation/, 'cotización')
+            .replace(/workorder/, 'orden de trabajo')
+            .replace(/auth/, 'autenticación')
+            .replace(/logs/, 'registros')
+            .replace(/system/, 'sistema');
+
+          // Casos especiales para hacer más legible
+          if (description.includes('Login exitoso')) {
+            readable = ' Usuario inició sesión correctamente';
+          } else if (description.includes('Intento de login fallido')) {
+            readable = ' Intento de inicio de sesión fallido';
+          } else if (description.includes('Logout')) {
+            readable = ' Usuario cerró sesión';
+          } else if (description.includes('Log de prueba manual')) {
+            readable = ' Registro de prueba del sistema';
+          } else if (description.includes('Logs cleanup')) {
+            readable = ' Limpieza automática de registros antiguos';
+          }
+
+          return readable;
+        };
+
+        const originalDescription = getValue() as string;
+        const readableDescription = getReadableDescription(originalDescription);
+
+        return (
+          <div className="text-sm">
+            <div className="text-gray-900 font-medium truncate max-w-xs" title={originalDescription}>
+              {readableDescription}
+            </div>
+            {row.original.entityId && (
+              <div className="text-xs text-gray-500">
+                ID: {row.original.entityId}
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     { 
       accessorKey: 'ipAddress', 
-      header: 'IP',
-      size: 100,
-      cell: ({ getValue }) => (
-        <span className="text-xs text-gray-500 font-mono">
-          {getValue() as string}
-        </span>
-      )
+      header: 'Dirección IP',
+      size: 140,
+      cell: ({ getValue }) => {
+        const ip = getValue() as string;
+        
+        const getIpDisplayName = (ipAddress: string) => {
+          if (!ipAddress || ipAddress === 'unknown') {
+            return 'No disponible';
+          }
+          if (ipAddress === 'system') {
+            return 'Sistema interno';
+          }
+          if (ipAddress.includes('::1') || ipAddress === '127.0.0.1') {
+            return `${ipAddress} (Local)`;
+          }
+          return ipAddress;
+        };
+
+        const getIpColor = (ipAddress: string) => {
+          if (!ipAddress || ipAddress === 'unknown') {
+            return 'text-gray-400';
+          }
+          if (ipAddress === 'system') {
+            return 'text-blue-600';
+          }
+          if (ipAddress.includes('::1') || ipAddress === '127.0.0.1') {
+            return 'text-green-600';
+          }
+          return 'text-gray-700';
+        };
+
+        return (
+          <div className="text-xs">
+            <div className={`font-mono ${getIpColor(ip)}`}>
+              {getIpDisplayName(ip)}
+            </div>
+          </div>
+        );
+      }
     }
   ];
 
-  // Cargar logs
-  const loadLogs = async (page: number = 1, newFilters?: LogFilters) => {
+  // Cargar logs filtrados por categoría
+  const loadLogs = async (page: number = 1, newFilters?: LogFilters, category?: LogCategory) => {
     try {
       setLoading(true);
       const filtersToUse = newFilters || filters;
-      const response = await logService.getLogs(page, 50, filtersToUse);
+      const categoryToUse = category || activeCategory;
       
-      setData(response.logs);
-      setTotalPages(response.totalPages);
+      // Obtener todos los logs primero
+      const response = await logService.getLogs(page, 200, filtersToUse); // Aumentar límite para filtrar localmente
+      
+      // Filtrar por categoría
+      const categoryInfo = logCategories.find(cat => cat.id === categoryToUse);
+      const filteredLogs = categoryInfo 
+        ? response.logs.filter(log => categoryInfo.entities.includes(log.entity))
+        : response.logs;
+      
+      // Aplicar paginación manual
+      const itemsPerPage = 50;
+      const startIndex = (page - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+      const totalFilteredPages = Math.ceil(filteredLogs.length / itemsPerPage);
+      
+      setData(paginatedLogs);
+      setTotalPages(totalFilteredPages);
       setCurrentPage(page);
-      setTotal(response.total);
+      setTotal(filteredLogs.length);
     } catch (error) {
       console.error('Error cargando logs:', error);
       alert('Error cargando los logs. Verifica que el servidor esté funcionando.');
@@ -151,14 +347,25 @@ const LogsPage = () => {
     }
   };
 
-  // Cargar logs al montar el componente
+  // Cargar logs al montar el componente y cuando cambie la categoría
+  useEffect(() => {
+    loadLogs(1, filters, activeCategory);
+  }, [activeCategory]);
+
+  // Cargar logs iniciales
   useEffect(() => {
     loadLogs();
   }, []);
 
+  // Cambiar categoría
+  const handleCategoryChange = (category: LogCategory) => {
+    setActiveCategory(category);
+    setCurrentPage(1); // Resetear a la primera página
+  };
+
   // Aplicar filtros
   const handleFilter = () => {
-    loadLogs(1, filters);
+    loadLogs(1, filters, activeCategory);
     setShowFilters(false);
   };
 
@@ -174,7 +381,7 @@ const LogsPage = () => {
       severity: ''
     };
     setFilters(emptyFilters);
-    loadLogs(1, emptyFilters);
+    loadLogs(1, emptyFilters, activeCategory);
     setShowFilters(false);
   };
 
@@ -212,7 +419,7 @@ const LogsPage = () => {
       setLoading(true);
       const result = await logService.cleanOldLogs(90);
       alert(`Se eliminaron ${result.deleted} logs antiguos`);
-      loadLogs(currentPage);
+      loadLogs(currentPage, filters, activeCategory);
     } catch (error) {
       console.error('Error limpiando logs:', error);
       alert('Error limpiando logs antiguos');
@@ -259,6 +466,31 @@ const LogsPage = () => {
             Limpiar Antiguos
           </Button>
         </div>
+      </div>
+
+      {/* Pestañas de categorías */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {logCategories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => handleCategoryChange(category.id)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                activeCategory === category.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{category.icon}</span>
+                <div className="text-left">
+                  <div className="font-semibold">{category.name}</div>
+                  <div className="text-xs text-gray-400">{category.description}</div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Panel de filtros */}
@@ -328,13 +560,16 @@ const LogsPage = () => {
                 onChange={(e) => setFilters(prev => ({ ...prev, entity: e.target.value }))}
               >
                 <option value="">Todas las entidades</option>
-                <option value="client">Cliente</option>
-                <option value="user">Usuario</option>
-                <option value="vehicle">Vehículo</option>
-                <option value="service">Servicio</option>
-                <option value="appointment">Cita</option>
-                <option value="workorder">Orden de trabajo</option>
-                <option value="auth">Autenticación</option>
+                <option value="client">🏢 Cliente</option>
+                <option value="user">👤 Usuario</option>
+                <option value="vehicle">🚗 Vehículo</option>
+                <option value="service">🔧 Servicio</option>
+                <option value="appointment">📅 Cita</option>
+                <option value="quotation">💰 Cotización</option>
+                <option value="workorder">📋 Orden de trabajo</option>
+                <option value="auth">🔐 Autenticación</option>
+                <option value="logs">📄 Registros</option>
+                <option value="system">⚙️ Sistema</option>
               </select>
             </div>
             
@@ -348,10 +583,10 @@ const LogsPage = () => {
                 onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value }))}
               >
                 <option value="">Todas las severidades</option>
-                <option value="LOW">Baja</option>
-                <option value="MEDIUM">Media</option>
-                <option value="HIGH">Alta</option>
-                <option value="CRITICAL">Crítica</option>
+                <option value="LOW">🟢 Baja</option>
+                <option value="MEDIUM">🟡 Media</option>
+                <option value="HIGH">🟠 Alta</option>
+                <option value="CRITICAL">🔴 Crítica</option>
               </select>
             </div>
           </div>
@@ -390,14 +625,14 @@ const LogsPage = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => loadLogs(currentPage - 1)}
+                    onClick={() => loadLogs(currentPage - 1, filters, activeCategory)}
                     disabled={currentPage === 1 || loading}
                   >
                     Anterior
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => loadLogs(currentPage + 1)}
+                    onClick={() => loadLogs(currentPage + 1, filters, activeCategory)}
                     disabled={currentPage === totalPages || loading}
                   >
                     Siguiente

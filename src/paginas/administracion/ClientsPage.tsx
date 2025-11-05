@@ -5,6 +5,7 @@ import { CSVDataManager } from '../../componentes/administracion/CSVDataManager'
 import ExcelImportModal from '../../componentes/gestion/ExcelImportModal';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
+import { useBusinessLogs } from '../../hooks/useBusinessLogs';
 import { generateId, formatDate, formatCurrency } from '../../utilidades/globalMockDatabase';
 import type { Client, User } from '../../tipos';
 

@@ -2,6 +2,7 @@
 import { useCallback } from 'react';
 import { useApp } from './useApp';
 import { agregarCliente, recargarClientesDesdeCSV } from '../utilidades/BaseDatosJS';
+import { businessLogService } from '../servicios/businessLogService';
 import type { Client, Vehicle, WorkOrder, Invoice, Payment, Quotation, Appointment } from '../tipos/index';
 
 export const useInterconnectedData = () => {
@@ -107,18 +108,12 @@ export const useInterconnectedData = () => {
         // Actualizar estado local con el cliente guardado (que incluye ID del servidor)
         dispatch({ type: 'ADD_CLIENT', payload: clienteGuardado });
         
-        // Agregar log de creación
-        dispatch({ 
-          type: 'ADD_LOG', 
-          payload: {
-            id: `log-${Date.now()}`,
-            userId: state.user?.id || 'system',
-            action: 'create',
-            entity: 'client',
-            entityId: clienteGuardado.id,
-            description: `Cliente creado: ${clienteGuardado.name}`,
-            timestamp: new Date()
-          }
+        // Crear log de negocio usando el businessLogService
+        await businessLogService.logClientCreated({
+          id: clienteGuardado.id,
+          name: clienteGuardado.name,
+          email: clienteGuardado.email,
+          phone: clienteGuardado.phone
         });
         
         // Refrescar estadísticas
@@ -139,20 +134,16 @@ export const useInterconnectedData = () => {
   }, [dispatch, state.user]);
 
   // Actualizar cliente con log automático
-  const updateClientWithLog = useCallback((client: Client) => {
+  const updateClientWithLog = useCallback(async (client: Client) => {
     dispatch({ type: 'UPDATE_CLIENT', payload: client });
-    dispatch({ 
-      type: 'ADD_LOG', 
-      payload: {
-        id: `log-${Date.now()}`,
-        userId: state.user?.id || 'system',
-        action: 'update',
-        entity: 'client',
-        entityId: client.id,
-        description: `Cliente actualizado: ${client.name}`,
-        timestamp: new Date()
-      }
-    });
+    
+    // Crear log de negocio usando el businessLogService
+    await businessLogService.logClientUpdated(
+      client.id, 
+      client.name, 
+      { name: client.name, email: client.email, phone: client.phone }
+    );
+    
     dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
   }, [dispatch, state.user]);
 
@@ -176,19 +167,8 @@ export const useInterconnectedData = () => {
     // Eliminar cliente
     dispatch({ type: 'DELETE_CLIENT', payload: clientId });
 
-    // Log de la acción
-    dispatch({ 
-      type: 'ADD_LOG', 
-      payload: {
-        id: `log-${Date.now()}`,
-        userId: state.user?.id || 'system',
-        action: 'delete',
-        entity: 'client',
-        entityId: clientId,
-        description: `Cliente eliminado con todas sus relaciones: ${client.name}`,
-        timestamp: new Date()
-      }
-    });
+    // Crear log de negocio usando el businessLogService
+    businessLogService.logClientDeleted(clientId, client.name);
 
     dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
   }, [dispatch, state.user, getClientById, getVehiclesByClient, getWorkOrdersByClient]);
