@@ -193,18 +193,20 @@ export const useInterconnectedData = () => {
     // Eliminar vehículo
     dispatch({ type: 'DELETE_VEHICLE', payload: vehicleId });
 
-    // Log de la acción
-    dispatch({ 
-      type: 'ADD_LOG', 
-      payload: {
-        id: `log-${Date.now()}`,
-        userId: state.user?.id || 'system',
-        action: 'delete',
-        entity: 'vehicle',
-        entityId: vehicleId,
-        description: `Vehículo eliminado con todas sus relaciones: ${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})`,
-        timestamp: new Date()
-      }
+    // Crear log de negocio usando el businessLogService
+    businessLogService.createBusinessLog({
+      action: 'DELETE',
+      entity: 'vehicle',
+      entityId: vehicleId,
+      description: `Vehículo eliminado con todas sus relaciones: ${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})`,
+      details: {
+        brand: vehicle.brand,
+        model: vehicle.model,
+        licensePlate: vehicle.licensePlate,
+        workOrdersDeleted: vehicleWorkOrders.length,
+        appointmentsDeleted: vehicleAppointments.length
+      },
+      severity: 'HIGH'
     });
 
     dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
@@ -249,18 +251,19 @@ export const useInterconnectedData = () => {
     };
     dispatch({ type: 'ADD_INVOICE', payload: newInvoice });
 
-    // Log de la acción
-    dispatch({ 
-      type: 'ADD_LOG', 
-      payload: {
-        id: `log-${Date.now()}`,
-        userId: state.user?.id || 'system',
-        action: 'complete',
-        entity: 'workorder',
-        entityId: workOrderId,
-        description: `Orden de trabajo completada y factura generada automáticamente`,
-        timestamp: new Date()
-      }
+    // Crear log de negocio usando el businessLogService
+    businessLogService.createBusinessLog({
+      action: 'UPDATE',
+      entity: 'workorder',
+      entityId: workOrderId,
+      description: `Orden de trabajo completada y factura generada automáticamente`,
+      details: {
+        invoiceId: newInvoice.id,
+        invoiceNumber: newInvoice.invoiceNumber,
+        totalAmount: newInvoice.total,
+        clientId: workOrder.clientId
+      },
+      severity: 'HIGH'
     });
 
     dispatch({ type: 'REFRESH_DASHBOARD_STATS' });

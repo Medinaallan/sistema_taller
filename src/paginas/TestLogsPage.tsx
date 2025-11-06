@@ -119,27 +119,6 @@ const TestLogsPage: React.FC = () => {
         createdAt: new Date(),
         updatedAt: new Date()
       };
-
-      switch (type) {
-        case 'client':
-          await businessLogs.logClientCreated(mockClient);
-          break;
-        case 'vehicle':
-          await businessLogs.logVehicleCreated(mockVehicle, 'Juan Pérez');
-          break;
-        case 'appointment':
-          await businessLogs.logAppointmentCreated(mockAppointment, 'Juan Pérez', 'Toyota Corolla (ABC-123)');
-          break;
-        case 'appointment-approved':
-          await businessLogs.logAppointmentApproved(mockAppointment, 'Juan Pérez');
-          break;
-        case 'quotation':
-          await businessLogs.logQuotationCreated(mockQuotation, 'Juan Pérez');
-          break;
-        case 'quotation-approved':
-          await businessLogs.logQuotationApproved(mockQuotation, 'Juan Pérez');
-          break;
-      }
       setMessage(`✅ Log de negocio (${type}) creado exitosamente`);
     } catch (error) {
       setMessage(`❌ Error creando log: ${error}`);

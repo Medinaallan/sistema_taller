@@ -1,4 +1,3 @@
 id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
 ,,,,,,,,,,,,,
 clients-1761839820730-d0cf4389,aldo garcia,aldo@taller.com,(504) 978-9622,asdasd,asdf1234,active,2025-10-30T15:57:00.729Z,,0,0,,2025-10-30T15:57:00.731Z,2025-10-30T15:57:00.731Z
-clients-1762436379358-bbc8b74b,Carlos Rodr�guez,carlos.rodriguez@taller.com,+1234567890,Av. Principal 123,carlos123,active,2025-11-06T13:39:39.357Z,,0,0,,2025-11-06T13:39:39.359Z,2025-11-06T13:39:39.359Z

@@ -3,6 +3,7 @@ import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/ou
 import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
+import { useBusinessLogs } from '../../hooks/useBusinessLogs';
 import { mockVehicles, mockClients, formatDate } from '../../utilidades/globalMockDatabase';
 import { vehiclesService } from '../../servicios/apiService';
 import type { Vehicle, Client } from '../../tipos';
@@ -176,6 +177,7 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
 export function VehiclesPage() {
   const { state, dispatch } = useApp();
   const data = useInterconnectedData();
+  const businessLogs = useBusinessLogs();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -271,9 +273,29 @@ export function VehiclesPage() {
     if (confirm(`¿Estás seguro de que quieres eliminar el vehículo ${vehicle.brand} ${vehicle.model}?`)) {
       try {
         setLoading(true);
+        
+        // Obtener información del cliente para el log
+        const client = data.getClientById(vehicle.clientId);
+        const clientName = client ? client.name : `Cliente ID: ${vehicle.clientId}`;
+        
         const response = await vehiclesService.delete(vehicle.id);
         
         if (response.success) {
+          // Generar log de negocio con datos reales
+          await businessLogs.logCustomAction(
+            'DELETE',
+            'vehicle',
+            vehicle.id,
+            `Vehículo eliminado: ${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate}) - Cliente: ${clientName}`,
+            {
+              brand: vehicle.brand,
+              model: vehicle.model,
+              licensePlate: vehicle.licensePlate,
+              clientId: vehicle.clientId,
+              clientName: clientName
+            }
+          );
+          
           data.deleteVehicleWithRelations(vehicle.id);
           alert('Vehículo eliminado exitosamente');
         } else {
@@ -314,6 +336,18 @@ export function VehiclesPage() {
             ...vehicleData,
             updatedAt: new Date(),
           };
+          
+          // Detectar cambios para el log
+          const changes: any = {};
+          if (selectedVehicle.brand !== vehicleData.brand) changes.brand = { old: selectedVehicle.brand, new: vehicleData.brand };
+          if (selectedVehicle.model !== vehicleData.model) changes.model = { old: selectedVehicle.model, new: vehicleData.model };
+          if (selectedVehicle.licensePlate !== vehicleData.licensePlate) changes.licensePlate = { old: selectedVehicle.licensePlate, new: vehicleData.licensePlate };
+          if (selectedVehicle.color !== vehicleData.color) changes.color = { old: selectedVehicle.color, new: vehicleData.color };
+          if (selectedVehicle.mileage !== vehicleData.mileage) changes.mileage = { old: selectedVehicle.mileage, new: vehicleData.mileage };
+          
+          // Generar log de negocio con datos reales
+          await businessLogs.logVehicleUpdated(updatedVehicle, changes);
+          
           dispatch({ type: 'UPDATE_VEHICLE', payload: updatedVehicle });
           setIsModalOpen(false);
           alert('Vehículo actualizado exitosamente');
@@ -353,6 +387,14 @@ export function VehiclesPage() {
             createdAt: new Date(),
             updatedAt: new Date(),
           };
+          
+          // Obtener información del cliente para el log
+          const client = data.getClientById(newVehicle.clientId);
+          const clientName = client ? client.name : `Cliente ID: ${newVehicle.clientId}`;
+          
+          // Generar log de negocio con datos reales
+          await businessLogs.logVehicleCreated(newVehicle, clientName);
+          
           dispatch({ type: 'ADD_VEHICLE', payload: newVehicle });
           setIsModalOpen(false);
           alert('Vehículo creado exitosamente');

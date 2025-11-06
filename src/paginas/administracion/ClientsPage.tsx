@@ -136,6 +136,8 @@ export function ClientsPage() {
   const data = useInterconnectedData();
   console.log(' ClientsPage: useInterconnectedData hook ejecutado, clientes:', data?.clients?.length || 0);
   
+  const businessLogs = useBusinessLogs();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -235,7 +237,7 @@ export function ClientsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteClient = (clientId: string) => {
+  const handleDeleteClient = async (clientId: string) => {
     const client = data.getClientById(clientId);
     if (!client) return;
 
@@ -247,6 +249,9 @@ export function ClientsPage() {
       : '¿Estás seguro de que deseas eliminar este cliente?';
 
     if (window.confirm(confirmMessage)) {
+      // Generar log de negocio con datos reales antes de eliminar
+      await businessLogs.logClientDeleted(client.id, client.name);
+      
       // Usar la función interconectada que elimina todo automáticamente
       data.deleteClientWithRelations(clientId);
     }
@@ -279,6 +284,9 @@ export function ClientsPage() {
       await data.createClientWithLog(newClient);
       dispatch({ type: 'ADD_USER', payload: newUser });
       
+      // Generar log de negocio con datos reales
+      await businessLogs.logClientCreated(newClient);
+      
     } else if (modalType === 'edit' && selectedClient) {
       const updatedClient: Client = {
         ...selectedClient,
@@ -300,8 +308,18 @@ export function ClientsPage() {
         dispatch({ type: 'UPDATE_USER', payload: updatedUser });
       }
       
+      // Detectar qué campos cambiaron
+      const changes: any = {};
+      if (selectedClient.name !== clientData.name) changes.name = { old: selectedClient.name, new: clientData.name };
+      if (selectedClient.email !== clientData.email) changes.email = { old: selectedClient.email, new: clientData.email };
+      if (selectedClient.phone !== clientData.phone) changes.phone = { old: selectedClient.phone, new: clientData.phone };
+      if (selectedClient.address !== clientData.address) changes.address = { old: selectedClient.address, new: clientData.address };
+      
       // Usar la función interconectada que actualiza cliente con log automático
-      data.updateClientWithLog(updatedClient);
+      await data.updateClientWithLog(updatedClient);
+      
+      // Generar log de negocio con datos reales
+      await businessLogs.logClientUpdated(updatedClient, changes);
     }
     setIsModalOpen(false);
   };

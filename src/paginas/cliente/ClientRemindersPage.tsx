@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../contexto/useApp';
 import { Reminder } from '../../tipos';
-import { getClientReminders } from '../../utilidades/mockData';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
+
+// Función helper para obtener recordatorios de un cliente
+const getClientReminders = (_clientId: string): Reminder[] => {
+  // Por ahora retornamos un array vacío ya que no hay implementación de recordatorios
+  return [];
+};
 
 export default function ClientRemindersPage() {
   const { state } = useApp();

@@ -1,6 +1,6 @@
 import { Card } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import { formatCurrency } from '../../utilidades/mockData';
+import { formatCurrency } from '../../utilidades/globalMockDatabase';
 
 export function CSVDemoPage() {
   const { state } = useApp();

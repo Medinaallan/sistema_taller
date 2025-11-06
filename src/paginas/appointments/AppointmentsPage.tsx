@@ -5,9 +5,11 @@ import EditAppointmentModal from '../../componentes/appointments/EditAppointment
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { obtenerClientes } from '../../servicios/clientesApiService';
+import { useBusinessLogs } from '../../hooks/useBusinessLogs';
 import type { Appointment } from '../../tipos';
 
 const AppointmentsPage = () => {
+  const businessLogs = useBusinessLogs();
   const [data, setData] = useState<Appointment[]>([]);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
   const [isEditAppointmentModalOpen, setIsEditAppointmentModalOpen] = useState(false);
@@ -176,6 +178,30 @@ const AppointmentsPage = () => {
       });
       
       if (response.success) {
+        // Obtener información para el log
+        const cliente = clientes.find(c => c.id === appointment.clientId);
+        const vehiculo = vehiculos.find(v => v.id === appointment.vehicleId);
+        const clientName = cliente ? cliente.name : `Cliente ID: ${appointment.clientId}`;
+        const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${appointment.vehicleId}`;
+        
+        // Generar log de negocio con datos reales
+        await businessLogs.logCustomAction(
+          'UPDATE',
+          'appointment',
+          appointment.id,
+          `Cita aprobada: ${clientName} - ${appointment.date.toLocaleDateString()} ${appointment.time} - ${vehicleInfo}`,
+          {
+            clientId: appointment.clientId,
+            clientName: clientName,
+            vehicleId: appointment.vehicleId,
+            vehicleInfo: vehicleInfo,
+            date: appointment.date.toISOString().split('T')[0],
+            time: appointment.time,
+            oldStatus: appointment.status,
+            newStatus: 'confirmed'
+          }
+        );
+        
         alert('Cita aprobada exitosamente');
         loadAppointments(); // Recargar datos
       } else {
@@ -188,6 +214,7 @@ const AppointmentsPage = () => {
   };
 
   const handleRejectAppointment = async (appointment: Appointment) => {
+    const reason = prompt('¿Cuál es la razón del rechazo? (opcional)');
     if (!confirm('¿Está seguro de rechazar esta cita?')) {
       return;
     }
@@ -204,6 +231,31 @@ const AppointmentsPage = () => {
       });
       
       if (response.success) {
+        // Obtener información para el log
+        const cliente = clientes.find(c => c.id === appointment.clientId);
+        const vehiculo = vehiculos.find(v => v.id === appointment.vehicleId);
+        const clientName = cliente ? cliente.name : `Cliente ID: ${appointment.clientId}`;
+        const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${appointment.vehicleId}`;
+        
+        // Generar log de negocio con datos reales
+        await businessLogs.logCustomAction(
+          'UPDATE',
+          'appointment',
+          appointment.id,
+          `Cita cancelada: ${clientName} - ${appointment.date.toLocaleDateString()} ${appointment.time} - ${vehicleInfo}${reason ? ` - Razón: ${reason}` : ''}`,
+          {
+            clientId: appointment.clientId,
+            clientName: clientName,
+            vehicleId: appointment.vehicleId,
+            vehicleInfo: vehicleInfo,
+            date: appointment.date.toISOString().split('T')[0],
+            time: appointment.time,
+            oldStatus: appointment.status,
+            newStatus: 'cancelled',
+            reason: reason || 'No especificada'
+          }
+        );
+        
         alert('Cita rechazada exitosamente');
         loadAppointments(); // Recargar datos
       } else {
@@ -218,8 +270,31 @@ const AppointmentsPage = () => {
   const handleDelete = async (item: Appointment) => {
     if (window.confirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
       try {
+        // Obtener información para el log antes de eliminar
+        const cliente = clientes.find(c => c.id === item.clientId);
+        const vehiculo = vehiculos.find(v => v.id === item.vehicleId);
+        const clientName = cliente ? cliente.name : `Cliente ID: ${item.clientId}`;
+        const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${item.vehicleId}`;
+        
         const response = await appointmentsService.delete(item.id);
         if (response.success) {
+          // Generar log de negocio con datos reales
+          await businessLogs.logCustomAction(
+            'DELETE',
+            'appointment',
+            item.id,
+            `Cita eliminada: ${clientName} - ${item.date.toLocaleDateString()} ${item.time} - ${vehicleInfo}`,
+            {
+              clientId: item.clientId,
+              clientName: clientName,
+              vehicleId: item.vehicleId,
+              vehicleInfo: vehicleInfo,
+              date: item.date.toISOString().split('T')[0],
+              time: item.time,
+              status: item.status
+            }
+          );
+          
           // Recargar la lista después de eliminar
           await loadAppointments();
         } else {
