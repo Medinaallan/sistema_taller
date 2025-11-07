@@ -147,7 +147,7 @@ const TestLogsPage: React.FC = () => {
         <Card>
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              🔒 Logs del Sistema
+               Logs del Sistema
             </h2>
             <p className="text-sm text-gray-600 mb-4">
               Logs relacionados con autenticación, seguridad y errores del sistema
