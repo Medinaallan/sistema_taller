@@ -287,6 +287,36 @@ app.post('/api/auth/validate-email', async (req, res) => {
   }
 });
 
+// ENDPOINT ADICIONAL para el frontend - /api/users/validate-email
+app.post('/api/users/validate-email', async (req, res) => {
+  console.log('Validar email (users endpoint):', req.body);
+  try {
+    const { email, correo } = req.body;
+    const emailToValidate = email || correo;
+    
+    if (!emailToValidate) {
+      return res.json({ success: false, message: 'Email requerido' });
+    }
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('correo', sql.VarChar(100), emailToValidate)
+      .execute('SP_VALIDAR_CORREO_USUARIO');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    
+    // Adaptar respuesta para el frontend
+    res.json({
+      success: response.allow === 1,
+      message: response.msg
+    });
+  } catch (error) {
+    console.error('Error validando email:', error);
+    res.json({ success: false, message: 'Error interno' });
+  }
+});
+
 // Registrar usuario (Paso 2) 
 app.post('/api/auth/register-user-info', async (req, res) => {
   console.log('👤 Registrar usuario:', req.body);
@@ -360,9 +390,109 @@ app.post('/api/auth/register-password', async (req, res) => {
   }
 });
 
-// Login - USANDO SP REAL
+// Obtener roles - USANDO SP REAL
+app.get('/api/users/roles', async (req, res) => {
+  console.log('📋 Obteniendo roles...');
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .execute('SP_OBTENER_ROLES');
+    
+    console.log('Roles obtenidos:', result.recordset);
+    res.json({
+      success: true,
+      data: result.recordset
+    });
+  } catch (error) {
+    console.error('Error obteniendo roles:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// Registrar usuario desde panel admin - USANDO SP REAL
+app.post('/api/users/panel', async (req, res) => {
+  console.log('👥 Registrar usuario panel admin:', req.body);
+  try {
+    const { nombre_completo, correo, telefono, rol, registradoPor } = req.body;
+    
+    if (!nombre_completo || !correo || !telefono || !rol) {
+      return res.json({
+        success: false,
+        message: 'Nombre completo, correo, teléfono y rol son requeridos'
+      });
+    }
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('nombre_completo', sql.VarChar(100), nombre_completo)
+      .input('correo', sql.VarChar(100), correo)
+      .input('telefono', sql.VarChar(30), telefono)
+      .input('rol', sql.VarChar(50), rol)
+      .input('registradoPor', sql.Int, registradoPor || null)
+      .execute('SP_REGISTRAR_USUARIO_PANEL_ADMIN');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    
+    res.json({
+      success: response.response === '200 OK' || response.allow === 1,
+      message: response.msg,
+      data: response
+    });
+  } catch (error) {
+    console.error('Error registrando usuario panel admin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// ENDPOINT ADICIONAL para register-client (compatibilidad frontend)
+app.post('/api/auth/register-client', async (req, res) => {
+  console.log('👤 Registrar cliente (frontend endpoint):', req.body);
+  try {
+    const { fullName, email, phone } = req.body;
+    
+    if (!fullName || !email || !phone) {
+      return res.json({
+        success: false,
+        message: 'Nombre completo, email y teléfono son requeridos'
+      });
+    }
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('nombre_completo', sql.VarChar(100), fullName)
+      .input('correo', sql.VarChar(100), email)
+      .input('telefono', sql.VarChar(30), phone)
+      .execute('SP_REGISTRAR_USUARIO_CLIENTE');
+    
+    const response = result.recordset[0];
+    console.log('Resultado:', response);
+    
+    res.json({
+      success: response.response === '200 OK',
+      message: response.msg,
+      data: {
+        securityCode: response.codigo_seguridad
+      }
+    });
+  } catch (error) {
+    console.error('Error registrando cliente:', error);
+    res.json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// Login - USANDO SP REAL CON FORMATO CORRECTO
 app.post('/api/auth/login', async (req, res) => {
-  console.log(' Login:', req.body);
+  console.log('🔐 Login:', req.body);
   
   try {
     const { correo, password } = req.body;
@@ -378,7 +508,23 @@ app.post('/api/auth/login', async (req, res) => {
     
     const response = result.recordset[0];
     console.log('Resultado:', response);
-    res.json(response);
+    
+    // Si allow = 1, el SP debe retornar también los datos del usuario
+    if (response.allow === 1) {
+      // En este caso, el SP retorna los datos del usuario en el mismo registro
+      res.json({
+        allow: 1,
+        usuario: {
+          usuario_id: response.usuario_id,
+          nombre_completo: response.nombre_completo,
+          correo: response.correo,
+          telefono: response.telefono,
+          rol: response.rol
+        }
+      });
+    } else {
+      res.json(response);
+    }
   } catch (error) {
     console.error('Error en login:', error);
     res.json({ allow: 0, msg: 'Error interno' });

@@ -1,47 +1,12 @@
 const { getConnection, sql } = require('../config/database');
 
-async function setupDatabase() {
+async function updateStoredProcedures() {
   try {
-    console.log(' Configurando base de datos...');
+    console.log('🔄 Actualizando stored procedures...');
     const pool = await getConnection();
     
-    // Crear tabla Users
-    console.log(' Creando tabla Users...');
-    await pool.request().query(`
-      IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Users' AND xtype='U')
-      BEGIN
-        CREATE TABLE Users (
-          UserId INT IDENTITY(1,1) PRIMARY KEY,
-          Email NVARCHAR(255) UNIQUE NOT NULL,
-          Password NVARCHAR(255) NOT NULL,
-          FullName NVARCHAR(255) NOT NULL,
-          UserType NVARCHAR(50) NOT NULL CHECK (UserType IN ('admin', 'client')),
-          Phone NVARCHAR(20),
-          Address NVARCHAR(500),
-          CompanyName NVARCHAR(255),
-          IsActive BIT DEFAULT 1,
-          SecurityCode NVARCHAR(10),
-          SecurityCodeExpiry DATETIME,
-          CreatedAt DATETIME DEFAULT GETDATE(),
-          UpdatedAt DATETIME DEFAULT GETDATE()
-        )
-        PRINT 'Tabla Users creada'
-      END
-    `);
-    
-    // Insertar usuario administrador por defecto
-    console.log(' Creando usuario administrador por defecto...');
-    await pool.request().query(`
-      IF NOT EXISTS (SELECT * FROM Users WHERE Email = 'admin@taller.com')
-      BEGIN
-        INSERT INTO Users (Email, Password, FullName, UserType, IsActive)
-        VALUES ('admin@taller.com', 'admin123', 'Administrador', 'admin', 1)
-        PRINT 'Usuario administrador creado'
-      END
-    `);
-
-    // Crear stored procedure SP_LOGIN
-    console.log(' Creando SP_LOGIN...');
+    // SP_LOGIN - Corregir parámetros según especificaciones
+    console.log('📝 Actualizando SP_LOGIN...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_LOGIN')
         DROP PROCEDURE SP_LOGIN
@@ -82,9 +47,10 @@ async function setupDatabase() {
         END
       END
     `);
+    console.log('✅ SP_LOGIN actualizado');
 
-    // Crear stored procedure SP_REGISTRAR_USUARIO_CLIENTE
-    console.log(' Creando SP_REGISTRAR_USUARIO_CLIENTE...');
+    // SP_REGISTRAR_USUARIO_CLIENTE - Según especificaciones
+    console.log('📝 Actualizando SP_REGISTRAR_USUARIO_CLIENTE...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_REGISTRAR_USUARIO_CLIENTE')
         DROP PROCEDURE SP_REGISTRAR_USUARIO_CLIENTE
@@ -122,9 +88,10 @@ async function setupDatabase() {
           @codigo_seguridad AS codigo_seguridad;
       END
     `);
+    console.log('✅ SP_REGISTRAR_USUARIO_CLIENTE actualizado');
 
-    // Crear stored procedure SP_VERIFICAR_CODIGO_SEGURIDAD
-    console.log(' Creando SP_VERIFICAR_CODIGO_SEGURIDAD...');
+    // SP_VERIFICAR_CODIGO_SEGURIDAD - Según especificaciones
+    console.log('📝 Actualizando SP_VERIFICAR_CODIGO_SEGURIDAD...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_VERIFICAR_CODIGO_SEGURIDAD')
         DROP PROCEDURE SP_VERIFICAR_CODIGO_SEGURIDAD
@@ -165,39 +132,10 @@ async function setupDatabase() {
         SELECT 'Código verificado exitosamente' AS msg, 1 AS allow;
       END
     `);
+    console.log('✅ SP_VERIFICAR_CODIGO_SEGURIDAD actualizado');
 
-    // Crear otros stored procedures útiles
-    console.log(' Creando procedures adicionales...');
-    
-    // SP_OBTENER_CLIENTES_REGISTRADOS
-    await pool.request().query(`
-      IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_OBTENER_CLIENTES_REGISTRADOS')
-        DROP PROCEDURE SP_OBTENER_CLIENTES_REGISTRADOS
-    `);
-    
-    await pool.request().query(`
-      CREATE PROCEDURE SP_OBTENER_CLIENTES_REGISTRADOS
-      AS
-      BEGIN
-        SET NOCOUNT ON;
-        
-        SELECT 
-          UserId,
-          Email,
-          FullName,
-          Phone,
-          Address,
-          CompanyName,
-          IsActive,
-          CreatedAt
-        FROM Users 
-        WHERE UserType = 'client'
-        ORDER BY CreatedAt DESC;
-      END
-    `);
-
-    // SP_VALIDAR_CORREO_USUARIO
-    console.log(' Creando SP_VALIDAR_CORREO_USUARIO...');
+    // SP_VALIDAR_CORREO_USUARIO - Con parámetro opcional
+    console.log('📝 Actualizando SP_VALIDAR_CORREO_USUARIO...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_VALIDAR_CORREO_USUARIO')
         DROP PROCEDURE SP_VALIDAR_CORREO_USUARIO
@@ -237,141 +175,10 @@ async function setupDatabase() {
         END
       END
     `);
+    console.log('✅ SP_VALIDAR_CORREO_USUARIO actualizado');
 
-    // SP_OBTENER_CLIENTE_POR_ID
-    console.log(' Creando SP_OBTENER_CLIENTE_POR_ID...');
-    await pool.request().query(`
-      IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_OBTENER_CLIENTE_POR_ID')
-        DROP PROCEDURE SP_OBTENER_CLIENTE_POR_ID
-    `);
-    
-    await pool.request().query(`
-      CREATE PROCEDURE SP_OBTENER_CLIENTE_POR_ID
-        @ClientId INT
-      AS
-      BEGIN
-        SET NOCOUNT ON;
-        
-        SELECT 
-          UserId,
-          Email,
-          FullName,
-          Phone,
-          Address,
-          CompanyName,
-          IsActive,
-          CreatedAt
-        FROM Users 
-        WHERE UserId = @ClientId AND UserType = 'client';
-      END
-    `);
-
-    // SP_ACTUALIZAR_CLIENTE
-    console.log(' Creando SP_ACTUALIZAR_CLIENTE...');
-    await pool.request().query(`
-      IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_ACTUALIZAR_CLIENTE')
-        DROP PROCEDURE SP_ACTUALIZAR_CLIENTE
-    `);
-    
-    await pool.request().query(`
-      CREATE PROCEDURE SP_ACTUALIZAR_CLIENTE
-        @ClientId INT,
-        @FullName NVARCHAR(255),
-        @Phone NVARCHAR(20),
-        @Address NVARCHAR(500),
-        @CompanyName NVARCHAR(255)
-      AS
-      BEGIN
-        SET NOCOUNT ON;
-        
-        UPDATE Users 
-        SET 
-          FullName = @FullName,
-          Phone = @Phone,
-          Address = @Address,
-          CompanyName = @CompanyName,
-          UpdatedAt = GETDATE()
-        WHERE UserId = @ClientId AND UserType = 'client';
-        
-        IF @@ROWCOUNT > 0
-        BEGIN
-          SELECT 1 AS Success, 'Cliente actualizado exitosamente' AS Message;
-        END
-        ELSE
-        BEGIN
-          SELECT 0 AS Success, 'Cliente no encontrado' AS Message;
-        END
-      END
-    `);
-
-    // SP_REGISTRAR_USUARIO_PANEL_ADMIN
-    console.log(' Creando SP_REGISTRAR_USUARIO_PANEL_ADMIN...');
-    await pool.request().query(`
-      IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_REGISTRAR_USUARIO_PANEL_ADMIN')
-        DROP PROCEDURE SP_REGISTRAR_USUARIO_PANEL_ADMIN
-    `);
-    
-    await pool.request().query(`
-      CREATE PROCEDURE SP_REGISTRAR_USUARIO_PANEL_ADMIN
-        @nombre_completo NVARCHAR(255),
-        @correo NVARCHAR(255),
-        @telefono NVARCHAR(20),
-        @rol NVARCHAR(50),
-        @registradoPor INT
-      AS
-      BEGIN
-        SET NOCOUNT ON;
-        
-        -- Verificar si el email ya existe
-        IF EXISTS (SELECT * FROM Users WHERE Email = @correo)
-        BEGIN
-          SELECT 0 AS Success, 'El email ya está registrado' AS Message;
-          RETURN;
-        END
-        
-        -- Generar contraseña temporal
-        DECLARE @TempPassword NVARCHAR(50) = CONCAT(@rol, '123');
-        
-        -- Insertar nuevo usuario admin
-        INSERT INTO Users (Email, Password, FullName, UserType, Phone, IsActive)
-        VALUES (@correo, @TempPassword, @nombre_completo, 'admin', @telefono, 1);
-        
-        SELECT 1 AS Success, 'Usuario creado exitosamente' AS Message, SCOPE_IDENTITY() AS UserId;
-      END
-    `);
-
-    // SP_OBTENER_ROLES (según especificaciones exactas)
-    console.log(' Creando SP_OBTENER_ROLES...');
-    await pool.request().query(`
-      IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_OBTENER_ROLES')
-        DROP PROCEDURE SP_OBTENER_ROLES
-    `);
-    
-    await pool.request().query(`
-      CREATE PROCEDURE SP_OBTENER_ROLES
-      AS
-      BEGIN
-        SET NOCOUNT ON;
-        
-        SELECT 
-          1 AS rol_id, 
-          'Administrador' AS nombre, 
-          'Acceso completo al sistema' AS descripcion
-        UNION ALL
-        SELECT 
-          2 AS rol_id, 
-          'Mecánico' AS nombre, 
-          'Gestión de órdenes de trabajo y servicios' AS descripcion
-        UNION ALL
-        SELECT 
-          3 AS rol_id, 
-          'Recepcionista' AS nombre, 
-          'Gestión de clientes y citas' AS descripcion;
-      END
-    `);
-
-    // SP_REGISTRAR_PASSWORD (FALTABA COMPLETAMENTE)
-    console.log(' Creando SP_REGISTRAR_PASSWORD...');
+    // SP_REGISTRAR_PASSWORD - NUEVO
+    console.log('📝 Creando SP_REGISTRAR_PASSWORD...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_REGISTRAR_PASSWORD')
         DROP PROCEDURE SP_REGISTRAR_PASSWORD
@@ -410,9 +217,81 @@ async function setupDatabase() {
         SELECT 'Contraseña registrada exitosamente' AS msg, 1 AS allow;
       END
     `);
+    console.log('✅ SP_REGISTRAR_PASSWORD creado');
 
-    // SP_OBTENER_USUARIOS (FALTABA COMPLETAMENTE)
-    console.log(' Creando SP_OBTENER_USUARIOS...');
+    // SP_REGISTRAR_USUARIO_PANEL_ADMIN - Según especificaciones
+    console.log('📝 Actualizando SP_REGISTRAR_USUARIO_PANEL_ADMIN...');
+    await pool.request().query(`
+      IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_REGISTRAR_USUARIO_PANEL_ADMIN')
+        DROP PROCEDURE SP_REGISTRAR_USUARIO_PANEL_ADMIN
+    `);
+    
+    await pool.request().query(`
+      CREATE PROCEDURE SP_REGISTRAR_USUARIO_PANEL_ADMIN
+        @nombre_completo VARCHAR(100),
+        @correo VARCHAR(100),
+        @telefono VARCHAR(30),
+        @rol VARCHAR(50),
+        @registradoPor INT = NULL
+      AS
+      BEGIN
+        SET NOCOUNT ON;
+        
+        -- Verificar si el email ya existe
+        IF EXISTS (SELECT * FROM Users WHERE Email = @correo)
+        BEGIN
+          SELECT 'El email ya está registrado' AS msg, 0 AS allow;
+          RETURN;
+        END
+        
+        -- Generar contraseña temporal
+        DECLARE @TempPassword NVARCHAR(50) = CONCAT(@rol, '123');
+        
+        -- Insertar nuevo usuario admin
+        INSERT INTO Users (Email, Password, FullName, UserType, Phone, IsActive)
+        VALUES (@correo, @TempPassword, @nombre_completo, 'admin', @telefono, 1);
+        
+        SELECT 
+          '200 OK' AS response,
+          'Usuario registrado con éxito' AS msg,
+          SCOPE_IDENTITY() AS usuario_id;
+      END
+    `);
+    console.log('✅ SP_REGISTRAR_USUARIO_PANEL_ADMIN actualizado');
+
+    // SP_OBTENER_ROLES - Según especificaciones
+    console.log('📝 Actualizando SP_OBTENER_ROLES...');
+    await pool.request().query(`
+      IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_OBTENER_ROLES')
+        DROP PROCEDURE SP_OBTENER_ROLES
+    `);
+    
+    await pool.request().query(`
+      CREATE PROCEDURE SP_OBTENER_ROLES
+      AS
+      BEGIN
+        SET NOCOUNT ON;
+        
+        SELECT 
+          1 AS rol_id, 
+          'Administrador' AS nombre, 
+          'Acceso completo al sistema' AS descripcion
+        UNION ALL
+        SELECT 
+          2 AS rol_id, 
+          'Mecánico' AS nombre, 
+          'Gestión de órdenes de trabajo y servicios' AS descripcion
+        UNION ALL
+        SELECT 
+          3 AS rol_id, 
+          'Recepcionista' AS nombre, 
+          'Gestión de clientes y citas' AS descripcion;
+      END
+    `);
+    console.log('✅ SP_OBTENER_ROLES actualizado');
+
+    // SP_OBTENER_USUARIOS - NUEVO
+    console.log('📝 Creando SP_OBTENER_USUARIOS...');
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'SP_OBTENER_USUARIOS')
         DROP PROCEDURE SP_OBTENER_USUARIOS
@@ -435,30 +314,36 @@ async function setupDatabase() {
         WHERE UserId = @usuario_id AND IsActive = 1;
       END
     `);
+    console.log('✅ SP_OBTENER_USUARIOS creado');
 
-    console.log(' Base de datos configurada exitosamente');
-    
-    // Verificar las tablas creadas
-    const result = await pool.request().query('SELECT name FROM sys.tables');
-    console.log(' Tablas en la base de datos:', result.recordset.map(r => r.name));
+    console.log('🎉 TODOS LOS STORED PROCEDURES ACTUALIZADOS EXITOSAMENTE');
+    console.log('📋 Stored procedures actualizados:');
+    console.log('   1. SP_LOGIN');
+    console.log('   2. SP_REGISTRAR_USUARIO_CLIENTE');
+    console.log('   3. SP_VERIFICAR_CODIGO_SEGURIDAD');
+    console.log('   4. SP_VALIDAR_CORREO_USUARIO');
+    console.log('   5. SP_REGISTRAR_PASSWORD');
+    console.log('   6. SP_REGISTRAR_USUARIO_PANEL_ADMIN');
+    console.log('   7. SP_OBTENER_ROLES');
+    console.log('   8. SP_OBTENER_USUARIOS');
     
   } catch (error) {
-    console.error(' Error configurando la base de datos:', error);
+    console.error('❌ Error actualizando stored procedures:', error);
     throw error;
   }
 }
 
 // Ejecutar si se llama directamente
 if (require.main === module) {
-  setupDatabase()
+  updateStoredProcedures()
     .then(() => {
-      console.log(' Configuración completada');
+      console.log('✅ Actualización completada');
       process.exit(0);
     })
     .catch(err => {
-      console.error(' Error en la configuración:', err);
+      console.error('❌ Error en la actualización:', err);
       process.exit(1);
     });
 }
 
-module.exports = { setupDatabase };
+module.exports = { updateStoredProcedures };

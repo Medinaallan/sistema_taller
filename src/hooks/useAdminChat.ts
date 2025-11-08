@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chatService, ChatMensajeDTO } from '../servicios/chatService';
 import { obtenerClientesActualizados } from '../utilidades/BaseDatosJS';
-import { SP_OBTENER_CLIENTES_REGISTRADOS } from '../utilidades/storedProceduresBackend';
 
 export interface ChatClienteItem {
   id: string;              // client.id
@@ -50,8 +49,18 @@ export function useAdminChat() {
       const clientesCSV = await obtenerClientesActualizados();
       console.log('📋 Clientes CSV:', clientesCSV.length);
       
-      // 2. Clientes registrados en BD
-      const clientesBD = await SP_OBTENER_CLIENTES_REGISTRADOS();
+      // 2. Clientes registrados en BD - LLAMADA DIRECTA A LA API
+      let clientesBD: any[] = [];
+      try {
+        const response = await fetch('http://localhost:8080/api/clients/registered');
+        if (response.ok) {
+          const result = await response.json();
+          clientesBD = result.success ? result.data : [];
+        }
+      } catch (error) {
+        console.warn('⚠️ Error obteniendo clientes de BD:', error);
+        clientesBD = [];
+      }
       console.log('💾 Clientes BD:', clientesBD.length);
       
       // 3. Combinar y evitar duplicados (priorizar BD sobre CSV)
@@ -68,13 +77,13 @@ export function useAdminChat() {
       });
       
       // Después agregar clientes BD (sobrescribe si hay email duplicado)
-      clientesBD.forEach(cliente => {
+      clientesBD.forEach((cliente: any) => {
         // Generar ID compatible con el sistema de chat
-        const chatId = `client-bd-${cliente.userId}`;
-        clientesUnicos.set(cliente.email, {
+        const chatId = `client-bd-${cliente.UserId || cliente.userId}`;
+        clientesUnicos.set(cliente.Email || cliente.email, {
           id: chatId,
-          nombre: cliente.fullName,
-          avatar: generarAvatar(cliente.fullName),
+          nombre: cliente.FullName || cliente.fullName,
+          avatar: generarAvatar(cliente.FullName || cliente.fullName),
           noLeidos: 0
         });
       });
