@@ -335,6 +335,10 @@ export function VehiclesPage() {
           );
           
           data.deleteVehicleWithRelations(vehicle.id);
+          
+          // Forzar actualización de estadísticas del dashboard
+          dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+          
           alert('Vehículo eliminado exitosamente');
         } else {
           alert('Error al eliminar el vehículo: ' + response.message);
@@ -388,6 +392,10 @@ export function VehiclesPage() {
           await businessLogs.logVehicleUpdated(updatedVehicle, changes);
           
           dispatch({ type: 'UPDATE_VEHICLE', payload: updatedVehicle });
+          
+          // Actualizar estadísticas del dashboard
+          dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+          
           setIsModalOpen(false);
           alert('Vehículo actualizado exitosamente');
         } else {
@@ -439,6 +447,10 @@ export function VehiclesPage() {
           await businessLogs.logVehicleCreated(newVehicle, clientName);
           
           dispatch({ type: 'ADD_VEHICLE', payload: newVehicle });
+          
+          // Actualizar estadísticas del dashboard
+          dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+          
           setIsModalOpen(false);
           alert('Vehículo creado exitosamente');
         } else {

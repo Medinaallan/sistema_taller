@@ -333,9 +333,39 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       const totalVehicles = state.vehicles.length;
       const totalWorkOrders = state.workOrders.length;
       const completedOrders = state.workOrders.filter(wo => wo.status === 'completed').length;
-      const totalRevenue = state.invoices
-        .filter(inv => inv.status === 'paid')
-        .reduce((sum, inv) => sum + inv.total, 0);
+      const pendingOrders = state.workOrders.filter(wo => wo.status === 'pending').length;
+      
+      // Calcular ingresos basado en órdenes completadas si no hay facturas
+      const totalRevenue = state.invoices.length > 0 
+        ? state.invoices
+            .filter(inv => inv.status === 'paid')
+            .reduce((sum, inv) => sum + inv.total, 0)
+        : state.workOrders
+            .filter(wo => wo.status === 'completed')
+            .reduce((sum, wo) => sum + wo.totalCost, 0);
+            
+      // Calcular ingresos mensuales
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const monthlyRevenue = state.invoices.length > 0
+        ? state.invoices
+            .filter(inv => {
+              const invDate = new Date(inv.date);
+              return inv.status === 'paid' && 
+                     invDate.getMonth() === currentMonth && 
+                     invDate.getFullYear() === currentYear;
+            })
+            .reduce((sum, inv) => sum + inv.total, 0)
+        : state.workOrders
+            .filter(wo => {
+              const completionDate = wo.actualCompletionDate;
+              return wo.status === 'completed' && 
+                     completionDate &&
+                     completionDate.getMonth() === currentMonth &&
+                     completionDate.getFullYear() === currentYear;
+            })
+            .reduce((sum, wo) => sum + wo.totalCost, 0);
+            
       const activeReminders = state.reminders.filter(r => r.isActive).length;
 
       const refreshedStats: DashboardStats = {
@@ -343,9 +373,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         totalVehicles,
         totalWorkOrders,
         completedOrders,
-        pendingOrders: totalWorkOrders - completedOrders,
+        pendingOrders,
         totalRevenue,
-        monthlyRevenue: totalRevenue, // Simplificado para el ejemplo
+        monthlyRevenue,
         activeReminders,
       };
 

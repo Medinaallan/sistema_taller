@@ -44,7 +44,7 @@ interface VehicleForm {
 }
 
 export function ClientVehiclesPage() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -197,6 +197,27 @@ export function ClientVehiclesPage() {
         };
         
         setClientVehicles(prev => [...prev, newVehicle]);
+        
+        // También actualizar el estado global 
+        dispatch({ type: 'ADD_VEHICLE', payload: {
+          ...newVehicle,
+          clientId: state.user.id,
+          serviceType: {
+            id: 'default',
+            name: 'Servicio General',
+            description: 'Servicio general',
+            basePrice: 0,
+            estimatedDuration: 1,
+          },
+          workOrders: [],
+          reminders: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }});
+        
+        // Actualizar estadísticas del dashboard
+        dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+        
         setShowAddModal(false);
         
         // Resetear formulario

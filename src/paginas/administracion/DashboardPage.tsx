@@ -45,7 +45,7 @@ export function DashboardPage() {
   useEffect(() => {
     // Refrescar estadísticas del dashboard automáticamente
     dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
-  }, [dispatch]);
+  }, [dispatch, data.vehicles.length, data.clients.length, data.workOrders.length]); // Agregué dependencias para que se actualice cuando cambien los datos
 
   const stats = data.dashboardStats;
   
