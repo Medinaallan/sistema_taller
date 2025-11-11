@@ -1,81 +1,36 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const { getConnection, sql } = require('../config/database');
 const router = express.Router();
 
-const CSV_FILE_PATH = path.join(__dirname, '../data/vehicles/vehicles.csv');
+/**
+ * CONTROLADOR DE VEHÍCULOS 
+ * Endpoints para gestión de vehículos usando la base de datos
+ * SP: SP_VALIDAR_PLACA_VEHICULO, SP_REGISTRAR_VEHICULO, 
+ *     SP_OBTENER_VEHICULOS, SP_EDITAR_VEHICULO
+ */
 
-// Función para leer el CSV de vehículos
-function readVehiclesCSV() {
+// GET /api/vehicles - Obtener vehículos con filtros opcionales
+router.get('/', async (req, res) => {
+  console.log('🚗 Obteniendo vehículos:', req.query);
   try {
-    if (!fs.existsSync(CSV_FILE_PATH)) {
-      // Crear el archivo con headers si no existe
-      const headers = 'id,clienteId,marca,modelo,año,placa,color,vin,mileage\n';
-      fs.writeFileSync(CSV_FILE_PATH, headers);
-      return [];
-    }
+    const { cliente_id, vehiculo_id, placa, obtener_activos = 1 } = req.query;
     
-    const csvContent = fs.readFileSync(CSV_FILE_PATH, 'utf8');
-    const lines = csvContent.trim().split('\n');
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cliente_id', sql.Int, cliente_id ? parseInt(cliente_id) : null)
+      .input('vehiculo_id', sql.Int, vehiculo_id ? parseInt(vehiculo_id) : null)
+      .input('placa', sql.VarChar(50), placa || null)
+      .input('obtener_activos', sql.Bit, obtener_activos === 'null' ? null : parseInt(obtener_activos))
+      .execute('SP_OBTENER_VEHICULOS');
     
-    if (lines.length <= 1) return []; // Solo headers o archivo vacío
-    
-    const headers = lines[0].split(',');
-    const vehicles = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line === '') continue; // Saltar líneas vacías
-      
-      const values = line.split(',');
-      if (values.length >= 6) { // Al menos los campos básicos requeridos
-        const vehicle = {};
-        headers.forEach((header, index) => {
-          vehicle[header] = values[index] || ''; // Usar string vacío si el valor no existe
-        });
-        vehicles.push(vehicle);
-      }
-    }
-    
-    return vehicles;
-  } catch (error) {
-    console.error('Error reading vehicles CSV:', error);
-    return [];
-  }
-}
-
-// Función para escribir al CSV de vehículos
-function writeVehiclesCSV(vehicles) {
-  try {
-    const headers = 'id,clienteId,marca,modelo,año,placa,color,vin,mileage\n';
-    const csvContent = headers + vehicles.map(vehicle => 
-      `${vehicle.id},${vehicle.clienteId},${vehicle.marca},${vehicle.modelo},${vehicle.año},${vehicle.placa},${vehicle.color},${vehicle.vin || ''},${vehicle.mileage || 0}`
-    ).join('\n');
-    
-    fs.writeFileSync(CSV_FILE_PATH, csvContent);
-    return true;
-  } catch (error) {
-    console.error('Error writing vehicles CSV:', error);
-    return false;
-  }
-}
-
-// Función para generar ID único
-function generateId() {
-  return 'VEH-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
-}
-
-// GET /api/vehicles - Obtener todos los vehículos
-router.get('/', (req, res) => {
-  try {
-    const vehicles = readVehiclesCSV();
+    console.log('Vehículos obtenidos:', result.recordset.length);
     res.json({
       success: true,
-      data: vehicles,
-      message: `${vehicles.length} vehículos encontrados`
+      data: result.recordset,
+      message: `${result.recordset.length} vehículos encontrados`
     });
   } catch (error) {
-    console.error('Error getting vehicles:', error);
+    console.error('Error obteniendo vehículos:', error);
     res.status(500).json({
       success: false,
       message: 'Error al obtener vehículos',
@@ -84,151 +39,241 @@ router.get('/', (req, res) => {
   }
 });
 
-// POST /api/vehicles - Crear nuevo vehículo
-router.post('/', (req, res) => {
+// POST /api/vehicles/validate-plate - Validar placa de vehículo
+router.post('/validate-plate', async (req, res) => {
+  console.log('Validando placa:', req.body);
   try {
-    const { clienteId, marca, modelo, año, placa, color, vin, mileage } = req.body;
+    const { placa, vehiculo_id } = req.body;
     
-    // Validaciones básicas
-    if (!clienteId || !marca || !modelo || !año || !placa || !color) {
+    if (!placa) {
       return res.status(400).json({
         success: false,
-        message: 'Los campos clienteId, marca, modelo, año, placa y color son requeridos'
+        message: 'La placa es requerida'
       });
     }
     
-    const newVehicle = {
-      id: generateId(),
-      clienteId,
-      marca,
-      modelo,
-      año: parseInt(año),
-      placa,
-      color,
-      vin: vin || '',
-      mileage: parseInt(mileage) || 0
-    };
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('placa', sql.VarChar(50), placa)
+      .input('vehiculo_id', sql.Int, vehiculo_id || null)
+      .execute('SP_VALIDAR_PLACA_VEHICULO');
     
-    // Escribir directamente al CSV sin leer primero
-    try {
-      const csvLine = `\n${newVehicle.id},${newVehicle.clienteId},${newVehicle.marca},${newVehicle.modelo},${newVehicle.año},${newVehicle.placa},${newVehicle.color},${newVehicle.vin},${newVehicle.mileage}`;
-      fs.appendFileSync(CSV_FILE_PATH, csvLine);
-      
-      res.status(201).json({
-        success: true,
-        data: newVehicle,
-        message: 'Vehículo creado exitosamente'
-      });
-    } catch (writeError) {
-      console.error('Error writing to CSV:', writeError);
-      res.status(500).json({
-        success: false,
-        message: 'Error al guardar el vehículo'
-      });
-    }
+    const response = result.recordset[0];
+    console.log('Resultado validación placa:', response);
+    
+    res.json({
+      success: response.allow === 1,
+      available: response.allow === 1,
+      message: response.msg,
+      data: response
+    });
   } catch (error) {
-    console.error('Error creating vehicle:', error);
+    console.error('Error validando placa:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al crear vehículo',
+      message: 'Error al validar la placa',
       error: error.message
     });
   }
 });
 
-// PUT /api/vehicles/:id - Actualizar vehículo
-router.put('/:id', (req, res) => {
+// POST /api/vehicles - Registrar nuevo vehículo
+router.post('/', async (req, res) => {
+  console.log('🚗 Registrando vehículo:', req.body);
   try {
-    const { id } = req.params;
-    const { clienteId, marca, modelo, año, placa, color, vin, mileage } = req.body;
+    const { 
+      cliente_id, clienteId,
+      marca, 
+      modelo, 
+      anio, año,
+      placa, 
+      color, 
+      vin, 
+      numero_motor, 
+      kilometraje, 
+      foto_url 
+    } = req.body;
     
-    const vehicles = readVehiclesCSV();
-    const vehicleIndex = vehicles.findIndex(v => v.id === id);
+    const finalClienteId = cliente_id || clienteId;
+    const finalAnio = anio || año;
     
-    if (vehicleIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: 'Vehículo no encontrado'
-      });
-    }
-    
-    // Verificar que la placa no exista en otro vehículo
-    const existingVehicle = vehicles.find(v => v.placa.toLowerCase() === placa.toLowerCase() && v.id !== id);
-    if (existingVehicle) {
+    // Validaciones básicas - Solo campos obligatorios según el SP
+    if (!finalClienteId || !marca || !modelo || !finalAnio || !placa) {
       return res.status(400).json({
         success: false,
-        message: 'Ya existe otro vehículo con esta placa'
+        message: 'Los campos cliente_id, marca, modelo, anio y placa son obligatorios'
       });
     }
     
-    vehicles[vehicleIndex] = {
-      ...vehicles[vehicleIndex],
-      clienteId,
-      marca,
-      modelo,
-      año: parseInt(año),
-      placa,
-      color,
-      vin: vin || vehicles[vehicleIndex].vin || '',
-      mileage: parseInt(mileage) || vehicles[vehicleIndex].mileage || 0
-    };
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cliente_id', sql.Int, parseInt(finalClienteId))
+      .input('marca', sql.VarChar(50), marca)
+      .input('modelo', sql.VarChar(50), modelo)
+      .input('anio', sql.SmallInt, parseInt(finalAnio))
+      .input('placa', sql.VarChar(50), placa)
+      .input('color', sql.VarChar(50), color || null)
+      .input('vin', sql.VarChar(50), vin || null)
+      .input('numero_motor', sql.VarChar(50), numero_motor || null)
+      .input('kilometraje', sql.Int, kilometraje ? parseInt(kilometraje) : null)
+      .input('foto_url', sql.VarChar(255), foto_url || null)
+      .execute('SP_REGISTRAR_VEHICULO');
     
-    if (writeVehiclesCSV(vehicles)) {
+    const response = result.recordset[0];
+    console.log('Resultado registro vehículo:', response);
+    
+    if (response.msg === '200 OK') {
+      res.status(201).json({
+        success: true,
+        data: {
+          vehiculo_id: response.vehiculo_id,
+          cliente_id: finalClienteId,
+          marca,
+          modelo,
+          anio: finalAnio,
+          placa,
+          color,
+          vin,
+          numero_motor,
+          kilometraje,
+          foto_url
+        },
+        message: 'Vehículo registrado exitosamente'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: response.msg || 'Error al registrar el vehículo',
+        data: response
+      });
+    }
+  } catch (error) {
+    console.error('Error registrando vehículo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al registrar el vehículo',
+      error: error.message
+    });
+  }
+});
+
+// PUT /api/vehicles/:id - Actualizar vehículo existente
+router.put('/:id', async (req, res) => {
+  console.log('🚗 Actualizando vehículo:', req.params.id, req.body);
+  try {
+    const vehiculo_id = parseInt(req.params.id);
+    const { 
+      marca, 
+      modelo, 
+      anio, año,
+      placa, 
+      color, 
+      vin, 
+      numero_motor, 
+      kilometraje, 
+      foto_url 
+    } = req.body;
+    
+    if (isNaN(vehiculo_id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de vehículo inválido'
+      });
+    }
+    
+    const finalAnio = anio || año;
+    
+    // Validaciones básicas - Solo campos obligatorios según el SP
+    if (!marca || !modelo || !finalAnio || !placa) {
+      return res.status(400).json({
+        success: false,
+        message: 'Los campos marca, modelo, anio y placa son obligatorios'
+      });
+    }
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('vehiculo_id', sql.Int, vehiculo_id)
+      .input('marca', sql.VarChar(50), marca)
+      .input('modelo', sql.VarChar(50), modelo)
+      .input('anio', sql.SmallInt, parseInt(finalAnio))
+      .input('placa', sql.VarChar(50), placa)
+      .input('color', sql.VarChar(50), color || null)
+      .input('vin', sql.VarChar(50), vin || null)
+      .input('numero_motor', sql.VarChar(50), numero_motor || null)
+      .input('kilometraje', sql.Int, kilometraje ? parseInt(kilometraje) : null)
+      .input('foto_url', sql.VarChar(255), foto_url || null)
+      .execute('SP_EDITAR_VEHICULO');
+    
+    const response = result.recordset[0];
+    console.log('Resultado actualización vehículo:', response);
+    
+    if (response.msg === '200 OK' || response.allow === 1) {
       res.json({
         success: true,
-        data: vehicles[vehicleIndex],
+        data: {
+          vehiculo_id,
+          marca,
+          modelo,
+          anio: finalAnio,
+          placa,
+          color,
+          vin,
+          numero_motor,
+          kilometraje,
+          foto_url
+        },
         message: 'Vehículo actualizado exitosamente'
       });
     } else {
-      res.status(500).json({
+      res.status(400).json({
         success: false,
-        message: 'Error al actualizar el vehículo'
+        message: response.msg || 'Error al actualizar el vehículo',
+        data: response
       });
     }
   } catch (error) {
-    console.error('Error updating vehicle:', error);
+    console.error('Error actualizando vehículo:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al actualizar vehículo',
+      message: 'Error al actualizar el vehículo',
       error: error.message
     });
   }
 });
 
-// DELETE /api/vehicles/:id - Eliminar vehículo
-router.delete('/:id', (req, res) => {
+// GET /api/vehicles/client/:clientId - Obtener vehículos de un cliente específico
+router.get('/client/:clientId', async (req, res) => {
+  console.log('🚗 Obteniendo vehículos del cliente:', req.params.clientId);
   try {
-    const { id } = req.params;
+    const cliente_id = parseInt(req.params.clientId);
     
-    const vehicles = readVehiclesCSV();
-    const vehicleIndex = vehicles.findIndex(v => v.id === id);
-    
-    if (vehicleIndex === -1) {
-      return res.status(404).json({
+    if (isNaN(cliente_id)) {
+      return res.status(400).json({
         success: false,
-        message: 'Vehículo no encontrado'
+        message: 'ID de cliente inválido'
       });
     }
     
-    const deletedVehicle = vehicles.splice(vehicleIndex, 1)[0];
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cliente_id', sql.Int, cliente_id)
+      .input('vehiculo_id', sql.Int, null)
+      .input('placa', sql.VarChar(50), null)
+      .input('obtener_activos', sql.Bit, 1)
+      .execute('SP_OBTENER_VEHICULOS');
     
-    if (writeVehiclesCSV(vehicles)) {
-      res.json({
-        success: true,
-        data: deletedVehicle,
-        message: 'Vehículo eliminado exitosamente'
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Error al eliminar el vehículo'
-      });
-    }
+    console.log(`Vehículos del cliente ${cliente_id}:`, result.recordset.length);
+    res.json({
+      success: true,
+      data: result.recordset,
+      message: `${result.recordset.length} vehículos encontrados para el cliente`
+    });
   } catch (error) {
-    console.error('Error deleting vehicle:', error);
+    console.error('Error obteniendo vehículos del cliente:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al eliminar vehículo',
+      message: 'Error al obtener los vehículos del cliente',
       error: error.message
     });
   }

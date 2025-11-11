@@ -277,14 +277,16 @@ export const vehiclesService = {
   },
   
   async create(vehicleData: { 
-    clienteId: string; 
+    cliente_id: number;  // Cambiado para coincidir con SP
     marca: string; 
     modelo: string; 
-    año: number; 
+    anio: number;  // Cambiado de año a anio
     placa: string; 
     color: string; 
-    vin?: string;
-    mileage?: number;
+    vin?: string | null;
+    numero_motor?: string | null;  // Nuevo campo del SP
+    kilometraje?: number | null;  // Cambiado de mileage a kilometraje
+    foto_url?: string | null;  // Nuevo campo del SP
   }): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/vehicles`, {
       ...fetchConfig,
@@ -296,14 +298,15 @@ export const vehiclesService = {
   },
   
   async update(id: string, vehicleData: Partial<{ 
-    clienteId: string; 
     marca: string; 
     modelo: string; 
-    año: number; 
+    anio: number;  // Cambiado de año a anio
     placa: string; 
     color: string; 
-    vin: string;
-    mileage: number;
+    vin: string | null;
+    numero_motor: string | null;  // Nuevo campo del SP
+    kilometraje: number | null;  // Cambiado de mileage a kilometraje
+    foto_url: string | null;  // Nuevo campo del SP
   }>): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
       ...fetchConfig,
@@ -318,6 +321,16 @@ export const vehiclesService = {
     const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
       ...fetchConfig,
       method: 'DELETE',
+    });
+    
+    return handleResponse(response);
+  },
+  
+  async validatePlate(placa: string, vehiculo_id?: number): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/vehicles/validate-plate`, {
+      ...fetchConfig,
+      method: 'POST',
+      body: JSON.stringify({ placa, vehiculo_id }),
     });
     
     return handleResponse(response);

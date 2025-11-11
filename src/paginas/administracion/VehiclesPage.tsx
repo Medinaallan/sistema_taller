@@ -24,6 +24,9 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
     licensePlate: vehicle?.licensePlate || '',
     color: vehicle?.color || '',
     mileage: vehicle?.mileage || 0,
+    vin: vehicle?.vin || '',
+    numeroMotor: vehicle?.numeroMotor || '', // Campo nuevo del SP
+    fotoUrl: vehicle?.fotoUrl || '', // Campo nuevo del SP
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -41,6 +44,7 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    // Solo validar campos obligatorios según el SP
     if (!formData.clientId) newErrors.clientId = 'Debe seleccionar un cliente';
     if (!formData.brand.trim()) newErrors.brand = 'La marca es requerida';
     if (!formData.model.trim()) newErrors.model = 'El modelo es requerido';
@@ -48,7 +52,7 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
       newErrors.year = 'El año debe estar entre 1900 y el próximo año';
     }
     if (!formData.licensePlate.trim()) newErrors.licensePlate = 'La placa es requerida';
-    if (!formData.color.trim()) newErrors.color = 'El color es requerido';
+    // Color es opcional según el SP - no validar como obligatorio
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -67,6 +71,9 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
       licensePlate: formData.licensePlate.trim(),
       color: formData.color.trim(),
       mileage: formData.mileage > 0 ? formData.mileage : undefined,
+      vin: formData.vin.trim(),
+      numeroMotor: formData.numeroMotor.trim(),
+      fotoUrl: formData.fotoUrl.trim(),
       serviceType: {
         id: 'default',
         name: 'Servicio General',
@@ -141,13 +148,12 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
         />
 
         <Input
-          label="Color"
+          label="Color (opcional)"
           name="color"
           value={formData.color}
           onChange={handleInputChange}
           error={errors.color}
           placeholder="Blanco"
-          required
         />
 
         <Input
@@ -159,6 +165,36 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
           onChange={handleInputChange}
           error={errors.mileage}
           placeholder="50000"
+        />
+
+        <Input
+          label="VIN (opcional)"
+          name="vin"
+          value={formData.vin}
+          onChange={handleInputChange}
+          error={errors.vin}
+          placeholder="1HGBH41JXMN109186"
+          maxLength={17}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input
+          label="Número de Motor (opcional)"
+          name="numeroMotor"
+          value={formData.numeroMotor}
+          onChange={handleInputChange}
+          error={errors.numeroMotor}
+          placeholder="ABC123456789"
+        />
+
+        <Input
+          label="URL de Foto (opcional)"
+          name="fotoUrl"
+          value={formData.fotoUrl}
+          onChange={handleInputChange}
+          error={errors.fotoUrl}
+          placeholder="https://ejemplo.com/foto.jpg"
         />
       </div>
 
@@ -191,17 +227,19 @@ export function VehiclesPage() {
       setLoading(true);
       const response = await vehiclesService.getAll();
       if (response.success) {
-        // Map CSV data to Vehicle format
-        const mappedVehicles = response.data.map((csvVehicle: any) => ({
-          id: csvVehicle.id,
-          clientId: csvVehicle.clienteId,
-          brand: csvVehicle.marca,
-          model: csvVehicle.modelo,
-          year: parseInt(csvVehicle.año),
-          licensePlate: csvVehicle.placa,
-          color: csvVehicle.color,
-          mileage: parseInt(csvVehicle.mileage) || 0,
-          vin: csvVehicle.vin || '',
+        // Map stored procedure data to Vehicle format
+        const mappedVehicles = response.data.map((spVehicle: any) => ({
+          id: spVehicle.vehiculo_id?.toString() || spVehicle.id,
+          clientId: spVehicle.cliente_id?.toString() || spVehicle.clientId,
+          brand: spVehicle.marca,
+          model: spVehicle.modelo,
+          year: parseInt(spVehicle.anio),
+          licensePlate: spVehicle.placa,
+          color: spVehicle.color,
+          mileage: parseInt(spVehicle.kilometraje) || 0,
+          vin: spVehicle.vin || '',
+          numeroMotor: spVehicle.numero_motor || '',
+          fotoUrl: spVehicle.foto_url || '',
           serviceType: {
             id: 'default',
             name: 'Servicio General',
@@ -211,7 +249,7 @@ export function VehiclesPage() {
           },
           workOrders: [],
           reminders: [],
-          createdAt: new Date(),
+          createdAt: new Date(spVehicle.fecha_creacion || Date.now()),
           updatedAt: new Date(),
         }));
         dispatch({ type: 'SET_VEHICLES', payload: mappedVehicles });
@@ -315,16 +353,17 @@ export function VehiclesPage() {
       setLoading(true);
       
       if (modalType === 'edit' && selectedVehicle) {
-        // Update vehicle via API
+        // Update vehicle via API using SP fields
         const updateData = {
-          clienteId: vehicleData.clientId,
           marca: vehicleData.brand,
           modelo: vehicleData.model,
-          año: vehicleData.year,
+          anio: vehicleData.year,
           placa: vehicleData.licensePlate,
           color: vehicleData.color,
-          vin: vehicleData.vin || '',
-          mileage: vehicleData.mileage || 0,
+          vin: vehicleData.vin || null,
+          numero_motor: vehicleData.numeroMotor || null,
+          kilometraje: vehicleData.mileage || null,
+          foto_url: vehicleData.fotoUrl || null,
         };
         
         const response = await vehiclesService.update(selectedVehicle.id, updateData);
@@ -355,32 +394,36 @@ export function VehiclesPage() {
           alert('Error al actualizar el vehículo: ' + response.message);
         }
       } else {
-        // Create new vehicle via API
+        // Create new vehicle via API using SP fields
         const createData = {
-          clienteId: vehicleData.clientId,
+          cliente_id: parseInt(vehicleData.clientId),
           marca: vehicleData.brand,
           modelo: vehicleData.model,
-          año: vehicleData.year,
+          anio: vehicleData.year,
           placa: vehicleData.licensePlate,
           color: vehicleData.color,
-          vin: vehicleData.vin || '',
-          mileage: vehicleData.mileage || 0,
+          vin: vehicleData.vin || null,
+          numero_motor: vehicleData.numeroMotor || null,
+          kilometraje: vehicleData.mileage || null,
+          foto_url: vehicleData.fotoUrl || null,
         };
         
         const response = await vehiclesService.create(createData);
         
         if (response.success) {
-          // Add to local state
+          // Add to local state mapping SP response
           const newVehicle: Vehicle = {
-            id: response.data.id,
-            clientId: response.data.clienteId,
+            id: response.data.vehiculo_id?.toString() || response.data.id,
+            clientId: response.data.cliente_id?.toString() || vehicleData.clientId,
             brand: response.data.marca,
             model: response.data.modelo,
-            year: parseInt(response.data.año),
+            year: parseInt(response.data.anio),
             licensePlate: response.data.placa,
             color: response.data.color,
             vin: response.data.vin || '',
-            mileage: parseInt(response.data.mileage) || 0,
+            numeroMotor: response.data.numero_motor || '',
+            fotoUrl: response.data.foto_url || '',
+            mileage: parseInt(response.data.kilometraje) || 0,
             serviceType: vehicleData.serviceType,
             workOrders: [],
             reminders: [],
@@ -677,6 +720,30 @@ function VehicleDetails({ vehicle, client, workOrders, appointments }: VehicleDe
               <div>
                 <dt className="text-sm font-medium text-gray-500">Kilometraje</dt>
                 <dd className="text-sm text-gray-900">{vehicle.mileage.toLocaleString()} km</dd>
+              </div>
+            )}
+            {vehicle.vin && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">VIN</dt>
+                <dd className="text-sm text-gray-900 font-mono">{vehicle.vin}</dd>
+              </div>
+            )}
+            {vehicle.numeroMotor && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Número de Motor</dt>
+                <dd className="text-sm text-gray-900 font-mono">{vehicle.numeroMotor}</dd>
+              </div>
+            )}
+            {vehicle.fotoUrl && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Foto</dt>
+                <dd className="text-sm text-gray-900">
+                  <img 
+                    src={vehicle.fotoUrl} 
+                    alt={`${vehicle.brand} ${vehicle.model}`}
+                    className="w-32 h-24 object-cover rounded-lg border border-gray-200"
+                  />
+                </dd>
               </div>
             )}
           </dl>

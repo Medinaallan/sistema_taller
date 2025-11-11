@@ -22,6 +22,8 @@ interface Vehicle {
   year: number;
   color: string;
   vin: string;
+  numeroMotor?: string;
+  fotoUrl?: string;
   licensePlate: string;
   mileage: number;
   photo?: string;
@@ -37,6 +39,8 @@ interface VehicleForm {
   vin: string;
   licensePlate: string;
   mileage: number;
+  numeroMotor: string;
+  fotoUrl: string;
 }
 
 export function ClientVehiclesPage() {
@@ -58,7 +62,9 @@ export function ClientVehiclesPage() {
     color: '',
     vin: '',
     licensePlate: '',
-    mileage: 0
+    mileage: 0,
+    numeroMotor: '',
+    fotoUrl: ''
   });
 
   // Datos de ejemplo con servicios - removidos para empezar en blanco
@@ -73,27 +79,31 @@ export function ClientVehiclesPage() {
       
       setLoadingVehicles(true);
       try {
-        const response = await vehiclesService.getAll();
-        if (response.success && response.data) {
-          // Filtrar solo los vehículos del cliente actual
-          const userVehicles = response.data
-            .filter((vehicle: any) => vehicle.clienteId === state.user?.id)
-            .map((vehicle: any) => ({
-              id: vehicle.id,
-              brand: vehicle.marca,
-              model: vehicle.modelo,
-              year: parseInt(vehicle.año),
-              color: vehicle.color,
-              vin: vehicle.vin || '',
-              licensePlate: vehicle.placa,
-              mileage: parseInt(vehicle.mileage) || 0,
-              photo: vehicle.photo,
-              nextService: vehicle.nextService,
-              lastServiceDate: vehicle.lastServiceDate
-            }));
+        // Llamar al endpoint específico para obtener vehículos de un cliente
+        const response = await fetch(`http://localhost:8080/api/vehicles/client/${state.user.id}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Mapear datos del stored procedure al formato del frontend
+          const userVehicles = result.data.map((vehicle: any) => ({
+            id: vehicle.vehiculo_id?.toString() || vehicle.id,
+            brand: vehicle.marca,
+            model: vehicle.modelo,
+            year: parseInt(vehicle.anio),
+            color: vehicle.color,
+            vin: vehicle.vin || '',
+            numeroMotor: vehicle.numero_motor || '',
+            fotoUrl: vehicle.foto_url || '',
+            licensePlate: vehicle.placa,
+            mileage: parseInt(vehicle.kilometraje) || 0,
+            photo: vehicle.foto_url,
+            nextService: vehicle.nextService,
+            lastServiceDate: vehicle.lastServiceDate,
+            clientName: vehicle.nombre_cliente
+          }));
           setClientVehicles(userVehicles);
         } else {
-          console.error('Error cargando vehículos:', response.message);
+          console.error('Error cargando vehículos:', result.message);
           setClientVehicles([]);
         }
       } catch (error) {
@@ -147,39 +157,43 @@ export function ClientVehiclesPage() {
       return;
     }
 
-    // Validaciones básicas
-    if (!vehicleForm.brand || !vehicleForm.model || !vehicleForm.licensePlate || !vehicleForm.color) {
-      alert('Por favor, completa todos los campos obligatorios');
+    // Validaciones básicas - Solo campos obligatorios según SP
+    if (!vehicleForm.brand || !vehicleForm.model || !vehicleForm.licensePlate) {
+      alert('Por favor, completa todos los campos obligatorios (marca, modelo y placa)');
       return;
     }
 
     setLoading(true);
     try {
-      // Preparar datos para la API (mapear campo nombres)
+      // Preparar datos para la API usando los nombres de campos del SP
       const vehicleData = {
-        clienteId: state.user.id,
+        cliente_id: parseInt(state.user.id), // Usar cliente_id como espera el SP
         marca: vehicleForm.brand,
         modelo: vehicleForm.model,
-        año: vehicleForm.year,
+        anio: vehicleForm.year,
         placa: vehicleForm.licensePlate,
         color: vehicleForm.color,
-        vin: vehicleForm.vin,
-        mileage: vehicleForm.mileage
+        vin: vehicleForm.vin || null,
+        numero_motor: vehicleForm.numeroMotor || null, // Campo nuevo del SP
+        kilometraje: vehicleForm.mileage || null,
+        foto_url: vehicleForm.fotoUrl || null // Campo nuevo del SP
       };
 
       const response = await vehiclesService.create(vehicleData);
       
       if (response.success) {
-        // Agregar el nuevo vehículo al estado local
+        // Mapear la respuesta del SP al formato del frontend
         const newVehicle: Vehicle = {
-          id: response.data.id,
+          id: response.data.vehiculo_id?.toString() || response.data.id,
           brand: response.data.marca,
           model: response.data.modelo,
-          year: parseInt(response.data.año),
+          year: parseInt(response.data.anio),
           color: response.data.color,
           vin: response.data.vin || '',
+          numeroMotor: response.data.numero_motor || '',
+          fotoUrl: response.data.foto_url || '',
           licensePlate: response.data.placa,
-          mileage: parseInt(response.data.mileage) || 0
+          mileage: parseInt(response.data.kilometraje) || 0
         };
         
         setClientVehicles(prev => [...prev, newVehicle]);
@@ -193,7 +207,9 @@ export function ClientVehiclesPage() {
           color: '',
           vin: '',
           licensePlate: '',
-          mileage: 0
+          mileage: 0,
+          numeroMotor: '',
+          fotoUrl: ''
         });
 
         alert('¡Vehículo registrado exitosamente!');
@@ -399,7 +415,7 @@ export function ClientVehiclesPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Color *
+                Color (opcional)
               </label>
               <input
                 type="text"
@@ -440,7 +456,7 @@ export function ClientVehiclesPage() {
 
           <div className="mt-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              VIN (Número de Identificación) *
+              VIN (Número de Identificación) (opcional)
             </label>
             <input
               type="text"
@@ -452,6 +468,38 @@ export function ClientVehiclesPage() {
             />
             <p className="text-xs text-gray-500 mt-1">
               El VIN es un código único de 17 caracteres que identifica tu vehículo
+            </p>
+          </div>
+
+          <div className="mt-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Número de Motor (opcional)
+            </label>
+            <input
+              type="text"
+              value={vehicleForm.numeroMotor}
+              onChange={(e) => setVehicleForm({...vehicleForm, numeroMotor: e.target.value.toUpperCase()})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="ABC123456789"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Número identificador del motor del vehículo
+            </p>
+          </div>
+
+          <div className="mt-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              URL de Foto del Vehículo (opcional)
+            </label>
+            <input
+              type="url"
+              value={vehicleForm.fotoUrl}
+              onChange={(e) => setVehicleForm({...vehicleForm, fotoUrl: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="https://ejemplo.com/foto-vehiculo.jpg"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              URL donde está alojada la foto de tu vehículo
             </p>
           </div>
 
