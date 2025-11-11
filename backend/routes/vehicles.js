@@ -244,7 +244,7 @@ router.put('/:id', async (req, res) => {
 
 // GET /api/vehicles/client/:clientId - Obtener vehículos de un cliente específico
 router.get('/client/:clientId', async (req, res) => {
-  console.log('🚗 Obteniendo vehículos del cliente:', req.params.clientId);
+  console.log('Obteniendo vehículos del cliente:', req.params.clientId);
   try {
     const cliente_id = parseInt(req.params.clientId);
     
