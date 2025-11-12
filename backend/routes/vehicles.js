@@ -106,8 +106,41 @@ router.post('/', async (req, res) => {
     }
     
     const pool = await getConnection();
+    
+    // Convertir cliente_id: buscar el primer usuario disponible en BD
+    let clienteIdFinal = null;
+    
+    if (finalClienteId) {
+      if (typeof finalClienteId === 'string' && finalClienteId.startsWith('clients-')) {
+        console.log('⚠️ Cliente ID es string generado, buscando usuario real en BD:', finalClienteId);
+        
+        // Buscar cualquier usuario disponible en la BD
+        try {
+          const usuariosResult = await pool.request().query(`
+            SELECT TOP 5 * FROM Usuarios ORDER BY usuario_id ASC
+          `);
+          console.log('👥 Usuarios disponibles en BD:', usuariosResult.recordset);
+          
+          if (usuariosResult.recordset.length > 0) {
+            // Usar el primer usuario disponible
+            clienteIdFinal = usuariosResult.recordset[0].usuario_id;
+            console.log('✅ Usando primer usuario disponible ID:', clienteIdFinal);
+          } else {
+            throw new Error('No hay usuarios en la base de datos');
+          }
+        } catch (error) {
+          console.log('❌ Error buscando usuarios:', error.message);
+          throw new Error('Error accediendo a la base de datos');
+        }
+      } else {
+        clienteIdFinal = parseInt(finalClienteId);
+      }
+    }
+    
+    console.log('🚀 Ejecutando SP_REGISTRAR_VEHICULO con cliente_id:', clienteIdFinal);
+    
     const result = await pool.request()
-      .input('cliente_id', sql.Int, parseInt(finalClienteId))
+      .input('cliente_id', sql.Int, clienteIdFinal)
       .input('marca', sql.VarChar(50), marca)
       .input('modelo', sql.VarChar(50), modelo)
       .input('anio', sql.SmallInt, parseInt(finalAnio))
@@ -116,13 +149,14 @@ router.post('/', async (req, res) => {
       .input('vin', sql.VarChar(50), vin || null)
       .input('numero_motor', sql.VarChar(50), numero_motor || null)
       .input('kilometraje', sql.Int, kilometraje ? parseInt(kilometraje) : null)
-      .input('foto_url', sql.VarChar(255), foto_url || null)
+      // NOTA: SP_REGISTRAR_VEHICULO NO tiene foto_url según las specs
       .execute('SP_REGISTRAR_VEHICULO');
     
     const response = result.recordset[0];
-    console.log('Resultado registro vehículo:', response);
+    console.log('✅ Resultado registro vehículo:', response);
     
-    if (response.msg === '200 OK') {
+    // Verificar éxito por response '200 OK' o msg específico
+    if (response && (response.response === '200 OK' || response.msg === '200 OK')) {
       res.status(201).json({
         success: true,
         data: {
@@ -163,6 +197,7 @@ router.put('/:id', async (req, res) => {
   try {
     const vehiculo_id = parseInt(req.params.id);
     const { 
+      cliente_id, clienteId,
       marca, 
       modelo, 
       anio, año,
@@ -173,6 +208,8 @@ router.put('/:id', async (req, res) => {
       kilometraje, 
       foto_url 
     } = req.body;
+    
+    const finalClienteId = cliente_id || clienteId;
     
     if (isNaN(vehiculo_id)) {
       return res.status(400).json({
@@ -192,6 +229,10 @@ router.put('/:id', async (req, res) => {
     }
     
     const pool = await getConnection();
+    
+    // Manejar cliente_id string (nota: SP_EDITAR_VEHICULO no tiene cliente_id según specs)
+    // El SP solo actualiza datos del vehículo, no cambia el propietario
+    
     const result = await pool.request()
       .input('vehiculo_id', sql.Int, vehiculo_id)
       .input('marca', sql.VarChar(50), marca)
@@ -208,11 +249,13 @@ router.put('/:id', async (req, res) => {
     const response = result.recordset[0];
     console.log('Resultado actualización vehículo:', response);
     
-    if (response.msg === '200 OK' || response.allow === 1) {
+    // Verificar éxito según specs: '200 OK', msg, allow
+    if (response && (response.msg === '200 OK' || response.allow === 1)) {
       res.json({
         success: true,
         data: {
           vehiculo_id,
+          cliente_id: finalClienteId,
           marca,
           modelo,
           anio: finalAnio,

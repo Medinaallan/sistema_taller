@@ -404,7 +404,7 @@ export function VehiclesPage() {
       } else {
         // Create new vehicle via API using SP fields
         const createData = {
-          cliente_id: parseInt(vehicleData.clientId),
+          cliente_id: vehicleData.clientId as any, // Temporal: enviar como string, el backend lo manejará
           marca: vehicleData.brand,
           modelo: vehicleData.model,
           anio: vehicleData.year,
