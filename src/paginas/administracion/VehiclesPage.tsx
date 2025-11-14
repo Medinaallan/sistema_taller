@@ -4,8 +4,8 @@ import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/com
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { useBusinessLogs } from '../../hooks/useBusinessLogs';
-import { mockVehicles, mockClients, formatDate } from '../../utilidades/globalMockDatabase';
-import { vehiclesService } from '../../servicios/apiService';
+import { mockVehicles, formatDate } from '../../utilidades/globalMockDatabase';
+import { vehiclesService, clientService } from '../../servicios/apiService';
 import type { Vehicle, Client } from '../../tipos';
 
 interface VehicleFormProps {
@@ -45,7 +45,14 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
     const newErrors: Record<string, string> = {};
 
     // Solo validar campos obligatorios según el SP
-    if (!formData.clientId) newErrors.clientId = 'Debe seleccionar un cliente';
+    if (!formData.clientId) {
+      newErrors.clientId = 'Debe ingresar el ID del cliente';
+    } else {
+      const clientIdNum = parseInt(formData.clientId.toString());
+      if (isNaN(clientIdNum) || clientIdNum <= 0) {
+        newErrors.clientId = 'El ID del cliente debe ser un número positivo';
+      }
+    }
     if (!formData.brand.trim()) newErrors.brand = 'La marca es requerida';
     if (!formData.model.trim()) newErrors.model = 'El modelo es requerido';
     if (!formData.year || formData.year < 1900 || formData.year > new Date().getFullYear() + 1) {
@@ -84,25 +91,62 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
     });
   };
 
+  // Filtrar solo clientes con ID numérico (de la base de datos)
+  const numericClients = clients.filter(client => {
+    const numericId = parseInt(client.id);
+    return !isNaN(numericId);
+  });
+  
   const clientOptions = [
     { value: '', label: 'Selecciona un cliente...' },
-    ...clients.map(client => ({
+    ...numericClients.map(client => ({
       value: client.id,
-      label: client.name
+      label: `${client.name} (ID: ${client.id})`
     }))
   ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Select
-        label="Cliente"
-        name="clientId"
-        value={formData.clientId}
-        onChange={handleInputChange}
-        options={clientOptions}
-        error={errors.clientId}
-        required
-      />
+      <div>
+        {clientOptions.length > 1 ? (
+          <Select
+            label="Cliente"
+            name="clientId"
+            value={formData.clientId}
+            onChange={handleInputChange}
+            options={clientOptions}
+            error={errors.clientId}
+            required
+          />
+        ) : (
+          <div>
+            <Input
+              label="ID del Cliente"
+              name="clientId"
+              type="number"
+              value={formData.clientId}
+              onChange={handleInputChange}
+              error={errors.clientId}
+              placeholder="Ej: 1, 2, 3..."
+              required
+            />
+            <div className="mt-2 p-3 bg-blue-50 border-l-4 border-blue-400">
+              <div className="text-sm text-blue-700">
+                <p className="font-medium mb-1">\ud83d\udcdd Instrucciones:</p>
+                <p>\u2022 Ingresa el ID num\u00e9rico del cliente de la base de datos</p>
+                <p>\u2022 Los clientes registrados tienen IDs como: 1, 2, 3, 4, 5...</p>
+                <p>\u2022 Si el ID no existe, aparecer\u00e1 un error de clave for\u00e1nea</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {clientOptions.length <= 1 && (
+          <p className="text-sm text-amber-600 mt-1">
+            \u26a0\ufe0f No se pudieron cargar clientes de la BD. Usar ID manual.
+          </p>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
@@ -265,15 +309,40 @@ export function VehiclesPage() {
     }
   };
 
+  // Cargar clientes desde la API
+  const loadClients = async () => {
+    try {
+      console.log('\ud83d\udccb Cargando clientes desde API...');
+      const response = await clientService.getRegisteredClients();
+      if (response.success && response.data && response.data.length > 0) {
+        const clients: Client[] = response.data.map((apiClient: any) => ({
+          id: apiClient.id?.toString(),
+          name: apiClient.name || apiClient.fullName || 'Cliente',
+          phone: apiClient.phone || '',
+          email: apiClient.email || '',
+          address: apiClient.address || '',
+          password: '', // No necesario para la interfaz
+          vehicles: [], // Se cargan por separado
+          createdAt: new Date(apiClient.createdAt || Date.now()),
+          updatedAt: new Date()
+        }));
+        console.log('\u2705 Clientes cargados:', clients.length);
+        dispatch({ type: 'SET_CLIENTS', payload: clients });
+      } else {
+        console.log('\u26a0\ufe0f No se obtuvieron clientes de la API, usando fallback vac\u00edo');
+        dispatch({ type: 'SET_CLIENTS', payload: [] });
+      }
+    } catch (error) {
+      console.error('\u274c Error loading clients:', error);
+      dispatch({ type: 'SET_CLIENTS', payload: [] });
+    }
+  };
+
   useEffect(() => {
     // Load data on component mount
     loadVehicles();
-    
-    // Load clients if not already loaded
-    if (!state.clients || state.clients.length === 0) {
-      dispatch({ type: 'SET_CLIENTS', payload: mockClients });
-    }
-  }, [dispatch, state.clients]);
+    loadClients(); // Cargar clientes desde API
+  }, [dispatch]);
 
   const filteredVehicles = state.vehicles.filter(vehicle => {
     const client = data.getClientById(vehicle.clientId);
@@ -403,8 +472,15 @@ export function VehiclesPage() {
         }
       } else {
         // Create new vehicle via API using SP fields
+        // Convertir clientId a número si es posible
+        const clienteIdNumerico = parseInt(vehicleData.clientId);
+        if (isNaN(clienteIdNumerico)) {
+          alert('Error: Solo se pueden asignar clientes con ID numérico válido');
+          return;
+        }
+        
         const createData = {
-          cliente_id: vehicleData.clientId as any, // Temporal: enviar como string, el backend lo manejará
+          cliente_id: clienteIdNumerico,
           marca: vehicleData.brand,
           modelo: vehicleData.model,
           anio: vehicleData.year,

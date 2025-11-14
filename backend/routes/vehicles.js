@@ -105,37 +105,26 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const pool = await getConnection();
+    // Validar que cliente_id sea un número válido (no string generado)
+    let clienteIdFinal = parseInt(finalClienteId);
     
-    // Convertir cliente_id: buscar el primer usuario disponible en BD
-    let clienteIdFinal = null;
-    
-    if (finalClienteId) {
-      if (typeof finalClienteId === 'string' && finalClienteId.startsWith('clients-')) {
-        console.log('⚠️ Cliente ID es string generado, buscando usuario real en BD:', finalClienteId);
-        
-        // Buscar cualquier usuario disponible en la BD
-        try {
-          const usuariosResult = await pool.request().query(`
-            SELECT TOP 5 * FROM Usuarios ORDER BY usuario_id ASC
-          `);
-          console.log('👥 Usuarios disponibles en BD:', usuariosResult.recordset);
-          
-          if (usuariosResult.recordset.length > 0) {
-            // Usar el primer usuario disponible
-            clienteIdFinal = usuariosResult.recordset[0].usuario_id;
-            console.log('✅ Usando primer usuario disponible ID:', clienteIdFinal);
-          } else {
-            throw new Error('No hay usuarios en la base de datos');
-          }
-        } catch (error) {
-          console.log('❌ Error buscando usuarios:', error.message);
-          throw new Error('Error accediendo a la base de datos');
-        }
-      } else {
-        clienteIdFinal = parseInt(finalClienteId);
-      }
+    if (isNaN(clienteIdFinal)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El cliente_id debe ser un número válido. No se permiten IDs generados por string.'
+      });
     }
+    
+    if (typeof finalClienteId === 'string' && finalClienteId.startsWith('clients-')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo se permiten clientes con ID numérico de la base de datos.'
+      });
+    }
+    
+    console.log('📊 Cliente ID numérico validado:', clienteIdFinal);
+    
+    const pool = await getConnection();
     
     console.log('🚀 Ejecutando SP_REGISTRAR_VEHICULO con cliente_id:', clienteIdFinal);
     
@@ -249,8 +238,8 @@ router.put('/:id', async (req, res) => {
     const response = result.recordset[0];
     console.log('Resultado actualización vehículo:', response);
     
-    // Verificar éxito según specs: '200 OK', msg, allow
-    if (response && (response.msg === '200 OK' || response.allow === 1)) {
+    // Verificar éxito según specs: response='200 OK' o allow=1
+    if (response && (response.response === '200 OK' || response.allow === 1)) {
       res.json({
         success: true,
         data: {
