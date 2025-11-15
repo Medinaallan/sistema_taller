@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
-import { CSVDataManager } from '../../componentes/administracion/CSVDataManager';
+
 import ExcelImportModal from '../../componentes/gestion/ExcelImportModal';
 import { useApp } from '../../contexto/useApp';
-import useInterconnectedData from '../../contexto/useInterconnectedData';
+import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
 import { useBusinessLogs } from '../../hooks/useBusinessLogs';
-import { generateId, formatDate, formatCurrency } from '../../utilidades/globalMockDatabase';
-import type { Client, User } from '../../tipos';
+import { formatDate } from '../../utilidades/globalMockDatabase';
+import type { Client } from '../../tipos';
 
 interface ClientFormProps {
   client?: Client;
@@ -133,8 +133,17 @@ export function ClientsPage() {
   const { dispatch } = useApp();
   console.log(' ClientsPage: useApp hook ejecutado');
   
-  const data = useInterconnectedData();
-  console.log(' ClientsPage: useInterconnectedData hook ejecutado, clientes:', data?.clients?.length || 0);
+  // Usar el nuevo hook para cargar clientes desde API
+  const { 
+    clientes, 
+    clientesLegacy, 
+    loading, 
+    error, 
+    recargarClientes, 
+    count 
+  } = useClientesFromAPI();
+  
+  console.log(' ClientsPage: useClientesFromAPI ejecutado, clientes:', count);
   
   const businessLogs = useBusinessLogs();
   
@@ -150,14 +159,14 @@ export function ClientsPage() {
   useEffect(() => {
     console.log(' ClientsPage useEffect: Ejecutando...');
     try {
-      console.log(' ClientsPage: Clientes disponibles:', data?.clients?.length || 0);
-      if (data?.clients && data.clients.length > 0) {
-        console.log(' ClientsPage: Lista de clientes:', data.clients.map(c => ({ id: c.id, name: c.name, email: c.email })));
+      console.log(' ClientsPage: Clientes disponibles:', count);
+      if (clientesLegacy && clientesLegacy.length > 0) {
+        console.log(' ClientsPage: Lista de clientes:', clientesLegacy.map((c: any) => ({ id: c.id, name: c.name, email: c.email })));
       }
     } catch (effectError) {
       console.error(' ClientsPage useEffect error:', effectError);
     }
-  }, [data.clients, forceRefresh]);
+  }, [clientesLegacy, count, forceRefresh]);
 
   console.log(' ClientsPage: useEffect configurado');
 
@@ -165,27 +174,29 @@ export function ClientsPage() {
   const handleForceRefresh = async () => {
     console.log(' Forzando recarga de clientes...');
     try {
+      // Usar la función de recarga del hook
+      await recargarClientes();
+      
       // Incrementar contador para forzar re-render
       setForceRefresh(prev => prev + 1);
       
       // Mostrar mensaje temporal
       const tempMsg = document.createElement('div');
-      tempMsg.textContent = ' Recargando datos...';
-      tempMsg.style.cssText = 'position:fixed; top:20px; right:20px; background:#3b82f6; color:white; padding:10px 20px; border-radius:8px; z-index:9999;';
+      tempMsg.textContent = ' Datos recargados desde API';
+      tempMsg.style.cssText = 'position:fixed; top:20px; right:20px; background:#10b981; color:white; padding:10px 20px; border-radius:8px; z-index:9999;';
       document.body.appendChild(tempMsg);
       
-      // Recargar la página después de un breve retraso
       setTimeout(() => {
-        window.location.reload();
-      }, 500);
+        document.body.removeChild(tempMsg);
+      }, 2000);
       
     } catch (error) {
       console.error(' Error forzando recarga:', error);
     }
   };
 
-  //  PROTEGIDO: Verificar que data.clients exista antes de filtrar
-  const filteredClients = (data?.clients || []).filter(client =>
+  //  PROTEGIDO: Verificar que clientesLegacy exista antes de filtrar
+  const filteredClients = (clientesLegacy || []).filter((client: any) =>
     client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client?.phone?.includes(searchTerm)
@@ -193,23 +204,47 @@ export function ClientsPage() {
 
   console.log(' ClientsPage: Clientes filtrados:', filteredClients.length);
 
-  //  PROTECCIÓN: Verificar que el componente tenga datos válidos antes de renderizar
-  if (!data) {
-    console.log(' ClientsPage: No hay datos disponibles, mostrando loading...');
+  //  PROTECCIÓN: Verificar estados de carga
+  if (loading) {
+    console.log(' ClientsPage: Cargando clientes desde API...');
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando datos de clientes...</p>
+              <p className="text-gray-600">Cargando clientes desde SP_OBTENER_USUARIOS...</p>
               <Button 
-                onClick={() => window.location.reload()}
+                onClick={handleForceRefresh}
                 variant="outline"
                 className="mt-4"
               >
-                 Recargar página
+                 Recargar desde API
               </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.log(' ClientsPage: Error cargando clientes:', error);
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+                <h3 className="text-lg font-semibold text-red-900 mb-2">Error cargando clientes</h3>
+                <p className="text-red-700 mb-4">{error}</p>
+                <Button 
+                  onClick={handleForceRefresh}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Reintentar carga desde API
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -238,6 +273,8 @@ export function ClientsPage() {
   };
 
   const handleDeleteClient = async (clientId: string) => {
+    // Por ahora, comentamos la funcionalidad de eliminación hasta implementar el endpoint
+    /*
     const client = data.getClientById(clientId);
     if (!client) return;
 
@@ -255,73 +292,111 @@ export function ClientsPage() {
       // Usar la función interconectada que elimina todo automáticamente
       data.deleteClientWithRelations(clientId);
     }
+    */
+    
+    alert('Funcionalidad de eliminación en desarrollo. Los clientes ahora se gestionan desde la base de datos.');
   };
 
   const handleFormSubmit = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (modalType === 'create') {
-      const clientId = generateId();
-      const newClient: Client = {
-        ...clientData,
-        id: clientId,
-        vehicles: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      // Crear también el usuario para login del cliente
-      const newUser: User = {
-        id: generateId(),
-        email: clientData.email,
-        password: clientData.password,
-        role: 'client',
-        name: clientData.name,
-        phone: clientData.phone,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      // Usar la función interconectada que crea cliente con log automático (ahora async)
-      await data.createClientWithLog(newClient);
-      dispatch({ type: 'ADD_USER', payload: newUser });
-      
-      // Generar log de negocio con datos reales
-      await businessLogs.logClientCreated(newClient);
-      
-    } else if (modalType === 'edit' && selectedClient) {
-      const updatedClient: Client = {
-        ...selectedClient,
-        ...clientData,
-        updatedAt: new Date(),
-      };
-      
-      // Buscar y actualizar también el usuario correspondiente
-      const userToUpdate = (data?.users || []).find(u => u.email === selectedClient.email && u.role === 'client');
-      if (userToUpdate) {
-        const updatedUser: User = {
-          ...userToUpdate,
-          email: clientData.email,
-          password: clientData.password,
-          name: clientData.name,
-          phone: clientData.phone,
-          updatedAt: new Date(),
-        };
-        dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+    try {
+      if (modalType === 'create') {
+        console.log('➕ Creando cliente usando stored procedures...');
+        
+        // Usar el endpoint que utiliza SP_REGISTRAR_USUARIO_CLIENTE
+        const response = await fetch('http://localhost:3001/api/clients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: clientData.name,
+            email: clientData.email,
+            phone: clientData.phone
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          console.log('✅ Cliente creado desde BD:', result.data);
+          
+          const newClient: Client = {
+            id: result.data.id,
+            name: result.data.name,
+            email: result.data.email,
+            phone: result.data.phone,
+            address: '',
+            password: '',
+            vehicles: [],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          
+          // Agregar al contexto local
+          dispatch({ type: 'ADD_CLIENT', payload: newClient });
+          
+          // Generar log de negocio
+          await businessLogs.logClientCreated(newClient);
+          
+          alert('Cliente creado exitosamente usando la base de datos');
+        } else {
+          alert(`Error al crear cliente: ${result.error || 'Error desconocido'}`);
+          return;
+        }
+        
+      } else if (modalType === 'edit' && selectedClient) {
+        console.log('✏️ Editando cliente usando stored procedures...');
+        
+        // Usar el endpoint que utiliza SP_EDITAR_USUARIO
+        const response = await fetch(`http://localhost:3001/api/clients/${selectedClient.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: clientData.name,
+            email: clientData.email,
+            phone: clientData.phone
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          console.log('✅ Cliente actualizado desde BD:', result.data);
+          
+          const updatedClient: Client = {
+            ...selectedClient,
+            name: result.data.name,
+            email: result.data.email,
+            phone: result.data.phone,
+            updatedAt: new Date(),
+          };
+          
+          // Detectar cambios para el log
+          const changes: any = {};
+          if (selectedClient.name !== clientData.name) changes.name = { old: selectedClient.name, new: clientData.name };
+          if (selectedClient.email !== clientData.email) changes.email = { old: selectedClient.email, new: clientData.email };
+          if (selectedClient.phone !== clientData.phone) changes.phone = { old: selectedClient.phone, new: clientData.phone };
+          
+          // Actualizar en contexto local
+          dispatch({ type: 'UPDATE_CLIENT', payload: updatedClient });
+          
+          // Generar log de negocio
+          await businessLogs.logClientUpdated(updatedClient, changes);
+          
+          alert('Cliente actualizado exitosamente usando la base de datos');
+        } else {
+          alert(`Error al actualizar cliente: ${result.error || 'Error desconocido'}`);
+          return;
+        }
       }
       
-      // Detectar qué campos cambiaron
-      const changes: any = {};
-      if (selectedClient.name !== clientData.name) changes.name = { old: selectedClient.name, new: clientData.name };
-      if (selectedClient.email !== clientData.email) changes.email = { old: selectedClient.email, new: clientData.email };
-      if (selectedClient.phone !== clientData.phone) changes.phone = { old: selectedClient.phone, new: clientData.phone };
-      if (selectedClient.address !== clientData.address) changes.address = { old: selectedClient.address, new: clientData.address };
-      
-      // Usar la función interconectada que actualiza cliente con log automático
-      await data.updateClientWithLog(updatedClient);
-      
-      // Generar log de negocio con datos reales
-      await businessLogs.logClientUpdated(updatedClient, changes);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('❌ Error en operación de cliente:', error);
+      alert('Error de conexión al procesar la operación');
     }
-    setIsModalOpen(false);
   };
 
   const getModalTitle = () => {
@@ -345,7 +420,15 @@ export function ClientsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Clientes</h1>
-          <p className="text-gray-600">Administra la información de los clientes</p>
+          <p className="text-gray-600">Usuarios con rol "Cliente" desde SP_OBTENER_USUARIOS</p>
+          <div className="flex items-center space-x-2 mt-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              🔗 API Conectada
+            </span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {count} clientes cargados
+            </span>
+          </div>
         </div>
         <div className="flex space-x-3">
           <Button 
@@ -369,8 +452,7 @@ export function ClientsPage() {
         </div>
       </div>
 
-      {/* Gestor de datos CSV */}
-      <CSVDataManager />
+
 
       {/* Filtros y búsqueda */}
       <Card>
@@ -415,11 +497,9 @@ export function ClientsPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900">{client.name}</span>
-                        {client.id.startsWith('client-') && client.email.includes('@taller.com') && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            CSV
-                          </span>
-                        )}
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          BD
+                        </span>
                       </div>
                       <div className="text-sm text-gray-500">{client.email}</div>
                     </div>
@@ -431,28 +511,17 @@ export function ClientsPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {(() => {
-                      const vehicleCount = data.getVehiclesByClient(client.id).length;
-                      const workOrderCount = data.getWorkOrdersByClient(client.id).length;
-                      const financialStatus = data.getClientFinancialStatus(client.id);
-                      
-                      return (
-                        <div className="text-sm">
-                          <div className="text-gray-900">
-                            {vehicleCount} vehículo{vehicleCount !== 1 ? 's' : ''}
-                          </div>
-                          <div className="text-gray-500">
-                            {workOrderCount} orden{workOrderCount !== 1 ? 'es' : ''}
-                          </div>
-                          <div className={`text-xs ${financialStatus.pendingDebt > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            {financialStatus.pendingDebt > 0 
-                              ? `Debe: ${formatCurrency(financialStatus.pendingDebt)}`
-                              : 'Al día'
-                            }
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <div className="text-sm">
+                      <div className="text-gray-900">
+                        Cliente desde BD
+                      </div>
+                      <div className="text-gray-500">
+                        ID: {client.id}
+                      </div>
+                      <div className="text-xs text-green-600">
+                        SP_OBTENER_USUARIOS
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(client.createdAt)}

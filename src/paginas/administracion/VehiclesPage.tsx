@@ -312,7 +312,7 @@ export function VehiclesPage() {
   // Cargar clientes desde la API
   const loadClients = async () => {
     try {
-      console.log('\ud83d\udccb Cargando clientes desde API...');
+      console.log('📋 Cargando clientes desde BD usando stored procedures...');
       const response = await clientService.getRegisteredClients();
       if (response.success && response.data && response.data.length > 0) {
         const clients: Client[] = response.data.map((apiClient: any) => ({
@@ -326,10 +326,10 @@ export function VehiclesPage() {
           createdAt: new Date(apiClient.createdAt || Date.now()),
           updatedAt: new Date()
         }));
-        console.log('\u2705 Clientes cargados:', clients.length);
+        console.log('✅ Clientes cargados desde BD:', clients.length);
         dispatch({ type: 'SET_CLIENTS', payload: clients });
       } else {
-        console.log('\u26a0\ufe0f No se obtuvieron clientes de la API, usando fallback vac\u00edo');
+        console.log('⚠️ No se obtuvieron clientes de la BD, usando fallback vacío');
         dispatch({ type: 'SET_CLIENTS', payload: [] });
       }
     } catch (error) {
@@ -472,7 +472,7 @@ export function VehiclesPage() {
         }
       } else {
         // Create new vehicle - USA EXACTAMENTE EL MISMO ENDPOINT DEL TEST QUE FUNCIONÓ
-        console.log('🚗 Creando vehículo desde formulario...');
+        console.log(' Creando vehículo desde formulario...');
         
         // Convertir clientId a número exactamente como en el test
         const clienteIdNumerico = parseInt(vehicleData.clientId);
@@ -495,7 +495,7 @@ export function VehiclesPage() {
           foto_url: vehicleData.fotoUrl || ''
         };
         
-        console.log('📤 Enviando payload:', vehiclePayload);
+        console.log(' Enviando payload:', vehiclePayload);
         
         // USAR EL MISMO ENDPOINT DIRECTO QUE EN EL TEST
         const response = await fetch('http://localhost:3001/api/vehicles', {

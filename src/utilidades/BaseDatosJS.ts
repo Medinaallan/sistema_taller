@@ -1,20 +1,22 @@
 // ====================================
 // BASE DE DATOS TYPESCRIPT - CLIENTES
-// Sistema de almacenamiento de clientes en CSV vía API
+// Sistema de almacenamiento de clientes usando SP_OBTENER_USUARIOS
 // ====================================
 
 import type { Client } from '../tipos';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
-// Array de clientes registrados (cargado desde CSV)
+// Array de clientes registrados (cargado desde base de datos)
 export let clientesRegistrados: Client[] = [];
 
-// Función para cargar clientes desde CSV vía API
+// Función para cargar clientes desde base de datos vía SP_OBTENER_USUARIOS
 async function cargarClientesDesdeCSV(): Promise<Client[]> {
   try {
-    console.log('🔄 Cargando clientes desde API:', `${API_BASE_URL}/clients`);
-    const response = await fetch(`${API_BASE_URL}/clients`);
+    console.log('📋 GET /api/clients/registered - Obteniendo todos los clientes desde BD');
+    console.log('🔄 Usando SP_OBTENER_USUARIOS para cargar clientes...');
+    
+    const response = await fetch(`${API_BASE_URL}/users/list`);
     
     if (!response.ok) {
       console.error('❌ Error HTTP:', response.status);
@@ -22,32 +24,34 @@ async function cargarClientesDesdeCSV(): Promise<Client[]> {
     }
     
     const data = await response.json();
-    console.log('📊 Respuesta de API:', data);
+    console.log('📊 Respuesta de API usuarios:', data);
     
     if (data.success && data.data) {
-      console.log('✅ API exitosa, procesando', data.data.length, 'clientes');
+      console.log('✅ API exitosa, procesando', data.data.length, 'usuarios');
       
-      // Convertir los datos del CSV al formato Client
-      const clientesConvertidos = data.data.map((cliente: any) => ({
-        id: cliente.id,
-        name: cliente.name,           // Usar 'name' directamente
-        email: cliente.email,
-        phone: cliente.phone,         // Usar 'phone' directamente  
-        address: cliente.address,     // Usar 'address' directamente
-        password: cliente.password_hash || '', // El backend usa 'password_hash'
-        vehicles: [], // Los vehículos se cargarían por separado
-        createdAt: new Date(cliente.created_at || cliente.registration_date || new Date()),
-        updatedAt: new Date(cliente.updated_at || new Date())
-      }));
+      // Filtrar solo usuarios con rol "Cliente" y convertir al formato Client
+      const clientesConvertidos = data.data
+        .filter((usuario: any) => usuario.rol === 'Cliente')
+        .map((usuario: any) => ({
+          id: usuario.usuario_id.toString(),
+          name: usuario.nombre_completo,
+          email: usuario.correo,
+          phone: usuario.telefono,
+          address: '', // Los usuarios no tienen dirección en el SP
+          password: '', // No exponemos contraseñas
+          vehicles: [], // Los vehículos se cargarían por separado
+          createdAt: new Date(), // Fecha genérica
+          updatedAt: new Date()
+        }));
       
-      console.log('🎯 Clientes convertidos:', clientesConvertidos.length);
+      console.log('🎯 Clientes (rol Cliente) convertidos:', clientesConvertidos.length);
       return clientesConvertidos;
     } else {
       console.warn('⚠️ API no exitosa o sin datos');
       return [];
     }
   } catch (error) {
-    console.error('❌ Error cargando clientes desde API:', error);
+    console.error('❌ Error cargando clientes desde API usuarios:', error);
     return [];
   }
 }

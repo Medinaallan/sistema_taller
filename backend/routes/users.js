@@ -2,6 +2,98 @@ const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 
+// Obtener lista de usuarios usando SP_OBTENER_USUARIOS
+router.get('/list', async (req, res) => {
+  console.log('👥 [ROUTER] Obteniendo lista de usuarios...');
+  
+  try {
+    const pool = await getConnection();
+    const usuarios = [];
+    
+    console.log('🔍 [ROUTER] Buscando usuarios por ID...');
+    
+    // Buscar usuarios en un rango de IDs
+    for (let id = 1; id <= 100; id++) {
+      try {
+        const result = await pool.request()
+          .input('usuario_id', sql.Int, id)
+          .execute('SP_OBTENER_USUARIOS');
+        
+        if (result.recordset.length > 0) {
+          const usuario = result.recordset[0];
+          usuarios.push(usuario);
+          console.log(`✅ [ROUTER] Usuario ID ${id}: ${usuario.nombre_completo} (${usuario.correo})`);
+        }
+      } catch (error) {
+        // Ignorar errores individuales
+      }
+    }
+    
+    console.log(`✅ [ROUTER] Total usuarios encontrados: ${usuarios.length}`);
+    
+    res.json({
+      success: true,
+      data: usuarios,
+      count: usuarios.length,
+      message: usuarios.length > 0 ? 'Usuarios obtenidos exitosamente' : 'No se encontraron usuarios'
+    });
+    
+  } catch (error) {
+    console.error('❌ [ROUTER] Error obteniendo usuarios:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener usuarios',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Obtener usuario específico por ID
+router.get('/:id', async (req, res) => {
+  console.log('👤 [ROUTER] Obteniendo usuario por ID:', req.params.id);
+  
+  try {
+    const userId = parseInt(req.params.id);
+    
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de usuario inválido' 
+      });
+    }
+    
+    const pool = await getConnection();
+    
+    const result = await pool.request()
+      .input('usuario_id', sql.Int, userId)
+      .execute('SP_OBTENER_USUARIOS');
+    
+    const user = result.recordset[0];
+    
+    if (user) {
+      console.log('✅ [ROUTER] Usuario encontrado:', user.nombre_completo);
+      res.json({
+        success: true,
+        data: user
+      });
+    } else {
+      console.log('❌ [ROUTER] Usuario no encontrado');
+      res.status(404).json({ 
+        success: false, 
+        message: 'Usuario no encontrado' 
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ [ROUTER] Error obteniendo usuario:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener usuario',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Obtener todos los roles disponibles (ya que no hay SP para obtener usuarios)
 router.get('/roles', async (req, res) => {
   try {

@@ -1,4 +1,1 @@
 id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
-clients-1761839820730-d0cf4389,aldo garcia,aldo@taller.com,(504) 978-9622,asdasd,asdf1234,active,2025-10-30T15:57:00.729Z,,0,0,,2025-10-30T15:57:00.731Z,2025-10-30T15:57:00.731Z
-clients-1762608283165-d9ccd3ba,Juan Prueba,prueba@test.com,123456789,,test123,active,2025-11-08T13:24:43.163Z,,0,0,Registrado desde login,2025-11-08T13:24:43.165Z,2025-11-08T13:24:43.165Z
-clients-1763135977931-f0bfc46e,CLIENTE DE EJEMPLO,cliente@taller.com,(504) 978-9622,asdasd,asdf1234,active,2025-11-14T15:59:37.930Z,,0,0,,2025-11-14T15:59:37.932Z,2025-11-14T15:59:37.932Z

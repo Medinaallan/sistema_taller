@@ -3,11 +3,13 @@ import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegisterForm';
+import { ForgotPasswordForm } from '../../componentes/autenticacion/ForgotPasswordForm';
+import { ResetPasswordForm } from '../../componentes/autenticacion/ResetPasswordForm';
 import { InitialSetupPage } from './InitialSetupPage';
 // import { obtenerClientesActualizados } from '../../utilidades/BaseDatosJS'; // Ya no se usa
 // import { mockUsers } from '../../utilidades/globalMockDatabaseFinal'; // Ya no necesario - ahora usa SP_LOGIN real
 
-type ViewMode = 'login' | 'setup' | 'clientRegister' | 'initialSetup';
+type ViewMode = 'login' | 'setup' | 'clientRegister' | 'initialSetup' | 'forgotPassword' | 'resetPassword';
 
 // Función para mapear roles del SP al formato del frontend
 const mapRoleFromSP = (roleSP: string): 'admin' | 'client' | 'mechanic' | 'receptionist' => {
@@ -42,6 +44,7 @@ export function LoginPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [resetToken, setResetToken] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -189,11 +192,32 @@ export function LoginPage() {
     setErrors({});
   };
 
+  const handleForgotPasswordSuccess = (token: string) => {
+    setResetToken(token);
+    setViewMode('resetPassword');
+  };
+
+  const handleResetPasswordSuccess = () => {
+    setViewMode('login');
+    setResetToken('');
+    setErrors({});
+    // Mostrar mensaje de éxito (opcional)
+  };
+
+  const handleBackToLogin = () => {
+    setViewMode('login');
+    setResetToken('');
+    setFormData({ email: '', password: '', name: '', phone: '' });
+    setErrors({});
+  };
+
   const getTitle = () => {
     switch (viewMode) {
       case 'setup': return 'Configuración Inicial';
       case 'clientRegister': return 'Registro de Cliente';
       case 'initialSetup': return 'Configuración del Sistema';
+      case 'forgotPassword': return 'Recuperar Contraseña';
+      case 'resetPassword': return 'Restablecer Contraseña';
       default: return 'Iniciar Sesión';
     }
   };
@@ -203,9 +227,56 @@ export function LoginPage() {
       case 'setup': return 'Crear el primer usuario administrador del sistema';
       case 'clientRegister': return 'Crear una cuenta de cliente';
       case 'initialSetup': return 'Registrar usuarios usando stored procedures reales';
+      case 'forgotPassword': return 'Solicitar enlace de recuperación por email';
+      case 'resetPassword': return 'Establecer nueva contraseña';
       default: return 'Sistema de Gestión para Talleres Mecánicos';
     }
   };
+
+  if (viewMode === 'forgotPassword') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center">
+                <WrenchScrewdriverIcon className="h-12 w-12 text-blue-600" />
+                <span className="ml-2 text-3xl font-bold text-gray-900">PruebaProject</span>
+              </div>
+            </div>
+            
+            <ForgotPasswordForm
+              onSuccess={handleForgotPasswordSuccess}
+              onCancel={handleBackToLogin}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (viewMode === 'resetPassword') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center">
+                <WrenchScrewdriverIcon className="h-12 w-12 text-blue-600" />
+                <span className="ml-2 text-3xl font-bold text-gray-900">PruebaProject</span>
+              </div>
+            </div>
+            
+            <ResetPasswordForm
+              token={resetToken}
+              onSuccess={handleResetPasswordSuccess}
+              onCancel={handleBackToLogin}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (viewMode === 'clientRegister') {
     return (
@@ -369,7 +440,7 @@ export function LoginPage() {
                   <button
                     type="button"
                     className="text-sm text-gray-500 hover:text-gray-400"
-                    onClick={() => {/* Implementar recuperación de contraseña */}}
+                    onClick={() => setViewMode('forgotPassword')}
                   >
                     ¿Olvidaste tu contraseña?
                   </button>

@@ -198,34 +198,74 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
         if (validatePassword()) {
           setLoading(true);
           try {
-            // Para este flujo simplificado, consideramos que el usuario ya fue creado
-            // y solo necesitamos agregarlo al CSV local para compatibilidad
-            console.log('✅ Usuario ya registrado en el sistema, agregando al CSV local...');
+            console.log('🔄 Actualizando contraseña en la base de datos...');
+            console.log('Email:', formData.email);
+            console.log('Nueva contraseña:', formData.password);
             
-            try {
-              const nuevoCliente: Client = {
-                id: generateId(),
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-                address: '', // Se puede agregar después
-                password: formData.password,
-                vehicles: [],
-                createdAt: new Date(),
-                updatedAt: new Date()
-              };
+            // Actualizar la contraseña en la base de datos
+            const updateResponse = await fetch(`${API_BASE}/auth/update-password`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                email: formData.email, 
+                newPassword: formData.password 
+              })
+            });
+            
+            const updateData = await updateResponse.json();
+            console.log('📊 Respuesta de actualización de contraseña:', updateData);
+            
+            if (updateData.success) {
+              console.log('✅ Contraseña actualizada exitosamente');
               
-              console.log('💾 Guardando cliente en CSV:', nuevoCliente.name);
-              await agregarCliente(nuevoCliente);
-              console.log('✅ Cliente agregado al CSV exitosamente');
+              // Probar login inmediatamente para verificar
+              console.log('🔐 Probando login con nueva contraseña...');
+              const loginTestResponse = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  correo: formData.email,
+                  password: formData.password
+                })
+              });
+              
+              const loginTestData = await loginTestResponse.json();
+              console.log('📊 Resultado del login test:', loginTestData);
+              
+              if (loginTestData.allow === 1) {
+                console.log('✅ Login test exitoso - la contraseña se guardó correctamente');
+              } else {
+                console.warn('⚠️ Login test falló - puede haber un problema con la actualización');
+              }
+              
+              // Agregar al CSV local para compatibilidad
+              try {
+                const nuevoCliente: Client = {
+                  id: generateId(),
+                  name: formData.name,
+                  email: formData.email,
+                  phone: formData.phone,
+                  address: '',
+                  password: formData.password,
+                  vehicles: [],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                };
+                
+                console.log('💾 Guardando cliente en CSV:', nuevoCliente.name);
+                await agregarCliente(nuevoCliente);
+                console.log('✅ Cliente agregado al CSV exitosamente');
+              } catch (csvError) {
+                console.warn('⚠️ Error guardando en CSV:', csvError);
+              }
               
               onSuccess();
-            } catch (csvError) {
-              console.warn('⚠️ Error guardando en CSV:', csvError);
-              // Aún así consideramos exitoso porque el usuario fue registrado en BD
-              onSuccess();
+            } else {
+              console.error('❌ Error actualizando contraseña:', updateData.message);
+              setErrors({ password: updateData.message || 'Error al actualizar contraseña' });
             }
-          } catch {
+          } catch (error) {
+            console.error('❌ Error actualizando contraseña:', error);
             setErrors({ password: 'Error al completar el registro' });
           } finally {
             setLoading(false);
