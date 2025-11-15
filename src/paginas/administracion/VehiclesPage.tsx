@@ -471,43 +471,60 @@ export function VehiclesPage() {
           alert('Error al actualizar el vehículo: ' + response.message);
         }
       } else {
-        // Create new vehicle via API using SP fields
-        // Convertir clientId a número si es posible
+        // Create new vehicle - USA EXACTAMENTE EL MISMO ENDPOINT DEL TEST QUE FUNCIONÓ
+        console.log('🚗 Creando vehículo desde formulario...');
+        
+        // Convertir clientId a número exactamente como en el test
         const clienteIdNumerico = parseInt(vehicleData.clientId);
         if (isNaN(clienteIdNumerico)) {
           alert('Error: Solo se pueden asignar clientes con ID numérico válido');
           return;
         }
         
-        const createData = {
+        // Usar exactamente la misma estructura de datos que en el test exitoso
+        const vehiclePayload = {
           cliente_id: clienteIdNumerico,
           marca: vehicleData.brand,
           modelo: vehicleData.model,
           anio: vehicleData.year,
           placa: vehicleData.licensePlate,
-          color: vehicleData.color,
-          vin: vehicleData.vin || null,
-          numero_motor: vehicleData.numeroMotor || null,
-          kilometraje: vehicleData.mileage || null,
-          foto_url: vehicleData.fotoUrl || null,
+          color: vehicleData.color || '',
+          vin: vehicleData.vin || '',
+          numero_motor: vehicleData.numeroMotor || '',
+          kilometraje: vehicleData.mileage || 0,
+          foto_url: vehicleData.fotoUrl || ''
         };
         
-        const response = await vehiclesService.create(createData);
+        console.log('📤 Enviando payload:', vehiclePayload);
         
-        if (response.success) {
-          // Add to local state mapping SP response
+        // USAR EL MISMO ENDPOINT DIRECTO QUE EN EL TEST
+        const response = await fetch('http://localhost:3001/api/vehicles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(vehiclePayload)
+        });
+        
+        const result = await response.json();
+        console.log('📥 Respuesta del servidor:', result);
+        
+        if (response.ok && result.success) {
+          console.log('✅ Vehículo creado exitosamente:', result.data);
+          
+          // Mapear respuesta del SP a formato Vehicle
           const newVehicle: Vehicle = {
-            id: response.data.vehiculo_id?.toString() || response.data.id,
-            clientId: response.data.cliente_id?.toString() || vehicleData.clientId,
-            brand: response.data.marca,
-            model: response.data.modelo,
-            year: parseInt(response.data.anio),
-            licensePlate: response.data.placa,
-            color: response.data.color,
-            vin: response.data.vin || '',
-            numeroMotor: response.data.numero_motor || '',
-            fotoUrl: response.data.foto_url || '',
-            mileage: parseInt(response.data.kilometraje) || 0,
+            id: result.data.vehiculo_id?.toString() || result.data.id,
+            clientId: result.data.cliente_id?.toString() || vehicleData.clientId,
+            brand: result.data.marca,
+            model: result.data.modelo,
+            year: parseInt(result.data.anio),
+            licensePlate: result.data.placa,
+            color: result.data.color || '',
+            vin: result.data.vin || '',
+            numeroMotor: result.data.numero_motor || '',
+            fotoUrl: result.data.foto_url || '',
+            mileage: parseInt(result.data.kilometraje) || 0,
             serviceType: vehicleData.serviceType,
             workOrders: [],
             reminders: [],
@@ -528,14 +545,18 @@ export function VehiclesPage() {
           dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
           
           setIsModalOpen(false);
-          alert('Vehículo creado exitosamente');
+          alert(`✅ Vehículo creado exitosamente: ${result.data.marca} ${result.data.modelo} (ID: ${result.data.vehiculo_id})`);
+          
+          // Recargar vehículos para mostrar el nuevo
+          loadVehicles();
         } else {
-          alert('Error al crear el vehículo: ' + response.message);
+          console.error('❌ Error al crear vehículo:', result);
+          alert(`Error al crear el vehículo: ${result.message || 'Error desconocido'}`);
         }
       }
     } catch (error) {
-      console.error('Error in vehicle operation:', error);
-      alert('Error al procesar la operación');
+      console.error('❌ Error en operación de vehículo:', error);
+      alert('Error de conexión al procesar la operación');
     } finally {
       setLoading(false);
     }
