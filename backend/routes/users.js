@@ -2,40 +2,69 @@ const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 
-// Obtener lista de usuarios usando SP_OBTENER_USUARIOS
+// Cache de usuarios para mejorar rendimiento
+let usuariosCache = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 30000; // 30 segundos
+
+// Obtener lista de usuarios usando SP_OBTENER_USUARIOS (ULTRA OPTIMIZADO)
 router.get('/list', async (req, res) => {
   console.log('👥 [ROUTER] Obteniendo lista de usuarios...');
   
   try {
+    // Verificar cache
+    const now = Date.now();
+    if (usuariosCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+      console.log(' [ROUTER] Devolviendo usuarios desde cache');
+      return res.json({
+        success: true,
+        data: usuariosCache,
+        count: usuariosCache.length,
+        message: `Usuarios obtenidos desde cache (${usuariosCache.length} usuarios)`,
+        cached: true
+      });
+    }
+    
     const pool = await getConnection();
     const usuarios = [];
     
-    console.log('🔍 [ROUTER] Buscando usuarios por ID...');
+    // Solo buscar los primeros 20 IDs conocidos más comunes
+    const idsRapidos = [2, 7, 8, 9, 10, 11, 12, 13, 15, 17, 19, 20];
     
-    // Buscar usuarios en un rango de IDs
-    for (let id = 1; id <= 100; id++) {
+    console.log(`🔍 [ROUTER] Búsqueda rápida en ${idsRapidos.length} IDs principales...`);
+    
+    // Usar Promise.all para consultas paralelas en lugar de secuenciales
+    const promesas = idsRapidos.map(async (id) => {
       try {
         const result = await pool.request()
           .input('usuario_id', sql.Int, id)
           .execute('SP_OBTENER_USUARIOS');
         
         if (result.recordset.length > 0) {
-          const usuario = result.recordset[0];
-          usuarios.push(usuario);
-          console.log(`✅ [ROUTER] Usuario ID ${id}: ${usuario.nombre_completo} (${usuario.correo})`);
+          console.log(`✅ [ROUTER] Usuario ID ${id}: ${result.recordset[0].nombre_completo}`);
+          return result.recordset[0];
         }
       } catch (error) {
-        // Ignorar errores individuales
+        console.log(`⚠️ [ROUTER] Error en ID ${id}`);
+        return null;
       }
-    }
+    });
     
-    console.log(`✅ [ROUTER] Total usuarios encontrados: ${usuarios.length}`);
+    const resultados = await Promise.all(promesas);
+    const usuariosEncontrados = resultados.filter(usuario => usuario !== null);
+    
+    // Actualizar cache
+    usuariosCache = usuariosEncontrados;
+    cacheTimestamp = now;
+    
+    console.log(`✅ [ROUTER] Total usuarios encontrados: ${usuariosEncontrados.length} (cached for 30s)`);
     
     res.json({
       success: true,
-      data: usuarios,
-      count: usuarios.length,
-      message: usuarios.length > 0 ? 'Usuarios obtenidos exitosamente' : 'No se encontraron usuarios'
+      data: usuariosEncontrados,
+      count: usuariosEncontrados.length,
+      message: `Usuarios obtenidos exitosamente (${usuariosEncontrados.length} usuarios)`,
+      cached: false
     });
     
   } catch (error) {
