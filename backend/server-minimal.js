@@ -853,8 +853,8 @@ app.post('/api/auth/validate-reset-token', async (req, res) => {
       }
     } catch (spError) {
       // Fallback para tokens de desarrollo
-      console.log('⚠️ Error con SP_VALIDAR_TOKEN_RECUPERACION:', spError.message);
-      console.log('🔄 Usando validación alternativa...');
+      console.log(' Error con SP_VALIDAR_TOKEN_RECUPERACION:', spError.message);
+      console.log(' Usando validación alternativa...');
       
       if (!token.startsWith('reset_')) {
         return res.json({ success: false, message: 'Token inválido' });

@@ -20,7 +20,7 @@ async function registerClientAndGetId() {
       .input('correo', clientData.correo)
       .execute('SP_REGISTRAR_USUARIO_CLIENTE');
     
-    console.log('✅ Cliente registrado:', registerResult.recordset[0]);
+    console.log(' Cliente registrado:', registerResult.recordset[0]);
     
     // Ahora vamos a buscar manualmente qué ID se le asignó
     // Probemos con los IDs más altos (los últimos registrados)
@@ -37,20 +37,20 @@ async function registerClientAndGetId() {
           .input('color', 'Rojo')
           .execute('SP_REGISTRAR_VEHICULO');
           
-        console.log(`✅ ID ${testId} FUNCIONA! - Vehículo creado:`, vehicleTestResult.recordset[0]);
+        console.log(`ID ${testId} FUNCIONA! - Vehículo creado:`, vehicleTestResult.recordset[0]);
         
         // Limpiar el vehículo de prueba si es posible
         try {
           await pool.request()
             .input('vehiculo_id', vehicleTestResult.recordset[0].vehiculo_id)
             .execute('SP_ELIMINAR_VEHICULO');
-          console.log(`🗑️ Vehículo de prueba ${testId} eliminado`);
+          console.log(` Vehículo de prueba ${testId} eliminado`);
         } catch (deleteError) {
-          console.log(`⚠️ No se pudo eliminar vehículo de prueba ${testId}:`, deleteError.message);
+          console.log(` No se pudo eliminar vehículo de prueba ${testId}:`, deleteError.message);
         }
         
         if (testId <= 10) {
-          console.log(`\n📋 RESUMEN: El cliente_id ${testId} existe y se puede usar.\n`);
+          console.log(`\n RESUMEN: El cliente_id ${testId} existe y se puede usar.\n`);
         }
         
       } catch (error) {
@@ -63,12 +63,7 @@ async function registerClientAndGetId() {
       }
     }
     
-    console.log('\n🎯 INSTRUCCIONES PARA EL USUARIO:');
-    console.log('1. Ve al frontend y haz clic en "Agregar Vehículo"');
-    console.log('2. En el campo "ID del Cliente", ingresa uno de los IDs que funcionaron arriba');
-    console.log('3. Completa los demás campos del vehículo');
-    console.log('4. Haz clic en "Crear Vehículo"');
-    console.log('5. Si aparece error de clave foránea, prueba con otro ID\n');
+
     
   } catch (error) {
     console.log('❌ Error:', error.message);

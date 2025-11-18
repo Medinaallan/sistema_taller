@@ -303,7 +303,7 @@ export function ClientsPage() {
         console.log('➕ Creando cliente usando stored procedures...');
         
         // Usar el endpoint que utiliza SP_REGISTRAR_USUARIO_CLIENTE
-        const response = await fetch('http://localhost:3001/api/clients', {
+        const response = await fetch('http://localhost:8080/api/clients', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -348,7 +348,7 @@ export function ClientsPage() {
         console.log('✏️ Editando cliente usando stored procedures...');
         
         // Usar el endpoint que utiliza SP_EDITAR_USUARIO
-        const response = await fetch(`http://localhost:3001/api/clients/${selectedClient.id}`, {
+        const response = await fetch(`http://localhost:8080/api/clients/${selectedClient.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

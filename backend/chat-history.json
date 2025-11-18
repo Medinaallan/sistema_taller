@@ -1,4 +1,16 @@
 {
+  "9": [
+    {
+      "mensaje_id": 1763480539806,
+      "sala_id": "9",
+      "usuario_id": "admin-system",
+      "rol": "admin",
+      "contenido": "🔧 SERVICIOS ADICIONALES ENCONTRADOS\n\nOrden de Trabajo: #29-ri28tvaqo\nCliente: Cliente #9\nVehículo: Vehículo #31\n\nProblemas encontrados:\nSE ENCONTRO EMPAQUE GASTADO\n\nDescripción del problema:\nESTE EMPAQUE ASDASDASDASDASDASDA\n\nServicios recomendados:\nCAMBIO DE EMPAQUES \n\nCosto estimado: L. 450.00\nUrgencia: ALTA\n\nNotas adicionales:\nZXCZCZCZXCZCZCZ\n\n---\nEsta cotización requiere tu aprobación antes de proceder. Puedes aprobarla o rechazarla desde tu panel de cliente.\n\nCotización ID: AQ-1763480539204-09x7z3m6p",
+      "es_sistema": false,
+      "enviado_en": "2025-11-18T15:42:26.228Z",
+      "leido": false
+    }
+  ],
   "client-1": [
     {
       "mensaje_id": 1757141853142,

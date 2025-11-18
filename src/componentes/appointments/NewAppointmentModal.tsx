@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Select, TextArea, Button } from '../comunes/UI';
 import type { Appointment } from '../../tipos';
-import { obtenerClientes, type Cliente } from '../../servicios/clientesApiService';
+import { clientesService } from '../../servicios/clientesService';
 import { servicesService, vehiclesService, appointmentsService } from '../../servicios/apiService';
 
 interface NewAppointmentModalProps {
@@ -26,7 +26,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
   const [loadingClientes, setLoadingClientes] = useState(false);
   const [servicios, setServicios] = useState<any[]>([]);
   const [loadingServicios, setLoadingServicios] = useState(false);
@@ -57,8 +57,13 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       const cargarClientes = async () => {
         setLoadingClientes(true);
         try {
-          const clientesData = await obtenerClientes();
-          setClientes(clientesData);
+          const response = await clientesService.obtenerClientes();
+          if (response.success && response.data) {
+            const clientesArray = Array.isArray(response.data) ? response.data : [response.data];
+            setClientes(clientesArray);
+          } else {
+            setClientes([]);
+          }
         } catch (error) {
           console.error('Error cargando clientes:', error);
           setClientes([]);
@@ -125,11 +130,11 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   // Filtrar vehículos cuando cambie el cliente seleccionado
   useEffect(() => {
     if (formData.clientId && vehiculos.length > 0) {
-      const vehiculosFiltrados = vehiculos.filter(vehiculo => vehiculo.clienteId === formData.clientId);
+      const vehiculosFiltrados = vehiculos.filter(vehiculo => vehiculo.cliente_id?.toString() === formData.clientId);
       setVehiculosCliente(vehiculosFiltrados);
       
       // Limpiar selección de vehículo si ya no está disponible
-      if (formData.vehicleId && !vehiculosFiltrados.some(v => v.id === formData.vehicleId)) {
+      if (formData.vehicleId && !vehiculosFiltrados.some(v => v.vehiculo_id?.toString() === formData.vehicleId)) {
         setFormData(prev => ({ ...prev, vehicleId: '' }));
       }
     } else {
@@ -137,6 +142,16 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       setFormData(prev => ({ ...prev, vehicleId: '' }));
     }
   }, [formData.clientId, vehiculos]);
+
+  // Procesar clientes para el Select
+  const numericClients = clientes.filter(cliente => cliente.usuario_id && !isNaN(Number(cliente.usuario_id)));
+  const clientOptions = [
+    { value: "", label: loadingClientes ? "Cargando clientes..." : "Seleccionar cliente..." },
+    ...numericClients.map(cliente => ({
+      value: cliente.usuario_id.toString(),
+      label: `${cliente.nombre_completo} (ID: ${cliente.usuario_id})`
+    }))
+  ];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -255,21 +270,31 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select
-            label="Cliente"
-            value={formData.clientId}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('clientId', e.target.value)}
-            error={errors.clientId}
-            required
-            options={[
-              { value: "", label: loadingClientes ? "Cargando clientes..." : "Seleccionar cliente..." },
-              ...clientes.map(cliente => ({
-                value: cliente.id,
-                label: `${cliente.name} - ${cliente.email}`
-              }))
-            ]}
-          />
+
+        <Select
+          label="Cliente"
+          value={formData.clientId}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('clientId', e.target.value)}
+          options={clientOptions}
+          error={errors.clientId}
+          required
+          disabled={loadingClientes}
+        />
+        {loadingClientes && (
+          <p className="mt-1 text-sm text-blue-600">
+            ⏳ Cargando clientes desde la base de datos...
+          </p>
+        )}
+        {!loadingClientes && numericClients.length === 0 && (
+          <p className="mt-1 text-sm text-amber-600">
+            ⚠️ No hay clientes cargados. Recargue la página o registre clientes primero.
+          </p>
+        )}
+        {!loadingClientes && numericClients.length > 0 && (
+          <p className="mt-1 text-sm text-gray-500">
+            ✅ {numericClients.length} clientes disponibles
+          </p>
+        )}
 
           <Select
             label="Vehículo"
@@ -290,12 +315,11 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
                       : "Seleccionar vehículo..."
               },
               ...vehiculosCliente.map(vehiculo => ({
-                value: vehiculo.id,
-                label: `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa} (${vehiculo.año})`
+                value: vehiculo.vehiculo_id?.toString(),
+                label: `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa} (${vehiculo.anio})`
               }))
             ]}
           />
-        </div>
 
         <Select
           label="Tipo de Servicio"

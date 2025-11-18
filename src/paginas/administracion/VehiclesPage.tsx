@@ -5,17 +5,19 @@ import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { useBusinessLogs } from '../../hooks/useBusinessLogs';
 import { mockVehicles, formatDate } from '../../utilidades/globalMockDatabase';
-import { vehiclesService, clientService } from '../../servicios/apiService';
+import { vehiclesService } from '../../servicios/apiService';
+import clientesService from '../../servicios/clientesService'; // Servicio de clientes con SP_OBTENER_USUARIOS
 import type { Vehicle, Client } from '../../tipos';
 
 interface VehicleFormProps {
   vehicle?: Vehicle;
   clients: Client[];
+  loadingClients?: boolean;
   onSubmit: (vehicle: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'workOrders' | 'reminders'>) => void;
   onCancel: () => void;
 }
 
-function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps) {
+function VehicleForm({ vehicle, clients, loadingClients = false, onSubmit, onCancel }: VehicleFormProps) {
   const [formData, setFormData] = useState({
     clientId: vehicle?.clientId || '',
     brand: vehicle?.brand || '',
@@ -108,42 +110,29 @@ function VehicleForm({ vehicle, clients, onSubmit, onCancel }: VehicleFormProps)
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        {clientOptions.length > 1 ? (
-          <Select
-            label="Cliente"
-            name="clientId"
-            value={formData.clientId}
-            onChange={handleInputChange}
-            options={clientOptions}
-            error={errors.clientId}
-            required
-          />
-        ) : (
-          <div>
-            <Input
-              label="ID del Cliente"
-              name="clientId"
-              type="number"
-              value={formData.clientId}
-              onChange={handleInputChange}
-              error={errors.clientId}
-              placeholder="Ej: 1, 2, 3..."
-              required
-            />
-            <div className="mt-2 p-3 bg-blue-50 border-l-4 border-blue-400">
-              <div className="text-sm text-blue-700">
-                <p className="font-medium mb-1">\ud83d\udcdd Instrucciones:</p>
-                <p>\u2022 Ingresa el ID num\u00e9rico del cliente de la base de datos</p>
-                <p>\u2022 Los clientes registrados tienen IDs como: 1, 2, 3, 4, 5...</p>
-                <p>\u2022 Si el ID no existe, aparecer\u00e1 un error de clave for\u00e1nea</p>
-              </div>
-            </div>
-          </div>
+        <Select
+          label="Cliente"
+          name="clientId"
+          value={formData.clientId}
+          onChange={handleInputChange}
+          options={clientOptions}
+          error={errors.clientId}
+          required
+          disabled={loadingClients}
+        />
+        {loadingClients && (
+          <p className="mt-1 text-sm text-blue-600">
+            ⏳ Cargando clientes desde la base de datos...
+          </p>
         )}
-        
-        {clientOptions.length <= 1 && (
-          <p className="text-sm text-amber-600 mt-1">
-            \u26a0\ufe0f No se pudieron cargar clientes de la BD. Usar ID manual.
+        {!loadingClients && numericClients.length === 0 && (
+          <p className="mt-1 text-sm text-amber-600">
+            ⚠️ No hay clientes cargados. Recargue la página o registre clientes primero.
+          </p>
+        )}
+        {!loadingClients && numericClients.length > 0 && (
+          <p className="mt-1 text-sm text-gray-500">
+            ✅ {numericClients.length} clientes disponibles
           </p>
         )}
       </div>
@@ -264,6 +253,7 @@ export function VehiclesPage() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [modalType, setModalType] = useState<'create' | 'edit' | 'view'>('create');
   const [loading, setLoading] = useState(false);
+  const [loadingClients, setLoadingClients] = useState(true); // Estado para carga de clientes
 
   // Cargar vehículos desde la API
   const loadVehicles = async () => {
@@ -309,32 +299,40 @@ export function VehiclesPage() {
     }
   };
 
-  // Cargar clientes desde la API
+  // Cargar clientes desde la API usando SP_OBTENER_USUARIOS
   const loadClients = async () => {
     try {
-      console.log('📋 Cargando clientes desde BD usando stored procedures...');
-      const response = await clientService.getRegisteredClients();
-      if (response.success && response.data && response.data.length > 0) {
-        const clients: Client[] = response.data.map((apiClient: any) => ({
-          id: apiClient.id?.toString(),
-          name: apiClient.name || apiClient.fullName || 'Cliente',
-          phone: apiClient.phone || '',
-          email: apiClient.email || '',
-          address: apiClient.address || '',
+      setLoadingClients(true);
+      console.log('📋 Cargando clientes desde BD usando SP_OBTENER_USUARIOS...');
+      const response = await clientesService.obtenerClientes();
+      
+      if (response.success && response.data) {
+        const clientesArray = Array.isArray(response.data) ? response.data : [response.data];
+        
+        // Convertir al formato Client esperado por el sistema
+        const clients: Client[] = clientesArray.map((cliente: any) => ({
+          id: cliente.usuario_id?.toString(),
+          name: cliente.nombre_completo,
+          phone: cliente.telefono,
+          email: cliente.correo,
+          address: '', // No disponible en el SP
           password: '', // No necesario para la interfaz
           vehicles: [], // Se cargan por separado
-          createdAt: new Date(apiClient.createdAt || Date.now()),
+          createdAt: new Date(),
           updatedAt: new Date()
         }));
+        
         console.log('✅ Clientes cargados desde BD:', clients.length);
         dispatch({ type: 'SET_CLIENTS', payload: clients });
       } else {
-        console.log('⚠️ No se obtuvieron clientes de la BD, usando fallback vacío');
+        console.log('⚠️ No se obtuvieron clientes de la BD');
         dispatch({ type: 'SET_CLIENTS', payload: [] });
       }
     } catch (error) {
-      console.error('\u274c Error loading clients:', error);
+      console.error('❌ Error loading clients:', error);
       dispatch({ type: 'SET_CLIENTS', payload: [] });
+    } finally {
+      setLoadingClients(false);
     }
   };
 
@@ -427,6 +425,10 @@ export function VehiclesPage() {
       
       if (modalType === 'edit' && selectedVehicle) {
         // Update vehicle via API using SP fields
+        console.log('🔄 Actualizando vehículo ID:', selectedVehicle.id);
+        console.log('📝 Datos originales:', selectedVehicle);
+        console.log('📝 Nuevos datos del formulario:', vehicleData);
+        
         const updateData = {
           marca: vehicleData.brand,
           modelo: vehicleData.model,
@@ -439,7 +441,10 @@ export function VehiclesPage() {
           foto_url: vehicleData.fotoUrl || null,
         };
         
+        console.log('🚀 Enviando datos de actualización:', updateData);
+        
         const response = await vehiclesService.update(selectedVehicle.id, updateData);
+        console.log('📥 Respuesta del servidor:', response);
         
         if (response.success) {
           // Update local state
@@ -448,6 +453,8 @@ export function VehiclesPage() {
             ...vehicleData,
             updatedAt: new Date(),
           };
+          
+          console.log('✅ Vehículo actualizado localmente:', updatedVehicle);
           
           // Detectar cambios para el log
           const changes: any = {};
@@ -464,6 +471,9 @@ export function VehiclesPage() {
           
           // Actualizar estadísticas del dashboard
           dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+          
+          // Recargar vehículos para mostrar los cambios actualizados
+          await loadVehicles();
           
           setIsModalOpen(false);
           alert('Vehículo actualizado exitosamente');
@@ -495,21 +505,13 @@ export function VehiclesPage() {
           foto_url: vehicleData.fotoUrl || ''
         };
         
-        console.log(' Enviando payload:', vehiclePayload);
+        console.log('📤 Enviando payload:', vehiclePayload);
         
-        // USAR EL MISMO ENDPOINT DIRECTO QUE EN EL TEST
-        const response = await fetch('http://localhost:3001/api/vehicles', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(vehiclePayload)
-        });
-        
-        const result = await response.json();
+        // USAR EL SERVICIO vehiclesService CONFIGURADO CORRECTAMENTE
+        const result = await vehiclesService.create(vehiclePayload);
         console.log('📥 Respuesta del servidor:', result);
         
-        if (response.ok && result.success) {
+        if (result.success) {
           console.log('✅ Vehículo creado exitosamente:', result.data);
           
           // Mapear respuesta del SP a formato Vehicle
@@ -780,6 +782,7 @@ export function VehiclesPage() {
           <VehicleForm
             vehicle={modalType === 'edit' ? selectedVehicle || undefined : undefined}
             clients={state.clients}
+            loadingClients={loadingClients}
             onSubmit={handleFormSubmit}
             onCancel={() => setIsModalOpen(false)}
           />
