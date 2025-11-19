@@ -24,6 +24,7 @@ import ClientQuotationsPage from './paginas/quotations/ClientQuotationsPage';
 import InvoicesPage from './paginas/invoices/InvoicesPage';
 import PaymentsPage from './paginas/payments/PaymentsPage';
 import InventoryPage from './paginas/inventory/InventoryPage';
+import POSPage from './paginas/pos/POSPage';
 import SuppliersPage from './paginas/suppliers/SuppliersPage';
 import ProductsPage from './paginas/products/ProductsPage';
 import ServicesPage from './paginas/services/ServicesPage';
@@ -270,6 +271,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <InvoicesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pos"
+        element={
+          <ProtectedRoute>
+            <POSPage />
           </ProtectedRoute>
         }
       />

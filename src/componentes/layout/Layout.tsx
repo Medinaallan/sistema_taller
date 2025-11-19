@@ -15,7 +15,8 @@ import {
   ClipboardDocumentListIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  CreditCardIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { getRoleText } from '../../utilidades/globalMockDatabase';
@@ -45,6 +46,7 @@ const navigationItems: NavigationItem[] = [
       { name: 'Cotizaciones', href: '/quotations', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },
       { name: 'Órdenes de Trabajo', href: '/work-orders', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
       { name: 'Facturas', href: '/invoices', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },
+      { name: 'Punto de Venta', href: '/pos', icon: CreditCardIcon, roles: ['admin', 'receptionist'] },
     ]
   },
   { 

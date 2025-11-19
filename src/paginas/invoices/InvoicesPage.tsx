@@ -121,14 +121,14 @@ const InvoicesPage = () => {
   const loadCompletedWorkOrdersAsInvoices = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Cargando órdenes de trabajo completadas para facturas...');
+      console.log('Cargando órdenes de trabajo completadas para facturas...');
       
       // Obtener todas las órdenes de trabajo
       const allWorkOrders = await workOrdersService.getAllWorkOrders();
       
       // Filtrar solo las completadas
       const completedOrders = allWorkOrders.filter(order => order.estado === 'completed');
-      console.log('✅ Órdenes completadas encontradas:', completedOrders.length);
+      console.log('Órdenes completadas encontradas:', completedOrders.length);
 
       // Convertir órdenes a facturas
       const invoices: GeneratedInvoice[] = completedOrders.map((order: WorkOrderData) => {
@@ -183,11 +183,11 @@ const InvoicesPage = () => {
         return invoiceData;
       });
 
-      console.log('📊 Facturas generadas:', invoices.length);
+      console.log(' Facturas generadas:', invoices.length);
       setData(invoices);
       
     } catch (error) {
-      console.error('❌ Error cargando órdenes completadas:', error);
+      console.error(' Error cargando órdenes completadas:', error);
       alert('Error cargando facturas: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -215,9 +215,6 @@ const InvoicesPage = () => {
     }
   };
 
-  const handleNewInvoice = () => {
-    alert('Para crear nuevas facturas, primero completa una orden de trabajo en la página de Órdenes de Trabajo');
-  };
 
   // Estadísticas
   const totalInvoices = data.length;
@@ -241,11 +238,9 @@ const InvoicesPage = () => {
             variant="secondary"
             className="flex items-center space-x-2"
           >
-            <span>🔄 Actualizar Facturas</span>
+            <span> Actualizar Facturas</span>
           </Button>
-          <Button onClick={handleNewInvoice} className="flex items-center space-x-2">
-            <span>➕ Nueva Factura</span>
-          </Button>
+          
         </div>
       </div>
 
