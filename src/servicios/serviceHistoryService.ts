@@ -91,6 +91,36 @@ export const serviceHistoryService = {
         data: null
       };
     }
+  },
+
+  /**
+   * Agregar nuevo registro al historial de servicios
+   */
+  async addServiceHistory(historyData: any) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/service-history`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(historyData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en la respuesta del servidor');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error agregando registro al historial:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error de conexión',
+        data: null
+      };
+    }
   }
 };
 

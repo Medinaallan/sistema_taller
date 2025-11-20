@@ -78,12 +78,23 @@ class ServiceHistoryService {
                 this.readCSV(this.workOrdersPath)
             ]);
 
+            // Leer historial adicional del archivo JSON
+            let additionalHistory = [];
+            try {
+                const historyPath = path.join(__dirname, '..', 'data', 'services', 'service_history.json');
+                const historyData = await fs.readFile(historyPath, 'utf8');
+                additionalHistory = JSON.parse(historyData);
+            } catch (error) {
+                // Si no existe el archivo, continuar sin historial adicional
+                additionalHistory = [];
+            }
+
             // Crear mapas para búsquedas rápidas
             const clientsMap = new Map(clients.map(client => [client.id, client]));
             const vehiclesMap = new Map(vehicles.map(vehicle => [vehicle.id, vehicle]));
             const servicesMap = new Map(services.map(service => [service.id, service]));
 
-            // Construir historial de servicios
+            // Construir historial de servicios desde work orders
             const serviceHistory = [];
 
             for (const workOrder of workOrders) {
@@ -128,6 +139,16 @@ class ServiceHistoryService {
                 };
 
                 serviceHistory.push(historyRecord);
+            }
+
+            // Agregar registros del historial adicional (facturas del POS)
+            if (additionalHistory && additionalHistory.length > 0) {
+                for (const record of additionalHistory) {
+                    // Filtrar por cliente si se especifica
+                    if (clientId && record.clientId !== clientId) continue;
+                    
+                    serviceHistory.push(record);
+                }
             }
 
             // Ordenar por fecha (más recientes primero)
@@ -255,6 +276,78 @@ class ServiceHistoryService {
 
         } catch (error) {
             console.error('Error obteniendo estadísticas del cliente:', error);
+            return {
+                success: false,
+                message: 'Error interno del servidor',
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Agregar nuevo registro al historial de servicios
+     */
+    async addServiceHistory(historyData) {
+        try {
+            // Crear un archivo JSON para almacenar el historial si no existe
+            const historyPath = path.join(__dirname, '..', 'data', 'services', 'service_history.json');
+            
+            let historyRecords = [];
+            
+            // Leer registros existentes
+            try {
+                const existingData = await fs.readFile(historyPath, 'utf8');
+                historyRecords = JSON.parse(existingData);
+            } catch (error) {
+                // El archivo no existe, crear array vacío
+                historyRecords = [];
+            }
+            
+            // Crear nuevo registro con ID único
+            const newRecord = {
+                id: `hist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                orderId: historyData.workOrderId || historyData.orderId || null,
+                workOrderId: historyData.workOrderId || null,
+                clientId: historyData.clientId,
+                clientName: historyData.clientName,
+                clientEmail: historyData.clientEmail || '',
+                clientPhone: historyData.clientPhone || '',
+                vehicleId: historyData.vehicleId,
+                vehicleName: historyData.vehicleName,
+                vehiclePlate: historyData.vehiclePlate || '',
+                vehicleColor: historyData.vehicleColor || '',
+                serviceId: historyData.serviceId || 'general',
+                serviceName: historyData.serviceName || 'Servicio de Taller',
+                serviceDescription: historyData.serviceDescription || '',
+                servicePrice: parseFloat(historyData.servicePrice) || 0,
+                serviceDuration: historyData.serviceDuration || '',
+                serviceCategory: historyData.serviceCategory || 'Mantenimiento',
+                date: historyData.date || new Date().toISOString(),
+                status: historyData.status || 'completed',
+                paymentStatus: historyData.paymentStatus || 'pending',
+                invoiceId: historyData.invoiceId || null,
+                invoiceTotal: parseFloat(historyData.invoiceTotal) || null,
+                notes: historyData.notes || '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Agregar al array
+            historyRecords.push(newRecord);
+            
+            // Guardar de vuelta al archivo
+            await fs.writeFile(historyPath, JSON.stringify(historyRecords, null, 2));
+            
+            console.log('Registro agregado al historial:', newRecord.id);
+            
+            return {
+                success: true,
+                data: newRecord,
+                message: 'Registro agregado exitosamente al historial'
+            };
+            
+        } catch (error) {
+            console.error('Error agregando registro al historial:', error);
             return {
                 success: false,
                 message: 'Error interno del servidor',

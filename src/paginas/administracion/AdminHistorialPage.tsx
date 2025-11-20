@@ -29,6 +29,7 @@ export function AdminHistorialPage() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedService, setSelectedService] = useState('all');
   const [selectedDateRange, setSelectedDateRange] = useState('all');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
   
   // Estado del modal de detalles
   const [selectedRecord, setSelectedRecord] = useState<ServiceHistoryRecord | null>(null);
@@ -41,7 +42,7 @@ export function AdminHistorialPage() {
   // Aplicar filtros cuando cambien
   useEffect(() => {
     applyFilters();
-  }, [serviceHistory, searchTerm, selectedClient, selectedStatus, selectedService, selectedDateRange]);
+  }, [serviceHistory, searchTerm, selectedClient, selectedStatus, selectedService, selectedDateRange, selectedPaymentStatus]);
 
   const loadServiceHistory = async () => {
     setLoading(true);
@@ -92,6 +93,11 @@ export function AdminHistorialPage() {
     // Filtro por servicio
     if (selectedService !== 'all') {
       filtered = filtered.filter(record => record.serviceId === selectedService);
+    }
+
+    // Filtro por estado de pago
+    if (selectedPaymentStatus !== 'all') {
+      filtered = filtered.filter(record => record.paymentStatus === selectedPaymentStatus);
     }
 
     // Filtro por rango de fecha
@@ -177,6 +183,10 @@ export function AdminHistorialPage() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const uniqueStatuses = Array.from(new Set(serviceHistory.map(r => r.status)));
+  const uniquePaymentStatuses = Array.from(new Set(serviceHistory
+    .map(r => r.paymentStatus)
+    .filter(Boolean)
+  ));
 
   if (loading) {
     return (
@@ -216,6 +226,7 @@ export function AdminHistorialPage() {
             <div className="mb-6 lg:mb-0">
               <h1 className="text-3xl font-bold mb-2">Historial Global de Servicios</h1>
               <p className="text-blue-100">Gestión completa del historial de servicios de todos los clientes</p>
+            
             </div>
             
             {/* Estadísticas generales */}
@@ -249,7 +260,7 @@ export function AdminHistorialPage() {
             <h3 className="text-lg font-medium text-gray-900">Filtros</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
             {/* Búsqueda */}
             <div className="xl:col-span-2">
               <div className="relative">
@@ -295,6 +306,24 @@ export function AdminHistorialPage() {
               </select>
             </div>
 
+            {/* Estado de Pago */}
+            <div>
+              <select
+                value={selectedPaymentStatus}
+                onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">Estado de Pago</option>
+                {uniquePaymentStatuses.map(status => (
+                  <option key={status} value={status}>
+                    {status === 'paid' ? 'Pagado' : 
+                     status === 'pending' ? 'Pendiente' : 
+                     status === 'partial' ? 'Parcial' : status}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Servicio */}
             <div>
               <select
@@ -329,7 +358,7 @@ export function AdminHistorialPage() {
           <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
             <span>Mostrando {filteredHistory.length} de {serviceHistory.length} registros</span>
             {(searchTerm || selectedClient !== 'all' || selectedStatus !== 'all' || 
-              selectedService !== 'all' || selectedDateRange !== 'all') && (
+              selectedService !== 'all' || selectedDateRange !== 'all' || selectedPaymentStatus !== 'all') && (
               <button
                 onClick={() => {
                   setSearchTerm('');
@@ -337,6 +366,7 @@ export function AdminHistorialPage() {
                   setSelectedStatus('all');
                   setSelectedService('all');
                   setSelectedDateRange('all');
+                  setSelectedPaymentStatus('all');
                 }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
@@ -367,6 +397,9 @@ export function AdminHistorialPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pago
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Costo
@@ -441,10 +474,34 @@ export function AdminHistorialPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
+                          {record.paymentStatus ? (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              record.paymentStatus === 'paid' ? 'text-green-500 bg-green-100' :
+                              record.paymentStatus === 'pending' ? 'text-yellow-500 bg-yellow-100' :
+                              record.paymentStatus === 'partial' ? 'text-blue-500 bg-blue-100' :
+                              'text-gray-500 bg-gray-100'
+                            }`}>
+                              {record.paymentStatus === 'paid' ? 'Pagado' :
+                               record.paymentStatus === 'pending' ? 'Pendiente' :
+                               record.paymentStatus === 'partial' ? 'Parcial' :
+                               record.paymentStatus}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
-                            <div className="text-sm font-medium text-gray-900">
-                              {formatCurrency(record.servicePrice)}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {formatCurrency(record.servicePrice)}
+                              </div>
+                              {record.invoiceTotal && record.invoiceTotal !== record.servicePrice && (
+                                <div className="text-xs text-blue-600">
+                                  Total factura: {formatCurrency(record.invoiceTotal)}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -541,6 +598,30 @@ export function AdminHistorialPage() {
                            selectedRecord.status}
                         </span>
                       </div>
+                      {selectedRecord.paymentStatus && (
+                        <div><strong>Estado de Pago:</strong>
+                          <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            selectedRecord.paymentStatus === 'paid' ? 'text-green-500 bg-green-100' :
+                            selectedRecord.paymentStatus === 'pending' ? 'text-yellow-500 bg-yellow-100' :
+                            selectedRecord.paymentStatus === 'partial' ? 'text-blue-500 bg-blue-100' :
+                            'text-gray-500 bg-gray-100'
+                          }`}>
+                            {selectedRecord.paymentStatus === 'paid' ? 'Pagado' :
+                             selectedRecord.paymentStatus === 'pending' ? 'Pendiente' :
+                             selectedRecord.paymentStatus === 'partial' ? 'Parcial' :
+                             selectedRecord.paymentStatus}
+                          </span>
+                        </div>
+                      )}
+                      {selectedRecord.invoiceId && (
+                        <div><strong>Factura ID:</strong> {selectedRecord.invoiceId}</div>
+                      )}
+                      {selectedRecord.invoiceTotal && (
+                        <div><strong>Total Facturado:</strong> {formatCurrency(selectedRecord.invoiceTotal)}</div>
+                      )}
+                      {selectedRecord.workOrderId && (
+                        <div><strong>Orden de Trabajo:</strong> #{selectedRecord.workOrderId.slice(-8)}</div>
+                      )}
                     </div>
                     
                     {selectedRecord.serviceDescription && (

@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Package, FileText, Wrench, User } from 'lucide-react';
 import type { Client } from '../../tipos';
 import usePendingInvoices from '../../hooks/usePendingInvoices';
+import { serviceHistoryService } from '../../servicios/serviceHistoryService';
+import { obtenerClientes } from '../../servicios/clientesApiService';
+import { vehiclesService } from '../../servicios/apiService';
 
 interface POSItem {
   id: string;
@@ -184,47 +187,106 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Separar productos y servicios (facturas pendientes)
-    const productItems = posState.cart.filter(item => item.type === 'product');
-    const serviceItems = posState.cart.filter(item => item.type === 'service');
+    try {
+      // Separar productos y servicios (facturas pendientes)
+      const productItems = posState.cart.filter(item => item.type === 'product');
+      const serviceItems = posState.cart.filter(item => item.type === 'service');
 
-    // Aquí implementarías la lógica de facturación
-    const invoice = {
-      id: Date.now().toString(),
-      items: posState.cart,
-      client: posState.selectedClient,
-      subtotal: posState.subtotal,
-      tax: posState.tax,
-      discount: posState.discount,
-      total: posState.total,
-      date: new Date(),
-      hasProducts: productItems.length > 0,
-      hasServices: serviceItems.length > 0
-    };
+      // Crear la factura
+      const invoice = {
+        id: Date.now().toString(),
+        items: posState.cart,
+        client: posState.selectedClient,
+        subtotal: posState.subtotal,
+        tax: posState.tax,
+        discount: posState.discount,
+        total: posState.total,
+        date: new Date(),
+        hasProducts: productItems.length > 0,
+        hasServices: serviceItems.length > 0
+      };
 
-    console.log('Factura generada:', invoice);
+      console.log('Factura generada:', invoice);
 
-    // Marcar órdenes de trabajo como facturadas
-    for (const serviceItem of serviceItems) {
-      if (serviceItem.id.startsWith('invoice-')) {
-        const workOrderId = serviceItem.id.replace('invoice-', '');
-        try {
-          await markAsInvoiced(workOrderId);
-          console.log(`Orden de trabajo ${workOrderId} marcada como facturada`);
-        } catch (error) {
-          console.error(`Error al marcar como facturada la orden ${workOrderId}:`, error);
+      // Procesar servicios facturados (órdenes de trabajo)
+      for (const serviceItem of serviceItems) {
+        if (serviceItem.id.startsWith('invoice-')) {
+          const workOrderId = serviceItem.id.replace('invoice-', '');
+          
+          try {
+            // Marcar orden como facturada
+            await markAsInvoiced(workOrderId);
+            
+            // Buscar la orden original para obtener información completa
+            const originalInvoice = pendingInvoices.find(inv => inv.id === workOrderId);
+            if (originalInvoice) {
+              console.log('Datos de la factura original:', originalInvoice);
+              
+              // Registrar en el historial global de servicios
+              const historyRecord = {
+                workOrderId: workOrderId,
+                clientId: originalInvoice.clienteId,
+                clientName: originalInvoice.clientName || 'Cliente no especificado',
+                clientEmail: originalInvoice.clientEmail || '',
+                clientPhone: originalInvoice.clientPhone || '',
+                vehicleId: originalInvoice.vehiculoId,
+                vehicleName: originalInvoice.vehicleName || 'Vehículo no especificado',
+                vehiclePlate: originalInvoice.vehiclePlate || '',
+                vehicleColor: originalInvoice.vehicleColor || '',
+                serviceId: originalInvoice.servicioId || 'general',
+                serviceName: 'Servicio de Taller',
+                serviceDescription: originalInvoice.descripcion || 'Servicio completado y facturado',
+                serviceCategory: originalInvoice.tipoServicio || 'Mantenimiento',
+                servicePrice: originalInvoice.costoTotal,
+                serviceDuration: '1 hora', // Valor por defecto
+                status: 'completed',
+                paymentStatus: 'paid',
+                invoiceId: invoice.id,
+                invoiceTotal: posState.total,
+                date: new Date().toISOString(),
+                notes: `Facturado en POS el ${new Date().toLocaleDateString()} - Total: L.${posState.total.toFixed(2)}`
+              };
+
+              console.log('Datos a enviar al historial:', historyRecord);
+
+              // Agregar al historial
+              try {
+                const historyResult = await serviceHistoryService.addServiceHistory(historyRecord);
+                console.log('Resultado del historial:', historyResult);
+                if (historyResult.success) {
+                  console.log(`Servicio ${workOrderId} agregado al historial global exitosamente`);
+                } else {
+                  console.error('Error al agregar al historial:', historyResult.message);
+                }
+              } catch (historyError) {
+                console.error('Error al agregar al historial:', historyError);
+                // No fallar toda la operación por esto
+              }
+            } else {
+              console.warn(`No se encontró la factura original para la orden ${workOrderId}`);
+            }
+            
+            console.log(`Orden de trabajo ${workOrderId} marcada como facturada`);
+          } catch (error) {
+            console.error(`Error al marcar como facturada la orden ${workOrderId}:`, error);
+            throw error; // Re-lanzar para manejar en el catch principal
+          }
         }
       }
-    }
 
-    alert(`Factura generada exitosamente por L.${posState.total.toFixed(2)}`);
-    clearCart();
-    setPosState(prev => ({ ...prev, selectedClient: null }));
-    setDiscountPercentage(0);
+      alert(`Factura generada exitosamente por L.${posState.total.toFixed(2)}`);
+      clearCart();
+      setPosState(prev => ({ ...prev, selectedClient: null }));
+      setDiscountPercentage(0);
 
-    // Actualizar lista de facturas pendientes
-    if (serviceItems.length > 0) {
-      refreshPendingInvoices();
+      // Actualizar lista de facturas pendientes
+      if (serviceItems.length > 0) {
+        refreshPendingInvoices();
+      }
+      
+    } catch (error) {
+      console.error('Error durante el checkout:', error);
+      alert('Error al procesar la factura. Por favor, inténtelo de nuevo.');
     }
   };
 

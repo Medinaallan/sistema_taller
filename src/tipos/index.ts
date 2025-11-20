@@ -389,6 +389,10 @@ export interface ServiceHistoryRecord {
   serviceCategory: string;
   date: string;
   status: string;
+  paymentStatus?: string;
+  invoiceId?: string;
+  invoiceTotal?: number;
+  workOrderId?: string;
   notes: string;
   createdAt: string;
   updatedAt: string;
