@@ -438,7 +438,7 @@ export function VehiclesPage() {
           foto_url: vehicleData.fotoUrl || null,
         };
         
-        console.log('🚀 Enviando datos de actualización:', updateData);
+        console.log('', updateData);
         
         const response = await vehiclesService.update(selectedVehicle.id, updateData);
         console.log('', response);
