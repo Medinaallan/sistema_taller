@@ -53,27 +53,21 @@ export interface ClientStats {
 export async function obtenerClientes(): Promise<Cliente[]> {
   try {
     console.log('🌐 API: Obteniendo todos los clientes...');
-    
-    const response = await fetch(`${API_BASE_URL}/clients`, {
+    const response = await fetch(`${API_BASE_URL}/clients/registered`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-    
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
     const result: ApiResponse<Cliente[]> = await response.json();
-    
     if (!result.success || !result.data) {
       throw new Error(result.error || 'Error obteniendo clientes');
     }
-    
     console.log(`✅ API: ${result.data.length} clientes obtenidos`);
     return result.data;
-    
   } catch (error) {
     console.error('❌ API Error obteniendo clientes:', error);
     throw error;

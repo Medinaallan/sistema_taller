@@ -213,13 +213,13 @@ export function ClientsPage() {
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando clientes desde SP_OBTENER_USUARIOS...</p>
+              <p className="text-gray-600">Cargando clientes...</p>
               <Button 
                 onClick={handleForceRefresh}
                 variant="outline"
                 className="mt-4"
               >
-                 Recargar desde API
+                 Recargar
               </Button>
             </div>
           </div>
@@ -318,7 +318,7 @@ export function ClientsPage() {
         const result = await response.json();
         
         if (response.ok && result.success) {
-          console.log('✅ Cliente creado desde BD:', result.data);
+          console.log(' Cliente creado desde BD:', result.data);
           
           const newClient: Client = {
             id: result.data.id,
@@ -420,10 +420,10 @@ export function ClientsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Clientes</h1>
-          <p className="text-gray-600">Usuarios con rol "Cliente" desde SP_OBTENER_USUARIOS</p>
+          <p className="text-gray-600">Usuarios con rol "Cliente"</p>
           <div className="flex items-center space-x-2 mt-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              🔗 API Conectada
+              Conectado
             </span>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               {count} clientes cargados
@@ -497,9 +497,7 @@ export function ClientsPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900">{client.name}</span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          BD
-                        </span>
+                        
                       </div>
                       <div className="text-sm text-gray-500">{client.email}</div>
                     </div>
@@ -517,9 +515,6 @@ export function ClientsPage() {
                       </div>
                       <div className="text-gray-500">
                         ID: {client.id}
-                      </div>
-                      <div className="text-xs text-green-600">
-                        SP_OBTENER_USUARIOS
                       </div>
                     </div>
                   </td>

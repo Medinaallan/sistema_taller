@@ -781,6 +781,16 @@ io.on('connection', (socket) => {
   });
 });
 
+// Registrar endpoint para historial desde factura pagada
+try {
+  console.log('🧾 Cargando endpoint de historial desde factura pagada...');
+  const serviceHistoryFromInvoiceRouter = require('./routes/serviceHistoryFromInvoice');
+  app.use('/api/service-history', serviceHistoryFromInvoiceRouter);
+  console.log('✅ Endpoint /api/service-history/from-invoice habilitado');
+} catch (error) {
+  console.error('❌ Error cargando endpoint de historial desde factura pagada:', error.message);
+}
+
 server.listen(PORT, () => {
   console.log('\n===============================================');
   console.log(`   SERVIDOR TALLER INICIADO EN PUERTO ${PORT}`);

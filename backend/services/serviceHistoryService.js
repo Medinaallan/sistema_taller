@@ -6,7 +6,7 @@ class ServiceHistoryService {
         this.clientsPath = path.join(__dirname, '..', 'data', 'clients', 'clients.csv');
         this.vehiclesPath = path.join(__dirname, '..', 'data', 'vehicles', 'vehicles.csv');
         this.servicesPath = path.join(__dirname, '..', 'data', 'services', 'services.csv');
-        this.workOrdersPath = path.join(__dirname, '..', 'data', 'services', 'work_orders.csv');
+        this.workOrdersPath = path.join(__dirname, '..', 'data', 'workorders', 'workorders.csv');
     }
 
     /**

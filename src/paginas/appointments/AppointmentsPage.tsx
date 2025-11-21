@@ -1,55 +1,39 @@
+import type { Appointment } from '../../tipos';
 import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import NewAppointmentModal from '../../componentes/appointments/NewAppointmentModal';
 import EditAppointmentModal from '../../componentes/appointments/EditAppointmentModal';
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
-import { obtenerClientes } from '../../servicios/clientesApiService';
+import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
 import { useBusinessLogs } from '../../hooks/useBusinessLogs';
-import type { Appointment } from '../../tipos';
+type AppointmentWithNames = Appointment & {
+  clientName?: string;
+  vehicleName?: string;
+};
 
 const AppointmentsPage = () => {
   const businessLogs = useBusinessLogs();
-  const [data, setData] = useState<Appointment[]>([]);
+  const [data, setData] = useState<AppointmentWithNames[]>([]);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
   const [isEditAppointmentModalOpen, setIsEditAppointmentModalOpen] = useState(false);
   const [isCreateQuotationModalOpen, setIsCreateQuotationModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [clientes, setClientes] = useState<any[]>([]);
+  const { clientes: clientesAPI, loading: loadingClientes, error: errorClientes, recargarClientes } = useClientesFromAPI();
   const [servicios, setServicios] = useState<any[]>([]);
   const [vehiculos, setVehiculos] = useState<any[]>([]);
-
-  // Función para buscar el nombre del cliente por ID
-  const getClienteName = (clienteId: string) => {
-    const cliente = clientes.find(c => c.id === clienteId);
-    return cliente ? cliente.name : clienteId;
-  };
 
   // Función para buscar el nombre del servicio por ID
   const getServiceName = (servicioId: string) => {
     const servicio = servicios.find(s => s.id === servicioId);
-    return servicio ? servicio.name || servicio.nombre : servicioId;
-  };
-
-  // Función para buscar el nombre del vehículo por ID
-  const getVehicleName = (vehiculoId: string) => {
-    const vehiculo = vehiculos.find(v => v.id === vehiculoId);
-    return vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}` : vehiculoId;
+    return servicio ? servicio.name || servicio.nombre : `ID: ${servicioId}`;
   };
 
 
 
-  // Función para cargar clientes
-  const loadClientes = async () => {
-    try {
-      const clientesData = await obtenerClientes();
-      setClientes(clientesData);
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-    }
-  };
+
 
   // Función para cargar servicios
   const loadServicios = async () => {
@@ -80,54 +64,78 @@ const AppointmentsPage = () => {
     }
   };
 
-  // Función para cargar citas desde el backend
+  // Función para cargar citas desde el backend y enriquecer con nombres
+
+
+  // Función para cargar citas y dependencias
   const loadAppointments = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      const response = await appointmentsService.getAll();
-      
-      if (response.success) {
-        // Convertir los datos del CSV al formato esperado por el frontend
-        const appointmentsData = response.data.map((csvAppointment: any) => ({
-          id: csvAppointment.id,
-          date: new Date(csvAppointment.fecha),
-          time: csvAppointment.hora,
-          clientId: csvAppointment.clienteId,
-          vehicleId: csvAppointment.vehiculoId,
-          serviceTypeId: csvAppointment.servicio,
-          status: csvAppointment.estado,
-          notes: (csvAppointment.notas || '').replace(/^"|"$/g, ''), // Remover comillas extras
-          createdAt: new Date(),
+      // 1. Cargar vehículos
+      const vehiculosRes = await vehiclesService.getAll();
+      if (vehiculosRes.success) {
+        // Mapear igual que en VehiclesPage
+        const mappedVehicles = vehiculosRes.data.map((spVehicle: any) => ({
+          id: spVehicle.vehiculo_id?.toString() || spVehicle.id,
+          clientId: spVehicle.cliente_id?.toString() || spVehicle.clientId,
+          brand: spVehicle.marca,
+          model: spVehicle.modelo,
+          year: parseInt(spVehicle.anio),
+          licensePlate: spVehicle.placa,
+          color: spVehicle.color,
+          mileage: parseInt(spVehicle.kilometraje) || 0,
+          vin: spVehicle.vin || '',
+          numeroMotor: spVehicle.numero_motor || '',
+          fotoUrl: spVehicle.foto_url || '',
+          createdAt: new Date(spVehicle.fecha_creacion || Date.now()),
           updatedAt: new Date(),
         }));
-        
+        setVehiculos(mappedVehicles);
+      } else {
+        setVehiculos([]);
+      }
+
+      // 2. Cargar servicios
+      await loadServicios();
+
+      // 3. Cargar citas y enriquecer con nombres usando clientesAPI
+      const response = await appointmentsService.getAll();
+      if (response.success) {
+        const appointmentsData = response.data.map((csvAppointment: any) => {
+          const clientIdStr = String(csvAppointment.clienteId).trim();
+          const vehicleIdStr = String(csvAppointment.vehiculoId).trim();
+          const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id).trim() === clientIdStr);
+          const vehiculo = vehiculos.find((v: any) => String(v.id).trim() === vehicleIdStr);
+          return {
+            id: csvAppointment.id,
+            date: new Date(csvAppointment.fecha),
+            time: csvAppointment.hora,
+            clientId: clientIdStr,
+            clientName: cliente ? cliente.nombre_completo : `ID sin coincidencia: ${clientIdStr}`,
+            vehicleId: vehicleIdStr,
+            vehicleName: vehiculo ? `${vehiculo.brand} ${vehiculo.model} (${vehiculo.licensePlate})` : `ID sin coincidencia: ${vehicleIdStr}`,
+            serviceTypeId: csvAppointment.servicio,
+            status: csvAppointment.estado,
+            notes: (csvAppointment.notas || '').replace(/^\"|\"$/g, ''),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        });
         setData(appointmentsData);
       } else {
         setError('Error al cargar las citas');
-        console.error('Error cargando citas:', response.message);
       }
     } catch (error) {
       setError('Error al conectar con el servidor');
-      console.error('Error cargando citas:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Cargar todos los datos al montar el componente
   useEffect(() => {
-    const loadAllData = async () => {
-      await Promise.all([
-        loadAppointments(),
-        loadClientes(),
-        loadServicios(),
-        loadVehiculos()
-      ]);
-    };
-    
-    loadAllData();
-  }, []);
+    loadAppointments();
+  }, [clientesAPI]);
 
   const handleEdit = (item: Appointment) => {
     setSelectedAppointment(item);
@@ -179,9 +187,9 @@ const AppointmentsPage = () => {
       
       if (response.success) {
         // Obtener información para el log
-        const cliente = clientes.find(c => c.id === appointment.clientId);
+        const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id) === String(appointment.clientId));
         const vehiculo = vehiculos.find(v => v.id === appointment.vehicleId);
-        const clientName = cliente ? cliente.name : `Cliente ID: ${appointment.clientId}`;
+        const clientName = cliente ? cliente.nombre_completo : `Cliente ID: ${appointment.clientId}`;
         const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${appointment.vehicleId}`;
         
         // Generar log de negocio con datos reales
@@ -232,9 +240,9 @@ const AppointmentsPage = () => {
       
       if (response.success) {
         // Obtener información para el log
-        const cliente = clientes.find(c => c.id === appointment.clientId);
+        const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id) === String(appointment.clientId));
         const vehiculo = vehiculos.find(v => v.id === appointment.vehicleId);
-        const clientName = cliente ? cliente.name : `Cliente ID: ${appointment.clientId}`;
+        const clientName = cliente ? cliente.nombre_completo : `Cliente ID: ${appointment.clientId}`;
         const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${appointment.vehicleId}`;
         
         // Generar log de negocio con datos reales
@@ -271,9 +279,9 @@ const AppointmentsPage = () => {
     if (window.confirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
       try {
         // Obtener información para el log antes de eliminar
-        const cliente = clientes.find(c => c.id === item.clientId);
+        const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id) === String(item.clientId));
         const vehiculo = vehiculos.find(v => v.id === item.vehicleId);
-        const clientName = cliente ? cliente.name : `Cliente ID: ${item.clientId}`;
+        const clientName = cliente ? cliente.nombre_completo : `Cliente ID: ${item.clientId}`;
         const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${item.vehicleId}`;
         
         const response = await appointmentsService.delete(item.id);
@@ -309,8 +317,12 @@ const AppointmentsPage = () => {
 
   const handleCreateAppointment = async (_newAppointment: Omit<Appointment, 'id'>) => {
     // La cita ya se creó en el backend desde el modal
-    // Solo necesitamos recargar la lista para mostrar la nueva cita
-    await loadAppointments();
+    // Recargar todos los datos para asegurar que los nombres estén disponibles
+    await Promise.all([
+      loadAppointments(),
+      loadVehiculos(),
+      loadServicios()
+    ]);
   };
 
   const handleEditAppointment = async () => {
@@ -374,14 +386,14 @@ const AppointmentsPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  data.map((appointment) => (
+                  data.map((appointment: AppointmentWithNames) => (
                     <tr key={appointment.id} className="bg-white border-b hover:bg-gray-50">
                       <td className="px-6 py-4">
                         {appointment.date.toLocaleDateString('es-ES')}
                       </td>
                       <td className="px-6 py-4">{appointment.time}</td>
-                      <td className="px-6 py-4">{getClienteName(appointment.clientId)}</td>
-                      <td className="px-6 py-4">{getVehicleName(appointment.vehicleId)}</td>
+                      <td className="px-6 py-4">{appointment.clientName}</td>
+                      <td className="px-6 py-4">{appointment.vehicleName}</td>
                       <td className="px-6 py-4">{getServiceName(appointment.serviceTypeId)}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 text-xs rounded-full ${

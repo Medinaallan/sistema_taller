@@ -425,9 +425,6 @@ export function VehiclesPage() {
       
       if (modalType === 'edit' && selectedVehicle) {
         // Update vehicle via API using SP fields
-        console.log('🔄 Actualizando vehículo ID:', selectedVehicle.id);
-        console.log('📝 Datos originales:', selectedVehicle);
-        console.log('📝 Nuevos datos del formulario:', vehicleData);
         
         const updateData = {
           marca: vehicleData.brand,
@@ -444,7 +441,7 @@ export function VehiclesPage() {
         console.log('🚀 Enviando datos de actualización:', updateData);
         
         const response = await vehiclesService.update(selectedVehicle.id, updateData);
-        console.log('📥 Respuesta del servidor:', response);
+        console.log('', response);
         
         if (response.success) {
           // Update local state
