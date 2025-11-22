@@ -75,17 +75,60 @@ try {
 }
 
 //  IMPORTAR Y CONFIGURAR RUTAS DE SERVICIOS
-try {
-  console.log(' Cargando rutas de servicios...');
-  const servicesRouter = require('./routes/services');
-  app.use('/api/services', servicesRouter);
-  console.log(' Rutas de servicios cargadas exitosamente');
-  console.log('    /api/services/* endpoints disponibles');
-} catch (error) {
-  console.error(' Error cargando rutas de servicios:', error.message);
-  console.error('   Stack:', error.stack);
-  console.warn('  El servidor continuará sin las rutas de servicios');
-}
+// ENDPOINTS DE SERVICIOS USANDO SP DE SQL SERVER
+const { getConnection, sql } = require('./config/database');
+
+// GET - Obtener todos los tipos de servicio (SP)
+app.get('/api/services', async (req, res) => {
+  try {
+    console.log('Intentando conectar a la base de datos...');
+    const pool = await getConnection();
+    console.log('Conexión exitosa. Ejecutando SP_OBTENER_TIPOS_SERVICIO...');
+    const result = await pool.request()
+      .execute('SP_OBTENER_TIPOS_SERVICIO');
+    console.log('Resultado del SP:', result);
+    res.json({ success: true, data: result.recordset });
+  } catch (error) {
+    console.error('Error en /api/services:', error);
+    res.status(500).json({ success: false, message: error.message, error });
+  }
+});
+
+// POST - Registrar nuevo tipo de servicio (SP)
+app.post('/api/services', async (req, res) => {
+  const { nombre, descripcion, registrado_por } = req.body;
+  try {
+    console.log('POST /api/services - Datos recibidos:', req.body);
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('nombre', sql.VarChar(100), nombre)
+      .input('descripcion', sql.VarChar(200), descripcion)
+      .input('registrado_por', sql.Int, registrado_por)
+      .execute('SP_REGISTRAR_TIPO_SERVICIO');
+    console.log('Resultado SP_REGISTRAR_TIPO_SERVICIO:', result);
+    res.json(result.recordset[0] || { response: '200 OK', msg: 'Registrado', allow: 1 });
+  } catch (error) {
+    console.error('Error en POST /api/services:', error);
+    res.status(500).json({ response: '500 ERROR', msg: error.message, error });
+  }
+});
+
+// PUT - Editar estado tipo de servicio (SP)
+app.put('/api/services/estado/:id', async (req, res) => {
+  const { id } = req.params;
+  const { activo, editado_por } = req.body;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('tipo_servicio_id', sql.Int, id)
+      .input('activo', sql.Bit, activo)
+      .input('editado_por', sql.Int, editado_por)
+      .execute('SP_EDITAR_ESTADO_TIPO_SERVICIO');
+    res.json(result.recordset[0] || { response: '200 OK', msg: 'Estado editado' });
+  } catch (error) {
+    res.status(500).json({ response: '500 ERROR', msg: error.message });
+  }
+});
 
 //  IMPORTAR Y CONFIGURAR RUTAS DE VEHÍCULOS
 try {
@@ -191,8 +234,21 @@ try {
   console.warn('⚠️ El servidor continuará sin las rutas de logs');
 }
 
+// IMPORTAR Y CONFIGURAR RUTAS DE TIPOS DE SERVICIO (SP)
+try {
+  console.log('🔄 Cargando rutas de tipos de servicio (SP)...');
+  const serviceTypesRouter = require('./routes/serviceTypes');
+  app.use('/api/service-types', serviceTypesRouter);
+  console.log('✅ Rutas de tipos de servicio (SP) cargadas exitosamente');
+  console.log('📍 /api/service-types/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de tipos de servicio (SP):', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de tipos de servicio (SP)');
+}
+
 // 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
-const { getConnection, sql } = require('./config/database');
+// (ya importado arriba)
 
 // Health check
 app.get('/api/health', (req, res) => {
