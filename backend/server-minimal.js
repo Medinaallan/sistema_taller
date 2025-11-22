@@ -815,7 +815,7 @@ io.on('connection', (socket) => {
     if (!sala_id) return;
     const historial = obtenerHistorial(sala_id);
     socket.emit('chat:historial', { sala_id, mensajes: historial });
-  });
+   });
 
   // Marcar mensajes como leídos
   socket.on('chat:leer', ({ sala_id, rolLectura }) => {
