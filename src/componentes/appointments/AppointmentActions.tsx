@@ -21,19 +21,16 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
 
   const handleApprove = async () => {
     if (isProcessing) return;
-    
     setIsProcessing(true);
     try {
-      const result = await appointmentsService.update(appointment.id, {
-        clienteId: (appointment as any).clienteId || appointment.clientId,
-        vehiculoId: (appointment as any).vehiculoId || appointment.vehicleId,
-        fecha: (appointment as any).fecha || appointment.date,
-        hora: (appointment as any).hora || appointment.time,
-        servicio: (appointment as any).servicio || appointment.serviceTypeId,
-        estado: 'confirmed',
-        notas: (appointment as any).notas || appointment.notes || ''
-      });
-
+      // SP_CAMBIAR_ESTADO_CITA: cita_id, nuevo_estado, comentario, registrado_por
+      const payload = {
+        cita_id: Number(appointment.id),
+        nuevo_estado: 'confirmed',
+        comentario: 'Aprobada por usuario',
+        registrado_por: 1 // TODO: Reemplazar con usuario actual
+      };
+      const result = await appointmentsService.changeStatus(payload.cita_id, payload);
       if (result.success) {
         console.log('Cita aprobada exitosamente');
         onUpdate();
@@ -51,22 +48,17 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
 
   const handleReject = async () => {
     if (isProcessing) return;
-    
     const confirmed = confirm('¿Está seguro que desea rechazar esta cita?');
     if (!confirmed) return;
-
     setIsProcessing(true);
     try {
-      const result = await appointmentsService.update(appointment.id, {
-        clienteId: (appointment as any).clienteId || appointment.clientId,
-        vehiculoId: (appointment as any).vehiculoId || appointment.vehicleId,
-        fecha: (appointment as any).fecha || appointment.date,
-        hora: (appointment as any).hora || appointment.time,
-        servicio: (appointment as any).servicio || appointment.serviceTypeId,
-        estado: 'cancelled',
-        notas: (appointment as any).notas || appointment.notes || ''
-      });
-
+      const payload = {
+        cita_id: Number(appointment.id),
+        nuevo_estado: 'cancelled',
+        comentario: 'Rechazada por usuario',
+        registrado_por: 1 // TODO: Reemplazar con usuario actual
+      };
+      const result = await appointmentsService.changeStatus(payload.cita_id, payload);
       if (result.success) {
         console.log('Cita rechazada exitosamente');
         onUpdate();
@@ -90,14 +82,10 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
 
       if (quotationResult.success) {
         // Marcar la cita como completada
-        const appointmentResult = await appointmentsService.update(appointment.id, {
-          clienteId: (appointment as any).clienteId || appointment.clientId,
-          vehiculoId: (appointment as any).vehiculoId || appointment.vehicleId,
-          fecha: (appointment as any).fecha || appointment.date,
-          hora: (appointment as any).hora || appointment.time,
-          servicio: (appointment as any).servicio || appointment.serviceTypeId,
-          estado: 'completed',
-          notas: (appointment as any).notas || appointment.notes || ''
+        const appointmentResult = await appointmentsService.changeStatus(Number(appointment.id), {
+          nuevo_estado: 'completed',
+          comentario: 'Cotización creada y cita completada',
+          registrado_por: 1 // TODO: Reemplazar con usuario actual
         });
 
         if (appointmentResult.success) {

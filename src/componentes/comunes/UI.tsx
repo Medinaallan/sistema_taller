@@ -112,7 +112,7 @@ export function Select({ label, error, helperText, options, className, ...props 
         {...props}
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.key || option.value} value={option.value}>
             {option.label}
           </option>
         ))}

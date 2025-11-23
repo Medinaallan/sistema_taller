@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useApp } from '../../contexto/useApp';
 import { Modal, Input, Select, TextArea, Button } from '../comunes/UI';
 import type { Appointment } from '../../tipos';
 import { clientesService } from '../../servicios/clientesService';
@@ -15,6 +16,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { state } = useApp();
   const [formData, setFormData] = useState({
     date: '',
     time: '',
@@ -22,6 +24,8 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
     vehicleId: '',
     serviceTypeId: '',
     notes: '',
+    canalOrigen: 'WEB',
+    asesorId: '',
     status: 'pending' as const,
   });
 
@@ -33,6 +37,33 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   const [vehiculos, setVehiculos] = useState<any[]>([]);
   const [loadingVehiculos, setLoadingVehiculos] = useState(false);
   const [vehiculosCliente, setVehiculosCliente] = useState<any[]>([]);
+  const [asesores, setAsesores] = useState<any[]>([]);
+  const [loadingAsesores, setLoadingAsesores] = useState(false);
+  // Cargar asesores cuando se abra el modal
+  useEffect(() => {
+    if (isOpen) {
+      const cargarAsesores = async () => {
+        setLoadingAsesores(true);
+        try {
+          // Aquí deberías llamar a tu servicio de usuarios para obtener asesores
+          // Ejemplo: const response = await userService.getAdvisors();
+          // Simulación:
+          setTimeout(() => {
+            setAsesores([
+              { id: 1, nombre: 'Asesor 1' },
+              { id: 2, nombre: 'Asesor 2' },
+              { id: 3, nombre: 'Asesor 3' }
+            ]);
+            setLoadingAsesores(false);
+          }, 500);
+        } catch (error) {
+          setAsesores([]);
+          setLoadingAsesores(false);
+        }
+      };
+      cargarAsesores();
+    }
+  }, [isOpen]);
 
   // Limpiar formulario al cerrar
   useEffect(() => {
@@ -44,6 +75,8 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         vehicleId: '',
         serviceTypeId: '',
         notes: '',
+        canalOrigen: 'WEB',
+        asesorId: '',
         status: 'pending',
       });
       setErrors({});
@@ -193,38 +226,38 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       return;
     }
-
+    // Validación extra para tipo_servicio_id
+    if (!formData.serviceTypeId || isNaN(Number(formData.serviceTypeId))) {
+      setErrors(prev => ({ ...prev, serviceTypeId: 'Debes seleccionar un tipo de servicio válido.' }));
+      return;
+    }
     try {
-      // Preparar datos para el backend
+      // Obtener usuario logueado del contexto
+      const registradoPor = state.user ? Number(state.user.id) : 1;
       const appointmentData = {
-        clienteId: formData.clientId,
-        vehiculoId: formData.vehicleId,
-        fecha: formData.date,
-        hora: formData.time,
-        servicio: formData.serviceTypeId,
-        estado: formData.status,
-        notas: formData.notes
+        cliente_id: Number(formData.clientId),
+        vehiculo_id: Number(formData.vehicleId),
+        tipo_servicio_id: Number(formData.serviceTypeId),
+        fecha_inicio: formData.date,
+        asesor_id: formData.asesorId ? Number(formData.asesorId) : null,
+        notas_cliente: formData.notes || '',
+        canal_origen: formData.canalOrigen,
+        registrado_por: registradoPor
       };
-
-      // Guardar en el backend
+      console.log('Datos enviados a crear cita:', appointmentData);
       const response = await appointmentsService.create(appointmentData);
-      
       if (response.success) {
-        // Llamar al callback para notificar al componente padre
         onSubmit({
           ...formData,
           date: new Date(formData.date),
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        
         onClose();
       } else {
-        // Mostrar error si no se pudo guardar
         setErrors({ submit: 'Error al crear la cita. Intente nuevamente.' });
       }
     } catch (error) {
@@ -296,30 +329,32 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
           </p>
         )}
 
-          <Select
-            label="Vehículo"
-            value={formData.vehicleId}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('vehicleId', e.target.value)}
-            error={errors.vehicleId}
-            required
-            disabled={!formData.clientId || loadingVehiculos}
-            options={[
-              { 
-                value: "", 
-                label: !formData.clientId 
-                  ? "Primero seleccione un cliente" 
-                  : loadingVehiculos 
-                    ? "Cargando vehículos..." 
-                    : vehiculosCliente.length === 0 
-                      ? "Este cliente no tiene vehículos registrados"
-                      : "Seleccionar vehículo..."
-              },
-              ...vehiculosCliente.map(vehiculo => ({
-                value: vehiculo.vehiculo_id?.toString(),
-                label: `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa} (${vehiculo.anio})`
-              }))
-            ]}
-          />
+        <Select
+          label="Vehículo"
+          value={formData.vehicleId}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('vehicleId', e.target.value)}
+          error={errors.vehicleId}
+          required
+          disabled={!formData.clientId || loadingVehiculos}
+          options={[
+            { 
+              value: "", 
+              label: !formData.clientId 
+                ? "Primero seleccione un cliente" 
+                : loadingVehiculos 
+                  ? "Cargando vehículos..." 
+                  : vehiculosCliente.length === 0 
+                    ? "Este cliente no tiene vehículos registrados"
+                    : "Seleccionar vehículo...",
+              key: "vehiculo_default"
+            },
+            ...vehiculosCliente.map(vehiculo => ({
+              value: vehiculo.vehiculo_id?.toString(),
+              label: `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa} (${vehiculo.anio})`,
+              key: `vehiculo_${vehiculo.vehiculo_id}`
+            }))
+          ]}
+        />
 
         <Select
           label="Tipo de Servicio"
@@ -327,14 +362,45 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('serviceTypeId', e.target.value)}
           error={errors.serviceTypeId}
           required
-          options={[
-            { value: "", label: loadingServicios ? "Cargando servicios..." : "Seleccionar servicio..." },
-            ...servicios.map(servicio => ({
-              value: servicio.id,
-              label: `${servicio.name} - $${servicio.basePrice}`
-            }))
-          ]}
+            options={[ 
+              { value: "", label: loadingServicios ? "Cargando servicios..." : "Seleccionar servicio...", key: "servicio_default" },
+              ...servicios.map(servicio => {
+                // Ensure key is always unique, even if id is undefined/null/empty
+                const idKey = servicio.id !== undefined && servicio.id !== null && servicio.id !== ''
+                  ? servicio.id
+                  : Math.random().toString(36).substr(2, 9); // fallback unique key
+                return {
+                  value: servicio.id,
+                  label: `${servicio.name} - $${servicio.basePrice}`,
+                  key: `servicio_${idKey}`
+                };
+              })
+            ]}
         />
+
+        <Select
+          label="Canal de Origen"
+          value={formData.canalOrigen}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('canalOrigen', e.target.value)}
+          required
+          options={[
+            { value: 'WEB', label: 'WEB' },
+            { value: 'APP', label: 'APP' }
+          ].map((opt, idx) => ({ ...opt, key: `canal_${opt.value}_${idx}` }))}
+        />
+
+        <Select
+          label="Asesor"
+          value={formData.asesorId}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('asesorId', e.target.value)}
+          required={false}
+          options={[
+            { value: '', label: loadingAsesores ? 'Cargando asesores...' : 'Sin asesor' },
+            ...asesores.map(asesor => ({ value: asesor.id.toString(), label: asesor.nombre }))
+          ].map((opt, idx) => ({ ...opt, key: `asesor_${opt.value}_${idx}` }))}
+        />
+
+        {/* El campo registrado_por ahora se toma automáticamente del usuario logueado */}
 
         <Input
           label="Estado"

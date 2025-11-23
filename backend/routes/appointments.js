@@ -1,104 +1,25 @@
+
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const router = express.Router();
+const { getConnection, sql } = require('../config/database');
 
-const CSV_FILE_PATH = path.join(__dirname, '../data/appointments/appointments.csv');
 
-// Función simplificada para parsear CSV - maneja campos con exactamente 8 columnas
-function parseCSVLine(line) {
-  // Para las citas sabemos que tenemos exactamente 8 campos:
-  // id,clienteId,vehiculoId,fecha,hora,servicio,estado,notas
-  
-  // Dividir por coma, pero reunir todo después del 7mo campo como 'notas'
-  const parts = line.split(',');
-  if (parts.length < 8) return parts; // Si hay menos de 8, devolver tal cual
-  
-  // Los primeros 7 campos son simples
-  const fields = parts.slice(0, 7);
-  
-  // El campo 'notas' puede contener comas, así que reunir todo lo que resta
-  const notas = parts.slice(7).join(',');
-  
-  // Limpiar comillas externas del campo notas
-  const cleanNotas = notas.startsWith('"') && notas.endsWith('"') 
-    ? notas.slice(1, -1) 
-    : notas;
-  
-  fields.push(cleanNotas);
-  
-  return fields;
-}
-
-// Función para leer el CSV de citas
-function readAppointmentsCSV() {
+// GET /api/appointments - Obtener todas las citas (SP_OBTENER_CITAS)
+router.get('/', async (req, res) => {
   try {
-    if (!fs.existsSync(CSV_FILE_PATH)) {
-      // Crear el archivo con headers si no existe
-      const headers = 'id,clienteId,vehiculoId,fecha,hora,servicio,estado,notas\n';
-      fs.writeFileSync(CSV_FILE_PATH, headers);
-      return [];
-    }
-    
-    const csvContent = fs.readFileSync(CSV_FILE_PATH, 'utf8');
-    const lines = csvContent.trim().split('\n');
-    
-    if (lines.length <= 1) return []; // Solo headers o archivo vacío
-    
-    const headers = parseCSVLine(lines[0]);
-    const appointments = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line === '') continue; // Saltar líneas vacías
-      
-      const values = parseCSVLine(line);
-      
-      if (values.length >= headers.length) {
-        const appointment = {};
-        headers.forEach((header, index) => {
-          appointment[header] = values[index] || '';
-        });
-        appointments.push(appointment);
-      }
-    }
-    
-    return appointments;
-  } catch (error) {
-    console.error('Error reading appointments CSV:', error);
-    return [];
-  }
-}
-
-// Función para escribir al CSV de citas
-function writeAppointmentsCSV(appointments) {
-  try {
-    const headers = 'id,clienteId,vehiculoId,fecha,hora,servicio,estado,notas\n';
-    const csvContent = headers + appointments.map(appointment => 
-      `${appointment.id},${appointment.clienteId},${appointment.vehiculoId},${appointment.fecha},${appointment.hora},${appointment.servicio},${appointment.estado},"${appointment.notas || ''}"`
-    ).join('\n');
-    
-    fs.writeFileSync(CSV_FILE_PATH, csvContent);
-    return true;
-  } catch (error) {
-    console.error('Error writing appointments CSV:', error);
-    return false;
-  }
-}
-
-// Función para generar ID único
-function generateId() {
-  return 'APPT-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
-}
-
-// GET /api/appointments - Obtener todas las citas
-router.get('/', (req, res) => {
-  try {
-    const appointments = readAppointmentsCSV();
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cita_id', sql.Int, req.query.cita_id || null)
+      .input('cliente_id', sql.Int, req.query.cliente_id || null)
+      .input('vehiculo_id', sql.Int, req.query.vehiculo_id || null)
+      .input('estado', sql.VarChar(50), req.query.estado || null)
+      .input('fecha_inicio', sql.Date, req.query.fecha_inicio || null)
+      .input('numero_cita', sql.VarChar(20), req.query.numero_cita || null)
+      .execute('SP_OBTENER_CITAS');
     res.json({
       success: true,
-      data: appointments,
-      message: `${appointments.length} citas encontradas`
+      data: result.recordset,
+      message: `${result.recordset.length} citas encontradas`
     });
   } catch (error) {
     console.error('Error getting appointments:', error);
@@ -110,47 +31,33 @@ router.get('/', (req, res) => {
   }
 });
 
-// POST /api/appointments - Crear nueva cita
-router.post('/', (req, res) => {
+
+// POST /api/appointments - Crear nueva cita (SP_REGISTRAR_CITA)
+router.post('/', async (req, res) => {
   try {
-    const { clienteId, vehiculoId, fecha, hora, servicio, estado, notas } = req.body;
-    
-    // Validaciones básicas
-    if (!clienteId || !vehiculoId || !fecha || !hora || !servicio) {
+    const { clienteId, vehiculoId, tipoServicioId, fechaInicio, asesorId, notasCliente, canalOrigen, registradoPor } = req.body;
+    if (!clienteId || !vehiculoId || !tipoServicioId || !fechaInicio || !canalOrigen || !registradoPor) {
       return res.status(400).json({
         success: false,
-        message: 'Los campos clienteId, vehiculoId, fecha, hora y servicio son requeridos'
+        message: 'Faltan campos requeridos para registrar la cita'
       });
     }
-    
-    const newAppointment = {
-      id: generateId(),
-      clienteId,
-      vehiculoId,
-      fecha,
-      hora,
-      servicio,
-      estado: estado || 'pending',
-      notas: notas || ''
-    };
-    
-    // Escribir directamente al CSV sin leer primero
-    try {
-      const csvLine = `\n${newAppointment.id},${newAppointment.clienteId},${newAppointment.vehiculoId},${newAppointment.fecha},${newAppointment.hora},${newAppointment.servicio},${newAppointment.estado},"${newAppointment.notas}"`;
-      fs.appendFileSync(CSV_FILE_PATH, csvLine);
-      
-      res.status(201).json({
-        success: true,
-        data: newAppointment,
-        message: 'Cita creada exitosamente'
-      });
-    } catch (writeError) {
-      console.error('Error writing to CSV:', writeError);
-      res.status(500).json({
-        success: false,
-        message: 'Error al guardar la cita'
-      });
-    }
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cliente_id', sql.Int, clienteId)
+      .input('vehiculo_id', sql.Int, vehiculoId)
+      .input('tipo_servicio_id', sql.Int, tipoServicioId)
+      .input('fecha_inicio', sql.Date, fechaInicio)
+      .input('asesor_id', sql.Int, asesorId || null)
+      .input('notas_cliente', sql.VarChar(400), notasCliente || null)
+      .input('canal_origen', sql.VarChar(20), canalOrigen)
+      .input('registrado_por', sql.Int, registradoPor)
+      .execute('SP_REGISTRAR_CITA');
+    res.status(201).json({
+      success: true,
+      data: result.recordset[0],
+      message: result.recordset[0]?.msg || 'Cita registrada'
+    });
   } catch (error) {
     console.error('Error creating appointment:', error);
     res.status(500).json({
@@ -161,23 +68,23 @@ router.post('/', (req, res) => {
   }
 });
 
-// GET /api/appointments/:id - Obtener cita por ID
-router.get('/:id', (req, res) => {
+
+// GET /api/appointments/:id - Obtener cita por ID (SP_OBTENER_CITAS)
+router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const appointments = readAppointmentsCSV();
-    const appointment = appointments.find(a => a.id === id);
-    
-    if (!appointment) {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cita_id', sql.Int, req.params.id)
+      .execute('SP_OBTENER_CITAS');
+    if (!result.recordset.length) {
       return res.status(404).json({
         success: false,
         message: 'Cita no encontrada'
       });
     }
-    
     res.json({
       success: true,
-      data: appointment,
+      data: result.recordset[0],
       message: 'Cita encontrada'
     });
   } catch (error) {
@@ -190,90 +97,68 @@ router.get('/:id', (req, res) => {
   }
 });
 
-// PUT /api/appointments/:id - Actualizar cita
-router.put('/:id', (req, res) => {
+
+// PUT /api/appointments/:id - Editar cita (SP_EDITAR_CITA)
+router.put('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const { clienteId, vehiculoId, fecha, hora, servicio, estado, notas } = req.body;
-    
-    const appointments = readAppointmentsCSV();
-    const appointmentIndex = appointments.findIndex(a => a.id === id);
-    
-    if (appointmentIndex === -1) {
-      return res.status(404).json({
+    const { tipoServicioId, fechaInicio, notasCliente, editadoPor } = req.body;
+    if (!tipoServicioId || !fechaInicio || !editadoPor) {
+      return res.status(400).json({
         success: false,
-        message: 'Cita no encontrada'
+        message: 'Faltan campos requeridos para editar la cita'
       });
     }
-    
-    // Actualizar solo los campos proporcionados
-    const updatedAppointment = {
-      ...appointments[appointmentIndex],
-      ...(clienteId && { clienteId }),
-      ...(vehiculoId && { vehiculoId }),
-      ...(fecha && { fecha }),
-      ...(hora && { hora }),
-      ...(servicio && { servicio }),
-      ...(estado && { estado }),
-      ...(notas !== undefined && { notas })
-    };
-    
-    appointments[appointmentIndex] = updatedAppointment;
-    
-    if (writeAppointmentsCSV(appointments)) {
-      res.json({
-        success: true,
-        data: updatedAppointment,
-        message: 'Cita actualizada exitosamente'
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Error al actualizar la cita'
-      });
-    }
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cita_id', sql.Int, req.params.id)
+      .input('tipo_servicio_id', sql.Int, tipoServicioId)
+      .input('fecha_inicio', sql.Date, fechaInicio)
+      .input('notas_cliente', sql.VarChar(400), notasCliente || null)
+      .input('editado_por', sql.Int, editadoPor)
+      .execute('SP_EDITAR_CITA');
+    res.json({
+      success: true,
+      data: result.recordset[0],
+      message: result.recordset[0]?.msg || 'Cita editada'
+    });
   } catch (error) {
-    console.error('Error updating appointment:', error);
+    console.error('Error editing appointment:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al actualizar cita',
+      message: 'Error al editar cita',
       error: error.message
     });
   }
 });
 
-// DELETE /api/appointments/:id - Eliminar cita
-router.delete('/:id', (req, res) => {
+
+// PUT /api/appointments/:id/status - Cambiar estado de cita (SP_CAMBIAR_ESTADO_CITA)
+router.put('/:id/status', async (req, res) => {
   try {
-    const { id } = req.params;
-    const appointments = readAppointmentsCSV();
-    const initialLength = appointments.length;
-    
-    const filteredAppointments = appointments.filter(a => a.id !== id);
-    
-    if (filteredAppointments.length === initialLength) {
-      return res.status(404).json({
+    const { nuevoEstado, comentario, registradoPor } = req.body;
+    if (!nuevoEstado || !registradoPor) {
+      return res.status(400).json({
         success: false,
-        message: 'Cita no encontrada'
+        message: 'Faltan campos requeridos para cambiar el estado de la cita'
       });
     }
-    
-    if (writeAppointmentsCSV(filteredAppointments)) {
-      res.json({
-        success: true,
-        message: 'Cita eliminada exitosamente'
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Error al eliminar la cita'
-      });
-    }
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cita_id', sql.Int, req.params.id)
+      .input('nuevo_estado', sql.VarChar(50), nuevoEstado)
+      .input('comentario', sql.VarChar(300), comentario || null)
+      .input('registrado_por', sql.Int, registradoPor)
+      .execute('SP_CAMBIAR_ESTADO_CITA');
+    res.json({
+      success: true,
+      data: result.recordset[0],
+      message: result.recordset[0]?.msg || 'Estado de cita actualizado'
+    });
   } catch (error) {
-    console.error('Error deleting appointment:', error);
+    console.error('Error changing appointment status:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al eliminar cita',
+      message: 'Error al cambiar estado de cita',
       error: error.message
     });
   }

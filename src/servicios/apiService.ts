@@ -339,66 +339,90 @@ export const vehiclesService = {
 
 // Servicio para gestión de citas
 export const appointmentsService = {
-  async getAll(): Promise<ApiResponse> {
-    const response = await fetch(`${API_BASE_URL}/appointments`, {
+  async getAll(params?: {
+    cita_id?: number;
+    cliente_id?: number;
+    vehiculo_id?: number;
+    estado?: string;
+    fecha_inicio?: string;
+    numero_cita?: string;
+  }): Promise<ApiResponse> {
+    // Construir query string
+    let query = '';
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      });
+      query = `?${searchParams.toString()}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/appointments${query}`, {
       ...fetchConfig,
       method: 'GET',
     });
-    
     return handleResponse(response);
   },
-  
-  async create(appointmentData: { 
-    clienteId: string; 
-    vehiculoId: string; 
-    fecha: string; 
-    hora: string; 
-    servicio: string; 
-    estado?: string;
-    notas?: string;
+
+  async create(appointmentData: {
+    cliente_id: number;
+    vehiculo_id: number;
+    tipo_servicio_id: number;
+    fecha_inicio: string;
+    asesor_id?: number | null;
+    notas_cliente?: string;
+    canal_origen: string;
+    registrado_por: number;
   }): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/appointments`, {
       ...fetchConfig,
       method: 'POST',
       body: JSON.stringify(appointmentData),
     });
-    
     return handleResponse(response);
   },
-  
-  async update(id: string, appointmentData: Partial<{ 
-    clienteId: string; 
-    vehiculoId: string; 
-    fecha: string; 
-    hora: string; 
-    servicio: string; 
-    estado: string;
-    notas: string;
-  }>): Promise<ApiResponse> {
+
+  async update(id: number, appointmentData: {
+    tipo_servicio_id: number;
+    fecha_inicio: string;
+    notas_cliente?: string;
+    editado_por: number;
+  }): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
       ...fetchConfig,
       method: 'PUT',
       body: JSON.stringify(appointmentData),
     });
-    
     return handleResponse(response);
   },
-  
-  async delete(id: string): Promise<ApiResponse> {
+
+  async changeStatus(id: number, statusData: {
+    nuevo_estado: string;
+    comentario?: string;
+    registrado_por: number;
+  }): Promise<ApiResponse> {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}/status`, {
+      ...fetchConfig,
+      method: 'PUT',
+      body: JSON.stringify(statusData),
+    });
+    return handleResponse(response);
+  },
+
+  async delete(id: number): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
       ...fetchConfig,
       method: 'DELETE',
     });
-    
     return handleResponse(response);
   },
-  
-  async getById(id: string): Promise<ApiResponse> {
+
+  async getById(id: number): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
       ...fetchConfig,
       method: 'GET',
     });
-    
     return handleResponse(response);
   },
 };
