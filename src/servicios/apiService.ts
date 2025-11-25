@@ -73,8 +73,14 @@ export const authService = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    // Si el login es exitoso, guardar usuario_id en localStorage
+    if (result.success && result.data && (result.data.userId || result.data.id)) {
+      // Guardar usuario_id con la clave 'usuario_id' (preferir userId, luego id)
+      const usuarioId = result.data.userId || result.data.id;
+      localStorage.setItem('usuario_id', String(usuarioId));
+    }
+    return result;
   },
 
   // Registro de cliente

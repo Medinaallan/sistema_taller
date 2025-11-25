@@ -117,13 +117,15 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         try {
           const response = await servicesService.getAll();
           if (response.success) {
-            const mappedServices = response.data.map((csvService: any) => ({
-              id: csvService.id,
-              name: csvService.nombre,
-              description: csvService.descripcion || '',
-              basePrice: parseFloat(csvService.precio) || 0,
-              estimatedTime: csvService.duracion || '',
+              console.log('Respuesta de servicesService.getAll():', response);
+            const mappedServices = response.data.map((servicio: any) => ({
+              id: servicio.tipo_servicio_id,
+              name: servicio.nombre,
+              description: servicio.descripcion || '',
+              basePrice: servicio.precio_base !== null && servicio.precio_base !== undefined ? Number(servicio.precio_base) : 0,
+              estimatedTime: servicio.horas_estimadas || '',
             }));
+              console.log('Servicios mapeados:', mappedServices);
             setServicios(mappedServices);
           }
         } catch (error) {
@@ -235,14 +237,15 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       return;
     }
     try {
-      // Obtener usuario logueado del contexto
-      const registradoPor = state.user ? Number(state.user.id) : 1;
+      // Tomar usuario_id logueado desde localStorage
+      const usuarioId = localStorage.getItem('usuario_id');
+      const registradoPor = usuarioId ? Number(usuarioId) : 1;
       const appointmentData = {
         cliente_id: Number(formData.clientId),
         vehiculo_id: Number(formData.vehicleId),
         tipo_servicio_id: Number(formData.serviceTypeId),
         fecha_inicio: formData.date,
-        asesor_id: formData.asesorId ? Number(formData.asesorId) : null,
+        asesor_id: registradoPor, // El asesor es el usuario logueado
         notas_cliente: formData.notes || '',
         canal_origen: formData.canalOrigen,
         registrado_por: registradoPor
@@ -258,7 +261,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         });
         onClose();
       } else {
-        setErrors({ submit: 'Error al crear la cita. Intente nuevamente.' });
+        setErrors({ submit: response.message || 'Error al crear la cita. Intente nuevamente.' });
       }
     } catch (error) {
       console.error('Error creando cita:', error);
@@ -362,20 +365,16 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('serviceTypeId', e.target.value)}
           error={errors.serviceTypeId}
           required
-            options={[ 
-              { value: "", label: loadingServicios ? "Cargando servicios..." : "Seleccionar servicio...", key: "servicio_default" },
-              ...servicios.map(servicio => {
-                // Ensure key is always unique, even if id is undefined/null/empty
-                const idKey = servicio.id !== undefined && servicio.id !== null && servicio.id !== ''
-                  ? servicio.id
-                  : Math.random().toString(36).substr(2, 9); // fallback unique key
-                return {
-                  value: servicio.id,
-                  label: `${servicio.name} - $${servicio.basePrice}`,
-                  key: `servicio_${idKey}`
-                };
-              })
-            ]}
+          options={[ 
+            { value: "", label: loadingServicios ? "Cargando servicios..." : "Seleccionar servicio...", key: "servicio_default" },
+            ...servicios
+              .filter(servicio => servicio.id !== undefined && servicio.id !== null && servicio.id !== '')
+              .map(servicio => ({
+                value: String(servicio.id),
+                label: `${servicio.name} - $${servicio.basePrice}`,
+                key: `servicio_${servicio.id}`
+              }))
+          ]}
         />
 
         <Select

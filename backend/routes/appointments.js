@@ -35,8 +35,12 @@ router.get('/', async (req, res) => {
 // POST /api/appointments - Crear nueva cita (SP_REGISTRAR_CITA)
 router.post('/', async (req, res) => {
   try {
-    const { clienteId, vehiculoId, tipoServicioId, fechaInicio, asesorId, notasCliente, canalOrigen, registradoPor } = req.body;
-    if (!clienteId || !vehiculoId || !tipoServicioId || !fechaInicio || !canalOrigen || !registradoPor) {
+    console.log('Datos recibidos para crear cita:', req.body);
+    const { cliente_id, vehiculo_id, tipo_servicio_id, fecha_inicio, asesor_id, notas_cliente, canal_origen, registrado_por } = req.body;
+    console.log('Campos extraídos:', {
+      cliente_id, vehiculo_id, tipo_servicio_id, fecha_inicio, asesor_id, notas_cliente, canal_origen, registrado_por
+    });
+    if (!cliente_id || !vehiculo_id || !tipo_servicio_id || !fecha_inicio || !canal_origen || !registrado_por) {
       return res.status(400).json({
         success: false,
         message: 'Faltan campos requeridos para registrar la cita'
@@ -44,15 +48,16 @@ router.post('/', async (req, res) => {
     }
     const pool = await getConnection();
     const result = await pool.request()
-      .input('cliente_id', sql.Int, clienteId)
-      .input('vehiculo_id', sql.Int, vehiculoId)
-      .input('tipo_servicio_id', sql.Int, tipoServicioId)
-      .input('fecha_inicio', sql.Date, fechaInicio)
-      .input('asesor_id', sql.Int, asesorId || null)
-      .input('notas_cliente', sql.VarChar(400), notasCliente || null)
-      .input('canal_origen', sql.VarChar(20), canalOrigen)
-      .input('registrado_por', sql.Int, registradoPor)
+      .input('cliente_id', sql.Int, cliente_id)
+      .input('vehiculo_id', sql.Int, vehiculo_id)
+      .input('tipo_servicio_id', sql.Int, tipo_servicio_id)
+      .input('fecha_inicio', sql.Date, fecha_inicio)
+      .input('asesor_id', sql.Int, asesor_id || null)
+      .input('notas_cliente', sql.VarChar(400), notas_cliente || null)
+      .input('canal_origen', sql.VarChar(20), canal_origen)
+      .input('registrado_por', sql.Int, registrado_por)
       .execute('SP_REGISTRAR_CITA');
+    console.log('Resultado SP_REGISTRAR_CITA:', result);
     res.status(201).json({
       success: true,
       data: result.recordset[0],

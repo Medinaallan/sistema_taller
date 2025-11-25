@@ -102,23 +102,23 @@ const AppointmentsPage = () => {
       // 3. Cargar citas y enriquecer con nombres usando clientesAPI
       const response = await appointmentsService.getAll();
       if (response.success) {
-        const appointmentsData = response.data.map((csvAppointment: any) => {
-          const clientIdStr = String(csvAppointment.clienteId).trim();
-          const vehicleIdStr = String(csvAppointment.vehiculoId).trim();
+        const appointmentsData = response.data.map((spAppointment: any) => {
+          const clientIdStr = String(spAppointment.cliente_id).trim();
+          const vehicleIdStr = String(spAppointment.vehiculo_id).trim();
           const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id).trim() === clientIdStr);
           const vehiculo = vehiculos.find((v: any) => String(v.id).trim() === vehicleIdStr);
           return {
-            id: csvAppointment.id,
-            date: new Date(csvAppointment.fecha),
-            time: csvAppointment.hora,
+            id: spAppointment.cita_id,
+            date: new Date(spAppointment.fecha_inicio),
+            time: spAppointment.fecha_inicio ? new Date(spAppointment.fecha_inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '',
             clientId: clientIdStr,
-            clientName: cliente ? cliente.nombre_completo : `ID sin coincidencia: ${clientIdStr}`,
+            clientName: spAppointment.nombre_cliente || (cliente ? cliente.nombre_completo : `ID sin coincidencia: ${clientIdStr}`),
             vehicleId: vehicleIdStr,
-            vehicleName: vehiculo ? `${vehiculo.brand} ${vehiculo.model} (${vehiculo.licensePlate})` : `ID sin coincidencia: ${vehicleIdStr}`,
-            serviceTypeId: csvAppointment.servicio,
-            status: csvAppointment.estado,
-            notes: (csvAppointment.notas || '').replace(/^\"|\"$/g, ''),
-            createdAt: new Date(),
+            vehicleName: spAppointment.vehiculo_info || (vehiculo ? `${vehiculo.brand} ${vehiculo.model} (${vehiculo.licensePlate})` : `ID sin coincidencia: ${vehicleIdStr}`),
+            serviceTypeId: spAppointment.tipo_servicio_id,
+            status: spAppointment.estado,
+            notes: (spAppointment.notas_cliente || '').replace(/^"|"$/g, ''),
+            createdAt: spAppointment.fecha_creacion ? new Date(spAppointment.fecha_creacion) : new Date(),
             updatedAt: new Date(),
           };
         });
