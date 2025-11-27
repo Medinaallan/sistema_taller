@@ -132,7 +132,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Crear Cotización - Cita #${appointment.id.substring(0, 8)}`}
+      title={`Crear Cotización - Cita #${String(appointment.id).substring(0, 8)}`}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="bg-gray-50 p-4 rounded-lg mb-4">

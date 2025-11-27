@@ -106,8 +106,9 @@ router.get('/:id', async (req, res) => {
 // PUT /api/appointments/:id - Editar cita (SP_EDITAR_CITA)
 router.put('/:id', async (req, res) => {
   try {
-    const { tipoServicioId, fechaInicio, notasCliente, editadoPor } = req.body;
-    if (!tipoServicioId || !fechaInicio || !editadoPor) {
+    // Usar snake_case para los parámetros, como requiere el SP
+    const { tipo_servicio_id, fecha_inicio, notas_cliente, editado_por } = req.body;
+    if (!tipo_servicio_id || !fecha_inicio || !editado_por) {
       return res.status(400).json({
         success: false,
         message: 'Faltan campos requeridos para editar la cita'
@@ -116,15 +117,17 @@ router.put('/:id', async (req, res) => {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cita_id', sql.Int, req.params.id)
-      .input('tipo_servicio_id', sql.Int, tipoServicioId)
-      .input('fecha_inicio', sql.Date, fechaInicio)
-      .input('notas_cliente', sql.VarChar(400), notasCliente || null)
-      .input('editado_por', sql.Int, editadoPor)
+      .input('tipo_servicio_id', sql.Int, tipo_servicio_id)
+      .input('fecha_inicio', sql.Date, fecha_inicio)
+      .input('notas_cliente', sql.VarChar(400), notas_cliente || null)
+      .input('editado_por', sql.Int, editado_por)
       .execute('SP_EDITAR_CITA');
-    res.json({
+    // El SP debe retornar msg y allow
+    res.status(200).json({
       success: true,
       data: result.recordset[0],
-      message: result.recordset[0]?.msg || 'Cita editada'
+      message: result.recordset[0]?.msg || 'Cita editada',
+      allow: result.recordset[0]?.allow ?? null
     });
   } catch (error) {
     console.error('Error editing appointment:', error);
@@ -140,8 +143,9 @@ router.put('/:id', async (req, res) => {
 // PUT /api/appointments/:id/status - Cambiar estado de cita (SP_CAMBIAR_ESTADO_CITA)
 router.put('/:id/status', async (req, res) => {
   try {
-    const { nuevoEstado, comentario, registradoPor } = req.body;
-    if (!nuevoEstado || !registradoPor) {
+    // Aceptar snake_case desde el frontend
+    const { nuevo_estado, comentario, registrado_por } = req.body;
+    if (!nuevo_estado || !registrado_por) {
       return res.status(400).json({
         success: false,
         message: 'Faltan campos requeridos para cambiar el estado de la cita'
@@ -150,9 +154,9 @@ router.put('/:id/status', async (req, res) => {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cita_id', sql.Int, req.params.id)
-      .input('nuevo_estado', sql.VarChar(50), nuevoEstado)
-      .input('comentario', sql.VarChar(300), comentario || null)
-      .input('registrado_por', sql.Int, registradoPor)
+      .input('nuevo_estado', sql.VarChar(50), nuevo_estado)
+      .input('comentario', sql.VarChar(300), comentario ?? '')
+      .input('registrado_por', sql.Int, registrado_por)
       .execute('SP_CAMBIAR_ESTADO_CITA');
     res.json({
       success: true,

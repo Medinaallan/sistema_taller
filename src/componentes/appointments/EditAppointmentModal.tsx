@@ -36,7 +36,7 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
         tipo_servicio_id: appointment.tipo_servicio_id?.toString() || appointment.serviceTypeId?.toString() || '',
         fecha_inicio: appointment.fecha_inicio instanceof Date ? appointment.fecha_inicio.toISOString().split('T')[0] : appointment.fecha_inicio || appointment.date || '',
         notas_cliente: appointment.notas_cliente || appointment.notes || '',
-        editado_por: '', // Debe ser llenado por el usuario actual
+        editado_por: localStorage.getItem('usuario_id') || '',
       });
       setErrors({});
     }
@@ -188,7 +188,8 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
           label="Editado por (ID usuario)"
           type="number"
           value={formData.editado_por}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('editado_por', e.target.value)}
+          disabled={true}
+          className="bg-gray-50"
           error={errors.editado_por}
           required
         />

@@ -124,7 +124,8 @@ export function LoginPage() {
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        
+        // Guardar usuario_id explícitamente en localStorage
+        localStorage.setItem('usuario_id', user.id);
         console.log('✅ Usuario autenticado via SP_LOGIN:', user);
         dispatch({ type: 'LOGIN', payload: user });
         return;

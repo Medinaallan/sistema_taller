@@ -37,33 +37,22 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   const [vehiculos, setVehiculos] = useState<any[]>([]);
   const [loadingVehiculos, setLoadingVehiculos] = useState(false);
   const [vehiculosCliente, setVehiculosCliente] = useState<any[]>([]);
-  const [asesores, setAsesores] = useState<any[]>([]);
-  const [loadingAsesores, setLoadingAsesores] = useState(false);
   // Cargar asesores cuando se abra el modal
   useEffect(() => {
     if (isOpen) {
       const cargarAsesores = async () => {
-        setLoadingAsesores(true);
         try {
           // Aquí deberías llamar a tu servicio de usuarios para obtener asesores
           // Ejemplo: const response = await userService.getAdvisors();
           // Simulación:
-          setTimeout(() => {
-            setAsesores([
-              { id: 1, nombre: 'Asesor 1' },
-              { id: 2, nombre: 'Asesor 2' },
-              { id: 3, nombre: 'Asesor 3' }
-            ]);
-            setLoadingAsesores(false);
-          }, 500);
         } catch (error) {
-          setAsesores([]);
-          setLoadingAsesores(false);
+          // Ya no se requiere setAsesores
         }
       };
       cargarAsesores();
     }
   }, [isOpen]);
+    // Ya no se requiere cargar asesores, lógica eliminada
 
   // Limpiar formulario al cerrar
   useEffect(() => {
@@ -240,12 +229,13 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       // Tomar usuario_id logueado desde localStorage
       const usuarioId = localStorage.getItem('usuario_id');
       const registradoPor = usuarioId ? Number(usuarioId) : 1;
+      // asesor_id se toma del select, registrado_por del usuario logueado
       const appointmentData = {
         cliente_id: Number(formData.clientId),
         vehiculo_id: Number(formData.vehicleId),
         tipo_servicio_id: Number(formData.serviceTypeId),
         fecha_inicio: formData.date,
-        asesor_id: registradoPor, // El asesor es el usuario logueado
+        asesor_id: registradoPor, // Tomar el usuario_id logueado
         notas_cliente: formData.notes || '',
         canal_origen: formData.canalOrigen,
         registrado_por: registradoPor
@@ -388,15 +378,12 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
           ].map((opt, idx) => ({ ...opt, key: `canal_${opt.value}_${idx}` }))}
         />
 
-        <Select
-          label="Asesor"
-          value={formData.asesorId}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('asesorId', e.target.value)}
-          required={false}
-          options={[
-            { value: '', label: loadingAsesores ? 'Cargando asesores...' : 'Sin asesor' },
-            ...asesores.map(asesor => ({ value: asesor.id.toString(), label: asesor.nombre }))
-          ].map((opt, idx) => ({ ...opt, key: `asesor_${opt.value}_${idx}` }))}
+        <Input
+          label="Asesor (usuario logueado)"
+          type="text"
+          value={localStorage.getItem('usuario_id') || ''}
+          disabled={true}
+          className="bg-gray-50"
         />
 
         {/* El campo registrado_por ahora se toma automáticamente del usuario logueado */}

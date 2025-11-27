@@ -285,7 +285,7 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
         <div className="bg-blue-50 p-4 rounded-lg">
           <h3 className="font-semibold text-blue-900 mb-2">Información de la Cita</h3>
           <div className="text-sm text-blue-800 space-y-1">
-            <p><strong>Cita:</strong> #{appointment.id.slice(-8)}</p>
+            <p><strong>Cita:</strong> #{String(appointment.id).slice(-8)}</p>
             <p><strong>Cliente:</strong> {displayNames.clientName}</p>
             <p><strong>Servicio:</strong> {displayNames.serviceName}</p>
             <p><strong>Vehículo:</strong> {displayNames.vehicleName}</p>

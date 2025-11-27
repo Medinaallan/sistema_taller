@@ -18,19 +18,21 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
 }) => {
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState(false);
 
   const handleApprove = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
     try {
       // SP_CAMBIAR_ESTADO_CITA: cita_id, nuevo_estado, comentario, registrado_por
+      const usuarioId = Number(localStorage.getItem('usuario_id'));
       const payload = {
-        cita_id: Number(appointment.id),
         nuevo_estado: 'confirmed',
-        comentario: 'Aprobada por usuario',
-        registrado_por: 1 // TODO: Reemplazar con usuario actual
+        comentario: '',
+        registrado_por: usuarioId
       };
-      const result = await appointmentsService.changeStatus(payload.cita_id, payload);
+      const result = await appointmentsService.changeStatus(Number(appointment.id), payload);
       if (result.success) {
         console.log('Cita aprobada exitosamente');
         onUpdate();
@@ -48,17 +50,23 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
 
   const handleReject = async () => {
     if (isProcessing) return;
-    const confirmed = confirm('¿Está seguro que desea rechazar esta cita?');
-    if (!confirmed) return;
+    setShowRejectInput(true);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectReason.trim()) {
+      alert('Debes ingresar el motivo de rechazo.');
+      return;
+    }
     setIsProcessing(true);
     try {
+      const usuarioId = Number(localStorage.getItem('usuario_id'));
       const payload = {
-        cita_id: Number(appointment.id),
         nuevo_estado: 'cancelled',
-        comentario: 'Rechazada por usuario',
-        registrado_por: 1 // TODO: Reemplazar con usuario actual
+        comentario: rejectReason,
+        registrado_por: usuarioId
       };
-      const result = await appointmentsService.changeStatus(payload.cita_id, payload);
+      const result = await appointmentsService.changeStatus(Number(appointment.id), payload);
       if (result.success) {
         console.log('Cita rechazada exitosamente');
         onUpdate();
@@ -82,10 +90,11 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
 
       if (quotationResult.success) {
         // Marcar la cita como completada
+        const usuarioId = Number(localStorage.getItem('usuario_id'));
         const appointmentResult = await appointmentsService.changeStatus(Number(appointment.id), {
           nuevo_estado: 'completed',
           comentario: 'Cotización creada y cita completada',
-          registrado_por: 1 // TODO: Reemplazar con usuario actual
+          registrado_por: usuarioId
         });
 
         if (appointmentResult.success) {
@@ -113,7 +122,7 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
     switch (appointmentStatus) {
       case 'pending':
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <button
               onClick={handleApprove}
               disabled={isProcessing}
@@ -130,6 +139,26 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
             >
               ✗ Rechazar
             </button>
+            {showRejectInput && (
+              <div className="flex flex-col gap-2 ml-2">
+                <input
+                  type="text"
+                  placeholder="Motivo de rechazo"
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)}
+                  className="px-2 py-1 border rounded text-xs"
+                  disabled={isProcessing}
+                  style={{ minWidth: '180px' }}
+                />
+                <button
+                  onClick={handleConfirmReject}
+                  disabled={isProcessing || !rejectReason.trim()}
+                  className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:bg-gray-400"
+                >
+                  Confirmar rechazo
+                </button>
+              </div>
+            )}
           </div>
         );
 

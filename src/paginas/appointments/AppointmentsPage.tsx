@@ -4,6 +4,7 @@ import { Card, Button } from '../../componentes/comunes/UI';
 import NewAppointmentModal from '../../componentes/appointments/NewAppointmentModal';
 import EditAppointmentModal from '../../componentes/appointments/EditAppointmentModal';
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
+import AppointmentActions from '../../componentes/appointments/AppointmentActions';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
 import { useBusinessLogs } from '../../hooks/useBusinessLogs';
@@ -102,6 +103,15 @@ const AppointmentsPage = () => {
       // 3. Cargar citas y enriquecer con nombres usando clientesAPI
       const response = await appointmentsService.getAll();
       if (response.success) {
+        const mapEstado = (estado: string) => {
+          switch (estado?.toLowerCase()) {
+            case 'pendiente': return 'pending';
+            case 'confirmada': return 'confirmed';
+            case 'cancelada': return 'cancelled';
+            case 'completada': return 'completed';
+            default: return estado;
+          }
+        };
         const appointmentsData = response.data.map((spAppointment: any) => {
           const clientIdStr = String(spAppointment.cliente_id).trim();
           const vehicleIdStr = String(spAppointment.vehiculo_id).trim();
@@ -116,7 +126,7 @@ const AppointmentsPage = () => {
             vehicleId: vehicleIdStr,
             vehicleName: spAppointment.vehiculo_info || (vehiculo ? `${vehiculo.brand} ${vehiculo.model} (${vehiculo.licensePlate})` : `ID sin coincidencia: ${vehicleIdStr}`),
             serviceTypeId: spAppointment.tipo_servicio_id,
-            status: spAppointment.estado,
+            status: mapEstado(spAppointment.estado),
             notes: (spAppointment.notas_cliente || '').replace(/^"|"$/g, ''),
             createdAt: spAppointment.fecha_creacion ? new Date(spAppointment.fecha_creacion) : new Date(),
             updatedAt: new Date(),
@@ -412,58 +422,13 @@ const AppointmentsPage = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2">
-                          {/* Botones según el estado de la cita */}
-                          {appointment.status === 'pending' && (
-                            <>
-                              <Button 
-                                size="sm" 
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => handleApproveAppointment(appointment)}
-                              >
-                                ✅ Aprobar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                                onClick={() => handleRejectAppointment(appointment)}
-                              >
-                                ❌ Rechazar
-                              </Button>
-                            </>
-                          )}
-                          
-                          {appointment.status === 'confirmed' && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => handleCreateQuotation(appointment)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                              >
-                                💰 Cotizar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                                onClick={() => handleRejectAppointment(appointment)}
-                              >
-                                ❌ Cancelar
-                              </Button>
-                            </>
-                          )}
-                          
-                          {appointment.status === 'completed' && (
-                            <span className="text-green-600 text-sm font-medium">
-                              ✅ Completada
-                            </span>
-                          )}
-                          
-                          {appointment.status === 'cancelled' && (
-                            <span className="text-red-600 text-sm font-medium">
-                              ❌ Cancelada
-                            </span>
-                          )}
-                          
-                          {/* Botones universales */}
+                          {/* Centralizar acciones en AppointmentActions */}
+                          <AppointmentActions
+                            appointment={appointment}
+                            clientName={appointment.clientName || ''}
+                            serviceName={appointment.serviceName || ''}
+                            onUpdate={loadAppointments}
+                          />
                           <Button 
                             size="sm" 
                             variant="secondary"
