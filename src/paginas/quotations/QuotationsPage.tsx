@@ -7,69 +7,11 @@ import { obtenerClientes } from '../../servicios/clientesApiService';
 const QuotationsPage = () => {
   const [data, setData] = useState<QuotationData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [servicios, setServicios] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  // Eliminados: clientes, servicios y appointments (no se usan con el nuevo SP)
 
-  // Funciones de mapeo
-  const getClienteName = (clienteId: string) => {
-    const cliente = clientes.find(c => c.id === clienteId);
-    return cliente ? cliente.name : clienteId?.substring(0, 12) + '...';
-  };
+  // Los datos ya vienen mapeados desde el SP, no se requieren funciones de mapeo legacy
 
-  const getServiceName = (servicioId: string) => {
-    const servicio = servicios.find(s => s.id === servicioId);
-    return servicio ? servicio.name || servicio.nombre : servicioId;
-  };
-
-  const getAppointmentName = (appointmentId: string) => {
-    const appointment = appointments.find(a => a.id === appointmentId);
-    return appointment ? `Cita ${appointment.date} ${appointment.time}` : appointmentId?.substring(0, 12) + '...';
-  };
-
-  // Función para cargar clientes
-  const loadClientes = async () => {
-    try {
-      const clientesData = await obtenerClientes();
-      setClientes(clientesData);
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-    }
-  };
-
-  // Función para cargar servicios
-  const loadServicios = async () => {
-    try {
-      const response = await servicesService.getAll();
-      if (response.success) {
-        const mappedServices = response.data.map((csvService: any) => ({
-          id: csvService.id,
-          name: csvService.nombre,
-          nombre: csvService.nombre,
-        }));
-        setServicios(mappedServices);
-      }
-    } catch (error) {
-      console.error('Error cargando servicios:', error);
-    }
-  };
-
-  // Función para cargar citas
-  const loadAppointments = async () => {
-    try {
-      const response = await appointmentsService.getAll();
-      if (response.success) {
-        const appointmentsData = response.data.map((csvAppointment: any) => ({
-          id: csvAppointment.id,
-          date: new Date(csvAppointment.fecha).toLocaleDateString('es-ES'),
-          time: csvAppointment.hora,
-        }));
-        setAppointments(appointmentsData);
-      }
-    } catch (error) {
-      console.error('Error cargando citas:', error);
-    }
-  };
+  // Eliminadas funciones de carga de clientes, servicios y citas
 
   const loadQuotations = async () => {
     try {
@@ -86,64 +28,50 @@ const QuotationsPage = () => {
 
   useEffect(() => {
     const loadAllData = async () => {
-      await Promise.all([
-        loadQuotations(),
-        loadClientes(),
-        loadServicios(),
-        loadAppointments()
-      ]);
+      await loadQuotations();
     };
-    
     loadAllData();
   }, []);
 
   const handleEdit = (item: QuotationData) => {
-    // TODO: Implementar modal de edición
-    alert('Editar cotización: ' + item.id);
+    alert('Editar cotización: ' + item.numero_cotizacion);
   };
-  
+
   const handleDelete = async (item: QuotationData) => {
-    if (!confirm(`¿Está seguro de eliminar la cotización ${item.id}?`)) {
+    if (!confirm(`¿Está seguro de eliminar la cotización ${item.numero_cotizacion}?`)) {
       return;
     }
-    
     try {
-      await quotationsService.deleteQuotation(item.id!);
-      await loadQuotations(); // Recargar datos
+      await quotationsService.deleteQuotation(item.cotizacion_id.toString());
+      await loadQuotations();
     } catch (err) {
       alert('Error eliminando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
   const handleApprove = async (item: QuotationData) => {
-    if (!confirm(`¿Está seguro de aprobar la cotización ${item.id?.substring(0, 12)}? Esto creará automáticamente una orden de trabajo.`)) {
+    if (!confirm(`¿Está seguro de aprobar la cotización ${item.numero_cotizacion}? Esto creará automáticamente una orden de trabajo.`)) {
       return;
     }
-    
     try {
-      // Paso 1: Aprobar la cotización
-      await quotationsService.approveQuotation(item.id!);
-      
-      // Paso 2: Crear orden de trabajo automáticamente
+      await quotationsService.approveQuotation(item.cotizacion_id.toString());
       const { workOrdersService } = await import('../../servicios/workOrdersService');
       const workOrder = await workOrdersService.createWorkOrderFromQuotation(item);
-      
       alert(`Cotización aprobada exitosamente y orden de trabajo #${workOrder.id?.substring(0, 12)} creada automáticamente.`);
-      await loadQuotations(); // Recargar datos
+      await loadQuotations();
     } catch (err) {
       alert('Error en el proceso de aprobación: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
   const handleReject = async (item: QuotationData) => {
-    if (!confirm(`¿Está seguro de rechazar la cotización ${item.id?.substring(0, 12)}?`)) {
+    if (!confirm(`¿Está seguro de rechazar la cotización ${item.numero_cotizacion}?`)) {
       return;
     }
-    
     try {
-      await quotationsService.rejectQuotation(item.id!);
+      await quotationsService.rejectQuotation(item.cotizacion_id.toString());
       alert('Cotización rechazada exitosamente');
-      await loadQuotations(); // Recargar datos
+      await loadQuotations();
     } catch (err) {
       alert('Error rechazando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
@@ -165,66 +93,68 @@ const QuotationsPage = () => {
         <table className="w-full text-sm text-left text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
             <tr>
-              <th className="px-6 py-3">ID</th>
-              <th className="px-6 py-3">Cita</th>
+              <th className="px-6 py-3"># Cotización</th>
               <th className="px-6 py-3">Cliente</th>
-              <th className="px-6 py-3">Servicio</th>
-              <th className="px-6 py-3">Descripción</th>
-              <th className="px-6 py-3">Precio</th>
+              <th className="px-6 py-3">Placa</th>
+              <th className="px-6 py-3">Cita</th>
+              <th className="px-6 py-3">OT</th>
               <th className="px-6 py-3">Estado</th>
-              <th className="px-6 py-3">Fecha</th>
+              <th className="px-6 py-3">Total</th>
+              <th className="px-6 py-3">Creación</th>
+              <th className="px-6 py-3">Vencimiento</th>
               <th className="px-6 py-3">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
                   No hay cotizaciones disponibles
                 </td>
               </tr>
             ) : (
               data.map((quotation) => (
-                <tr key={quotation.id} className="bg-white border-b hover:bg-gray-50">
+                <tr key={quotation.cotizacion_id} className="bg-white border-b hover:bg-gray-50">
                   <td className="px-6 py-4 font-mono text-xs">
-                    COT-{quotation.id?.substring(0, 8)}
+                    {quotation.numero_cotizacion}
                   </td>
                   <td className="px-6 py-4">
-                    {getAppointmentName(quotation.appointmentId || '')}
+                    {quotation.nombre_cliente}
                   </td>
                   <td className="px-6 py-4">
-                    {getClienteName(quotation.clienteId || '')}
+                    {quotation.placa_vehiculo}
                   </td>
                   <td className="px-6 py-4">
-                    {getServiceName(quotation.servicioId || '')}
+                    {quotation.numero_cita}
                   </td>
                   <td className="px-6 py-4">
-                    {quotation.descripcion?.length > 30 
-                      ? `${quotation.descripcion.substring(0, 30)}...` 
-                      : quotation.descripcion}
-                  </td>
-                  <td className="px-6 py-4 font-semibold">
-                    L{quotation.precio.toFixed(2)}
+                    {quotation.numero_ot || '-'}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      quotation.estado === 'draft' ? 'bg-gray-100 text-gray-800' :
-                      quotation.estado === 'sent' ? 'bg-blue-100 text-blue-800' :
-                      quotation.estado === 'approved' ? 'bg-green-100 text-green-800' :
-                      quotation.estado === 'rejected' ? 'bg-red-100 text-red-800' :
-                      quotation.estado === 'completed' ? 'bg-purple-100 text-purple-800' :
+                      quotation.estado_cotizacion === 'draft' ? 'bg-gray-100 text-gray-800' :
+                      quotation.estado_cotizacion === 'sent' ? 'bg-blue-100 text-blue-800' :
+                      quotation.estado_cotizacion === 'approved' ? 'bg-green-100 text-green-800' :
+                      quotation.estado_cotizacion === 'rejected' ? 'bg-red-100 text-red-800' :
+                      quotation.estado_cotizacion === 'completed' ? 'bg-purple-100 text-purple-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {quotationsService.formatStatus(quotation.estado)}
+                      {quotationsService.formatStatus(quotation.estado_cotizacion)}
                     </span>
                   </td>
+                  <td className="px-6 py-4 font-semibold">
+                    L{quotation.total?.toFixed(2)}
+                  </td>
                   <td className="px-6 py-4">
-                    {new Date(quotation.fechaCreacion || '').toLocaleDateString('es-ES')}
+                    {new Date(quotation.fecha_creacion).toLocaleDateString('es-ES')}
+                  </td>
+                  <td className="px-6 py-4">
+                    {quotation.fecha_vencimiento ? new Date(quotation.fecha_vencimiento).toLocaleDateString('es-ES') : '-'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-2">
                       {/* Botones según el estado de la cotización */}
-                      {quotation.estado === 'sent' && (
+                      {quotation.estado_cotizacion === 'sent' && (
                         <>
                           <Button 
                             size="sm" 
@@ -242,26 +172,22 @@ const QuotationsPage = () => {
                           </Button>
                         </>
                       )}
-                      
-                      {quotation.estado === 'approved' && (
+                      {quotation.estado_cotizacion === 'approved' && (
                         <span className="text-green-600 text-sm font-medium px-2 py-1">
                           ✅ Aprobada
                         </span>
                       )}
-                      
-                      {quotation.estado === 'rejected' && (
+                      {quotation.estado_cotizacion === 'rejected' && (
                         <span className="text-red-600 text-sm font-medium px-2 py-1">
                           ❌ Rechazada
                         </span>
                       )}
-                      
-                      {quotation.estado === 'completed' && (
+                      {quotation.estado_cotizacion === 'completed' && (
                         <span className="text-purple-600 text-sm font-medium px-2 py-1">
                           🏁 Completada
                         </span>
                       )}
-                      
-                      {quotation.estado === 'draft' && (
+                      {quotation.estado_cotizacion === 'draft' && (
                         <>
                           <Button 
                             size="sm" 
@@ -279,7 +205,6 @@ const QuotationsPage = () => {
                           </Button>
                         </>
                       )}
-                      
                       {/* Botones universales */}
                       <Button 
                         size="sm" 

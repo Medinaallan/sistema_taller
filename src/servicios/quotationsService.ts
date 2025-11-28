@@ -1,17 +1,20 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export interface QuotationData {
-  id?: string;
-  appointmentId: string;
-  clienteId: string;
-  vehiculoId: string;
-  servicioId: string;
-  descripcion: string;
-  precio: number;
-  notas?: string;
-  estado: 'draft' | 'sent' | 'approved' | 'rejected' | 'completed';
-  fechaCreacion?: string;
-  fechaActualizacion?: string;
+  cotizacion_id: number;
+  numero_cotizacion: string;
+  cita_id: number;
+  ot_id: number | null;
+  estado_cotizacion: string;
+  total: number;
+  fecha_creacion: string;
+  fecha_vencimiento: string;
+  comentario: string;
+  registrado_por: string;
+  numero_cita: string;
+  numero_ot: string;
+  nombre_cliente: string;
+  placa_vehiculo: string;
 }
 
 export interface QuotationResponse {
@@ -25,12 +28,10 @@ class QuotationsService {
   async getAllQuotations(): Promise<QuotationData[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/quotations`);
-      const result: QuotationResponse = await response.json();
-      
+      const result = await response.json();
       if (!response.ok) {
         throw new Error(result.message || 'Error al obtener cotizaciones');
       }
-      
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
       console.error('Error fetching quotations:', error);

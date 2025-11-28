@@ -129,7 +129,7 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
               className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 disabled:bg-gray-400"
               title="Aprobar cita"
             >
-              ✓ Aprobar
+              Aprobar
             </button>
             <button
               onClick={handleReject}
@@ -137,7 +137,7 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
               className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 disabled:bg-gray-400"
               title="Rechazar cita"
             >
-              ✗ Rechazar
+              Rechazar
             </button>
             {showRejectInput && (
               <div className="flex flex-col gap-2 ml-2">
@@ -171,7 +171,7 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
               className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 disabled:bg-gray-400"
               title="Convertir a cotización"
             >
-              💰 Cotizar
+               Cotizar
             </button>
             <button
               onClick={handleReject}
@@ -179,7 +179,7 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
               className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 disabled:bg-gray-400"
               title="Cancelar cita"
             >
-              ✗ Cancelar
+              Cancelar
             </button>
           </div>
         );
@@ -187,14 +187,14 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
       case 'completed':
         return (
           <span className="text-green-600 text-xs font-medium">
-            ✓ Completada
+            Completada
           </span>
         );
 
       case 'cancelled':
         return (
           <span className="text-red-600 text-xs font-medium">
-            ✗ Cancelada
+            Cancelada
           </span>
         );
 

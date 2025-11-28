@@ -86,7 +86,7 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      console.log('🔍 Autenticando con SP_LOGIN:', formData.email, formData.password);
+      console.log('Autenticando con SP_LOGIN:', formData.email, formData.password);
       
       // ========================================
       // USAR EXCLUSIVAMENTE SP_LOGIN REAL (REQUIERE VPN)

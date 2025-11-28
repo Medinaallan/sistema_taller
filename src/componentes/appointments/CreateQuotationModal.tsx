@@ -293,21 +293,37 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
           </div>
         </div>
 
-        {/* Sección de productos del inventario */}
+        <TextArea
+          label="Descripción del Trabajo"
+          value={formData.descripcion}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('descripcion', e.target.value)}
+          error={errors.descripcion}
+          placeholder="Describa detalladamente el trabajo a realizar..."
+          rows={4}
+          required
+        />
+
+        {/* Precio del servicio base fijo */}
+        <div className="bg-gray-100 p-4 rounded-lg flex items-center justify-between">
+          <span className="font-medium text-gray-700">Precio del Servicio Base</span>
+          <span className="text-2xl font-bold text-blue-700">L {servicePriceBase || '0.00'}</span>
+        </div>
+
+        {/* Sección de productos del inventario mejorada */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900">Productos del punto de venta</h3>
+          <div className="flex items-center justify-between bg-yellow-100 p-4 rounded-lg border border-yellow-300">
+            <h3 className="font-bold text-yellow-900 text-lg">Productos del punto de venta</h3>
             <button
               type="button"
               onClick={() => setShowProductsSection(!showProductsSection)}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-base shadow hover:bg-blue-700"
             >
               {showProductsSection ? 'Ocultar productos' : 'Agregar productos'}
             </button>
           </div>
 
           {showProductsSection && (
-            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="border-2 border-blue-400 rounded-lg p-4 bg-blue-50">
               {loadingProducts ? (
                 <div className="text-center py-4">
                   <p className="text-gray-600">Cargando productos del inventario...</p>
@@ -417,53 +433,12 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
           )}
         </div>
 
-        <TextArea
-          label="Descripción del Trabajo"
-          value={formData.descripcion}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('descripcion', e.target.value)}
-          error={errors.descripcion}
-          placeholder="Describa detalladamente el trabajo a realizar..."
-          rows={4}
-          required
-        />
 
-        {/* Precio del servicio base */}
-        <Input
-          label={`Precio del Servicio Base${loadingServicePrice ? ' (Cargando...)' : ''}`}
-          type="number"
-          step="0.01"
-          min="0"
-          value={servicePriceBase}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleServicePriceChange(e.target.value)}
-          error={errors.servicePriceBase}
-          placeholder={loadingServicePrice ? "Obteniendo precio desde el sistema..." : "Precio obtenido automáticamente del servicio"}
-          required
-          disabled={loadingServicePrice}
-        />
-
-        {servicePriceBase && !loadingServicePrice && (
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>✓ Precio cargado automáticamente</strong>
-            </p>
-          </div>
-        )}
-
-        {/* Campo de precio total */}
-        <Input
-          label="Precio Total de la Cotización"
-          type="number"
-          step="0.01"
-          min="0"
-          value={formData.precio}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            handleInputChange('precio', e.target.value);
-            setServicePriceBase(e.target.value);
-          }}
-          error={errors.precio}
-          placeholder="0.00"
-          required
-        />
+        {/* Precio total fijo */}
+        <div className="bg-green-100 p-4 rounded-lg flex items-center justify-between mt-4">
+          <span className="font-medium text-green-700">Precio Total de la Cotización</span>
+          <span className="text-2xl font-bold text-green-800">L {formData.precio || '0.00'}</span>
+        </div>
 
         <TextArea
           label="Notas Adicionales"
