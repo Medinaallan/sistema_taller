@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Appointment } from '../../tipos';
-import { appointmentsService, quotationsService } from '../../servicios/apiService';
-import CreateQuotationModal from './CreateQuotationModal';
+import { appointmentsService } from '../../servicios/apiService';
+import CreateQuotationModal from '../quotations/CreateQuotationModal';
 
 interface AppointmentActionsProps {
   appointment: Appointment;
@@ -82,38 +82,31 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
     }
   };
 
-  const handleCreateQuotation = async (quotationData: any) => {
+  const handleQuotationSuccess = async () => {
+    // Después de crear la cotización, marcar la cita como completada
     setIsProcessing(true);
     try {
-      // Crear la cotización
-      const quotationResult = await quotationsService.create(quotationData);
-
-      if (quotationResult.success) {
-        // Marcar la cita como completada
-        const usuarioId = Number(localStorage.getItem('usuario_id'));
-        const appointmentResult = await appointmentsService.changeStatus(Number(appointment.id), {
-          nuevo_estado: 'completed',
-          comentario: 'Cotización creada y cita completada',
-          registrado_por: usuarioId
-        });
-
-        if (appointmentResult.success) {
-          console.log('Cotización creada y cita completada exitosamente');
-          alert('Cotización creada exitosamente y cita marcada como completada');
-          onUpdate();
-        } else {
-          console.error('Error al actualizar cita:', appointmentResult.message);
-          alert('Cotización creada pero error al actualizar la cita');
-        }
+      const usuarioId = Number(localStorage.getItem('usuario_id'));
+      const payload = {
+        nuevo_estado: 'completed',
+        comentario: 'Cotización creada y cita completada',
+        registrado_por: usuarioId
+      };
+      const result = await appointmentsService.changeStatus(Number(appointment.id), payload);
+      if (result.success) {
+        console.log('Cita marcada como completada');
+        alert('Cotización creada exitosamente y cita marcada como completada');
+        onUpdate();
       } else {
-        console.error('Error al crear cotización:', quotationResult.message);
-        alert('Error al crear la cotización');
+        console.error('Error al actualizar cita:', result.message);
+        alert('Cotización creada pero error al actualizar la cita');
       }
     } catch (error) {
-      console.error('Error en el proceso de cotización:', error);
-      alert('Error al crear la cotización');
+      console.error('Error al actualizar cita:', error);
+      alert('Cotización creada pero error al actualizar la cita');
     } finally {
       setIsProcessing(false);
+      setIsQuotationModalOpen(false);
     }
   };
 
@@ -210,10 +203,8 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
       <CreateQuotationModal
         isOpen={isQuotationModalOpen}
         onClose={() => setIsQuotationModalOpen(false)}
-        onSubmit={handleCreateQuotation}
         appointment={appointment}
-        clientName={clientName}
-        serviceName={serviceName}
+        onSuccess={handleQuotationSuccess}
       />
     </>
   );

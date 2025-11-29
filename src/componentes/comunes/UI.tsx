@@ -111,8 +111,8 @@ export function Select({ label, error, helperText, options, className, ...props 
         )}
         {...props}
       >
-        {options.map((option) => (
-          <option key={option.key || option.value} value={option.value}>
+        {options.map((option, index) => (
+          <option key={option.value || `empty-${index}`} value={option.value}>
             {option.label}
           </option>
         ))}

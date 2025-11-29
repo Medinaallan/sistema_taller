@@ -68,7 +68,7 @@ class QuotationsService {
   }
 
   // Crear nueva cotización
-  async createQuotation(quotationData: Omit<QuotationData, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<QuotationData> {
+  async createQuotation(quotationData: any): Promise<{ cotizacion_id: string; success: boolean; msg: string; allow: boolean }> {
     try {
       const response = await fetch(`${API_BASE_URL}/quotations`, {
         method: 'POST',
@@ -78,13 +78,13 @@ class QuotationsService {
         body: JSON.stringify(quotationData),
       });
       
-      const result: QuotationResponse = await response.json();
+      const result = await response.json();
       
       if (!response.ok) {
         throw new Error(result.message || 'Error al crear cotización');
       }
       
-      return result.data as QuotationData;
+      return result;
     } catch (error) {
       console.error('Error creating quotation:', error);
       throw error;
@@ -92,7 +92,7 @@ class QuotationsService {
   }
 
   // Actualizar cotización
-  async updateQuotation(id: string, updateData: Partial<QuotationData>): Promise<QuotationData> {
+  async updateQuotation(id: string, updateData: { decision?: string; usuario_id?: number | null; comentario?: string }): Promise<QuotationData> {
     try {
       const response = await fetch(`${API_BASE_URL}/quotations/${id}`, {
         method: 'PUT',
@@ -102,7 +102,7 @@ class QuotationsService {
         body: JSON.stringify(updateData),
       });
       
-      const result: QuotationResponse = await response.json();
+      const result = await response.json();
       
       if (!response.ok) {
         throw new Error(result.message || 'Error al actualizar cotización');
@@ -115,14 +115,44 @@ class QuotationsService {
     }
   }
 
-  // Aprobar cotización (cliente)
+  // Aprobar cotización (cliente) - Usa SP_GESTIONAR_APROBACION_COTIZACION
   async approveQuotation(id: string): Promise<QuotationData> {
-    return this.updateQuotation(id, { estado: 'approved' });
+    const usuario_id = localStorage.getItem('usuario_id');
+    return this.updateQuotation(id, { 
+      decision: 'Aprobada',
+      usuario_id: usuario_id ? parseInt(usuario_id) : null,
+      comentario: ''
+    });
   }
 
-  // Rechazar cotización (cliente)
+  // Rechazar cotización (cliente) - Usa SP_GESTIONAR_APROBACION_COTIZACION
   async rejectQuotation(id: string): Promise<QuotationData> {
-    return this.updateQuotation(id, { estado: 'rejected' });
+    const usuario_id = localStorage.getItem('usuario_id');
+    return this.updateQuotation(id, { 
+      decision: 'Rechazada',
+      usuario_id: usuario_id ? parseInt(usuario_id) : null,
+      comentario: ''
+    });
+  }
+
+  // Marcar como enviada - Solo cambia estado local en frontend, no usa SP
+  // El SP solo maneja Aprobada y Rechazada
+  async markQuotationAsSent(id: string): Promise<QuotationData> {
+    try {
+      // Este es un cambio local del frontend, no requiere llamada al SP
+      // El estado cambia para mostrar los botones Aprobar/Rechazar
+      const quotation = await this.getQuotationById(id);
+      if (!quotation) throw new Error('Cotización no encontrada');
+      
+      // Simular actualización local
+      return {
+        ...quotation,
+        estado_cotizacion: 'Enviada'
+      };
+    } catch (error) {
+      console.error('Error marking quotation as sent:', error);
+      throw error;
+    }
   }
 
   // Eliminar cotización
@@ -132,7 +162,7 @@ class QuotationsService {
         method: 'DELETE',
       });
       
-      const result: QuotationResponse = await response.json();
+      const result = await response.json();
       
       if (!response.ok) {
         throw new Error(result.message || 'Error al eliminar cotización');
@@ -148,11 +178,11 @@ class QuotationsService {
   // Obtener estados disponibles
   getAvailableStates(): Array<{ value: string; label: string }> {
     return [
-      { value: 'draft', label: 'Borrador' },
-      { value: 'sent', label: 'Enviada' },
-      { value: 'approved', label: 'Aprobada' },
-      { value: 'rejected', label: 'Rechazada' },
-      { value: 'completed', label: 'Completada' }
+      { value: 'Pendiente', label: 'Pendiente' },
+      { value: 'Enviada', label: 'Enviada' },
+      { value: 'Aprobada', label: 'Aprobada' },
+      { value: 'Rechazada', label: 'Rechazada' },
+      { value: 'Completada', label: 'Completada' }
     ];
   }
 
@@ -161,6 +191,92 @@ class QuotationsService {
     const states = this.getAvailableStates();
     const state = states.find(s => s.value === status);
     return state?.label || status;
+  }
+
+  // Agregar item a cotización (SP_AGREGAR_ITEM_COTIZACION)
+  async addItemToQuotation(itemData: {
+    cotizacion_id: string;
+    tipo_item: 'Servicio' | 'Repuesto';
+    descripcion: string;
+    cantidad: number;
+    precio_unitario: number;
+    descuento_unitario?: number;
+    tipo_servicio_id?: string | null;
+    registrado_por?: number | null;
+  }): Promise<{ success: boolean; msg: string; allow: boolean }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/quotations/${itemData.cotizacion_id}/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(itemData),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al agregar item a cotización');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error adding item to quotation:', error);
+      throw error;
+    }
+  }
+
+  // Obtener items de una cotización (SP_OBTENER_ITEMS_COTIZACION)
+  async getQuotationItems(cotizacionId: string): Promise<Array<{
+    cot_item_id: string;
+    cotizacion_id: string;
+    tipo_item: string;
+    descripcion: string;
+    cantidad: number;
+    precio_unitario: number;
+    descuento_unitario: number;
+    total_linea: number;
+  }>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/quotations/${cotizacionId}/items`);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al obtener items de cotización');
+      }
+      
+      return Array.isArray(result.data) ? result.data : [];
+    } catch (error) {
+      console.error('Error fetching quotation items:', error);
+      throw error;
+    }
+  }
+
+  // Eliminar item de cotización (SP_ELIMINAR_ITEM_COTIZACION)
+  async removeItemFromQuotation(itemData: {
+    cot_item_id: string;
+    eliminado_por?: number | null;
+  }): Promise<{ success: boolean; msg: string; allow: boolean }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/quotations/items/${itemData.cot_item_id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(itemData),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al eliminar item de cotización');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error removing item from quotation:', error);
+      throw error;
+    }
   }
 }
 

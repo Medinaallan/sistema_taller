@@ -59,6 +59,7 @@ app.use('/api/vehicles', vehiclesRoutes);
 app.use('/api/excel-import', excelImportRoutes);
 app.use('/api/service-history', serviceHistoryRoutes);
 app.use('/api/appointments', appointmentsRoutes);
+app.use('/api/quotations', quotationsRoutes);
 app.use('/api/logs', logsRoutes);
 
 // Ruta de salud

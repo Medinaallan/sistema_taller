@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
-import { Modal, Button, TextArea } from '../comunes/UI';
+import { Modal, Button, TextArea, Select, Input } from '../comunes/UI';
 import quotationsService from '../../servicios/quotationsService';
 import { servicesService } from '../../servicios/apiService';
 import { getDisplayNames } from '../../utilidades/dataMappers';
@@ -12,118 +12,263 @@ interface CreateQuotationModalProps {
   onSuccess: () => void;
 }
 
+interface QuotationItem {
+  cot_item_id?: string;
+  tipo_item: 'Servicio' | 'Repuesto';
+  descripcion: string;
+  cantidad: number;
+  precio_unitario: number;
+  descuento_unitario: number;
+  total_linea: number;
+  tipo_servicio_id?: string | null;
+}
+
 const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: CreateQuotationModalProps) => {
+  const [step, setStep] = useState<'info' | 'items' | 'summary'>('info');
   const [loading, setLoading] = useState(false);
-  const [servicePrecio, setServicePrecio] = useState<number>(0);
-  const [serviceName, setServiceName] = useState<string>('');
-  const [loadingService, setLoadingService] = useState(false);
+  const [cotizacionId, setCotizacionId] = useState<string | null>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+
+  // Datos del formulario - Paso 1: Información
   const [formData, setFormData] = useState({
-    descripcion: '',
-    notas: ''
+    fecha_vencimiento: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    comentario: ''
   });
+
+  // Datos del formulario - Paso 2: Items
+  const [itemForm, setItemForm] = useState({
+    tipo_item: 'Servicio' as 'Servicio' | 'Repuesto',
+    descripcion: '',
+    cantidad: 1,
+    precio_unitario: 0,
+    descuento_unitario: 0,
+    tipo_servicio_id: ''
+  });
+
+  // Items agregados
+  const [items, setItems] = useState<QuotationItem[]>([]);
+
+  // Nombres descriptivos
   const [displayNames, setDisplayNames] = useState({
     clientName: 'Cargando...',
     vehicleName: 'Cargando...',
     serviceName: 'Cargando...'
   });
 
-  // Cargar precio del servicio cuando se abre el modal
+  // Cargar servicios cuando se abre el modal
   useEffect(() => {
-    if (isOpen && appointment?.serviceTypeId) {
-      loadServicePrice(appointment.serviceTypeId);
+    if (isOpen) {
+      loadServices();
+      loadDisplayNames();
     }
-  }, [isOpen, appointment?.serviceTypeId]);
+  }, [isOpen]);
 
-  // Cargar nombres descriptivos cuando se abre el modal
-  useEffect(() => {
-    const loadDisplayNames = async () => {
-      if (isOpen && appointment) {
-        try {
-          const names = await getDisplayNames({
-            clientId: appointment.clientId,
-            vehicleId: appointment.vehicleId,
-            serviceId: appointment.serviceTypeId
-          });
-          setDisplayNames(names);
-        } catch (error) {
-          console.error('Error cargando nombres descriptivos:', error);
-          setDisplayNames({
-            clientName: `Cliente #${appointment.clientId}`,
-            vehicleName: `Vehículo #${appointment.vehicleId}`,
-            serviceName: `Servicio #${appointment.serviceTypeId}`
-          });
-        }
-      }
-    };
-
-    loadDisplayNames();
-  }, [isOpen, appointment]);
-
-  const loadServicePrice = async (serviceId: string) => {
+  const loadServices = async () => {
     try {
-      setLoadingService(true);
+      setLoadingServices(true);
       const response = await servicesService.getAll();
       if (response.success && response.data) {
-        const service = response.data.find((s: any) => s.id === serviceId);
-        if (service) {
-          setServicePrecio(parseFloat(service.precio) || 0);
-          setServiceName(service.nombre || service.name || 'Servicio');
-        } else {
-          setServicePrecio(500); // Precio por defecto
-          setServiceName('Servicio no encontrado');
-        }
+        setServices(response.data);
       }
     } catch (error) {
-      console.error('Error cargando precio del servicio:', error);
-      setServicePrecio(500); // Precio por defecto en caso de error
-      setServiceName('Error cargando servicio');
+      console.error('Error cargando servicios:', error);
     } finally {
-      setLoadingService(false);
+      setLoadingServices(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const loadDisplayNames = async () => {
+    if (appointment) {
+      try {
+        const names = await getDisplayNames({
+          clientId: appointment.clientId,
+          vehicleId: appointment.vehicleId,
+          serviceId: appointment.serviceTypeId
+        });
+        setDisplayNames(names);
+      } catch (error) {
+        console.error('Error cargando nombres:', error);
+        setDisplayNames({
+          clientName: `Cliente #${appointment.clientId}`,
+          vehicleName: `Vehículo #${appointment.vehicleId}`,
+          serviceName: `Servicio #${appointment.serviceTypeId}`
+        });
+      }
+    }
+  };
+
+  // Paso 1: Crear cotización
+  const handleCreateQuotation = async () => {
     if (!appointment) return;
-    
+
     try {
       setLoading(true);
-      
-      const cotizacionData = {
-        appointmentId: appointment.id,
-        clienteId: appointment.clientId,
-        vehiculoId: appointment.vehicleId,
-        servicioId: appointment.serviceTypeId,
-        descripcion: formData.descripcion,
-        precio: servicePrecio,
-        notas: formData.notas,
-        estado: 'sent' as const
-      };
-      
-      await quotationsService.createQuotation(cotizacionData);
-      
-      setFormData({
-        descripcion: '',
-        notas: ''
+      const usuario_id = localStorage.getItem('usuario_id');
+
+      const response = await quotationsService.createQuotation({
+        cita_id: typeof appointment.id === 'string' ? parseInt(appointment.id) : appointment.id,
+        ot_id: null,
+        fecha_vencimiento: formData.fecha_vencimiento,
+        comentario: formData.comentario,
+        registrado_por: usuario_id ? parseInt(usuario_id) : null
       });
-      
-      alert('Cotización creada exitosamente');
-      onSuccess();
-      onClose();
+
+      if (response && response.cotizacion_id) {
+        setCotizacionId(String(response.cotizacion_id));
+        setStep('items');
+      } else {
+        alert('Error: No se recibió ID de cotización. Respuesta: ' + JSON.stringify(response));
+      }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error creando cotización');
+      console.error('Error creando cotización:', error);
+      alert('Error creando cotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // Cargar items desde el servidor
+  const loadQuotationItems = async (quotationId: string) => {
+    try {
+      const itemsData = await quotationsService.getQuotationItems(quotationId);
+      setItems(itemsData as QuotationItem[]);
+    } catch (error) {
+      console.error('Error cargando items:', error);
+    }
+  };
+
+  // Paso 2: Agregar item a la cotización
+  const handleAddItem = async () => {
+    if (!cotizacionId) return;
+    if (!itemForm.descripcion.trim()) {
+      alert('La descripción es requerida');
+      return;
+    }
+    if (itemForm.cantidad <= 0) {
+      alert('La cantidad debe ser mayor a 0');
+      return;
+    }
+    if (itemForm.precio_unitario <= 0) {
+      alert('El precio unitario debe ser mayor a 0');
+      return;
+    }
+    if (itemForm.tipo_item === 'Servicio' && !itemForm.tipo_servicio_id) {
+      alert('Debe seleccionar un tipo de servicio');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const usuario_id = localStorage.getItem('usuario_id');
+
+      await quotationsService.addItemToQuotation({
+        cotizacion_id: cotizacionId,
+        tipo_item: itemForm.tipo_item,
+        descripcion: itemForm.descripcion,
+        cantidad: itemForm.cantidad,
+        precio_unitario: itemForm.precio_unitario,
+        descuento_unitario: itemForm.descuento_unitario,
+        tipo_servicio_id: itemForm.tipo_item === 'Servicio' ? itemForm.tipo_servicio_id : null,
+        registrado_por: usuario_id ? parseInt(usuario_id) : null
+      });
+
+      // Recargar items desde el servidor para sincronizar
+      await loadQuotationItems(cotizacionId);
+
+      // Limpiar formulario de item
+      setItemForm({
+        tipo_item: 'Servicio',
+        descripcion: '',
+        cantidad: 1,
+        precio_unitario: 0,
+        descuento_unitario: 0,
+        tipo_servicio_id: ''
+      });
+
+      alert('Item agregado exitosamente');
+    } catch (error) {
+      console.error('Error agregando item:', error);
+      alert('Error agregando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Eliminar item
+  const handleRemoveItem = async (index: number) => {
+    const item = items[index];
+    if (!item.cot_item_id) {
+      // Si no tiene ID, es un item local sin guardar aún
+      setItems(items.filter((_, i) => i !== index));
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const usuario_id = localStorage.getItem('usuario_id');
+
+      await quotationsService.removeItemFromQuotation({
+        cot_item_id: item.cot_item_id,
+        eliminado_por: usuario_id ? parseInt(usuario_id) : null
+      });
+
+      // Recargar items desde el servidor para sincronizar
+      if (cotizacionId) {
+        await loadQuotationItems(cotizacionId);
+      }
+
+      alert('Item eliminado exitosamente');
+    } catch (error) {
+      console.error('Error eliminando item:', error);
+      alert('Error eliminando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcular total
+  const calculateTotal = () => {
+    return items.reduce((sum, item) => sum + item.total_linea, 0);
+  };
+
+  // Finalizar cotización
+  const handleFinish = () => {
+    if (items.length === 0) {
+      alert('Debe agregar al menos un item a la cotización');
+      return;
+    }
+
+    alert('Cotización creada exitosamente');
+    onSuccess();
+    resetModal();
+    onClose();
+  };
+
+  const resetModal = () => {
+    setStep('info');
+    setCotizacionId(null);
+    setFormData({
+      fecha_vencimiento: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      comentario: ''
+    });
+    setItemForm({
+      tipo_item: 'Servicio',
+      descripcion: '',
+      cantidad: 1,
+      precio_unitario: 0,
+      descuento_unitario: 0,
+      tipo_servicio_id: ''
+    });
+    setItems([]);
+  };
+
+  const handleClose = () => {
+    if (step !== 'info' && !confirm('¿Descartar los cambios?')) {
+      return;
+    }
+    resetModal();
+    onClose();
   };
 
   if (!appointment) return null;
@@ -131,95 +276,326 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      title={`Crearón - Cita #${String(appointment.id).substring(0, 8)}`}
+      onClose={handleClose}
+      title={`Crear Cotización - Cita #${String(appointment.id).substring(0, 8)}`}
+      size="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="bg-gray-50 p-4 rounded-lg mb-4">
-          <h4 className="font-medium text-gray-700 mb-2">Información de la cita:</h4>
-          <div className="grid grid-cols-1 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Cliente:</span>
-              <div className="font-medium">{displayNames.clientName}</div>
-            </div>
-            <div>
-              <span className="text-gray-500">Vehículo:</span>
-              <div className="font-medium">{displayNames.vehicleName}</div>
-            </div>
-            <div>
-              <span className="text-gray-500">Servicio:</span>
-              <div className="font-medium">{displayNames.serviceName}</div>
-            </div>
-            <div>
-              <span className="text-gray-500">Fecha:</span>
-              <div>{appointment.date.toLocaleDateString('es-ES')} - {appointment.time}</div>
+      {/* PASO 1: Información de la Cotización */}
+      {step === 'info' && (
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-3">Información de la cita</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-gray-600">Cliente:</span>
+                <div className="font-medium">{displayNames.clientName}</div>
+              </div>
+              <div>
+                <span className="text-gray-600">Vehículo:</span>
+                <div className="font-medium">{displayNames.vehicleName}</div>
+              </div>
+              <div>
+                <span className="text-gray-600">Servicio:</span>
+                <div className="font-medium">{displayNames.serviceName}</div>
+              </div>
+              <div>
+                <span className="text-gray-600">Fecha:</span>
+                <div className="font-medium">{appointment.date.toLocaleDateString('es-ES')}</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Descripción del trabajo *
-          </label>
-          <TextArea
-            value={formData.descripcion}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('descripcion', e.target.value)}
-            placeholder="Describe detalladamente el trabajo..."
-            rows={4}
-            required
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha de Vencimiento *
+            </label>
+            <Input
+              type="date"
+              value={formData.fecha_vencimiento}
+              onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Precio del Servicio (Lempiras)
-          </label>
-          <div className="bg-gray-50 p-3 rounded-lg border">
-            {loadingService ? (
-              <div className="text-gray-500">Cargando precio...</div>
-            ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Comentarios
+            </label>
+            <TextArea
+              value={formData.comentario}
+              onChange={(e) => setFormData({ ...formData, comentario: e.target.value })}
+              placeholder="Comentarios adicionales sobre la cotización..."
+              rows={3}
+              maxLength={300}
+            />
+            <p className="text-xs text-gray-500 mt-1">{formData.comentario.length}/300</p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleClose}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              loading={loading}
+              disabled={loading}
+              onClick={handleCreateQuotation}
+            >
+              Siguiente: Agregar Items
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* PASO 2: Agregar Items */}
+      {step === 'items' && (
+        <div className="space-y-4">
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <h4 className="font-medium text-green-900">
+              Cotización #{cotizacionId?.substring(0, 8)}
+            </h4>
+            <p className="text-sm text-green-800">Agregue items (servicios o repuestos)</p>
+          </div>
+
+          {/* Formulario para agregar items */}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h5 className="font-medium text-gray-900 mb-3">Agregar nuevo item</h5>
+
+            <div className="space-y-3">
               <div>
-                <div className="text-2xl font-bold text-green-600">
-                  L {servicePrecio.toFixed(2)}
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de Item *
+                </label>
+                <Select
+                  value={itemForm.tipo_item}
+                  onChange={(e) => setItemForm({ ...itemForm, tipo_item: e.target.value as 'Servicio' | 'Repuesto' })}
+                  options={[
+                    { value: 'Servicio', label: 'Servicio' },
+                    { value: 'Repuesto', label: 'Repuesto' }
+                  ]}
+                />
+              </div>
+
+              {itemForm.tipo_item === 'Servicio' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Servicio *
+                  </label>
+                  <Select
+                    value={itemForm.tipo_servicio_id}
+                    onChange={(e) => setItemForm({ ...itemForm, tipo_servicio_id: e.target.value })}
+                    options={loadingServices ? [] : services.map((s) => ({
+                      value: s.id,
+                      label: s.nombre || s.name
+                    }))}
+                    disabled={loadingServices}
+                  />
                 </div>
-                <div className="text-sm text-gray-600">
-                  {serviceName}
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descripción *
+                </label>
+                <TextArea
+                  value={itemForm.descripcion}
+                  onChange={(e) => setItemForm({ ...itemForm, descripcion: e.target.value })}
+                  placeholder="Descripción del servicio o repuesto..."
+                  rows={2}
+                  maxLength={200}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cantidad *
+                  </label>
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={itemForm.cantidad}
+                    onChange={(e) => setItemForm({ ...itemForm, cantidad: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Precio Unitario *
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={itemForm.precio_unitario}
+                    onChange={(e) => setItemForm({ ...itemForm, precio_unitario: parseFloat(e.target.value) || 0 })}
+                  />
                 </div>
               </div>
-            )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descuento Unitario
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={itemForm.descuento_unitario}
+                  onChange={(e) => setItemForm({ ...itemForm, descuento_unitario: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleAddItem}
+                loading={loading}
+                disabled={loading}
+                className="w-full"
+              >
+                Agregar Item
+              </Button>
+            </div>
+          </div>
+
+          {/* Lista de items agregados */}
+          {items.length > 0 && (
+            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+              <h5 className="font-medium text-blue-900 mb-3">Items agregados ({items.length})</h5>
+              <div className="space-y-2">
+                {items.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-100">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{item.descripcion}</p>
+                      <p className="text-sm text-gray-600">
+                        {item.tipo_item} • {item.cantidad} x L {item.precio_unitario.toFixed(2)}
+                        {item.descuento_unitario > 0 && ` - L ${item.descuento_unitario.toFixed(2)} desc.`}
+                      </p>
+                      <p className="text-sm font-semibold text-blue-600">
+                        Total: L {item.total_linea.toFixed(2)}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleRemoveItem(index)}
+                      disabled={loading}
+                    >
+                      ✕ Eliminar
+                    </Button>
+                  </div>
+                ))}
+
+                <div className="border-t border-blue-200 pt-3 mt-3">
+                  <div className="flex justify-between font-semibold">
+                    <span>Total de la Cotización:</span>
+                    <span className="text-lg text-green-600">L {calculateTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setStep('summary')}
+              disabled={items.length === 0 || loading}
+            >
+              Ver Resumen
+            </Button>
+            <Button
+              type="button"
+              onClick={handleClose}
+              disabled={loading}
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
           </div>
         </div>
+      )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notas adicionales
-          </label>
-          <TextArea
-            value={formData.notas}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('notas', e.target.value)}
-            placeholder="Información adicional..."
-            rows={3}
-          />
-        </div>
+      {/* PASO 3: Resumen */}
+      {step === 'summary' && (
+        <div className="space-y-4">
+          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <h4 className="font-medium text-purple-900 mb-2">Resumen de la Cotización</h4>
+            <p className="text-sm text-purple-800">Cotización #{cotizacionId?.substring(0, 8)}</p>
+          </div>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            loading={loading}
-            disabled={loading || !formData.descripcion || servicePrecio <= 0}
-          >
-            {loading ? 'Creando...' : 'Crear Cotización'}
-          </Button>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <span className="text-gray-600">Cliente</span>
+              <p className="font-medium">{displayNames.clientName}</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <span className="text-gray-600">Vehículo</span>
+              <p className="font-medium">{displayNames.vehicleName}</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <span className="text-gray-600">Vencimiento</span>
+              <p className="font-medium">{new Date(formData.fecha_vencimiento).toLocaleDateString('es-ES')}</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <span className="text-gray-600">Items</span>
+              <p className="font-medium">{items.length}</p>
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <h5 className="font-medium text-gray-900 mb-3">Items incluidos:</h5>
+            <div className="space-y-2 text-sm">
+              {items.map((item, index) => (
+                <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                  <div>
+                    <p className="font-medium">{item.descripcion}</p>
+                    <p className="text-xs text-gray-600">{item.tipo_item} • {item.cantidad} x L {item.precio_unitario.toFixed(2)}</p>
+                  </div>
+                  <p className="font-semibold">L {item.total_linea.toFixed(2)}</p>
+                </div>
+              ))}
+              <div className="flex justify-between items-center py-3 bg-green-50 px-3 rounded-lg font-semibold text-lg">
+                <span>Total:</span>
+                <span className="text-green-600">L {calculateTotal().toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {formData.comentario && (
+            <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+              <p className="text-xs text-yellow-600 font-medium">Comentarios:</p>
+              <p className="text-sm text-yellow-800">{formData.comentario}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setStep('items')}
+              disabled={loading}
+            >
+              Volver a Editar
+            </Button>
+            <Button
+              type="button"
+              loading={loading}
+              disabled={loading}
+              onClick={handleFinish}
+            >
+              Finalizar Cotización
+            </Button>
+          </div>
         </div>
-      </form>
+      )}
     </Modal>
   );
 };

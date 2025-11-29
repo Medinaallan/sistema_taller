@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Card, Button } from '../../componentes/comunes/UI';
+import { Card, Button, Select } from '../../componentes/comunes/UI';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
+import { appointmentsService } from '../../servicios/apiService';
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
-// ...existing code...
+import ViewQuotationModal from '../../componentes/quotations/ViewQuotationModal';
+import type { Appointment } from '../../tipos';
 
 const QuotationsPage = () => {
   const [data, setData] = useState<QuotationData[]>([]);
   const [loading, setLoading] = useState(true);
-  // Eliminados: clientes, servicios y appointments (no se usan con el nuevo SP)
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState(null); // Si necesitas seleccionar una cita
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>('');
+  const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(null);
 
   // Los datos ya vienen mapeados desde el SP, no se requieren funciones de mapeo legacy
 
-  // Eliminadas funciones de carga de clientes, servicios y citas
-
+  // Cargar cotizaciones
   const loadQuotations = async () => {
     try {
       setLoading(true);
@@ -28,15 +31,33 @@ const QuotationsPage = () => {
     }
   };
 
+  // Cargar citas disponibles
+  const loadAppointments = async () => {
+    try {
+      const response = await appointmentsService.getAll();
+      if (response.success && Array.isArray(response.data)) {
+        setAppointments(response.data);
+      }
+    } catch (err) {
+      console.error('Error cargando citas:', err);
+    }
+  };
+
   useEffect(() => {
     const loadAllData = async () => {
       await loadQuotations();
+      await loadAppointments();
     };
     loadAllData();
   }, []);
 
   const handleEdit = (item: QuotationData) => {
     alert('Editar cotización: ' + item.numero_cotizacion);
+  };
+
+  const handleView = (item: QuotationData) => {
+    setSelectedQuotationId(item.cotizacion_id.toString());
+    setShowViewModal(true);
   };
 
   const handleDelete = async (item: QuotationData) => {
@@ -57,12 +78,14 @@ const QuotationsPage = () => {
     }
     try {
       await quotationsService.approveQuotation(item.cotizacion_id.toString());
+      await loadQuotations();
       const { workOrdersService } = await import('../../servicios/workOrdersService');
       const workOrder = await workOrdersService.createWorkOrderFromQuotation(item);
       alert(`Cotización aprobada exitosamente y orden de trabajo #${workOrder.id?.substring(0, 12)} creada automáticamente.`);
-      await loadQuotations();
     } catch (err) {
       alert('Error en el proceso de aprobación: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      // Recargar para deshacer cambios en la UI si es necesario
+      await loadQuotations();
     }
   };
 
@@ -72,10 +95,28 @@ const QuotationsPage = () => {
     }
     try {
       await quotationsService.rejectQuotation(item.cotizacion_id.toString());
-      alert('Cotización rechazada exitosamente');
       await loadQuotations();
+      alert('Cotización rechazada exitosamente');
     } catch (err) {
       alert('Error rechazando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      // Recargar para deshacer cambios en la UI si es necesario
+      await loadQuotations();
+    }
+  };
+
+  const handleMarkAsSent = async (item: QuotationData) => {
+    try {
+      // Actualizar estado localmente para mostrar botones Aprobar/Rechazar
+      setData(prevData => 
+        prevData.map(q => 
+          q.cotizacion_id === item.cotizacion_id 
+            ? { ...q, estado_cotizacion: 'Enviada' }
+            : q
+        )
+      );
+      alert('Cotización marcada como enviada. Ahora puede ser aprobada o rechazada.');
+    } catch (err) {
+      alert('Error marcando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
@@ -89,9 +130,45 @@ const QuotationsPage = () => {
     );
   }
 
+  const handleOpenCreateModal = () => {
+    if (appointments.length === 0) {
+      alert('No hay citas disponibles. Cree una cita primero.');
+      return;
+    }
+    setShowCreateModal(true);
+  };
+
+  const selectedAppointment = selectedAppointmentId 
+    ? appointments.find(a => a.id === selectedAppointmentId) 
+    : null;
+
   return (
     <>
-      <Card title="Cotizaciones" actions={<Button onClick={() => setShowCreateModal(true)}>Nueva Cotización</Button>}>
+      <Card 
+        title="Cotizaciones" 
+        actions={
+          <div className="flex gap-2">
+            <Select
+              value={selectedAppointmentId}
+              onChange={(e) => setSelectedAppointmentId(e.target.value)}
+              options={[
+                { value: '', label: 'Seleccionar cita...' },
+                ...appointments.map((apt) => ({
+                  value: apt.id,
+                  label: `Cita #${String(apt.id).substring(0, 8)}`
+                }))
+              ]}
+              style={{ minWidth: '250px' }}
+            />
+            <Button 
+              onClick={handleOpenCreateModal}
+              disabled={!selectedAppointmentId}
+            >
+              Nueva Cotización
+            </Button>
+          </div>
+        }
+      >
         <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -135,11 +212,11 @@ const QuotationsPage = () => {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      quotation.estado_cotizacion === 'draft' ? 'bg-gray-100 text-gray-800' :
-                      quotation.estado_cotizacion === 'sent' ? 'bg-blue-100 text-blue-800' :
-                      quotation.estado_cotizacion === 'approved' ? 'bg-green-100 text-green-800' :
-                      quotation.estado_cotizacion === 'rejected' ? 'bg-red-100 text-red-800' :
-                      quotation.estado_cotizacion === 'completed' ? 'bg-purple-100 text-purple-800' :
+                      quotation.estado_cotizacion === 'Pendiente' ? 'bg-gray-100 text-gray-800' :
+                      quotation.estado_cotizacion === 'Enviada' ? 'bg-blue-100 text-blue-800' :
+                      quotation.estado_cotizacion === 'Aprobada' ? 'bg-green-100 text-green-800' :
+                      quotation.estado_cotizacion === 'Rechazada' ? 'bg-red-100 text-red-800' :
+                      quotation.estado_cotizacion === 'Completada' ? 'bg-purple-100 text-purple-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {quotationsService.formatStatus(quotation.estado_cotizacion)}
@@ -156,8 +233,37 @@ const QuotationsPage = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-2">
-                      {/* Botones según el estado de la cotización */}
-                      {quotation.estado_cotizacion === 'sent' && (
+                      {/* Botón universal Ver */}
+                      <Button 
+                        size="sm" 
+                        className="bg-gray-600 hover:bg-gray-700 text-white"
+                        onClick={() => handleView(quotation)}
+                      >
+                         Ver
+                      </Button>
+                      
+                      {/* Botones según estado: Pendiente */}
+                      {quotation.estado_cotizacion === 'Pendiente' && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                            onClick={() => handleMarkAsSent(quotation)}
+                          >
+                             Enviar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => handleReject(quotation)}
+                          >
+                             Rechazar
+                          </Button>
+                        </>
+                      )}
+                      
+                      {/* Botones según estado: Enviada */}
+                      {quotation.estado_cotizacion === 'Enviada' && (
                         <>
                           <Button 
                             size="sm" 
@@ -171,57 +277,42 @@ const QuotationsPage = () => {
                             className="bg-red-600 hover:bg-red-700 text-white"
                             onClick={() => handleReject(quotation)}
                           >
-                            ❌ Rechazar
+                             Rechazar
                           </Button>
                         </>
                       )}
-                      {quotation.estado_cotizacion === 'approved' && (
-                        <span className="text-green-600 text-sm font-medium px-2 py-1">
-                          ✅ Aprobada
+                      
+                      {/* Estados terminales - Solo botones de lectura */}
+                      {quotation.estado_cotizacion === 'Aprobada' && (
+                        <span className="text-green-600 text-sm font-medium px-2 py-1 bg-green-50 rounded">
+                           Aprobada
                         </span>
                       )}
-                      {quotation.estado_cotizacion === 'rejected' && (
-                        <span className="text-red-600 text-sm font-medium px-2 py-1">
-                          ❌ Rechazada
+                      {quotation.estado_cotizacion === 'Rechazada' && (
+                        <span className="text-red-600 text-sm font-medium px-2 py-1 bg-red-50 rounded">
+                           Rechazada
                         </span>
                       )}
-                      {quotation.estado_cotizacion === 'completed' && (
-                        <span className="text-purple-600 text-sm font-medium px-2 py-1">
-                          🏁 Completada
+                      {quotation.estado_cotizacion === 'Completada' && (
+                        <span className="text-purple-600 text-sm font-medium px-2 py-1 bg-purple-50 rounded">
+                           Completada
                         </span>
                       )}
-                      {quotation.estado_cotizacion === 'draft' && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => handleApprove(quotation)}
-                          >
-                            ✅ Aprobar
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                            onClick={() => handleReject(quotation)}
-                          >
-                            ❌ Rechazar
-                          </Button>
-                        </>
-                      )}
+                      
                       {/* Botones universales */}
                       <Button 
                         size="sm" 
                         variant="secondary"
                         onClick={() => handleEdit(quotation)}
                       >
-                        Editar
+                         Editar
                       </Button>
                       <Button 
                         size="sm" 
                         variant="danger"
                         onClick={() => handleDelete(quotation)}
                       >
-                        Eliminar
+                         Eliminar
                       </Button>
                     </div>
                   </td>
@@ -235,9 +326,26 @@ const QuotationsPage = () => {
       {/* Modal para crear cotización */}
       <CreateQuotationModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        appointment={selectedAppointment}
-        onSuccess={loadQuotations}
+        onClose={() => {
+          setShowCreateModal(false);
+          setSelectedAppointmentId('');
+        }}
+        appointment={selectedAppointment || null}
+        onSuccess={() => {
+          loadQuotations();
+          setShowCreateModal(false);
+          setSelectedAppointmentId('');
+        }}
+      />
+      
+      {/* Modal para ver detalles de cotización */}
+      <ViewQuotationModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedQuotationId(null);
+        }}
+        quotationId={selectedQuotationId}
       />
     </>
   );
