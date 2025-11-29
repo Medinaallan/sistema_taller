@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
-import { appointmentsService, servicesService } from '../../servicios/apiService';
-import { obtenerClientes } from '../../servicios/clientesApiService';
+import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
+// ...existing code...
 
 const QuotationsPage = () => {
   const [data, setData] = useState<QuotationData[]>([]);
   const [loading, setLoading] = useState(true);
   // Eliminados: clientes, servicios y appointments (no se usan con el nuevo SP)
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null); // Si necesitas seleccionar una cita
 
   // Los datos ya vienen mapeados desde el SP, no se requieren funciones de mapeo legacy
 
@@ -88,8 +90,9 @@ const QuotationsPage = () => {
   }
 
   return (
-    <Card title="Cotizaciones" actions={<Button onClick={() => alert('Nueva cotización')}>Nueva Cotización</Button>}>
-      <div className="overflow-x-auto">
+    <>
+      <Card title="Cotizaciones" actions={<Button onClick={() => setShowCreateModal(true)}>Nueva Cotización</Button>}>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-gray-500">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
             <tr>
@@ -228,7 +231,15 @@ const QuotationsPage = () => {
           </tbody>
         </table>
       </div>
-    </Card>
+      </Card>
+      {/* Modal para crear cotización */}
+      <CreateQuotationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        appointment={selectedAppointment}
+        onSuccess={loadQuotations}
+      />
+    </>
   );
 };
 

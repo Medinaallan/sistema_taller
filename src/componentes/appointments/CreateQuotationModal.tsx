@@ -219,29 +219,27 @@ const CreateQuotationModal: React.FC<CreateQuotationModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm() || !appointment) {
       return;
     }
 
+    // Obtener usuario_id del localStorage
+    const usuario_id = localStorage.getItem('usuario_id');
+
+    // Calcular fecha de vencimiento (por ejemplo, +7 días)
+    const fechaVencimiento = new Date();
+    fechaVencimiento.setDate(fechaVencimiento.getDate() + 7);
+
     const quotationData = {
-      appointmentId: appointment.id,
-      clienteId: appointment.clientId,
-      vehiculoId: appointment.vehicleId,
-      servicioId: appointment.serviceTypeId,
-      descripcion: formData.descripcion,
-      precio: parseFloat(formData.precio),
-      precioServicioBase: parseFloat(servicePriceBase),
-      notas: formData.notas,
-      estado: 'sent',
-      fechaCreacion: new Date().toISOString().split('T')[0],
-      productos: selectedProducts,
-      totalProductos: selectedProducts.reduce((sum, p) => sum + p.total, 0),
+      cita_id: appointment.id,
+      fecha_vencimiento: fechaVencimiento.toISOString(),
+      comentario: formData.notas,
+      registrado_por: usuario_id ? parseInt(usuario_id) : null
     };
 
     onSubmit(quotationData);
     onClose();
-    
+
     // Limpiar formulario
     setFormData({
       descripcion: '',
