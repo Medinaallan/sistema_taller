@@ -25,5 +25,32 @@
     "notes": "Facturado en POS el 20/11/2025 - Total: L.1322.50",
     "createdAt": "2025-11-21T00:09:14.501Z",
     "updatedAt": "2025-11-21T00:09:14.501Z"
+  },
+  {
+    "id": "hist_1764711296116_q2mnx4yzg",
+    "orderId": "002",
+    "workOrderId": "002",
+    "clientId": "002",
+    "clientName": "Cliente no especificado",
+    "clientEmail": "",
+    "clientPhone": "",
+    "vehicleId": "002",
+    "vehicleName": "Vehículo no especificado",
+    "vehiclePlate": "",
+    "vehicleColor": "",
+    "serviceId": "002",
+    "serviceName": "Servicio de Taller",
+    "serviceDescription": "Revisión de frenos",
+    "servicePrice": 195,
+    "serviceDuration": "1 hora",
+    "serviceCategory": "Mantenimiento",
+    "date": "2025-12-02T21:34:56.107Z",
+    "status": "completed",
+    "paymentStatus": "paid",
+    "invoiceId": "1764711296102",
+    "invoiceTotal": 263.4075,
+    "notes": "Facturado en POS el 2/12/2025 - Total: L.263.41",
+    "createdAt": "2025-12-02T21:34:56.116Z",
+    "updatedAt": "2025-12-02T21:34:56.116Z"
   }
 ]

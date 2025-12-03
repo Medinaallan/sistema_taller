@@ -852,5 +852,17 @@
       "enviado_en": "2025-11-05T13:49:34.569Z",
       "leido": false
     }
+  ],
+  "002": [
+    {
+      "mensaje_id": 1764711012868,
+      "sala_id": "002",
+      "usuario_id": "admin-system",
+      "rol": "admin",
+      "contenido": "🔧 SERVICIOS ADICIONALES ENCONTRADOS\n\nOrden de Trabajo: #002\nCliente: Cliente #002\nVehículo: Vehículo #002\n\nProblemas encontrados:\nsdasdasdas\n\nDescripción del problema:\nasdasdasdas\n\nServicios recomendados:\ntyujrtyjrhn\n\nCosto estimado: L. 130.00\nUrgencia: MEDIA\n\nNotas adicionales:\nz<czxc\n\n---\nEsta cotización requiere tu aprobación antes de proceder. Puedes aprobarla o rechazarla desde tu panel de cliente.\n\nCotización ID: AQ-1764711011951-mut7z07n9",
+      "es_sistema": false,
+      "enviado_en": "2025-12-02T21:30:13.432Z",
+      "leido": false
+    }
   ]
 }

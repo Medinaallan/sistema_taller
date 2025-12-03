@@ -247,10 +247,10 @@ const QuotationsPage = () => {
                         <>
                           <Button 
                             size="sm" 
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                            onClick={() => handleMarkAsSent(quotation)}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => handleApprove(quotation)}
                           >
-                             Enviar
+                            ✅ Aprobar
                           </Button>
                           <Button 
                             size="sm" 
@@ -299,14 +299,7 @@ const QuotationsPage = () => {
                         </span>
                       )}
                       
-                      {/* Botones universales */}
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        onClick={() => handleEdit(quotation)}
-                      >
-                         Editar
-                      </Button>
+                      {/* Botón universal Eliminar */}
                       <Button 
                         size="sm" 
                         variant="danger"

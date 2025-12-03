@@ -153,6 +153,30 @@ const WorkOrdersPage = () => {
     setIsModalOpen(true);
   };
 
+  const handleStartWorkOrder = async (orderId: string) => {
+    if (confirm('¿Deseas iniciar esta orden de trabajo?')) {
+      try {
+        // TODO: Implementar cambio de estado a in-progress
+        alert('Orden iniciada (TODO: implementar en backend)');
+        await loadWorkOrders();
+      } catch (err) {
+        alert('Error iniciando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      }
+    }
+  };
+
+  const handlePauseWorkOrder = async (orderId: string) => {
+    if (confirm('¿Deseas pausar esta orden de trabajo?')) {
+      try {
+        // TODO: Implementar cambio de estado a paused
+        alert('Orden pausada (TODO: implementar en backend)');
+        await loadWorkOrders();
+      } catch (err) {
+        alert('Error pausando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      }
+    }
+  };
+
   const handleCompleteWorkOrder = async (orderId: string) => {
     if (confirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
@@ -257,9 +281,9 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
     // TODO: Aquí podrías cargar los nombres reales de clientes desde la API
   ];
 
-  const pendingOrders = workOrders.filter(wo => wo.estado === 'pending');
+  const pendingOrders = workOrders.filter(wo => wo.estado === 'pending' || wo.estado === 'Pendiente' || wo.estado === 'Aprobada');
   const inProgressOrders = workOrders.filter(wo => wo.estado === 'in-progress');
-  const completedOrders = workOrders.filter(wo => wo.estado === 'completed');
+  const completedOrders = workOrders.filter(wo => wo.estado === 'completed' || wo.estado === 'Completada');
 
   return (
     <div className="space-y-6">
@@ -399,6 +423,7 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
                         variant={
                           order.estado === 'completed' ? 'success' : 
                           order.estado === 'in-progress' ? 'warning' : 
+                          order.estado === 'pending' ? 'default' :
                           'default'
                         }
                         size="sm"
@@ -425,43 +450,64 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
+                      <div className="flex flex-wrap gap-1">
                         <button
                           onClick={() => handleViewWorkOrder(order)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs"
                           title="Ver detalles"
                         >
-                          <EyeIcon className="h-4 w-4" />
+                          👁️ Ver
                         </button>
+                        {/* Botón Iniciar - disponible si está pending */}
+                        {order.estado === 'pending' && (
+                          <button
+                            onClick={() => handleStartWorkOrder(order.id!)}
+                            className="px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 text-xs font-semibold"
+                            title="Iniciar orden"
+                          >
+                            ▶️ Iniciar
+                          </button>
+                        )}
+                        {/* Botón Pausar - disponible si está en progreso */}
+                        {order.estado === 'in-progress' && (
+                          <button
+                            onClick={() => handlePauseWorkOrder(order.id!)}
+                            className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-xs font-semibold"
+                            title="Pausar orden"
+                          >
+                            ⏸️ Pausar
+                          </button>
+                        )}
+                        {/* Botón Completar - disponible si está en progreso */}
                         {order.estado === 'in-progress' && (
                           <button
                             onClick={() => handleCompleteWorkOrder(order.id!)}
-                            className="text-green-600 hover:text-green-900"
+                            className="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-semibold"
                             title="Completar orden"
                           >
-                            <CheckIcon className="h-4 w-4" />
+                            ✅ Completar
                           </button>
                         )}
                         <button
                           onClick={() => {/* TODO: Implementar edición */}}
-                          className="text-yellow-600 hover:text-yellow-900"
+                          className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-xs"
                           title="Editar"
                         >
-                          <PencilIcon className="h-4 w-4" />
+                          ✏️ Editar
                         </button>
                         <button
                           onClick={() => handleAdditionalQuotationAccess(order)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 text-xs"
                           title="Subcotización (Admin)"
                         >
-                          <LockClosedIcon className="h-4 w-4" />
+                          🔒 Subcot
                         </button>
                         <button
                           onClick={() => handleDeleteWorkOrder(order.id!)}
-                          className="text-red-600 hover:text-red-900"
+                          className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
                           title="Eliminar"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          🗑️ Eliminar
                         </button>
                       </div>
                     </td>
