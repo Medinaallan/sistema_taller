@@ -32,6 +32,34 @@ export interface WorkOrderResponse {
 }
 
 class WorkOrdersService {
+  // Mapear datos del SP al modelo WorkOrderData
+  private mapSpDataToWorkOrder(spData: any): WorkOrderData {
+    return {
+      id: spData.ot_id?.toString() || '',
+      quotationId: undefined,
+      appointmentId: undefined,
+      clienteId: spData.cliente_id?.toString() || '',
+      vehiculoId: spData.vehiculo_id?.toString() || '',
+      servicioId: '',
+      descripcion: spData.vehiculo_info || '',
+      problema: spData.notas_recepcion || '',
+      diagnostico: '',
+      tipoServicio: 'corrective',
+      fechaEstimadaCompletado: spData.fecha_estimada ? new Date(spData.fecha_estimada).toISOString() : undefined,
+      fechaInicioReal: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
+      costoManoObra: 0,
+      costoPartes: 0,
+      costoTotal: 0,
+      costoEstimado: 0,
+      notas: `Placa: ${spData.placa} | Odómetro: ${spData.odometro_ingreso}km | Asesor: ${spData.nombre_asesor}`,
+      recomendaciones: spData.nombre_mecanico ? `Mecánico asignado: ${spData.nombre_mecanico}` : '',
+      estadoPago: 'pending',
+      estado: spData.estado_ot === 'Abierta' ? 'pending' : spData.estado_ot === 'Completada' ? 'completed' : 'in-progress',
+      fechaCreacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
+      fechaActualizacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
+    };
+  }
+
   // Obtener todas las órdenes de trabajo
   async getAllWorkOrders(): Promise<WorkOrderData[]> {
     try {
@@ -39,15 +67,19 @@ class WorkOrdersService {
       const response = await fetch(`${API_BASE_URL}/workorders`);
       console.log('📡 Respuesta recibida. Status:', response.status);
       
-      const result: WorkOrderResponse = await response.json();
+      const result: any = await response.json();
       console.log('📦 Datos recibidos:', result);
       
       if (!response.ok) {
         throw new Error(result.message || 'Error al obtener órdenes de trabajo');
       }
       
-      const orders = Array.isArray(result.data) ? result.data : [];
+      // Mapear datos del SP al modelo WorkOrderData
+      const rawOrders = Array.isArray(result.data) ? result.data : [];
+      const orders = rawOrders.map(order => this.mapSpDataToWorkOrder(order));
+      
       console.log('🎯 Órdenes procesadas:', orders.length, 'elementos');
+      console.log('✅ Órdenes mapeadas:', orders);
       return orders;
     } catch (error) {
       console.error('❌ Error fetching work orders:', error);

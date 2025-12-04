@@ -99,13 +99,13 @@ const WorkOrdersPage = () => {
 
   const filteredWorkOrders = workOrders.filter(order => {
     const matchesSearch = 
-      order.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.problema?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.clienteId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.vehiculoId.toLowerCase().includes(searchTerm.toLowerCase());
+      (order.descripcion || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.problema || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.clienteId || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.vehiculoId || '').toString().toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = !statusFilter || order.estado === statusFilter;
-    const matchesClient = !clientFilter || order.clienteId === clientFilter;
+    const matchesClient = !clientFilter || order.clienteId?.toString() === clientFilter;
     
     return matchesSearch && matchesStatus && matchesClient;
   });

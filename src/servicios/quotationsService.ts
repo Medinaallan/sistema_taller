@@ -125,6 +125,84 @@ class QuotationsService {
     });
   }
 
+  // Generar Orden de Trabajo desde cotización aprobada (SP_GENERAR_OT_DESDE_COTIZACION)
+  async generateWorkOrderFromQuotation(quotationId: string, otData: {
+    asesor_id: number;
+    mecanico_encargado_id?: number | null;
+    odometro_ingreso?: number | null;
+    fecha_estimada?: string | null;
+    hora_estimada?: string | null; // horas de trabajo estimadas en formato HH:mm:ss
+    generado_por?: number | null;
+  }): Promise<{
+    success: boolean;
+    msg: string;
+    allow: boolean;
+    ot_id: number;
+    numero_ot: string;
+  }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/quotations/${quotationId}/generate-workorder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(otData),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al generar orden de trabajo');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error generating work order from quotation:', error);
+      throw error;
+    }
+  }
+
+  // Flujo completo: Aprobar cotización + Generar OT
+  async approveAndGenerateWorkOrder(quotationId: string, otData: {
+    asesor_id: number;
+    mecanico_encargado_id?: number | null;
+    odometro_ingreso?: number | null;
+    fecha_estimada?: string | null;
+    hora_estimada?: string | null;
+    generado_por?: number | null;
+  }): Promise<{
+    quotationApproved: boolean;
+    workOrderGenerated: boolean;
+    ot_id?: number;
+    numero_ot?: string;
+    msg: string;
+  }> {
+    try {
+      console.log('🔄 Iniciando flujo de aprobación y generación de OT');
+      
+      // Paso 1: Aprobar cotización (ejecuta SP_GESTIONAR_APROBACION_COTIZACION)
+      console.log(`📋 Paso 1: Aprobando cotización ${quotationId}...`);
+      await this.approveQuotation(quotationId);
+      console.log('✅ Cotización aprobada exitosamente');
+      
+      // Paso 2: Generar orden de trabajo (ejecuta SP_GENERAR_OT_DESDE_COTIZACION)
+      console.log(`📋 Paso 2: Generando orden de trabajo desde cotización...`);
+      const workOrderResult = await this.generateWorkOrderFromQuotation(quotationId, otData);
+      console.log('✅ Orden de trabajo generada exitosamente:', workOrderResult);
+      
+      return {
+        quotationApproved: true,
+        workOrderGenerated: workOrderResult.allow,
+        ot_id: workOrderResult.ot_id,
+        numero_ot: workOrderResult.numero_ot,
+        msg: `Cotización aprobada exitosamente. Orden de trabajo #${workOrderResult.numero_ot} generada.`
+      };
+    } catch (error) {
+      console.error('❌ Error en flujo de aprobación y generación:', error);
+      throw error;
+    }
+  }
+
   // Rechazar cotización (cliente) - Usa SP_GESTIONAR_APROBACION_COTIZACION
   async rejectQuotation(id: string): Promise<QuotationData> {
     const usuario_id = localStorage.getItem('usuario_id');

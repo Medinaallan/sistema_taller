@@ -269,6 +269,66 @@ router.put('/:cotizacionId', async (req, res) => {
 	}
 });
 
+// POST /quotations/:cotizacionId/generate-workorder - Generar OT desde cotización aprobada
+router.post('/:cotizacionId/generate-workorder', async (req, res) => {
+	const { cotizacionId } = req.params;
+	const {
+		asesor_id,
+		mecanico_encargado_id = null,
+		odometro_ingreso = null,
+		fecha_estimada = null,
+		hora_estimada = null, // horas de trabajo estimadas
+		generado_por = null
+	} = req.body;
+
+	try {
+		const pool = await getConnection();
+
+		console.log(`📋 Generando OT desde cotización ${cotizacionId}`);
+		console.log('Parámetros recibidos:', {
+			cotizacion_id: parseInt(cotizacionId),
+			asesor_id,
+			mecanico_encargado_id,
+			odometro_ingreso,
+			fecha_estimada,
+			hora_estimada,
+			generado_por
+		});
+
+		const result = await pool.request()
+			.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
+			.input('asesor_id', sql.Int, asesor_id)
+			.input('mecanico_encargado_id', sql.Int, mecanico_encargado_id || null)
+			.input('odometro_ingreso', sql.Decimal(10, 1), odometro_ingreso || null)
+			.input('fecha_estimada', sql.Date, fecha_estimada || null)
+			.input('hora_estimada', sql.Time, hora_estimada || null)
+			.input('generado_por', sql.Int, generado_por || null)
+			.execute('SP_GENERAR_OT_DESDE_COTIZACION');
+
+		console.log('✅ SP_GENERAR_OT_DESDE_COTIZACION ejecutado exitosamente');
+		console.log('Recordset:', result.recordset);
+
+		const output = result.recordset?.[0] || {};
+		
+		res.status(200).json({
+			success: true,
+			msg: output.msg || 'Orden de trabajo generada',
+			allow: output.allow,
+			ot_id: output.ot_id,
+			numero_ot: output.numero_ot,
+			data: output
+		});
+	} catch (error) {
+		console.error('❌ Error al generar OT desde cotización:', error);
+		console.error('Detalles del error:', error.originalError || error);
+		res.status(500).json({
+			success: false,
+			message: 'Error al generar orden de trabajo',
+			error: error.message
+		});
+	}
+});
+
 // DELETE /quotations/:cotizacionId - Eliminar cotización
 router.delete('/:cotizacionId', async (req, res) => {
 	const { cotizacionId } = req.params;

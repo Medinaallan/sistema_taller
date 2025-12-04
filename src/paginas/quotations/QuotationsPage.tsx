@@ -4,6 +4,7 @@ import quotationsService, { type QuotationData } from '../../servicios/quotation
 import { appointmentsService } from '../../servicios/apiService';
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
 import ViewQuotationModal from '../../componentes/quotations/ViewQuotationModal';
+import ApproveQuotationModal from '../../componentes/quotations/ApproveQuotationModal';
 import type { Appointment } from '../../tipos';
 
 const QuotationsPage = () => {
@@ -12,8 +13,10 @@ const QuotationsPage = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>('');
   const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(null);
+  const [selectedQuotationForApprove, setSelectedQuotationForApprove] = useState<QuotationData | null>(null);
 
   // Los datos ya vienen mapeados desde el SP, no se requieren funciones de mapeo legacy
 
@@ -72,21 +75,9 @@ const QuotationsPage = () => {
     }
   };
 
-  const handleApprove = async (item: QuotationData) => {
-    if (!confirm(`¿Está seguro de aprobar la cotización ${item.numero_cotizacion}? Esto creará automáticamente una orden de trabajo.`)) {
-      return;
-    }
-    try {
-      await quotationsService.approveQuotation(item.cotizacion_id.toString());
-      await loadQuotations();
-      const { workOrdersService } = await import('../../servicios/workOrdersService');
-      const workOrder = await workOrdersService.createWorkOrderFromQuotation(item);
-      alert(`Cotización aprobada exitosamente y orden de trabajo #${workOrder.id?.substring(0, 12)} creada automáticamente.`);
-    } catch (err) {
-      alert('Error en el proceso de aprobación: ' + (err instanceof Error ? err.message : 'Error desconocido'));
-      // Recargar para deshacer cambios en la UI si es necesario
-      await loadQuotations();
-    }
+  const handleApprove = (item: QuotationData) => {
+    setSelectedQuotationForApprove(item);
+    setShowApproveModal(true);
   };
 
   const handleReject = async (item: QuotationData) => {
@@ -339,6 +330,20 @@ const QuotationsPage = () => {
           setSelectedQuotationId(null);
         }}
         quotationId={selectedQuotationId}
+      />
+
+      {/* Modal para aprobar cotización y generar OT */}
+      <ApproveQuotationModal
+        isOpen={showApproveModal}
+        onClose={() => {
+          setShowApproveModal(false);
+          setSelectedQuotationForApprove(null);
+        }}
+        quotation={selectedQuotationForApprove}
+        onSuccess={async (result) => {
+          await loadQuotations();
+          alert(`✅ Cotización aprobada exitosamente\n\nOrden de trabajo generada:\nNúmero: ${result.numero_ot}\nID: ${result.ot_id}`);
+        }}
       />
     </>
   );
