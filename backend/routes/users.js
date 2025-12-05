@@ -298,4 +298,70 @@ router.post('/panel', async (req, res) => {
   }
 });
 
+// PUT /users/:usuarioId - Editar usuario (SP_EDITAR_USUARIO)
+router.put('/:usuarioId', async (req, res) => {
+  const { usuarioId } = req.params;
+  const { nombre_completo, correo, telefono } = req.body;
+
+  try {
+    console.log(`📝 Editando usuario ${usuarioId}`);
+    console.log('Datos recibidos:', { nombre_completo, correo, telefono });
+
+    // Validaciones básicas
+    if (!nombre_completo && !correo && !telefono) {
+      return res.status(400).json({
+        success: false,
+        message: 'Al menos uno de los campos (nombre_completo, correo o telefono) es requerido'
+      });
+    }
+
+    const pool = await getConnection();
+
+    // Si se proporciona correo, validar primero con SP_VALIDAR_CORREO_USUARIO
+    if (correo) {
+      console.log(`🔍 Validando correo: ${correo}`);
+      const validationResult = await pool.request()
+        .input('correo', sql.VarChar(100), correo)
+        .execute('SP_VALIDAR_CORREO_USUARIO');
+
+      const validationOutput = validationResult.recordset?.[0] || {};
+      console.log('Resultado validación:', validationOutput);
+
+      if (!validationOutput.allow) {
+        return res.status(400).json({
+          success: false,
+          message: validationOutput.msg || 'El correo ya está en uso'
+        });
+      }
+    }
+
+    // Ejecutar SP_EDITAR_USUARIO
+    console.log('📤 Ejecutando SP_EDITAR_USUARIO');
+    const result = await pool.request()
+      .input('usuario_id', sql.Int, parseInt(usuarioId))
+      .input('nombre_completo', sql.VarChar(100), nombre_completo || null)
+      .input('correo', sql.VarChar(100), correo || null)
+      .input('telefono', sql.VarChar(30), telefono || null)
+      .execute('SP_EDITAR_USUARIO');
+
+    console.log('✅ SP ejecutado exitosamente. Recordset:', result.recordset);
+    const output = result.recordset?.[0] || {};
+
+    res.json({
+      success: true,
+      msg: output.msg || 'Usuario actualizado exitosamente',
+      allow: output.allow,
+      data: output
+    });
+  } catch (error) {
+    console.error('❌ Error editando usuario:', error);
+    console.error('Detalles del error:', error.originalError || error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al editar usuario',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

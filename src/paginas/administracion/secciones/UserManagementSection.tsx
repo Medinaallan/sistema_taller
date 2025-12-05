@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   UserIcon,
   PencilIcon,
@@ -195,6 +195,52 @@ export function UserManagementSection() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  // Cargar usuarios desde el SP
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+      const response = await fetch(`${apiUrl}/users/list`);
+      
+      if (!response.ok) {
+        console.error('Error fetching users:', response.status);
+        // Usar datos mockeados si hay error
+        return;
+      }
+      
+      const result = await response.json();
+      console.log('✅ Usuarios obtenidos del SP:', result.data);
+      
+      if (result.success && Array.isArray(result.data)) {
+        // Mapear datos del SP al formato de User
+        const mappedUsers: User[] = result.data
+          .filter((spUser: any) => spUser.rol?.toLowerCase() !== 'cliente') // Excluir clientes
+          .map((spUser: any) => ({
+            id: spUser.usuario_id?.toString() || '',
+            username: spUser.nombre_completo || '',
+            fullName: spUser.nombre_completo || '',
+            email: spUser.correo || '',
+            phone: spUser.telefono || '',
+            role: (spUser.rol?.toLowerCase() || 'client') as User['role'],
+            status: 'active' as const,
+            permissions: rolePermissions[spUser.rol?.toLowerCase() || 'client'] || defaultPermissions,
+            lastLogin: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            mustChangePassword: false
+          }));
+        
+        console.log(' Usuarios mapeados (excluyendo clientes):', mappedUsers);
+        setUsers(mappedUsers);
+      }
+    } catch (error) {
+      console.error(' Error cargando usuarios:', error);
+    }
+  };
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
@@ -683,8 +729,9 @@ export function UserManagementSection() {
           }}
           onSave={(userData) => {
             if (selectedUser) {
-              // Update existing user
+              // Update existing user - ya fue guardado en la BD vía SP_EDITAR_USUARIO en el modal
               setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...userData, updatedAt: new Date() } : u));
+              console.log('✅ Usuario actualizado localmente y en BD');
             } else {
               // Add new user
               const newUser: User = {
@@ -704,6 +751,8 @@ export function UserManagementSection() {
             }
             setShowUserModal(false);
             setSelectedUser(null);
+            // Recargar lista después de 500ms para asegurar BD actualizada
+            setTimeout(() => loadUsers(), 500);
           }}
         />
       )}
@@ -767,10 +816,53 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
     role: user?.role || 'receptionist',
     status: user?.status || 'active'
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (user) {
+        // Editar usuario existente usando SP_EDITAR_USUARIO
+        console.log('📝 Editando usuario:', user.id);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+        
+        const response = await fetch(`${apiUrl}/users/${user.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nombre_completo: formData.fullName,
+            correo: formData.email,
+            telefono: formData.phone
+          })
+        });
+
+        const result = await response.json();
+        console.log('✅ Resultado de edición:', result);
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.msg || result.message || 'Error al editar usuario');
+        }
+
+        alert('✅ Usuario actualizado exitosamente');
+        onSave(formData);
+      } else {
+        // Crear nuevo usuario
+        onSave(formData);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
+      console.error('❌ Error:', errorMsg);
+      setError(errorMsg);
+      alert(`Error: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -780,6 +872,12 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             {user ? 'Editar Usuario' : 'Nuevo Usuario'}
           </h3>
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -791,8 +889,10 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
                 required
                 value={formData.username}
                 onChange={(e) => setFormData({...formData, username: e.target.value})}
-                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                disabled={!!user}
+                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-500"
               />
+              {user && <p className="text-xs text-gray-500 mt-1">No se puede cambiar</p>}
             </div>
 
             <div>
@@ -819,6 +919,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
+              <p className="text-xs text-gray-500 mt-1">Se validará con SP_VALIDAR_CORREO_USUARIO</p>
             </div>
 
             <div>
@@ -833,49 +934,54 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rol
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({...formData, role: e.target.value as User['role']})}
-                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                <option value="receptionist">Recepcionista</option>
-                <option value="mechanic">Mecánico</option>
-                <option value="admin">Administrador</option>
-                <option value="client">Cliente</option>
-              </select>
-            </div>
+            {!user && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rol
+                  </label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({...formData, role: e.target.value as User['role']})}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="receptionist">Recepcionista</option>
+                    <option value="mechanic">Mecánico</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estado
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value as User['status']})}
-                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select>
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Estado
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({...formData, status: e.target.value as User['status']})}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inactivo</option>
+                  </select>
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                disabled={loading}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
-                {user ? 'Actualizar' : 'Crear'}
+                {loading ? '⏳ Guardando...' : (user ? 'Actualizar' : 'Crear')}
               </button>
             </div>
           </form>
