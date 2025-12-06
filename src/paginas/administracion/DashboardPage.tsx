@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   UsersIcon,
   TruckIcon,
@@ -11,6 +11,10 @@ import { Card } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { formatCurrency, getStatusText, getStatusColor } from '../../utilidades/globalMockDatabase';
+import { AppointmentCalendar } from '../../componentes/calendario/AppointmentCalendar';
+import { appointmentsService } from '../../servicios/apiService';
+import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
+import type { Appointment } from '../../tipos';
 
 
 interface StatCardProps {
@@ -41,11 +45,55 @@ function StatCard({ title, value, icon: Icon, color, subtitle }: StatCardProps) 
 export function DashboardPage() {
   const { dispatch } = useApp();
   const data = useInterconnectedData();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const { clientes: clientesAPI } = useClientesFromAPI();
 
   useEffect(() => {
     // Refrescar estadísticas del dashboard automáticamente
     dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
-  }, [dispatch, data.vehicles.length, data.clients.length, data.workOrders.length]); // Agregué dependencias para que se actualice cuando cambien los datos
+  }, [dispatch, data.vehicles.length, data.clients.length, data.workOrders.length]);
+
+  // Cargar citas para el calendario
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        const response = await appointmentsService.getAll();
+        if (response.success) {
+          const mapEstado = (estado: string) => {
+            switch (estado?.toLowerCase()) {
+              case 'pendiente': return 'pending';
+              case 'confirmada': return 'confirmed';
+              case 'cancelada': return 'cancelled';
+              case 'completada': return 'completed';
+              default: return estado;
+            }
+          };
+          const appointmentsData = response.data.map((spAppointment: any) => {
+            const clientIdStr = String(spAppointment.cliente_id).trim();
+            const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id).trim() === clientIdStr);
+            return {
+              id: spAppointment.cita_id,
+              date: new Date(spAppointment.fecha_inicio),
+              time: spAppointment.fecha_inicio ? new Date(spAppointment.fecha_inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '',
+              clientId: clientIdStr,
+              clientName: spAppointment.nombre_cliente || (cliente ? cliente.nombre_completo : `ID: ${clientIdStr}`),
+              vehicleId: String(spAppointment.vehiculo_id).trim(),
+              vehicleName: spAppointment.vehiculo_info || '',
+              serviceTypeId: spAppointment.tipo_servicio_id,
+              status: mapEstado(spAppointment.estado),
+              notes: (spAppointment.notas_cliente || '').replace(/^"|"$/g, ''),
+              createdAt: spAppointment.fecha_creacion ? new Date(spAppointment.fecha_creacion) : new Date(),
+              updatedAt: new Date(),
+            };
+          });
+          setAppointments(appointmentsData);
+        }
+      } catch (error) {
+        console.error('Error cargando citas para el calendario:', error);
+      }
+    };
+    loadAppointments();
+  }, [clientesAPI]);
 
   const stats = data.dashboardStats;
   
@@ -103,6 +151,15 @@ export function DashboardPage() {
             icon={ChartBarIcon}
             color="bg-blue-600"
           />
+        </div>
+      )}
+
+      {/* Calendario de Citas */}
+      {appointments.length > 0 && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="lg:col-span-1">
+            <AppointmentCalendar appointments={appointments} />
+          </div>
         </div>
       )}
 
