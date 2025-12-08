@@ -269,6 +269,54 @@ router.put('/:cotizacionId', async (req, res) => {
 	}
 });
 
+// Función para normalizar el formato de hora a HH:mm:ss
+function normalizeTimeFormat(timeStr) {
+	if (!timeStr) return null;
+	
+	// Convertir a string y trim
+	let time = String(timeStr).trim();
+	
+	console.log(`⏰ Normalizando hora: "${time}" (tipo: ${typeof timeStr})`);
+	
+	// Si ya está en formato HH:mm:ss, validar y devolver
+	if (/^\d{2}:\d{2}:\d{2}$/.test(time)) {
+		console.log(`✅ Hora ya en formato correcto: ${time}`);
+		return time;
+	}
+	
+	// Si es H:mm:ss (una sola cifra en horas), agregar cero a la izquierda
+	if (/^\d{1}:\d{2}:\d{2}$/.test(time)) {
+		const formatted = '0' + time;
+		console.log(`✅ Convertido de ${time} a ${formatted}`);
+		return formatted;
+	}
+	
+	// Si es HH:mm (sin segundos), agregar :00
+	if (/^\d{2}:\d{2}$/.test(time)) {
+		const formatted = time + ':00';
+		console.log(`✅ Convertido de ${time} a ${formatted}`);
+		return formatted;
+	}
+	
+	// Si es H:mm (una sola cifra), formatear correctamente
+	if (/^\d{1}:\d{2}$/.test(time)) {
+		const formatted = '0' + time + ':00';
+		console.log(`✅ Convertido de ${time} a ${formatted}`);
+		return formatted;
+	}
+	
+	// Si es solo una hora (número), convertir a HH:00:00
+	if (/^\d{1,2}$/.test(time)) {
+		const formatted = String(time).padStart(2, '0') + ':00:00';
+		console.log(`✅ Convertido de ${time} a ${formatted}`);
+		return formatted;
+	}
+	
+	// Si el string contiene caracteres inválidos, loguear y devolver null
+	console.warn(`⚠️ Formato de hora inválido: ${time}`);
+	return null;
+}
+
 // POST /quotations/:cotizacionId/generate-workorder - Generar OT desde cotización aprobada
 router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 	const { cotizacionId } = req.params;
@@ -284,8 +332,11 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 	try {
 		const pool = await getConnection();
 
+		// Normalizar el formato de hora
+		const horaFormateada = normalizeTimeFormat(hora_estimada);
+
 		console.log(`📋 Generando OT desde cotización ${cotizacionId}`);
-		console.log('Parámetros recibidos:', {
+		console.log('Parámetros originales:', {
 			cotizacion_id: parseInt(cotizacionId),
 			asesor_id,
 			mecanico_encargado_id,
@@ -294,6 +345,24 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 			hora_estimada,
 			generado_por
 		});
+		console.log('Parámetros procesados:', {
+			cotizacion_id: parseInt(cotizacionId),
+			asesor_id,
+			mecanico_encargado_id,
+			odometro_ingreso,
+			fecha_estimada,
+			hora_estimada: horaFormateada,
+			generado_por
+		});
+
+		// Validar que la hora esté en formato válido
+		if (hora_estimada && !horaFormateada) {
+			return res.status(400).json({
+				success: false,
+				message: 'Formato de hora inválido. Use HH:mm:ss o HH:mm o H:mm',
+				receivedValue: hora_estimada
+			});
+		}
 
 		const result = await pool.request()
 			.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
@@ -301,7 +370,7 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 			.input('mecanico_encargado_id', sql.Int, mecanico_encargado_id || null)
 			.input('odometro_ingreso', sql.Decimal(10, 1), odometro_ingreso || null)
 			.input('fecha_estimada', sql.Date, fecha_estimada || null)
-			.input('hora_estimada', sql.Time, hora_estimada || null)
+			.input('hora_estimada', sql.VarChar(8), horaFormateada || null)
 			.input('generado_por', sql.Int, generado_por || null)
 			.execute('SP_GENERAR_OT_DESDE_COTIZACION');
 
