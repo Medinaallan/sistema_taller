@@ -15,44 +15,44 @@ function normalizeTimeFormat(timeStr) {
   // Convertir a string y trim
   let time = String(timeStr).trim();
   
-  console.log(`⏰ Normalizando hora: "${time}" (tipo: ${typeof timeStr})`);
+  console.log(` Normalizando hora: "${time}" (tipo: ${typeof timeStr})`);
   
   // Si ya está en formato HH:mm:ss, validar y devolver
   if (/^\d{2}:\d{2}:\d{2}$/.test(time)) {
-    console.log(`✅ Hora ya en formato correcto: ${time}`);
+    console.log(` Hora ya en formato correcto: ${time}`);
     return time;
   }
   
   // Si es H:mm:ss (una sola cifra en horas), agregar cero a la izquierda
   if (/^\d{1}:\d{2}:\d{2}$/.test(time)) {
     const formatted = '0' + time;
-    console.log(`✅ Convertido de ${time} a ${formatted}`);
+    console.log(` Convertido de ${time} a ${formatted}`);
     return formatted;
   }
   
   // Si es HH:mm (sin segundos), agregar :00
   if (/^\d{2}:\d{2}$/.test(time)) {
     const formatted = time + ':00';
-    console.log(`✅ Convertido de ${time} a ${formatted}`);
+    console.log(` Convertido de ${time} a ${formatted}`);
     return formatted;
   }
   
   // Si es H:mm (una sola cifra), formatear correctamente
   if (/^\d{1}:\d{2}$/.test(time)) {
     const formatted = '0' + time + ':00';
-    console.log(`✅ Convertido de ${time} a ${formatted}`);
+    console.log(` Convertido de ${time} a ${formatted}`);
     return formatted;
   }
   
   // Si es solo una hora (número), convertir a HH:00:00
   if (/^\d{1,2}$/.test(time)) {
     const formatted = String(time).padStart(2, '0') + ':00:00';
-    console.log(`✅ Convertido de ${time} a ${formatted}`);
+    console.log(` Convertido de ${time} a ${formatted}`);
     return formatted;
   }
   
   // Si el string contiene caracteres inválidos, loguear y devolver null
-  console.warn(`⚠️ Formato de hora inválido: ${time}`);
+  console.warn(` Formato de hora inválido: ${time}`);
   return null;
 }
 
@@ -61,10 +61,10 @@ router.get('/', async (req, res) => {
   const { ot_id, cliente_id, placa, estado, numero_ot } = req.query;
 
   try {
-    console.log('📥 Llamada a GET /workorders con parámetros:', { ot_id, cliente_id, placa, estado, numero_ot });
+    console.log(' Llamada a GET /workorders con parámetros:', { ot_id, cliente_id, placa, estado, numero_ot });
     
     const pool = await getConnection();
-    console.log('✅ Pool de conexión obtenido');
+    console.log(' Pool de conexión obtenido');
     
     const result = await pool.request()
       .input('ot_id', sql.Int, ot_id ? parseInt(ot_id) : null)
@@ -84,8 +84,8 @@ router.get('/', async (req, res) => {
       count: result.recordset.length
     });
   } catch (error) {
-    console.error('❌ Error al obtener órdenes de trabajo:', error);
-    console.error('📍 Detalles del error:', error.originalError || error);
+    console.error(' Error al obtener órdenes de trabajo:', error);
+    console.error(' Detalles del error:', error.originalError || error);
     res.status(500).json({
       success: false,
       message: 'Error al obtener órdenes de trabajo',
@@ -95,8 +95,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST - Registrar una nueva orden de trabajo manualmente (SP_REGISTRAR_OT_MANUAL)
-// ⚠️ DEBE IR ANTES DE router.post('/:id') para que sea matching más específico
+// POST - Registrar una nueva orden de trabajo manualmente
 router.post('/manual', async (req, res) => {
   const {
     cliente_id,
@@ -125,7 +124,7 @@ router.post('/manual', async (req, res) => {
     // Normalizar el formato de hora
     const horaFormateada = normalizeTimeFormat(hora_estimada);
 
-    console.log(`📋 Registrando OT manual`);
+    console.log(` Registrando OT manual`);
     console.log('Parámetros originales:', {
       cliente_id,
       vehiculo_id,
@@ -173,7 +172,7 @@ router.post('/manual', async (req, res) => {
       .input('registrado_por', sql.Int, registrado_por ? parseInt(registrado_por) : null)
       .execute('SP_REGISTRAR_OT_MANUAL');
 
-    console.log('✅ SP_REGISTRAR_OT_MANUAL ejecutado exitosamente');
+    console.log(' SP_REGISTRAR_OT_MANUAL ejecutado exitosamente');
     console.log('Recordset:', result.recordset);
 
     const output = result.recordset?.[0] || {};
@@ -187,7 +186,7 @@ router.post('/manual', async (req, res) => {
       data: output
     });
   } catch (error) {
-    console.error('❌ Error al registrar OT manual:', error);
+    console.error(' Error al registrar OT manual:', error);
     console.error('Detalles del error:', error.originalError || error);
     res.status(500).json({
       success: false,
@@ -198,8 +197,7 @@ router.post('/manual', async (req, res) => {
   }
 });
 
-// POST - Crear orden de trabajo desde cotización aprobada (SP_GENERAR_OT_DESDE_COTIZACION)
-// ⚠️ DEBE IR ANTES DE router.post('/:id') para que sea matching más específico
+// POST - Crear orden de trabajo desde cotización aprobada
 router.post('/from-quotation', async (req, res) => {
   const {
     cotizacion_id,
@@ -225,7 +223,7 @@ router.post('/from-quotation', async (req, res) => {
     // Normalizar el formato de hora
     const horaFormateada = normalizeTimeFormat(hora_estimada);
 
-    console.log(`📋 Generando OT desde cotización ${cotizacion_id}`);
+    console.log(` Generando OT desde cotización ${cotizacion_id}`);
     console.log('Parámetros originales:', {
       cotizacion_id,
       asesor_id,
@@ -264,7 +262,7 @@ router.post('/from-quotation', async (req, res) => {
       .input('generado_por', sql.Int, generado_por ? parseInt(generado_por) : null)
       .execute('SP_GENERAR_OT_DESDE_COTIZACION');
 
-    console.log('✅ SP_GENERAR_OT_DESDE_COTIZACION ejecutado exitosamente');
+    console.log(' SP_GENERAR_OT_DESDE_COTIZACION ejecutado exitosamente');
     console.log('Recordset:', result.recordset);
 
     const output = result.recordset?.[0] || {};
@@ -278,7 +276,7 @@ router.post('/from-quotation', async (req, res) => {
       data: output
     });
   } catch (error) {
-    console.error('❌ Error al generar OT desde cotización:', error);
+    console.error(' Error al generar OT desde cotización:', error);
     console.error('Detalles del error:', error.originalError || error);
     res.status(500).json({
       success: false,
@@ -290,7 +288,6 @@ router.post('/from-quotation', async (req, res) => {
 });
 
 // GET - Obtener orden de trabajo por ID
-// ⚠️ DEBE IR DESPUÉS DE rutas más específicas como /manual y /from-quotation
 router.get('/:id', (req, res) => {
   try {
     const { id } = req.params;
