@@ -96,10 +96,10 @@ class CSVService {
     
     try {
       await csvWriter.writeRecords(data);
-      console.log(`✅ Escritos ${data.length} registros en ${filename}`);
+      console.log(` Escritos ${data.length} registros en ${filename}`);
       return true;
     } catch (error) {
-      console.error(`❌ Error escribiendo ${filename}:`, error);
+      console.error(` Error escribiendo ${filename}:`, error);
       throw error;
     }
   }
@@ -126,12 +126,12 @@ class CSVService {
     data.push(newRecord);
     await this.writeCSV(module, filename, data, headers);
     
-    console.log(`✅ Registro creado en ${filename}: ${newRecord.id}`);
+    console.log(` Registro creado en ${filename}: ${newRecord.id}`);
     return newRecord;
   }
 
   /**
-   * 📝 ACTUALIZAR REGISTRO - Actualizar un registro existente
+   *  ACTUALIZAR REGISTRO - Actualizar un registro existente
    * @param {string} module - Módulo
    * @param {string} filename - Archivo CSV
    * @param {string} id - ID del registro
@@ -150,12 +150,12 @@ class CSVService {
     data[index] = { ...data[index], ...updates, updated_at: new Date().toISOString() };
     await this.writeCSV(module, filename, data, headers);
     
-    console.log(`✅ Registro actualizado en ${filename}: ${id}`);
+    console.log(` Registro actualizado en ${filename}: ${id}`);
     return data[index];
   }
 
   /**
-   * 🗑️ ELIMINAR REGISTRO - Eliminar un registro
+   *  ELIMINAR REGISTRO - Eliminar un registro
    * @param {string} module - Módulo
    * @param {string} filename - Archivo CSV
    * @param {string} id - ID del registro
@@ -171,12 +171,12 @@ class CSVService {
     
     await this.writeCSV(module, filename, filteredData, headers);
     
-    console.log(`✅ Registro eliminado de ${filename}: ${id}`);
+    console.log(` Registro eliminado de ${filename}: ${id}`);
     return true;
   }
 
   /**
-   * 🔍 BUSCAR REGISTROS - Buscar registros con filtros
+   *  BUSCAR REGISTROS - Buscar registros con filtros
    * @param {string} module - Módulo
    * @param {string} filename - Archivo CSV
    * @param {Object} filters - Filtros de búsqueda
@@ -197,7 +197,7 @@ class CSVService {
   }
 
   /**
-   * 🆔 GENERAR ID ÚNICO
+   *  GENERAR ID ÚNICO
    * @param {string} prefix - Prefijo del ID
    */
   generateId(prefix = 'record') {

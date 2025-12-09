@@ -17,7 +17,7 @@ class UsuariosService {
    */
   async obtenerUsuarios(): Promise<UsuarioResponse> {
     try {
-      console.log('📋 Obteniendo lista de usuarios...');
+      console.log(' Obteniendo lista de usuarios...');
       
       const response = await fetch(`${API_BASE}/users/list`, {
         method: 'GET',
@@ -27,10 +27,10 @@ class UsuariosService {
       });
 
       const data = await response.json();
-      console.log('📝 Respuesta del servidor:', data);
+      console.log('Respuesta del servidor:', data);
 
       if (data.success) {
-        console.log(`✅ ${data.count} usuarios obtenidos`);
+        console.log(` ${data.count} usuarios obtenidos`);
         return {
           success: true,
           data: data.data,

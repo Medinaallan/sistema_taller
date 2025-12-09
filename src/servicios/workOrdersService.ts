@@ -76,13 +76,13 @@ class WorkOrdersService {
       
       // Mapear datos del SP al modelo WorkOrderData
       const rawOrders = Array.isArray(result.data) ? result.data : [];
-      const orders = rawOrders.map(order => this.mapSpDataToWorkOrder(order));
+      const orders = rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order));
       
-      console.log('🎯 Órdenes procesadas:', orders.length, 'elementos');
-      console.log('✅ Órdenes mapeadas:', orders);
+      console.log('Órdenes procesadas:', orders.length, 'elementos');
+      console.log('Órdenes mapeadas:', orders);
       return orders;
     } catch (error) {
-      console.error('❌ Error fetching work orders:', error);
+      console.error('Error fetching work orders:', error);
       throw error;
     }
   }
