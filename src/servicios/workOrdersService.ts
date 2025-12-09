@@ -230,6 +230,45 @@ class WorkOrdersService {
     }
   }
 
+  // Registrar una nueva orden de trabajo manualmente (SP_REGISTRAR_OT_MANUAL)
+  async registerWorkOrderManually(data: {
+    cliente_id: number;
+    vehiculo_id: number;
+    cita_id?: number | null;
+    asesor_id?: number | null;
+    mecanico_encargado_id?: number | null;
+    odometro_ingreso?: number | null;
+    fecha_estimada?: string | null;
+    hora_estimada?: string | null;
+    notas_recepcion?: string | null;
+    registrado_por?: number | null;
+  }): Promise<any> {
+    try {
+      console.log('📋 Registrando OT manual desde cliente:', data);
+      
+      const response = await fetch(`${API_BASE_URL}/workorders/manual`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al registrar orden de trabajo');
+      }
+
+      const result = await response.json();
+      console.log('✅ Orden registrada exitosamente:', result);
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Error registrando orden:', error);
+      throw error;
+    }
+  }
+
   // Obtener estados disponibles
   getAvailableStates(): Array<{ value: string; label: string }> {
     return [

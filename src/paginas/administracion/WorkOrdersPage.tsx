@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, DocumentPlusIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../componentes/comunes/UI';
+import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderModal';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
@@ -20,6 +21,7 @@ const WorkOrdersPage = () => {
   const [adminPassword, setAdminPassword] = useState('');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [workOrdersWithNames, setWorkOrdersWithNames] = useState<Map<string, { clientName: string; vehicleName: string }>>(new Map());
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
@@ -132,6 +134,13 @@ const WorkOrdersPage = () => {
     }
   };
 
+  const handleCreateWorkOrderSuccess = (newWorkOrder: WorkOrderData) => {
+    // Agregar la nueva orden a la lista
+    setWorkOrders(prev => [newWorkOrder, ...prev]);
+    // Cerrar modal
+    setIsCreateModalOpen(false);
+  };
+
   const handleCompleteWorkOrder = async (orderId: string) => {
     if (confirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
@@ -211,9 +220,12 @@ const WorkOrdersPage = () => {
             variant="secondary"
             className="flex items-center space-x-2"
           >
-            <span> Recargar</span>
+            <span>Recargar</span>
           </Button>
-          <Button onClick={() => {/* TODO: Implementar creación */}} className="flex items-center space-x-2">
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)} 
+            className="flex items-center space-x-2"
+          >
             <PlusIcon className="h-4 w-4" />
             <span>Nueva Orden</span>
           </Button>
@@ -551,6 +563,13 @@ const WorkOrdersPage = () => {
           />
         )}
       </Modal>
+
+      {/* Modal de crear nueva orden de trabajo */}
+      <CreateWorkOrderModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateWorkOrderSuccess}
+      />
     </div>
   );
 };

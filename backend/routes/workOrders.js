@@ -95,65 +95,111 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET - Obtener orden de trabajo por ID
-router.get('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    res.status(501).json({ 
-      success: false, 
-      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
-      note: 'Por favor, crear SP_OBTENER_ORDEN_TRABAJO_POR_ID',
-      orderId: id
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al obtener orden de trabajo', error: error.message });
-  }
-});
+// POST - Registrar una nueva orden de trabajo manualmente (SP_REGISTRAR_OT_MANUAL)
+// ⚠️ DEBE IR ANTES DE router.post('/:id') para que sea matching más específico
+router.post('/manual', async (req, res) => {
+  const {
+    cliente_id,
+    vehiculo_id,
+    cita_id = null,
+    asesor_id = null,
+    mecanico_encargado_id = null,
+    odometro_ingreso = null,
+    fecha_estimada = null,
+    hora_estimada = null,
+    notas_recepcion = null,
+    registrado_por = null
+  } = req.body;
 
-// POST - Crear nueva orden de trabajo
-router.post('/', (req, res) => {
   try {
-    res.status(501).json({ 
-      success: false, 
-      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
-      note: 'Por favor, crear SP_CREAR_ORDEN_TRABAJO'
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al crear orden de trabajo', error: error.message });
-  }
-});
+    // Validar parámetros requeridos
+    if (!cliente_id || !vehiculo_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Parámetros requeridos faltantes: cliente_id, vehiculo_id'
+      });
+    }
 
-// PUT - Actualizar orden de trabajo
-router.put('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    res.status(501).json({ 
-      success: false, 
-      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
-      note: 'Por favor, crear SP_ACTUALIZAR_ORDEN_TRABAJO',
-      orderId: id
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al actualizar orden de trabajo', error: error.message });
-  }
-});
+    const pool = await getConnection();
 
-// DELETE - Eliminar orden de trabajo
-router.delete('/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    res.status(501).json({ 
-      success: false, 
-      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
-      note: 'Por favor, crear SP_ELIMINAR_ORDEN_TRABAJO',
-      orderId: id
+    // Normalizar el formato de hora
+    const horaFormateada = normalizeTimeFormat(hora_estimada);
+
+    console.log(`📋 Registrando OT manual`);
+    console.log('Parámetros originales:', {
+      cliente_id,
+      vehiculo_id,
+      cita_id,
+      asesor_id,
+      mecanico_encargado_id,
+      odometro_ingreso,
+      fecha_estimada,
+      hora_estimada,
+      notas_recepcion,
+      registrado_por
+    });
+    console.log('Parámetros procesados:', {
+      cliente_id: parseInt(cliente_id),
+      vehiculo_id: parseInt(vehiculo_id),
+      cita_id,
+      asesor_id,
+      mecanico_encargado_id,
+      odometro_ingreso,
+      fecha_estimada,
+      hora_estimada: horaFormateada,
+      notas_recepcion,
+      registrado_por
+    });
+
+    // Validar que la hora esté en formato válido
+    if (hora_estimada && !horaFormateada) {
+      return res.status(400).json({
+        success: false,
+        message: 'Formato de hora inválido. Use HH:mm:ss o HH:mm o H:mm',
+        receivedValue: hora_estimada
+      });
+    }
+
+    const result = await pool.request()
+      .input('cliente_id', sql.Int, parseInt(cliente_id))
+      .input('vehiculo_id', sql.Int, parseInt(vehiculo_id))
+      .input('cita_id', sql.Int, cita_id ? parseInt(cita_id) : null)
+      .input('asesor_id', sql.Int, asesor_id ? parseInt(asesor_id) : null)
+      .input('mecanico_encargado_id', sql.Int, mecanico_encargado_id ? parseInt(mecanico_encargado_id) : null)
+      .input('odometro_ingreso', sql.Decimal(10, 1), odometro_ingreso ? parseFloat(odometro_ingreso) : null)
+      .input('fecha_estimada', sql.Date, fecha_estimada || null)
+      .input('hora_estimada', sql.VarChar(8), horaFormateada || null)
+      .input('notas_recepcion', sql.VarChar(500), notas_recepcion || null)
+      .input('registrado_por', sql.Int, registrado_por ? parseInt(registrado_por) : null)
+      .execute('SP_REGISTRAR_OT_MANUAL');
+
+    console.log('✅ SP_REGISTRAR_OT_MANUAL ejecutado exitosamente');
+    console.log('Recordset:', result.recordset);
+
+    const output = result.recordset?.[0] || {};
+    
+    res.status(200).json({
+      success: output.allow || false,
+      msg: output.msg || 'Orden de trabajo registrada',
+      allow: output.allow || false,
+      ot_id: output.ot_id,
+      numero_ot: output.numero_ot,
+      data: output
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al eliminar orden de trabajo', error: error.message });
+    console.error('❌ Error al registrar OT manual:', error);
+    console.error('Detalles del error:', error.originalError || error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al registrar orden de trabajo',
+      error: error.message,
+      details: error.originalError?.message || null
+    });
   }
 });
 
 // POST - Crear orden de trabajo desde cotización aprobada (SP_GENERAR_OT_DESDE_COTIZACION)
+// ⚠️ DEBE IR ANTES DE router.post('/:id') para que sea matching más específico
 router.post('/from-quotation', async (req, res) => {
   const {
     cotizacion_id,
@@ -240,6 +286,65 @@ router.post('/from-quotation', async (req, res) => {
       error: error.message,
       details: error.originalError?.message || null
     });
+  }
+});
+
+// GET - Obtener orden de trabajo por ID
+// ⚠️ DEBE IR DESPUÉS DE rutas más específicas como /manual y /from-quotation
+router.get('/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    res.status(501).json({ 
+      success: false, 
+      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
+      note: 'Por favor, crear SP_OBTENER_ORDEN_TRABAJO_POR_ID',
+      orderId: id
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al obtener orden de trabajo', error: error.message });
+  }
+});
+
+// POST - Crear nueva orden de trabajo
+router.post('/', (req, res) => {
+  try {
+    res.status(501).json({ 
+      success: false, 
+      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
+      note: 'Por favor, crear SP_CREAR_ORDEN_TRABAJO'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al crear orden de trabajo', error: error.message });
+  }
+});
+
+// PUT - Actualizar orden de trabajo
+router.put('/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    res.status(501).json({ 
+      success: false, 
+      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
+      note: 'Por favor, crear SP_ACTUALIZAR_ORDEN_TRABAJO',
+      orderId: id
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al actualizar orden de trabajo', error: error.message });
+  }
+});
+
+// DELETE - Eliminar orden de trabajo
+router.delete('/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    res.status(501).json({ 
+      success: false, 
+      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
+      note: 'Por favor, crear SP_ELIMINAR_ORDEN_TRABAJO',
+      orderId: id
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al eliminar orden de trabajo', error: error.message });
   }
 });
 
