@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import NewAppointmentModal from '../../componentes/appointments/NewAppointmentModal';
 import EditAppointmentModal from '../../componentes/appointments/EditAppointmentModal';
+import AppointmentDetailsModal from '../../componentes/appointments/AppointmentDetailsModal';
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
 import AppointmentActions from '../../componentes/appointments/AppointmentActions';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
@@ -18,11 +19,12 @@ const AppointmentsPage = () => {
   const [data, setData] = useState<AppointmentWithNames[]>([]);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
   const [isEditAppointmentModalOpen, setIsEditAppointmentModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCreateQuotationModalOpen, setIsCreateQuotationModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { clientes: clientesAPI, loading: loadingClientes, error: errorClientes, recargarClientes } = useClientesFromAPI();
+  const { clientes: clientesAPI } = useClientesFromAPI();
   const [servicios, setServicios] = useState<any[]>([]);
   const [vehiculos, setVehiculos] = useState<any[]>([]);
 
@@ -107,6 +109,7 @@ const AppointmentsPage = () => {
           switch (estado?.toLowerCase()) {
             case 'pendiente': return 'pending';
             case 'confirmada': return 'confirmed';
+            case 'aprobada': return 'approved';
             case 'cancelada': return 'cancelled';
             case 'completada': return 'completed';
             default: return estado;
@@ -152,138 +155,18 @@ const AppointmentsPage = () => {
     setIsEditAppointmentModalOpen(true);
   };
 
-  const handleCreateQuotation = (item: Appointment) => {
+  const handleViewDetails = (item: AppointmentWithNames) => {
     setSelectedAppointment(item);
-    setIsCreateQuotationModalOpen(true);
+    setIsDetailsModalOpen(true);
   };
 
   const handleQuotationSuccess = async () => {
-    // Marcar la cita como completada después de crear cotización
-    if (selectedAppointment) {
-      try {
-        await appointmentsService.update(selectedAppointment.id, {
-          clienteId: selectedAppointment.clientId,
-          vehiculoId: selectedAppointment.vehicleId,
-          fecha: selectedAppointment.date.toISOString().split('T')[0],
-          hora: selectedAppointment.time,
-          servicio: selectedAppointment.serviceTypeId,
-          estado: 'completed',
-          notas: selectedAppointment.notes || ''
-        });
-      } catch (error) {
-        console.error('Error actualizando estado de cita:', error);
-      }
-    }
+    // NO cambiar el estado de la cita al crear la cotización
+    // La cita seguirá en "pending" hasta que la cotización sea aprobada o rechazada
     
-    // Recargar citas después de crear cotización
-    loadAppointments();
-  };
-
-  const handleApproveAppointment = async (appointment: Appointment) => {
-    if (!confirm('¿Está seguro de aprobar esta cita?')) {
-      return;
-    }
-    
-    try {
-      const response = await appointmentsService.update(appointment.id, {
-        clienteId: appointment.clientId,
-        vehiculoId: appointment.vehicleId,
-        fecha: appointment.date.toISOString().split('T')[0],
-        hora: appointment.time,
-        servicio: appointment.serviceTypeId,
-        estado: 'confirmed',
-        notas: appointment.notes || ''
-      });
-      
-      if (response.success) {
-        // Obtener información para el log
-        const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id) === String(appointment.clientId));
-        const vehiculo = vehiculos.find(v => v.id === appointment.vehicleId);
-        const clientName = cliente ? cliente.nombre_completo : `Cliente ID: ${appointment.clientId}`;
-        const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${appointment.vehicleId}`;
-        
-        // Generar log de negocio con datos reales
-        await businessLogs.logCustomAction(
-          'UPDATE',
-          'appointment',
-          appointment.id,
-          `Cita aprobada: ${clientName} - ${appointment.date.toLocaleDateString()} ${appointment.time} - ${vehicleInfo}`,
-          {
-            clientId: appointment.clientId,
-            clientName: clientName,
-            vehicleId: appointment.vehicleId,
-            vehicleInfo: vehicleInfo,
-            date: appointment.date.toISOString().split('T')[0],
-            time: appointment.time,
-            oldStatus: appointment.status,
-            newStatus: 'confirmed'
-          }
-        );
-        
-        alert('Cita aprobada exitosamente');
-        loadAppointments(); // Recargar datos
-      } else {
-        alert('Error aprobando cita: ' + response.message);
-      }
-    } catch (error) {
-      console.error('Error aprobando cita:', error);
-      alert('Error aprobando cita');
-    }
-  };
-
-  const handleRejectAppointment = async (appointment: Appointment) => {
-    const reason = prompt('¿Cuál es la razón del rechazo? (opcional)');
-    if (!confirm('¿Está seguro de rechazar esta cita?')) {
-      return;
-    }
-    
-    try {
-      const response = await appointmentsService.update(appointment.id, {
-        clienteId: appointment.clientId,
-        vehiculoId: appointment.vehicleId,
-        fecha: appointment.date.toISOString().split('T')[0],
-        hora: appointment.time,
-        servicio: appointment.serviceTypeId,
-        estado: 'cancelled',
-        notas: appointment.notes || ''
-      });
-      
-      if (response.success) {
-        // Obtener información para el log
-        const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id) === String(appointment.clientId));
-        const vehiculo = vehiculos.find(v => v.id === appointment.vehicleId);
-        const clientName = cliente ? cliente.nombre_completo : `Cliente ID: ${appointment.clientId}`;
-        const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${appointment.vehicleId}`;
-        
-        // Generar log de negocio con datos reales
-        await businessLogs.logCustomAction(
-          'UPDATE',
-          'appointment',
-          appointment.id,
-          `Cita cancelada: ${clientName} - ${appointment.date.toLocaleDateString()} ${appointment.time} - ${vehicleInfo}${reason ? ` - Razón: ${reason}` : ''}`,
-          {
-            clientId: appointment.clientId,
-            clientName: clientName,
-            vehicleId: appointment.vehicleId,
-            vehicleInfo: vehicleInfo,
-            date: appointment.date.toISOString().split('T')[0],
-            time: appointment.time,
-            oldStatus: appointment.status,
-            newStatus: 'cancelled',
-            reason: reason || 'No especificada'
-          }
-        );
-        
-        alert('Cita rechazada exitosamente');
-        loadAppointments(); // Recargar datos
-      } else {
-        alert('Error rechazando cita: ' + response.message);
-      }
-    } catch (error) {
-      console.error('Error rechazando cita:', error);
-      alert('Error rechazando cita');
-    }
-  };
+    // Solo recargar citas después de crear cotización
+    await loadAppointments();
+  };;
   
   const handleDelete = async (item: Appointment) => {
     if (window.confirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
@@ -294,7 +177,7 @@ const AppointmentsPage = () => {
         const clientName = cliente ? cliente.nombre_completo : `Cliente ID: ${item.clientId}`;
         const vehicleInfo = vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa})` : `Vehículo ID: ${item.vehicleId}`;
         
-        const response = await appointmentsService.delete(item.id);
+        const response = await appointmentsService.delete(typeof item.id === 'string' ? parseInt(item.id, 10) : item.id);
         if (response.success) {
           // Generar log de negocio con datos reales
           await businessLogs.logCustomAction(
@@ -409,14 +292,15 @@ const AppointmentsPage = () => {
                         <span className={`px-2 py-1 text-xs rounded-full ${
                           appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           appointment.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                          appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
                           appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          appointment.status === 'approved' || appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {appointment.status === 'pending' ? 'Pendiente' :
                            appointment.status === 'confirmed' ? 'Confirmada' :
-                           appointment.status === 'completed' ? 'Completada' :
                            appointment.status === 'cancelled' ? 'Cancelada' :
+                           appointment.status === 'approved' ? 'Aprobada' :
+                           appointment.status === 'completed' ? 'Completada' :
                            appointment.status}
                         </span>
                       </td>
@@ -426,23 +310,38 @@ const AppointmentsPage = () => {
                           <AppointmentActions
                             appointment={appointment}
                             clientName={appointment.clientName || ''}
-                            serviceName={appointment.serviceName || ''}
+                            serviceName={getServiceName(appointment.serviceTypeId)}
                             onUpdate={loadAppointments}
                           />
-                          <Button 
-                            size="sm" 
-                            variant="secondary"
-                            onClick={() => handleEdit(appointment)}
-                          >
-                            Editar
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="danger"
-                            onClick={() => handleDelete(appointment)}
-                          >
-                            Eliminar
-                          </Button>
+                          
+                          {/* Mostrar Editar/Eliminar solo si la cita está en estado editable */}
+                          {appointment.status !== 'approved' && appointment.status !== 'completed' && appointment.status !== 'cancelled' ? (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="secondary"
+                                onClick={() => handleEdit(appointment)}
+                              >
+                                Editar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="danger"
+                                onClick={() => handleDelete(appointment)}
+                              >
+                                Eliminar
+                              </Button>
+                            </>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="secondary"
+                              onClick={() => handleViewDetails(appointment)}
+                              title="Ver detalles de la cita"
+                            >
+                              Ver Detalles
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -465,6 +364,15 @@ const AppointmentsPage = () => {
         onClose={handleCloseEditModal}
         onSubmit={handleEditAppointment}
         appointment={selectedAppointment}
+      />
+
+      <AppointmentDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        appointment={selectedAppointment}
+        clientName={selectedAppointment ? (data.find(a => a.id === selectedAppointment.id)?.clientName || 'Cargando...') : 'Cargando...'}
+        vehicleName={selectedAppointment ? (data.find(a => a.id === selectedAppointment.id)?.vehicleName || 'Cargando...') : 'Cargando...'}
+        serviceName={selectedAppointment ? getServiceName(selectedAppointment.serviceTypeId) : 'Cargando...'}
       />
 
       <CreateQuotationModal

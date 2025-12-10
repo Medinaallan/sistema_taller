@@ -169,7 +169,7 @@ export interface Appointment {
   serviceTypeId: string;
   date: Date;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'confirmed' | 'approved' | 'cancelled' | 'completed';
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

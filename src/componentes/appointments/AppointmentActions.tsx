@@ -83,31 +83,11 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
   };
 
   const handleQuotationSuccess = async () => {
-    // Después de crear la cotización, marcar la cita como completada
-    setIsProcessing(true);
-    try {
-      const usuarioId = Number(localStorage.getItem('usuario_id'));
-      const payload = {
-        nuevo_estado: 'completed',
-        comentario: 'Cotización creada y cita completada',
-        registrado_por: usuarioId
-      };
-      const result = await appointmentsService.changeStatus(Number(appointment.id), payload);
-      if (result.success) {
-        console.log('Cita marcada como completada');
-        alert('Cotización creada exitosamente y cita marcada como completada');
-        onUpdate();
-      } else {
-        console.error('Error al actualizar cita:', result.message);
-        alert('Cotización creada pero error al actualizar la cita');
-      }
-    } catch (error) {
-      console.error('Error al actualizar cita:', error);
-      alert('Cotización creada pero error al actualizar la cita');
-    } finally {
-      setIsProcessing(false);
-      setIsQuotationModalOpen(false);
-    }
+    // NO cambiar el estado de la cita al crear la cotización
+    // La cita seguirá en su estado actual hasta que la cotización sea aprobada o rechazada
+    alert('Cotización creada exitosamente');
+    setIsQuotationModalOpen(false);
+    onUpdate();
   };
 
   const getActionButtons = () => {

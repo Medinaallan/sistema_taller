@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, Card } from '../comunes/UI';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
+import { appointmentsService } from '../../servicios/apiService';
 
 interface ApproveQuotationModalProps {
   isOpen: boolean;
@@ -113,6 +114,38 @@ export default function ApproveQuotationModal({
       );
 
       console.log('✅ Resultado de aprobación:', result);
+
+      // Cambiar estado de la cita a "aprobada" después de aprobar la cotización
+      if (quotation.cita_id) {
+        try {
+          const cita_id = quotation.cita_id;
+          console.log(`📋 Información para cambiar estado:`, {
+            cita_id,
+            nuevo_estado: 'aprobada',
+            comentario: 'Cotización aprobada',
+            registrado_por: usuario_id ? parseInt(usuario_id) : 0
+          });
+          
+          const statusResponse = await appointmentsService.changeStatus(cita_id, {
+            nuevo_estado: 'aprobada',
+            comentario: 'Cotización aprobada',
+            registrado_por: usuario_id ? parseInt(usuario_id) : 0
+          });
+          
+          console.log('✅ Respuesta del cambio de estado:', statusResponse);
+          console.log('✅ Estado de cita actualizado a "aprobada"');
+        } catch (error) {
+          console.error('⚠️ Error al cambiar estado de cita:', error);
+          console.error('⚠️ Detalles del error:', {
+            message: error instanceof Error ? error.message : error,
+            stack: error instanceof Error ? error.stack : 'No stack available'
+          });
+          // No detener el flujo si falla el cambio de estado
+        }
+      } else {
+        console.warn('⚠️ No hay cita_id en la cotización:', quotation);
+      }
+      
       alert(`✅ ${result.msg}`);
       
       onSuccess({

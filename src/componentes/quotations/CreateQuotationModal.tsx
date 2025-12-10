@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { Modal, Button, TextArea, Select, Input } from '../comunes/UI';
 import quotationsService from '../../servicios/quotationsService';
-import { servicesService } from '../../servicios/apiService';
+import { servicesService, appointmentsService } from '../../servicios/apiService';
 import { getDisplayNames } from '../../utilidades/dataMappers';
 import type { Appointment } from '../../tipos';
 
@@ -69,10 +69,15 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       setLoadingServices(true);
       const response = await servicesService.getAll();
       if (response.success && response.data) {
-        setServices(response.data);
+        const validServices = Array.isArray(response.data) ? response.data : [];
+        setServices(validServices);
+      } else {
+        console.warn('No se pudieron cargar los servicios:', response);
+        setServices([]);
       }
     } catch (error) {
       console.error('Error cargando servicios:', error);
+      setServices([]);
     } finally {
       setLoadingServices(false);
     }
@@ -153,7 +158,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       alert('El precio unitario debe ser mayor a 0');
       return;
     }
-    if (itemForm.tipo_item === 'Servicio' && !itemForm.tipo_servicio_id) {
+    if (itemForm.tipo_item === 'Servicio' && (!itemForm.tipo_servicio_id || itemForm.tipo_servicio_id.trim() === '')) {
       alert('Debe seleccionar un tipo de servicio');
       return;
     }
@@ -233,16 +238,49 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
   };
 
   // Finalizar cotización
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (items.length === 0) {
       alert('Debe agregar al menos un item a la cotización');
       return;
     }
 
-    alert('Cotización creada exitosamente');
-    onSuccess();
-    resetModal();
-    onClose();
+    try {
+      setLoading(true);
+      
+      console.log(`🎯 Finalizando cotización #${cotizacionId}`);
+      
+      // Cambiar estado de la cita a "aprobada" cuando se finaliza la cotización
+      if (appointment && appointment.id) {
+        try {
+          const usuario_id = localStorage.getItem('usuario_id');
+          console.log(`📋 Cambiando estado de cita ${appointment.id} a "aprobada"`);
+          
+          await appointmentsService.changeStatus(
+            typeof appointment.id === 'string' ? parseInt(appointment.id, 10) : appointment.id,
+            {
+              nuevo_estado: 'aprobada',
+              comentario: 'Cotización finalizada',
+              registrado_por: usuario_id ? parseInt(usuario_id) : 0
+            }
+          );
+          
+          console.log('✅ Estado de cita actualizado a "aprobada"');
+        } catch (error) {
+          console.error('⚠️ Error al cambiar estado de cita:', error);
+          // Continuar aunque falle el cambio de estado
+        }
+      }
+      
+      alert('Cotización creada exitosamente');
+      onSuccess();
+      resetModal();
+      onClose();
+    } catch (error) {
+      console.error('Error al finalizar cotización:', error);
+      alert('Error al finalizar la cotización');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetModal = () => {
@@ -389,10 +427,17 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                   <Select
                     value={itemForm.tipo_servicio_id}
                     onChange={(e) => setItemForm({ ...itemForm, tipo_servicio_id: e.target.value })}
-                    options={loadingServices ? [] : services.map((s) => ({
-                      value: s.id,
-                      label: s.nombre || s.name
-                    }))}
+                    options={
+                      loadingServices 
+                        ? [{ value: '', label: 'Cargando servicios...' }]
+                        : [
+                            { value: '', label: '-- Seleccionar servicio --' },
+                            ...(Array.isArray(services) ? services.map((s) => ({
+                              value: s.tipo_servicio_id?.toString() || s.id?.toString() || '',
+                              label: s.nombre || s.name || 'Servicio sin nombre'
+                            })).filter(opt => opt.value) : [])
+                          ]
+                    }
                     disabled={loadingServices}
                   />
                 </div>
