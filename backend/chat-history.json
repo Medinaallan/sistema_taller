@@ -21,6 +21,48 @@
       "es_sistema": false,
       "enviado_en": "2025-11-18T15:42:26.228Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1765415428851,
+      "sala_id": "9",
+      "usuario_id": "13",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2025-12-11T01:10:28.073Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1765415426270-484cbf66-74d9-4058-90a2-c9fbca6a7565.jpg",
+      "tipo_archivo": "image/jpeg"
+    },
+    {
+      "mensaje_id": 1765415452713,
+      "sala_id": "9",
+      "usuario_id": "13",
+      "rol": "admin",
+      "contenido": "hola como estas",
+      "es_sistema": false,
+      "enviado_en": "2025-12-11T01:10:51.838Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1765415454640,
+      "sala_id": "9",
+      "usuario_id": "13",
+      "rol": "admin",
+      "contenido": "dasdasda",
+      "es_sistema": false,
+      "enviado_en": "2025-12-11T01:10:53.985Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1765415455260,
+      "sala_id": "9",
+      "usuario_id": "13",
+      "rol": "admin",
+      "contenido": "asda",
+      "es_sistema": false,
+      "enviado_en": "2025-12-11T01:10:54.604Z",
+      "leido": false
     }
   ],
   "client-1": [
