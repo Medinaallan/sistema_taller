@@ -1,5 +1,0 @@
-id,appointmentId,clienteId,vehiculoId,servicioId,descripcion,precio,notas,estado,fechaCreacion,fechaActualizacion
-QUOT-mh6gehd886p7661bt3o,APPT-1761407235178-cohpt13kn,clients-1761407171283-0313b557,VEH-1761407197726-mhevf5d4l,1761407142549gbjofzg1r,ES NECESARIO,500,NOTA ADICIONAL,approved,2025-10-25,2025-10-27
-QUOT-test-12345678,APPT-test-987654321,CLIENT-test-abc123,VEH-test-def456,SERVICE-test-ghi789,Reparación de frenos y cambio de aceite,1500,Cotización de prueba para orden de trabajo,approved,2025-10-27,2025-10-27
-QUOT-nueva-prueba-789,APPT-nueva-456123,CLIENT-nuevo-xyz789,VEH-nuevo-abc123,SERVICE-nuevo-def456,Cambio de llantas y alineación completa,2500,Nueva cotización para probar el flujo automático,approved,2025-10-27,2025-10-27
-QUOT-final-test-456,APPT-final-789123,CLIENT-final-abc456,VEH-final-def789,SERVICE-final-ghi012,Mantenimiento preventivo completo con revisión detallada,3200,Cotización final para verificar funcionamiento del sistema,approved,2025-10-27,2025-10-27

@@ -1,6 +1,0 @@
-id,name,email,phone,address,password_hash,status,registration_date,last_visit,total_visits,total_spent,notes,created_at,updated_at
-client-1760081368203-eznn4w8z0,USUARIO DE PRUEBA 1,user1@taller.com,9999-9991,barrio w,asdf1234,active,2025-10-10,,,,Importado desde Excel,2025-10-10T07:29:28.203Z,2025-10-10T07:29:28.203Z
-client-1760081368203-9lq5scnp0,USUARIO DE PRUEBA 2,user2@taller.com,9999-9992,barrio x,asdf1234,active,2025-10-10,,,,Importado desde Excel,2025-10-10T07:29:28.203Z,2025-10-10T07:29:28.203Z
-client-1760081368203-h8v1lj49z,USUARIO DE PRUEBA 3,user3@taller.com,9999-9993,barrio y,asdf1234,active,2025-10-10,,,,Importado desde Excel,2025-10-10T07:29:28.203Z,2025-10-10T07:29:28.203Z
-client-1760081368203-6phu0if7l,USUARIO DE PRUEBA 4,user4@taller.com,9999-9994,barrio z,asdf1234,active,2025-10-10,,,,Importado desde Excel,2025-10-10T07:29:28.203Z,2025-10-10T07:29:28.203Z
-clients-1760171050210oz0btxune,GRUPO INCOVA - PRUEBA 061025,incova@taller.com,,,,active,2025-10-11T08:24:10.210Z,,,,,2025-10-11T08:24:10.210Z,2025-10-11T08:24:10.210Z
