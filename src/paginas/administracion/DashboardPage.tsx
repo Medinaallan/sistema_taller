@@ -10,9 +10,10 @@ import {
 import { Card } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
-import { formatCurrency, getStatusText, getStatusColor } from '../../utilidades/globalMockDatabase';
+import { formatCurrency } from '../../utilidades/globalMockDatabase';
 import { AppointmentCalendar } from '../../componentes/calendario/AppointmentCalendar';
 import { appointmentsService } from '../../servicios/apiService';
+import workOrdersService from '../../servicios/workOrdersService';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
 import type { Appointment } from '../../tipos';
 
@@ -46,12 +47,30 @@ export function DashboardPage() {
   const { dispatch } = useApp();
   const data = useInterconnectedData();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [totalWorkOrders, setTotalWorkOrders] = useState(0);
   const { clientes: clientesAPI } = useClientesFromAPI();
 
   useEffect(() => {
     // Refrescar estadísticas del dashboard automáticamente
     dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
   }, [dispatch, data.vehicles.length, data.clients.length, data.workOrders.length]);
+
+  // Cargar órdenes de trabajo desde la API
+  useEffect(() => {
+    const loadWorkOrders = async () => {
+      try {
+        const response = await workOrdersService.getAllWorkOrders();
+        if (response && Array.isArray(response)) {
+          setWorkOrders(response);
+          setTotalWorkOrders(response.length);
+        }
+      } catch (error) {
+        console.error('Error cargando órdenes de trabajo:', error);
+      }
+    };
+    loadWorkOrders();
+  }, []);
 
   // Cargar citas para el calendario
   useEffect(() => {
@@ -98,13 +117,13 @@ export function DashboardPage() {
   const stats = data.dashboardStats;
   
   // Datos para las tablas
-  const recentOrders = data.workOrders.slice(0, 5);
+  const recentOrders = workOrders.slice(0, 5);
 
   // Filtrar órdenes por estado
-  const pendingOrders = data.workOrders.filter(order => order.status === 'pending');
+  const pendingOrders = workOrders.filter(order => order.estado === 'pendiente' || order.status === 'pending');
 
   // Filtrar órdenes en progreso
-  const inProgressOrders = data.workOrders.filter(order => order.status === 'in-progress');  return (
+  const inProgressOrders = workOrders.filter(order => order.estado === 'en-progreso' || order.status === 'in-progress');  return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -113,10 +132,10 @@ export function DashboardPage() {
 
       {/* Estadísticas principales */}
       {stats && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Total Órdenes"
-            value={stats.totalWorkOrders}
+            value={totalWorkOrders}
             icon={WrenchScrewdriverIcon}
             color="bg-blue-500"
           />
@@ -133,12 +152,6 @@ export function DashboardPage() {
             color="bg-yellow-500"
           />
           <StatCard
-            title="Recordatorios Activos"
-            value={stats.activeReminders}
-            icon={BellIcon}
-            color="bg-red-500"
-          />
-          <StatCard
             title="Ingresos del Mes"
             value={formatCurrency(stats.monthlyRevenue)}
             icon={CurrencyDollarIcon}
@@ -151,45 +164,52 @@ export function DashboardPage() {
             icon={ChartBarIcon}
             color="bg-blue-600"
           />
+          <StatCard
+            title="Recordatorios Activos"
+            value={stats.activeReminders}
+            icon={BellIcon}
+            color="bg-red-500"
+          />
         </div>
       )}
 
-      {/* Calendario de Citas */}
+      {/* Calendario de Citas - Ancho completo */}
       {appointments.length > 0 && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="lg:col-span-1">
-            <AppointmentCalendar appointments={appointments} />
-          </div>
+        <div className="w-full">
+          <AppointmentCalendar appointments={appointments} />
         </div>
       )}
 
+      {/* Sección de Órdenes - Grid 2 columnas */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Órdenes Recientes */}
         <Card title="Órdenes Recientes" subtitle="Últimas órdenes de trabajo registradas">
           <div className="space-y-3">
             {recentOrders.length > 0 ? (
               recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={order.ot_id || order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {order.description}
+                      OT #{order.numero_ot || order.id}
                     </p>
-                    <p className="text-sm text-gray-500">
-                      {order.problem}
+                    <p className="text-xs text-gray-500">
+                      {order.fecha_creacion ? new Date(order.fecha_creacion).toLocaleDateString('es-ES') : 'Fecha no disponible'}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                      {getStatusText(order.status)}
-                    </span>
-                    <span className="text-sm text-gray-600">
-                      {formatCurrency(order.estimatedCost)}
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      order.estado === 'completada' ? 'bg-green-100 text-green-800' :
+                      order.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                      order.estado === 'en-progreso' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {order.estado || 'N/A'}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-sm">No hay órdenes recientes</p>
+              <p className="text-gray-500 text-sm text-center py-4">No hay órdenes registradas</p>
             )}
           </div>
         </Card>
@@ -199,22 +219,22 @@ export function DashboardPage() {
           <div className="space-y-3">
             {pendingOrders.length > 0 ? (
               pendingOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div key={order.ot_id || order.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200 hover:bg-yellow-100 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {order.description}
+                      OT #{order.numero_ot || order.id}
                     </p>
-                    <p className="text-sm text-yellow-600">
-                      Esperando asignación de mecánico
+                    <p className="text-xs text-yellow-600">
+                      Esperando atención
                     </p>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {formatCurrency(order.estimatedCost)}
+                  <div className="text-xs text-gray-600 whitespace-nowrap ml-2">
+                    {order.fecha_creacion ? new Date(order.fecha_creacion).toLocaleDateString('es-ES') : ''}
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-sm">No hay órdenes pendientes</p>
+              <p className="text-gray-500 text-sm text-center py-4">✓ No hay órdenes pendientes</p>
             )}
           </div>
         </Card>
@@ -224,45 +244,23 @@ export function DashboardPage() {
           <div className="space-y-3">
             {inProgressOrders.length > 0 ? (
               inProgressOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div key={order.ot_id || order.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {order.description}
+                      OT #{order.numero_ot || order.id}
                     </p>
-                    <p className="text-sm text-blue-600">
-                      {order.mechanicId ? 'Asignado a mecánico' : 'Sin mecánico asignado'}
+                    <p className="text-xs text-blue-600">
+                      {order.mecanico_encargado_id ? 'Asignado' : 'Sin asignar'}
                     </p>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {formatCurrency(order.estimatedCost)}
+                  <div className="text-xs text-gray-600 whitespace-nowrap ml-2">
+                    {order.fecha_creacion ? new Date(order.fecha_creacion).toLocaleDateString('es-ES') : ''}
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-sm">No hay órdenes en progreso</p>
+              <p className="text-gray-500 text-sm text-center py-4">No hay órdenes en progreso</p>
             )}
-          </div>
-        </Card>
-
-        {/* Acciones Rápidas */}
-        <Card title="Acciones Rápidas">
-          <div className="grid grid-cols-2 gap-4">
-            <button className="flex flex-col items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200">
-              <WrenchScrewdriverIcon className="h-8 w-8 text-blue-600 mb-2" />
-              <span className="text-sm font-medium text-blue-700">Nueva Orden</span>
-            </button>
-            <button className="flex flex-col items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200">
-              <UsersIcon className="h-8 w-8 text-green-600 mb-2" />
-              <span className="text-sm font-medium text-green-700">Nuevo Cliente</span>
-            </button>
-            <button className="flex flex-col items-center p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors duration-200">
-              <TruckIcon className="h-8 w-8 text-yellow-600 mb-2" />
-              <span className="text-sm font-medium text-yellow-700">Nuevo Vehículo</span>
-            </button>
-            <button className="flex flex-col items-center p-4 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200">
-              <BellIcon className="h-8 w-8 text-red-600 mb-2" />
-              <span className="text-sm font-medium text-red-700">Recordatorio</span>
-            </button>
           </div>
         </Card>
       </div>

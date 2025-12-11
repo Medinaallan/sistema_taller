@@ -276,7 +276,7 @@ export default function ApproveQuotationModal({
               variant="primary"
               disabled={loading}
             >
-              {loading ? '⏳ Aprobando y generando OT...' : '✅ Aprobar y Generar OT'}
+              {loading ? ' Aprobando y generando OT...' : ' Aprobar y Generar OT'}
             </Button>
           </div>
         </form>
