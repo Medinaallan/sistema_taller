@@ -302,6 +302,9 @@ export function ClientsPage() {
       if (modalType === 'create') {
         console.log('➕ Creando cliente usando stored procedures...');
         
+        // Obtener usuario_id del localStorage
+        const usuario_id = localStorage.getItem('usuario_id');
+        
         // Usar el endpoint que utiliza SP_REGISTRAR_USUARIO_CLIENTE
         const response = await fetch('http://localhost:8080/api/clients', {
           method: 'POST',
@@ -311,7 +314,8 @@ export function ClientsPage() {
           body: JSON.stringify({
             name: clientData.name,
             email: clientData.email,
-            phone: clientData.phone
+            phone: clientData.phone,
+            usuario_id: usuario_id ? parseInt(usuario_id) : undefined
           })
         });
         
@@ -393,6 +397,9 @@ export function ClientsPage() {
       }
       
       setIsModalOpen(false);
+      
+      // Recargar la lista de clientes
+      await loadClients();
     } catch (error) {
       console.error('❌ Error en operación de cliente:', error);
       alert('Error de conexión al procesar la operación');

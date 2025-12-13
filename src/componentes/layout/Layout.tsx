@@ -106,17 +106,17 @@ export function Layout({ children }: LayoutProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       {/* Sidebar */}
       <div className={clsx(
-        'fixed inset-y-0 left-0 z-50 bg-white shadow-lg transition-all duration-300',
+        'fixed inset-y-0 left-0 z-50 bg-gray-600 shadow-lg transition-all duration-300',
         state.isNavCollapsed ? 'w-16' : 'w-64'
       )}>
         <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
           {!state.isNavCollapsed && (
             <div className="flex items-center">
-              <WrenchScrewdriverIcon className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">PruebaProject</span>
+              <WrenchScrewdriverIcon className="h-14 w-14 text-blue-300" />
+              <span className="ml-2 text-xl font-bold text-white">AutoFlow</span>
             </div>
           )}
           <button 
@@ -132,7 +132,8 @@ export function Layout({ children }: LayoutProps) {
         </div>
         
         <nav className={clsx(
-          'mt-8',
+          'mt-8 overflow-y-auto',
+          'max-h-[calc(100vh-166px)]',
           state.isNavCollapsed ? 'px-2' : 'px-4'
         )}>
           <ul className="space-y-2">
@@ -151,7 +152,7 @@ export function Layout({ children }: LayoutProps) {
                         state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2',
                         hasActiveChild 
                           ? 'bg-blue-100 text-blue-700' 
-                          : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+                          : 'text-white hover:bg-gray-100 hover:text-blue-600'
                       )}
                       title={state.isNavCollapsed ? item.name : undefined}
                     >
@@ -191,7 +192,7 @@ export function Layout({ children }: LayoutProps) {
                                   'flex items-center px-3 py-2 text-sm rounded-lg transition-colors duration-200',
                                   isChildActive 
                                     ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-600' 
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'
+                                    : 'text-white hover:bg-gray-50 hover:text-blue-600'
                                 )}
                               >
                                 <child.icon 
@@ -222,7 +223,7 @@ export function Layout({ children }: LayoutProps) {
                       state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2',
                       isActive 
                         ? 'bg-blue-100 text-blue-700' 
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+                        : 'text-white hover:bg-gray-100 hover:text-blue-600'
                     )}
                     title={state.isNavCollapsed ? item.name : undefined}
                   >
@@ -249,17 +250,17 @@ export function Layout({ children }: LayoutProps) {
               {!state.isNavCollapsed ? (
                 <>
                   <div className="flex-shrink-0">
-                    <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
-                      <span className="text-sm font-medium text-white">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span className="text-sm font-medium text-black">
                         {state.user.name.charAt(0)}
                       </span>
                     </div>
                   </div>
                   <div className="ml-3 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-700 truncate">
+                    <p className="text-sm font-medium text-white truncate">
                       {state.user.name}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-white truncate">
                       {getRoleText(state.user.role)}
                     </p>
                   </div>
@@ -288,17 +289,17 @@ export function Layout({ children }: LayoutProps) {
       {/* Main content */}
       <div className={`transition-all duration-300 ${state.isNavCollapsed ? 'pl-16' : 'pl-64'}`}>
         {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
+        <header className="h-16 bg-gray-600 border-b border-gray-300 flex items-center justify-between px-8">
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="text-xl font-semibold text-white">
               {/* Título dinámico basado en la ruta actual */}
-              Sistema de Gestión de Taller
+              Control de Talleres Mecanicos
             </h1>
           </div>
           
           <div className="flex items-center space-x-4">
             {/* Notificaciones */}
-            <button className="p-2 text-gray-400 hover:text-gray-600 relative">
+            <button className="p-2 text-white hover:text-white relative">
               <BellIcon className="h-5 w-5" />
               {/* Indicador de notificaciones */}
               <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
@@ -307,7 +308,7 @@ export function Layout({ children }: LayoutProps) {
             </button>
             
             {/* Información del usuario */}
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-white">
               Bienvenido, <span className="font-medium">{state.user?.name}</span>
             </div>
           </div>

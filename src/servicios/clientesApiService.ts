@@ -110,12 +110,18 @@ export async function crearCliente(clienteData: ClienteNuevo): Promise<Cliente> 
   try {
     console.log('🌐 API: Creando nuevo cliente...', clienteData.name);
     
+    // Obtener usuario_id del localStorage
+    const usuario_id = localStorage.getItem('usuario_id');
+    
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(clienteData),
+      body: JSON.stringify({
+        ...clienteData,
+        usuario_id: usuario_id ? parseInt(usuario_id) : undefined
+      }),
     });
     
     if (!response.ok) {

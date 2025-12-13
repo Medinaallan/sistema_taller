@@ -96,14 +96,16 @@ app.get('/api/services', async (req, res) => {
 
 // POST - Registrar nuevo tipo de servicio (SP)
 app.post('/api/services', async (req, res) => {
-  const { nombre, descripcion, registrado_por } = req.body;
+  const { nombre, descripcion, precio, duracion, categoria, registrado_por } = req.body;
   try {
     console.log('POST /api/services - Datos recibidos:', req.body);
     const pool = await getConnection();
     const result = await pool.request()
       .input('nombre', sql.VarChar(100), nombre)
       .input('descripcion', sql.VarChar(200), descripcion)
-      .input('registrado_por', sql.Int, registrado_por)
+      .input('precio_base', sql.Decimal(10, 2), precio || null)
+      .input('horas_estimadas', sql.VarChar(50), duracion || null)
+      .input('registrado_por', sql.Int, registrado_por || 1)
       .execute('SP_REGISTRAR_TIPO_SERVICIO');
     console.log('Resultado SP_REGISTRAR_TIPO_SERVICIO:', result);
     res.json(result.recordset[0] || { response: '200 OK', msg: 'Registrado', allow: 1 });

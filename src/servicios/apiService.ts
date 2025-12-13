@@ -22,7 +22,28 @@ async function handleResponse(response: Response) {
       };
     }
     
-    return data;
+    // Estandarizar respuestas que vienen del SP (tienen response, msg, allow)
+    if (data.response && data.msg !== undefined && data.allow !== undefined) {
+      return {
+        success: data.allow === 1,
+        message: data.msg,
+        data: data,
+        response: data.response,
+        allow: data.allow
+      };
+    }
+    
+    // Si la respuesta ya tiene success, devolverla como está
+    if (data.success !== undefined) {
+      return data;
+    }
+    
+    // Si llegó aquí y response.ok es true, asumir que es exitoso
+    return {
+      success: true,
+      message: 'Operación exitosa',
+      data: data
+    };
   } catch (error) {
     return {
       success: false,
@@ -175,7 +196,8 @@ export const servicesService = {
     descripcion?: string; 
     precio: number; 
     duracion?: string; 
-    categoria?: string; 
+    categoria?: string;
+    registrado_por?: number;
   }): Promise<ApiResponse> {
     const response = await fetch(`${API_BASE_URL}/services`, {
       ...fetchConfig,

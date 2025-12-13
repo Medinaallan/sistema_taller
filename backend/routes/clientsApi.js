@@ -23,7 +23,10 @@ router.get('/registered', async (req, res) => {
     
     const pool = await getConnection();
     const result = await pool.request()
+      .input('usuario_id', sql.Int, null)
       .execute('SP_OBTENER_USUARIOS');
+    
+    console.log('📊 Resultado del SP_OBTENER_USUARIOS:', result.recordset);
     
     // Transformar datos para el frontend
     const clients = result.recordset.map(user => ({
@@ -107,7 +110,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone } = req.body;
+    const { name, email, phone, usuario_id } = req.body;
     console.log('➕ POST /api/clients - Creando nuevo cliente:', name);
     
     // Validaciones básicas
@@ -134,10 +137,11 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Usar usuario_id del request (del localStorage del frontend)
     res.status(201).json({
       success: true,
       data: {
-        id: response.id_usuario?.toString(),
+        id: usuario_id?.toString() || Math.random().toString(),
         name: name,
         email: email.toLowerCase(),
         phone: phone

@@ -34,17 +34,26 @@ const ServicesPage = () => {
     try {
       setLoading(true);
       const response = await servicesService.getAll();
-      if (response.success) {
-        // Mapear los datos del CSV al formato esperado por la interfaz Service
-        const mappedServices = response.data.map((csvService: any) => ({
-          id: csvService.id,
-          name: csvService.nombre,
-          description: csvService.descripcion,
-          basePrice: parseFloat(csvService.precio) || 0,
-          estimatedTime: csvService.duracion,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }));
+      console.log('📋 Respuesta de servicios:', response);
+      
+      // Verificar si response.data contiene los servicios o si están en response.recordset
+      const servicesArray = response.data || response.recordset || [];
+      
+      if (Array.isArray(servicesArray) && servicesArray.length > 0) {
+        // Mapear los datos del backend al formato esperado por la interfaz Service
+        const mappedServices = servicesArray.map((service: any) => {
+          console.log('🔍 Mapeando servicio:', service);
+          return {
+            id: service.tipo_servicio_id || service.id || Math.random().toString(),
+            name: service.nombre || service.name || 'Sin nombre',
+            description: service.descripcion || service.description || '',
+            basePrice: parseFloat(service.precio_base || service.precio || service.basePrice || '0') || 0,
+            estimatedTime: service.horas_estimadas || service.duracion || service.estimatedTime || 'N/A',
+            createdAt: service.createdAt || new Date(),
+            updatedAt: service.updatedAt || new Date(),
+          };
+        });
+        console.log('✅ Servicios mapeados:', mappedServices);
         setData(mappedServices);
       }
     } catch (error) {
@@ -87,12 +96,16 @@ const ServicesPage = () => {
       
       console.log('🚀 Enviando datos del servicio:', formData);
       
+      // Obtener usuario_id del localStorage
+      const usuarioId = localStorage.getItem('usuario_id') || '1';
+      
       const serviceData = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
         precio: parseFloat(formData.precio),
         duracion: formData.duracion,
         categoria: formData.categoria,
+        registrado_por: parseInt(usuarioId),
       };
 
       console.log('📤 Datos procesados para enviar:', serviceData);
@@ -101,26 +114,23 @@ const ServicesPage = () => {
       
       console.log('📥 Respuesta del servidor:', response);
       
-      if (response.success) {
-        // Mapear el nuevo servicio al formato esperado
-        const newService: Service = {
-          id: response.data.id,
-          name: response.data.nombre,
-          description: response.data.descripcion,
-          basePrice: response.data.precio,
-          estimatedTime: response.data.duracion,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        setData(prev => [...prev, newService]);
+      // Verificar si el SP realmente permitió la inserción (allow = 1)
+      const spSucceeded = response.data?.allow === 1 || response.allow === 1;
+      
+      if (spSucceeded) {
+        console.log('✅ Servicio creado exitosamente');
         setIsModalOpen(false);
         
         // Mostrar mensaje de éxito
         alert('Servicio creado exitosamente');
+        
+        // Recargar la lista de servicios para mostrar el nuevo
+        await loadServices();
       } else {
-        console.error('❌ Error del servidor:', response);
-        alert('Error al crear el servicio: ' + (response.message || 'Error desconocido'));
+        // El SP rechazó la inserción
+        const errorMsg = response.data?.msg || response.message || 'Error desconocido';
+        console.error('❌ Error del servidor:', errorMsg);
+        alert('Error al crear el servicio: ' + errorMsg);
       }
     } catch (error) {
       console.error('❌ Error completo:', error);
