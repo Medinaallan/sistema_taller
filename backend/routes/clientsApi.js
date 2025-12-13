@@ -15,27 +15,33 @@ const router = express.Router();
 
 /**
  * 📋 GET /api/clients/registered - Obtener todos los clientes registrados
- * Usa SP_OBTENER_USUARIOS sin parámetros para obtener todos los usuarios
+ * 
+ * SP: SP_OBTENER_USUARIOS
+ * Params: @obtener_todos BIT, @usuario_id INT
+ * Return: usuario_id, nombre_completo, correo, telefono, rol
  */
 router.get('/registered', async (req, res) => {
   try {
     console.log('📋 GET /api/clients/registered - Obteniendo todos los clientes desde BD');
     
     const pool = await getConnection();
+    
+    // Obtener TODOS los usuarios (@obtener_todos = 1, @usuario_id = NULL)
     const result = await pool.request()
+      .input('obtener_todos', sql.Bit, 1)
       .input('usuario_id', sql.Int, null)
       .execute('SP_OBTENER_USUARIOS');
     
-    console.log('📊 Resultado del SP_OBTENER_USUARIOS:', result.recordset);
+    console.log(`📊 SP_OBTENER_USUARIOS devolvió ${result.recordset.length} usuarios`);
     
-    // Transformar datos para el frontend
+    // Transformar datos del SP al formato esperado por el frontend
     const clients = result.recordset.map(user => ({
       id: user.usuario_id?.toString(),
       name: user.nombre_completo,
       email: user.correo,
       phone: user.telefono,
       role: user.rol,
-      createdAt: new Date(), // Podríamos agregar fecha_creacion al SP si la necesitamos
+      createdAt: new Date(),
       updatedAt: new Date()
     }));
     
@@ -45,7 +51,8 @@ router.get('/registered', async (req, res) => {
       total: clients.length
     });
     
-    console.log(`✅ Enviados ${clients.length} clientes desde BD`);
+    console.log(`✅ Enviados ${clients.length} usuarios al frontend`);
+    
   } catch (error) {
     console.error('❌ Error obteniendo clientes:', error);
     res.status(500).json({
@@ -58,19 +65,35 @@ router.get('/registered', async (req, res) => {
 
 /**
  * 👤 GET /api/clients/:id - Obtener un cliente específico
- * Usa SP_OBTENER_USUARIOS con parámetro @usuario_id
+ * 
+ * SP: SP_OBTENER_USUARIOS
+ * Params: @obtener_todos BIT, @usuario_id INT
+ * Return: usuario_id, nombre_completo, correo, telefono, rol
  */
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`👤 GET /api/clients/${id} - Obteniendo cliente específico desde BD`);
+    const usuarioId = parseInt(id);
+    
+    if (isNaN(usuarioId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID de cliente inválido'
+      });
+    }
+    
+    console.log(`👤 GET /api/clients/${usuarioId} - Obteniendo cliente específico`);
     
     const pool = await getConnection();
+    
+    // Obtener usuario específico (@obtener_todos = 0, @usuario_id = ID)
     const result = await pool.request()
-      .input('usuario_id', sql.Int, parseInt(id))
+      .input('obtener_todos', sql.Bit, 0)
+      .input('usuario_id', sql.Int, usuarioId)
       .execute('SP_OBTENER_USUARIOS');
     
     if (result.recordset.length === 0) {
+      console.log(`⚠️ Cliente no encontrado: ID ${usuarioId}`);
       return res.status(404).json({
         success: false,
         error: 'Cliente no encontrado'
@@ -79,7 +102,7 @@ router.get('/:id', async (req, res) => {
     
     const user = result.recordset[0];
     const client = {
-      id: user.usuario_id?.toString(),
+      id: user.usuario_id.toString(),
       name: user.nombre_completo,
       email: user.correo,
       phone: user.telefono,
@@ -93,7 +116,8 @@ router.get('/:id', async (req, res) => {
       data: client
     });
     
-    console.log(`✅ Cliente encontrado: ${client.name}`);
+    console.log(`✅ Cliente encontrado: ${client.name} (${client.email})`);
+    
   } catch (error) {
     console.error('❌ Error obteniendo cliente:', error);
     res.status(500).json({
@@ -106,11 +130,11 @@ router.get('/:id', async (req, res) => {
 
 /**
  * ➕ POST /api/clients - Crear nuevo cliente
- * Usa SP_REGISTRAR_USUARIO_CLIENTE
+ * Usa SP_REGISTRAR_USUARIO_CLIENTE y luego busca el cliente creado
  */
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, usuario_id } = req.body;
+    const { name, email, phone } = req.body;
     console.log('➕ POST /api/clients - Creando nuevo cliente:', name);
     
     // Validaciones básicas
@@ -122,34 +146,73 @@ router.post('/', async (req, res) => {
     }
     
     const pool = await getConnection();
-    const result = await pool.request()
+    
+    // PASO 1: Registrar el cliente usando SP_REGISTRAR_USUARIO_CLIENTE
+    // Retorna: '200 OK' as response, 'Usuario registrado con éxito' as msg, codigo_seguridad
+    const createResult = await pool.request()
       .input('nombre_completo', sql.VarChar(100), name)
       .input('correo', sql.VarChar(100), email.toLowerCase())
       .input('telefono', sql.VarChar(30), phone)
       .execute('SP_REGISTRAR_USUARIO_CLIENTE');
     
-    const response = result.recordset[0];
+    const createResponse = createResult.recordset[0];
+    console.log('📝 Respuesta del SP:', createResponse);
     
-    if (response.allow === 0) {
+    // Verificar si hubo error (el SP devuelve response diferente a '200 OK' si falla)
+    if (createResponse.response !== '200 OK') {
       return res.status(400).json({
         success: false,
-        error: response.msg
+        error: createResponse.msg || 'Error al crear cliente'
       });
     }
     
-    // Usar usuario_id del request (del localStorage del frontend)
+    // PASO 2: Buscar el cliente recién creado por correo para obtener su ID
+    // Como el SP no devuelve el ID, necesitamos buscarlo
+    const findResult = await pool.request()
+      .input('obtener_todos', sql.Bit, 1)
+      .input('usuario_id', sql.Int, null)
+      .execute('SP_OBTENER_USUARIOS');
+    
+    // Buscar el cliente por correo en los resultados
+    const clienteCreado = findResult.recordset.find(
+      user => user.correo.toLowerCase() === email.toLowerCase()
+    );
+    
+    if (!clienteCreado) {
+      // Esto no debería pasar, pero por seguridad...
+      console.error('⚠️ Cliente creado pero no encontrado en la búsqueda');
+      return res.status(201).json({
+        success: true,
+        message: createResponse.msg,
+        data: {
+          name: name,
+          email: email.toLowerCase(),
+          phone: phone,
+          codigo_seguridad: createResponse.codigo_seguridad
+        }
+      });
+    }
+    
+    // PASO 3: Devolver los datos completos del cliente con su ID real
+    const clientData = {
+      id: clienteCreado.usuario_id.toString(),
+      name: clienteCreado.nombre_completo,
+      email: clienteCreado.correo,
+      phone: clienteCreado.telefono,
+      role: clienteCreado.rol,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
     res.status(201).json({
       success: true,
-      data: {
-        id: usuario_id?.toString() || Math.random().toString(),
-        name: name,
-        email: email.toLowerCase(),
-        phone: phone
-      },
-      message: response.msg || 'Cliente creado exitosamente'
+      data: clientData,
+      message: createResponse.msg || 'Cliente creado exitosamente',
+      codigo_seguridad: createResponse.codigo_seguridad
     });
     
-    console.log(`✅ Cliente creado: ${name} (ID: ${response.id_usuario})`);
+    console.log(`✅ Cliente creado exitosamente: ${clientData.name} (ID: ${clientData.id})`);
+    
   } catch (error) {
     console.error('❌ Error creando cliente:', error);
     res.status(500).json({

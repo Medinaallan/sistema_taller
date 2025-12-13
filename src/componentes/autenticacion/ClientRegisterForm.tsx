@@ -176,17 +176,32 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
         if (validateCode()) {
           setLoading(true);
           try {
+            console.log('🔐 Verificando código:', {
+              email: formData.email,
+              code: formData.code,
+              codeLength: formData.code.length,
+              codeType: typeof formData.code
+            });
+            
             const result = await verificarCodigoSeguridad(
               formData.email,
               formData.code
             );
             
+            console.log('📥 Respuesta del backend:', result);
+            console.log('📊 result.success:', result.success, 'tipo:', typeof result.success);
+            console.log('📊 result.allow:', result.allow, 'tipo:', typeof result.allow);
+            console.log('📊 result.message:', result.message);
+            
             if (result.success) {
+              console.log('✅ Código válido, avanzando a password');
               setCurrentStep('password');
             } else {
+              console.log('❌ Código inválido:', result.message);
               setErrors({ code: result.message || 'Código inválido' });
             }
-          } catch {
+          } catch (error) {
+            console.error('❌ Error verificando código:', error);
             setErrors({ code: 'Error al verificar código' });
           } finally {
             setLoading(false);

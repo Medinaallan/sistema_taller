@@ -51,9 +51,14 @@ router.post('/login', async (req, res) => {
 });
 
 // Verificar código de seguridad
+// SP: SP_VERIFICAR_CODIGO_SEGURIDAD
+// Params: @correo VARCHAR(100), @codigo_seguridad VARCHAR(6)
+// Return: msg, allow (0, 1)
 router.post('/verify-security-code', async (req, res) => {
   try {
     const { email, securityCode } = req.body;
+    
+    console.log('🔐 Verificando código de seguridad:', { email, securityCode });
 
     if (!email || !securityCode) {
       return res.status(400).json({
@@ -63,17 +68,35 @@ router.post('/verify-security-code', async (req, res) => {
     }
 
     const pool = await getConnection();
+    
+    console.log('📤 Ejecutando SP_VERIFICAR_CODIGO_SEGURIDAD con params:', {
+      correo: email.toLowerCase(),
+      codigo_seguridad: securityCode.trim()
+    });
+    
     const result = await pool.request()
-      .input('Email', sql.VarChar(255), email)
-      .input('SecurityCode', sql.VarChar(10), securityCode)
+      .input('correo', sql.VarChar(100), email.toLowerCase())
+      .input('codigo_seguridad', sql.VarChar(6), securityCode.trim())
       .execute('SP_VERIFICAR_CODIGO_SEGURIDAD');
 
     const response = result.recordset[0];
+    console.log('📝 Respuesta COMPLETA del SP:', JSON.stringify(response, null, 2));
+    console.log('📊 allow:', response.allow, 'tipo:', typeof response.allow);
+    console.log('📊 msg:', response.msg);
 
-    res.json({
-      success: response.Success,
-      message: response.Message
-    });
+    // El SP devuelve: msg, allow (0 o 1)
+    const isValid = response.allow === 1;
+    console.log('✅ ¿Es válido?', isValid);
+
+    const responseData = {
+      success: isValid,
+      message: response.msg,
+      allow: response.allow
+    };
+    
+    console.log('📤 Respuesta enviada al frontend:', responseData);
+    
+    res.json(responseData);
 
   } catch (error) {
     console.error('Error verificando código:', error);
@@ -86,50 +109,46 @@ router.post('/verify-security-code', async (req, res) => {
 });
 
 // Registrar usuario cliente
+// SP: SP_REGISTRAR_USUARIO_CLIENTE
+// Params: @nombre_completo VARCHAR(100), @correo VARCHAR(100), @telefono VARCHAR(30)
+// Return: '200 OK' as response, 'Usuario registrado con éxito' as msg, codigo_seguridad
 router.post('/register-client', async (req, res) => {
   try {
-    const {
-      email,
-      password,
-      fullName,
-      phone,
-      address,
-      companyName
-    } = req.body;
+    const { email, fullName, phone } = req.body;
+    
+    console.log('➕ Registrando cliente:', { fullName, email, phone });
 
-    // Validaciones básicas
-    if (!email || !password || !fullName || !phone) {
+    // Validaciones básicas (solo los 3 campos requeridos por el SP)
+    if (!email || !fullName || !phone) {
       return res.status(400).json({
-         success: false,
-        message: 'Email, contraseña, nombre completo y teléfono son requeridos'
+        success: false,
+        message: 'Nombre completo, email y teléfono son requeridos'
       });
     }
 
     const pool = await getConnection();
     const result = await pool.request()
-      .input('Email', sql.VarChar(255), email)
-      .input('Password', sql.VarChar(255), password)
-      .input('FullName', sql.VarChar(255), fullName)
-      .input('Phone', sql.VarChar(20), phone)
-      .input('Address', sql.VarChar(500), address || '')
-      .input('CompanyName', sql.VarChar(255), companyName || '')
+      .input('nombre_completo', sql.VarChar(100), fullName)
+      .input('correo', sql.VarChar(100), email.toLowerCase())
+      .input('telefono', sql.VarChar(30), phone)
       .execute('SP_REGISTRAR_USUARIO_CLIENTE');
 
     const response = result.recordset[0];
+    console.log('📝 Respuesta del SP:', response);
 
-    if (response.Success) {
+    // El SP devuelve: response ('200 OK'), msg, codigo_seguridad
+    if (response.response === '200 OK') {
       res.status(201).json({
         success: true,
-        message: response.Message,
+        message: response.msg,
         data: {
-          userId: response.UserId,
-          securityCode: response.SecurityCode
+          codigo_seguridad: response.codigo_seguridad
         }
       });
     } else {
       res.status(400).json({
         success: false,
-        message: response.Message
+        message: response.msg || 'Error al registrar cliente'
       });
     }
 

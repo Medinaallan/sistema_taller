@@ -94,6 +94,7 @@ router.get('/:id', async (req, res) => {
     const pool = await getConnection();
     
     const result = await pool.request()
+      .input('obtener_todos', sql.Bit, 0)
       .input('usuario_id', sql.Int, userId)
       .execute('SP_OBTENER_USUARIOS');
     

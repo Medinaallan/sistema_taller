@@ -20,10 +20,9 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
     name: client?.name || '',
     phone: client?.phone || '',
     email: client?.email || '',
-    address: client?.address || '',
-    password: client?.password || '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,56 +35,60 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = 'El nombre es requerido';
-    if (!formData.phone.trim()) newErrors.phone = 'El teléfono es requerido';
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre completo es requerido';
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'El teléfono es requerido';
+    }
     if (!formData.email.trim()) {
       newErrors.email = 'El email es requerido';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'El email no es válido';
-    }
-    if (!client && !formData.password.trim()) {
-      newErrors.password = 'La contraseña es requerida';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSubmit({
-        ...formData,
-        vehicles: client?.vehicles || [],
-      });
+    if (validateForm() && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        await onSubmit({
+          ...formData,
+          address: '', // No usado por los SPs pero requerido por el tipo
+          password: '', // No usado por los SPs pero requerido por el tipo
+          vehicles: client?.vehicles || [],
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <p className="text-sm text-blue-800">
+          ℹ️ Los campos marcados con * son requeridos 
+        </p>
+      </div>
+
       <Input
-        label="Nombre completo"
+        label="Nombre completo *"
         name="name"
         value={formData.name}
         onChange={handleInputChange}
         error={errors.name}
         placeholder="Juan Pérez"
         required
+        disabled={isSubmitting}
       />
 
       <Input
-        label="Teléfono"
-        name="phone"
-        type="tel"
-        value={formData.phone}
-        onChange={handleInputChange}
-        error={errors.phone}
-        placeholder="555-1234"
-        required
-      />
-
-      <Input
-        label="Correo electrónico"
+        label="Correo electrónico *"
         name="email"
         type="email"
         value={formData.email}
@@ -93,34 +96,35 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
         error={errors.email}
         placeholder="juan@email.com"
         required
+        disabled={isSubmitting}
       />
 
       <Input
-        label="Dirección (opcional)"
-        name="address"
-        value={formData.address}
+        label="Teléfono *"
+        name="phone"
+        type="tel"
+        value={formData.phone}
         onChange={handleInputChange}
-        error={errors.address}
-        placeholder="Calle 123 #45-67"
-      />
-
-      <Input
-        label={client ? "Nueva contraseña (opcional)" : "Contraseña"}
-        name="password"
-        type="password"
-        value={formData.password}
-        onChange={handleInputChange}
-        error={errors.password}
-        placeholder="••••••••"
-        required={!client}
+        error={errors.phone}
+        placeholder="555-1234"
+        required
+        disabled={isSubmitting}
       />
 
       <div className="flex justify-end space-x-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
           Cancelar
         </Button>
-        <Button type="submit">
-          {client ? 'Actualizar' : 'Crear'} Cliente
+        <Button 
+          type="submit"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Procesando...' : (client ? 'Actualizar' : 'Crear')} Cliente
         </Button>
       </div>
     </form>
@@ -300,12 +304,11 @@ export function ClientsPage() {
   const handleFormSubmit = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       if (modalType === 'create') {
-        console.log('➕ Creando cliente usando stored procedures...');
-        
-        // Obtener usuario_id del localStorage
-        const usuario_id = localStorage.getItem('usuario_id');
+        console.log('➕ Creando cliente usando SP_REGISTRAR_USUARIO_CLIENTE...');
+        console.log('📤 Datos a enviar:', { name: clientData.name, email: clientData.email, phone: clientData.phone });
         
         // Usar el endpoint que utiliza SP_REGISTRAR_USUARIO_CLIENTE
+        // Este SP solo requiere: nombre_completo, correo, telefono
         const response = await fetch('http://localhost:8080/api/clients', {
           method: 'POST',
           headers: {
@@ -314,15 +317,15 @@ export function ClientsPage() {
           body: JSON.stringify({
             name: clientData.name,
             email: clientData.email,
-            phone: clientData.phone,
-            usuario_id: usuario_id ? parseInt(usuario_id) : undefined
+            phone: clientData.phone
           })
         });
         
         const result = await response.json();
+        console.log('📥 Respuesta del servidor:', result);
         
         if (response.ok && result.success) {
-          console.log(' Cliente creado desde BD:', result.data);
+          console.log('✅ Cliente creado exitosamente:', result.data);
           
           const newClient: Client = {
             id: result.data.id,
@@ -342,14 +345,23 @@ export function ClientsPage() {
           // Generar log de negocio
           await businessLogs.logClientCreated(newClient);
           
-          alert('Cliente creado exitosamente usando la base de datos');
+          // Cerrar modal
+          setIsModalOpen(false);
+          
+          // Recargar clientes desde la API
+          await recargarClientes();
+          
+          // Mensaje de éxito
+          alert(`✅ Cliente creado exitosamente\n\nNombre: ${result.data.name}\nID: ${result.data.id}\nEmail: ${result.data.email}`);
         } else {
-          alert(`Error al crear cliente: ${result.error || 'Error desconocido'}`);
+          console.error('❌ Error del servidor:', result);
+          alert(`Error al crear cliente: ${result.error || result.message || 'Error desconocido'}`);
           return;
         }
         
       } else if (modalType === 'edit' && selectedClient) {
-        console.log('✏️ Editando cliente usando stored procedures...');
+        console.log('✏️ Editando cliente usando SP_EDITAR_USUARIO...');
+        console.log('📤 Datos a enviar:', { name: clientData.name, email: clientData.email, phone: clientData.phone });
         
         // Usar el endpoint que utiliza SP_EDITAR_USUARIO
         const response = await fetch(`http://localhost:8080/api/clients/${selectedClient.id}`, {
@@ -365,9 +377,10 @@ export function ClientsPage() {
         });
         
         const result = await response.json();
+        console.log('📥 Respuesta del servidor:', result);
         
         if (response.ok && result.success) {
-          console.log('✅ Cliente actualizado desde BD:', result.data);
+          console.log('✅ Cliente actualizado exitosamente:', result.data);
           
           const updatedClient: Client = {
             ...selectedClient,
@@ -389,17 +402,20 @@ export function ClientsPage() {
           // Generar log de negocio
           await businessLogs.logClientUpdated(updatedClient, changes);
           
-          alert('Cliente actualizado exitosamente usando la base de datos');
+          // Cerrar modal
+          setIsModalOpen(false);
+          
+          // Recargar clientes desde la API
+          await recargarClientes();
+          
+          // Mensaje de éxito
+          alert('✅ Cliente actualizado exitosamente');
         } else {
-          alert(`Error al actualizar cliente: ${result.error || 'Error desconocido'}`);
+          console.error('❌ Error del servidor:', result);
+          alert(`Error al actualizar cliente: ${result.error || result.message || 'Error desconocido'}`);
           return;
         }
       }
-      
-      setIsModalOpen(false);
-      
-      // Recargar la lista de clientes
-      await loadClients();
     } catch (error) {
       console.error('❌ Error en operación de cliente:', error);
       alert('Error de conexión al procesar la operación');
