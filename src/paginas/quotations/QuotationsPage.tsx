@@ -241,7 +241,7 @@ const QuotationsPage = () => {
                             className="bg-green-600 hover:bg-green-700 text-white"
                             onClick={() => handleApprove(quotation)}
                           >
-                            ✅ Aprobar
+                             Aprobar
                           </Button>
                           <Button 
                             size="sm" 

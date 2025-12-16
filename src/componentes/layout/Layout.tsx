@@ -124,9 +124,9 @@ export function Layout({ children }: LayoutProps) {
             className="p-2 rounded-lg hover:bg-gray-100"
           >
             {state.isNavCollapsed ? (
-              <ChevronRightIcon className="h-5 w-5 text-gray-500" />
+              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
             ) : (
-              <ChevronLeftIcon className="h-5 w-5 text-gray-500" />
+              <ChevronLeftIcon className="h-5 w-5 text-gray-400" />
             )}
           </button>
         </div>
@@ -198,7 +198,7 @@ export function Layout({ children }: LayoutProps) {
                                 <child.icon 
                                   className={clsx(
                                     'h-4 w-4 mr-3',
-                                    isChildActive ? 'text-blue-600' : 'text-gray-400'
+                                    isChildActive ? 'text-blue-600' : 'text-gray-100'
                                   )} 
                                 />
                                 {child.name}
