@@ -3,6 +3,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-light: #93c5fd;
+  --color-primary-dark: #1e40af;
+  --color-sidebar: #4b5563;
+  --color-header: #4b5563;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #d1d5db;
+  --color-text-hover: #e5e7eb;
+  --color-hover: #6b7280;
+  --color-accent: #0ea5e9;
+}
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;

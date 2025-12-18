@@ -3,6 +3,7 @@ import ClientChatPage from './paginas/cliente/chat/ClientChatPage';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './contexto/AppProvider';
+import { ThemeProvider } from './contexto/ThemeProvider';
 import { useApp } from './contexto/useApp';
 import { Layout } from './componentes/layout/Layout';
 import { LoginPage } from './paginas/autenticacion/LoginPage';
@@ -365,11 +366,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AppProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AppProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AppProvider>
+    </ThemeProvider>
   );
 }
 

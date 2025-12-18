@@ -19,8 +19,10 @@ import {
   CreditCardIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+import { useTheme } from '../../hooks/useTheme';
 import { getRoleText } from '../../utilidades/globalMockDatabase';
 import { clsx } from 'clsx';
+import { ThemeDropdown } from '../ui/ThemeDropdown';
 
 interface LayoutProps {
   children: ReactNode;
@@ -80,6 +82,7 @@ const navigationItems: NavigationItem[] = [
 
 export function Layout({ children }: LayoutProps) {
   const { state, dispatch } = useApp();
+  const { colors } = useTheme();
   const location = useLocation();
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
 
@@ -106,27 +109,29 @@ export function Layout({ children }: LayoutProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen" style={{ backgroundColor: '#f9fafb' }}>
       {/* Sidebar */}
       <div className={clsx(
-        'fixed inset-y-0 left-0 z-50 bg-gray-600 shadow-lg transition-all duration-300',
+        'fixed inset-y-0 left-0 z-50 shadow-lg transition-all duration-300',
         state.isNavCollapsed ? 'w-16' : 'w-64'
-      )}>
-        <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
+      )}
+      style={{ backgroundColor: colors.sidebar }}>
+        <div className="flex h-16 items-center justify-between border-b px-4" style={{ borderColor: colors.primaryDark }}>
           {!state.isNavCollapsed && (
             <div className="flex items-center">
-              <WrenchScrewdriverIcon className="h-14 w-14 text-blue-300" />
-              <span className="ml-2 text-xl font-bold text-white">AutoFlow</span>
+              <WrenchScrewdriverIcon className="h-14 w-14" style={{ color: colors.primaryLight }} />
+              <span className="ml-2 text-xl font-bold" style={{ color: colors.text.primary }}>AutoFlow</span>
             </div>
           )}
           <button 
             onClick={handleToggleNav}
-            className="p-2 rounded-lg hover:bg-gray-100"
+            className="p-2 rounded-lg hover:opacity-80 transition-opacity"
+            style={{ backgroundColor: colors.hover }}
           >
             {state.isNavCollapsed ? (
-              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+              <ChevronRightIcon className="h-5 w-5" style={{ color: colors.text.secondary }} />
             ) : (
-              <ChevronLeftIcon className="h-5 w-5 text-gray-400" />
+              <ChevronLeftIcon className="h-5 w-5" style={{ color: colors.text.secondary }} />
             )}
           </button>
         </div>
@@ -148,21 +153,25 @@ export function Layout({ children }: LayoutProps) {
                     <button
                       onClick={() => handleToggleExpanded(item.name)}
                       className={clsx(
-                        'w-full flex items-center justify-between text-sm font-medium rounded-lg transition-colors duration-200',
+                        'w-full flex items-center justify-between text-sm font-bold rounded-lg transition-all duration-200',
                         state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2',
                         hasActiveChild 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'text-white hover:bg-gray-100 hover:text-blue-600'
+                          ? 'text-white shadow-md'
+                          : 'text-opacity-100 hover:bg-opacity-10'
                       )}
+                      style={{
+                        backgroundColor: hasActiveChild ? colors.primary : 'transparent',
+                        color: hasActiveChild ? colors.text.primary : colors.text.primary
+                      }}
                       title={state.isNavCollapsed ? item.name : undefined}
                     >
                       <div className="flex items-center">
                         <item.icon 
                           className={clsx(
                             'h-5 w-5',
-                            hasActiveChild ? 'text-blue-600' : '',
                             !state.isNavCollapsed && 'mr-3'
-                          )} 
+                          )}
+                          style={{ color: hasActiveChild ? colors.primary : colors.text.primary }}
                           aria-hidden="true" 
                         />
                         {!state.isNavCollapsed && <span>{item.name}</span>}
@@ -189,17 +198,20 @@ export function Layout({ children }: LayoutProps) {
                               <Link
                                 to={child.href!}
                                 className={clsx(
-                                  'flex items-center px-3 py-2 text-sm rounded-lg transition-colors duration-200',
-                                  isChildActive 
-                                    ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-600' 
-                                    : 'text-white hover:bg-gray-50 hover:text-blue-600'
+                                  'flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 border-l-4',
+                                  isChildActive ? 'shadow-md text-white' : ''
                                 )}
+                                style={{
+                                  backgroundColor: isChildActive ? `${colors.primary}60` : 'transparent',
+                                  color: isChildActive ? colors.text.primary : colors.text.primary,
+                                  borderColor: isChildActive ? colors.primary : 'transparent'
+                                }}
                               >
                                 <child.icon 
                                   className={clsx(
                                     'h-4 w-4 mr-3',
-                                    isChildActive ? 'text-blue-600' : 'text-gray-100'
-                                  )} 
+                                  )}
+                                  style={{ color: isChildActive ? colors.primary : colors.text.secondary }}
                                 />
                                 {child.name}
                               </Link>
@@ -219,20 +231,22 @@ export function Layout({ children }: LayoutProps) {
                   <Link
                     to={item.href!}
                     className={clsx(
-                      'flex items-center text-sm font-medium rounded-lg transition-colors duration-200',
+                      'flex items-center text-sm font-bold rounded-lg transition-all duration-200',
                       state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2',
-                      isActive 
-                        ? 'bg-blue-100 text-blue-700' 
-                        : 'text-white hover:bg-gray-100 hover:text-blue-600'
+                      isActive ? 'text-white shadow-md' : ''
                     )}
+                    style={{
+                      backgroundColor: isActive ? `${colors.primary}90` : 'transparent',
+                      color: isActive ? colors.text.primary : colors.text.secondary
+                    }}
                     title={state.isNavCollapsed ? item.name : undefined}
                   >
                     <item.icon 
                       className={clsx(
                         'h-5 w-5',
-                        isActive ? 'text-blue-600' : '',
                         !state.isNavCollapsed && 'mr-3'
-                      )} 
+                      )}
+                      style={{ color: isActive ? colors.text.primary : colors.text.secondary }}
                       aria-hidden="true" 
                     />
                     {!state.isNavCollapsed && <span>{item.name}</span>}
@@ -245,28 +259,29 @@ export function Layout({ children }: LayoutProps) {
 
         {/* User info and logout */}
         {state.user && (
-          <div className="absolute bottom-0 w-full p-4 border-t border-gray-200">
+          <div className="absolute bottom-0 w-full p-4" style={{ borderTop: `1px solid ${colors.primaryDark}` }}>
             <div className={`flex items-center ${state.isNavCollapsed ? 'justify-center' : ''}`}>
               {!state.isNavCollapsed ? (
                 <>
                   <div className="flex-shrink-0">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span className="text-sm font-medium text-black">
+                    <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.primary }}>
+                      <span className="text-sm font-medium text-white">
                         {state.user.name.charAt(0)}
                       </span>
                     </div>
                   </div>
                   <div className="ml-3 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">
+                    <p className="text-sm font-medium truncate" style={{ color: colors.text.primary }}>
                       {state.user.name}
                     </p>
-                    <p className="text-xs text-white truncate">
+                    <p className="text-xs truncate" style={{ color: colors.text.secondary }}>
                       {getRoleText(state.user.role)}
                     </p>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="ml-2 p-1 text-gray-400 hover:text-gray-600"
+                    className="ml-2 p-1 hover:opacity-80 transition-opacity"
+                    style={{ color: colors.text.secondary }}
                     title="Cerrar Sesión"
                   >
                     <ArrowRightOnRectangleIcon className="h-5 w-5" />
@@ -274,7 +289,7 @@ export function Layout({ children }: LayoutProps) {
                 </>
               ) : (
                 <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.primary }}>
                     <span className="text-sm font-medium text-white">
                       {state.user.name.charAt(0)}
                     </span>
@@ -289,17 +304,20 @@ export function Layout({ children }: LayoutProps) {
       {/* Main content */}
       <div className={`transition-all duration-300 ${state.isNavCollapsed ? 'pl-16' : 'pl-64'}`}>
         {/* Header */}
-        <header className="h-16 bg-gray-600 border-b border-gray-300 flex items-center justify-between px-8">
+        <header className="h-16 border-b flex items-center justify-between px-8" style={{ backgroundColor: colors.header, borderColor: colors.primaryDark }}>
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-white">
+            <h1 className="text-xl font-semibold" style={{ color: colors.text.primary }}>
               {/* Título dinámico basado en la ruta actual */}
               Control de Talleres Mecanicos
             </h1>
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Botón de Tema */}
+            <ThemeDropdown />
+
             {/* Notificaciones */}
-            <button className="p-2 text-white hover:text-white relative">
+            <button className="p-2 hover:opacity-80 transition-opacity relative" style={{ color: colors.text.primary }}>
               <BellIcon className="h-5 w-5" />
               {/* Indicador de notificaciones */}
               <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
@@ -308,7 +326,7 @@ export function Layout({ children }: LayoutProps) {
             </button>
             
             {/* Información del usuario */}
-            <div className="text-sm text-white">
+            <div className="text-sm" style={{ color: colors.text.primary }}>
               Bienvenido, <span className="font-medium">{state.user?.name}</span>
             </div>
           </div>
