@@ -43,11 +43,11 @@ export function useAdminChat() {
   // Función para obtener TODOS los clientes desde SP_OBTENER_USUARIOS
   const obtenerTodosLosClientes = async (): Promise<ChatClienteItem[]> => {
     try {
-      console.log('🔄 Cargando clientes para chat admin desde SP_OBTENER_USUARIOS...');
+      console.log(' Cargando clientes para chat admin desde SP_OBTENER_USUARIOS...');
       
       // Obtener clientes desde BaseDatosJS (que usa el SP_OBTENER_USUARIOS)
       const clientesAPI = await obtenerClientesActualizados();
-      console.log('✅ Clientes obtenidos del SP:', clientesAPI.length, clientesAPI);
+      console.log(' Clientes obtenidos del SP:', clientesAPI.length, clientesAPI);
       
       // Mapear a estructura ChatClienteItem
       const clientesChat = clientesAPI.map(cliente => ({
@@ -57,11 +57,11 @@ export function useAdminChat() {
         noLeidos: 0
       }));
       
-      console.log('✅ Total clientes para chat:', clientesChat.length, clientesChat);
+      console.log(' Total clientes para chat:', clientesChat.length, clientesChat);
       
       return clientesChat;
     } catch (error) {
-      console.error('❌ Error cargando clientes:', error);
+      console.error(' Error cargando clientes:', error);
       return [];
     }
   };
