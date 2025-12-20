@@ -40,68 +40,29 @@ export function useAdminChat() {
     return `https://ui-avatars.com/api/?name=${encoded}&background=random&rounded=true&size=64`;
   };
 
-  // Función para obtener TODOS los clientes (CSV + BD registrados)
+  // Función para obtener TODOS los clientes desde SP_OBTENER_USUARIOS
   const obtenerTodosLosClientes = async (): Promise<ChatClienteItem[]> => {
     try {
-      console.log('🔄 Cargando clientes para chat admin...');
+      console.log('🔄 Cargando clientes para chat admin desde SP_OBTENER_USUARIOS...');
       
-      // 1. Clientes del CSV local
-      const clientesCSV = await obtenerClientesActualizados();
-      console.log('📋 Clientes CSV:', clientesCSV.length);
+      // Obtener clientes desde BaseDatosJS (que usa el SP_OBTENER_USUARIOS)
+      const clientesAPI = await obtenerClientesActualizados();
+      console.log('✅ Clientes obtenidos del SP:', clientesAPI.length, clientesAPI);
       
-      // 2. Clientes registrados en BD - LLAMADA DIRECTA A LA API
-      let clientesBD: any[] = [];
-      try {
-        const response = await fetch('http://localhost:8080/api/clients/registered');
-        if (response.ok) {
-          const result = await response.json();
-          clientesBD = result.success ? result.data : [];
-        }
-      } catch (error) {
-        console.warn('⚠️ Error obteniendo clientes de BD:', error);
-        clientesBD = [];
-      }
-      console.log('💾 Clientes BD:', clientesBD.length);
-      
-      // 3. Combinar y evitar duplicados (priorizar BD sobre CSV)
-      const clientesUnicos = new Map<string, ChatClienteItem>();
-      
-      // Primero agregar clientes CSV
-      clientesCSV.forEach(cliente => {
-        clientesUnicos.set(cliente.email, {
-          id: cliente.id,
-          nombre: cliente.name,
-          avatar: generarAvatar(cliente.name),
-          noLeidos: 0
-        });
-      });
-      
-      // Después agregar clientes BD (sobrescribe si hay email duplicado)
-      clientesBD.forEach((cliente: any) => {
-        // Generar ID compatible con el sistema de chat
-        const chatId = `client-bd-${cliente.UserId || cliente.userId}`;
-        clientesUnicos.set(cliente.Email || cliente.email, {
-          id: chatId,
-          nombre: cliente.FullName || cliente.fullName,
-          avatar: generarAvatar(cliente.FullName || cliente.fullName),
-          noLeidos: 0
-        });
-      });
-      
-      const clientesFinales = Array.from(clientesUnicos.values());
-      console.log('✅ Total clientes únicos:', clientesFinales.length);
-      
-      return clientesFinales;
-    } catch (error) {
-      console.error('❌ Error cargando clientes:', error);
-      // Fallback a solo CSV si falla la BD
-      const clientesCSV = await obtenerClientesActualizados();
-      return clientesCSV.map(c => ({
-        id: c.id,
-        nombre: c.name,
-        avatar: generarAvatar(c.name),
+      // Mapear a estructura ChatClienteItem
+      const clientesChat = clientesAPI.map(cliente => ({
+        id: cliente.id,
+        nombre: cliente.name,
+        avatar: generarAvatar(cliente.name),
         noLeidos: 0
       }));
+      
+      console.log('✅ Total clientes para chat:', clientesChat.length, clientesChat);
+      
+      return clientesChat;
+    } catch (error) {
+      console.error('❌ Error cargando clientes:', error);
+      return [];
     }
   };
 

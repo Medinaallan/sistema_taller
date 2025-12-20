@@ -717,6 +717,13 @@ app.get('/api/clients/registered', async (req, res) => {
       .execute('SP_OBTENER_CLIENTES_REGISTRADOS');
 
     console.log(`✅ Encontrados ${result.recordset.length} clientes registrados en BD`);
+    
+    // Debug: mostrar la estructura de los primeros clientes
+    if (result.recordset.length > 0) {
+      console.log('📋 Estructura del primer cliente:', Object.keys(result.recordset[0]));
+      console.log('📋 Primer cliente completo:', JSON.stringify(result.recordset[0], null, 2));
+    }
+    
     res.json({
       success: true,
       data: result.recordset,

@@ -13,8 +13,8 @@ export let clientesRegistrados: Client[] = [];
 // Función para cargar clientes desde base de datos vía SP_OBTENER_USUARIOS
 async function cargarClientesDesdeCSV(): Promise<Client[]> {
   try {
-    console.log('📋 GET /api/clients/registered - Obteniendo todos los clientes desde BD');
-    console.log('🔄 Usando SP_OBTENER_USUARIOS para cargar clientes...');
+    console.log(' GET /api/clients/registered - Obteniendo todos los clientes desde BD');
+    console.log(' Usando SP_OBTENER_USUARIOS para cargar clientes...');
     
     const response = await fetch(`${API_BASE_URL}/users/list`);
     
@@ -24,34 +24,45 @@ async function cargarClientesDesdeCSV(): Promise<Client[]> {
     }
     
     const data = await response.json();
-    console.log('📊 Respuesta de API usuarios:', data);
+    console.log(' Respuesta de API usuarios:', data);
     
     if (data.success && data.data) {
-      console.log('✅ API exitosa, procesando', data.data.length, 'usuarios');
+      console.log(' API exitosa, procesando', data.data.length, 'usuarios');
+      console.log(' Primeros usuarios:', JSON.stringify(data.data.slice(0, 3), null, 2));
       
       // Filtrar solo usuarios con rol "Cliente" y convertir al formato Client
       const clientesConvertidos = data.data
-        .filter((usuario: any) => usuario.rol === 'Cliente')
-        .map((usuario: any) => ({
-          id: usuario.usuario_id.toString(),
-          name: usuario.nombre_completo,
-          email: usuario.correo,
-          phone: usuario.telefono,
-          address: '', // Los usuarios no tienen dirección en el SP
-          password: '', // No exponemos contraseñas
-          vehicles: [], // Los vehículos se cargarían por separado
-          createdAt: new Date(), // Fecha genérica
-          updatedAt: new Date()
-        }));
+        .filter((usuario: any) => {
+          const esCliente = usuario.rol === 'Cliente';
+          if (!esCliente) {
+            console.log(` Omitiendo ${usuario.nombre_completo} (rol: ${usuario.rol})`);
+          }
+          return esCliente;
+        })
+        .map((usuario: any) => {
+          const clienteConvertido = {
+            id: usuario.usuario_id.toString(),
+            name: usuario.nombre_completo,
+            email: usuario.correo,
+            phone: usuario.telefono,
+            address: '', // Los usuarios no tienen dirección en el SP
+            password: '', // No exponemos contraseñas
+            vehicles: [], // Los vehículos se cargarían por separado
+            createdAt: new Date(), // Fecha genérica
+            updatedAt: new Date()
+          };
+          console.log(`    Cliente convertido: ${clienteConvertido.name} (${clienteConvertido.email})`);
+          return clienteConvertido;
+        });
       
-      console.log('🎯 Clientes (rol Cliente) convertidos:', clientesConvertidos.length);
+      console.log(' Clientes (rol Cliente) convertidos:', clientesConvertidos.length);
       return clientesConvertidos;
     } else {
-      console.warn('⚠️ API no exitosa o sin datos');
+      console.warn(' API no exitosa o sin datos');
       return [];
     }
   } catch (error) {
-    console.error('❌ Error cargando clientes desde API usuarios:', error);
+    console.error(' Error cargando clientes desde API usuarios:', error);
     return [];
   }
 }
@@ -59,7 +70,7 @@ async function cargarClientesDesdeCSV(): Promise<Client[]> {
 // Función para guardar cliente en CSV vía API
 async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
   try {
-    console.log('💾 Guardando cliente en CSV:', cliente.name);
+    console.log(' Guardando cliente en CSV:', cliente.name);
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
       headers: {
@@ -75,22 +86,22 @@ async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
     });
     
     if (!response.ok) {
-      console.error('❌ Error HTTP al guardar cliente:', response.status);
+      console.error(' Error HTTP al guardar cliente:', response.status);
       return false;
     }
     
     const data = await response.json();
-    console.log('📊 Respuesta del servidor:', data);
+    console.log(' Respuesta del servidor:', data);
     
     if (data.success) {
-      console.log('✅ Cliente guardado exitosamente en CSV:', data.data?.name);
+      console.log(' Cliente guardado exitosamente en CSV:', data.data?.name);
       return true;
     } else {
-      console.error('❌ Error guardando cliente:', data.error);
+      console.error(' Error guardando cliente:', data.error);
       return false;
     }
   } catch (error) {
-    console.error('❌ Error en guardarClienteEnCSV:', error);
+    console.error(' Error en guardarClienteEnCSV:', error);
     return false;
   }
 }
@@ -141,7 +152,7 @@ export async function obtenerClientesActualizados(): Promise<Client[]> {
 
 // Función para agregar un nuevo cliente
 export async function agregarCliente(nuevoCliente: Client): Promise<Client | null> {
-  console.log('💾 Agregando nuevo cliente:', nuevoCliente.name);
+  console.log(' Agregando nuevo cliente:', nuevoCliente.name);
   
   // Guardar en CSV vía API
   const guardado = await guardarClienteEnCSV(nuevoCliente);
@@ -153,11 +164,11 @@ export async function agregarCliente(nuevoCliente: Client): Promise<Client | nul
     // Buscar el cliente recién creado por email
     const clienteCreado = clientesRegistrados.find(c => c.email === nuevoCliente.email);
     
-    console.log('✅ Cliente agregado exitosamente');
-    console.log('📊 Total clientes registrados:', clientesRegistrados.length);
+    console.log(' Cliente agregado exitosamente');
+    console.log(' Total clientes registrados:', clientesRegistrados.length);
     return clienteCreado || nuevoCliente;
   } else {
-    console.error('❌ Error al agregar cliente en CSV');
+    console.error(' Error al agregar cliente en CSV');
     return null;
   }
 }
@@ -221,9 +232,9 @@ export function limpiarLocalStorage(): void {
     // Eliminar clientes del localStorage
     localStorage.removeItem('tallerApp_clientesRegistrados');
     localStorage.removeItem('tallerApp_clients');
-    console.log('🧹 LocalStorage de clientes limpiado');
+    console.log(' LocalStorage de clientes limpiado');
   } catch (error) {
-    console.error('❌ Error limpiando localStorage:', error);
+    console.error(' Error limpiando localStorage:', error);
   }
 }
 
