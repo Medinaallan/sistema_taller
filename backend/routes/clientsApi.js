@@ -16,8 +16,8 @@ const router = express.Router();
 /**
  * 📋 GET /api/clients/registered - Obtener todos los clientes registrados
  * 
- * SP: SP_OBTENER_USUARIOS
- * Params: @obtener_todos BIT, @usuario_id INT
+ * SP: SP_OBTENER_USUARIOS (obtiene TODOS los usuarios)
+ * Params: @usuario_id INT 
  * Return: usuario_id, nombre_completo, correo, telefono, rol
  */
 router.get('/registered', async (req, res) => {
@@ -26,20 +26,19 @@ router.get('/registered', async (req, res) => {
     
     const pool = await getConnection();
     
-    // Obtener TODOS los usuarios (@obtener_todos = 1, @usuario_id = NULL)
+    // SP_OBTENER_USUARIOS obtiene todos los usuarios
     const result = await pool.request()
-      .input('obtener_todos', sql.Bit, 1)
       .input('usuario_id', sql.Int, null)
       .execute('SP_OBTENER_USUARIOS');
     
     console.log(`📊 SP_OBTENER_USUARIOS devolvió ${result.recordset.length} usuarios`);
     
-    // Transformar datos del SP al formato esperado por el frontend
+    // Transformar datos al formato esperado por el frontend
     const clients = result.recordset.map(user => ({
       id: user.usuario_id?.toString(),
       name: user.nombre_completo,
       email: user.correo,
-      phone: user.telefono,
+      phone: user.telefono || '',
       role: user.rol,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -51,7 +50,7 @@ router.get('/registered', async (req, res) => {
       total: clients.length
     });
     
-    console.log(`✅ Enviados ${clients.length} usuarios al frontend`);
+    console.log(`✅ Enviados ${clients.length} clientes al frontend`);
     
   } catch (error) {
     console.error('❌ Error obteniendo clientes:', error);
@@ -67,7 +66,7 @@ router.get('/registered', async (req, res) => {
  * 👤 GET /api/clients/:id - Obtener un cliente específico
  * 
  * SP: SP_OBTENER_USUARIOS
- * Params: @obtener_todos BIT, @usuario_id INT
+ * Params: @usuario_id INT
  * Return: usuario_id, nombre_completo, correo, telefono, rol
  */
 router.get('/:id', async (req, res) => {
@@ -86,9 +85,8 @@ router.get('/:id', async (req, res) => {
     
     const pool = await getConnection();
     
-    // Obtener usuario específico (@obtener_todos = 0, @usuario_id = ID)
+    // Usar SP con solo @usuario_id
     const result = await pool.request()
-      .input('obtener_todos', sql.Bit, 0)
       .input('usuario_id', sql.Int, usuarioId)
       .execute('SP_OBTENER_USUARIOS');
     

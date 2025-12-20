@@ -700,37 +700,19 @@ app.post('/api/clients', async (req, res) => {
 });
 */
 
-// Obtener clientes registrados en la BD (para el panel de admin)
-app.get('/api/clients/registered', async (req, res) => {
-  try {
-    console.log('🔍 Obteniendo clientes registrados en BD...');
-    const pool = await getConnection();
-    const result = await pool.request()
-      .execute('SP_OBTENER_CLIENTES_REGISTRADOS');
-
-    console.log(`✅ Encontrados ${result.recordset.length} clientes registrados en BD`);
-    
-    // Debug: mostrar la estructura de los primeros clientes
-    if (result.recordset.length > 0) {
-      console.log('📋 Estructura del primer cliente:', Object.keys(result.recordset[0]));
-      console.log('📋 Primer cliente completo:', JSON.stringify(result.recordset[0], null, 2));
-    }
-    
-    res.json({
-      success: true,
-      data: result.recordset,
-      count: result.recordset.length
-    });
-
-  } catch (error) {
-    console.error('❌ Error obteniendo clientes registrados:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
+// ========================================
+// ENDPOINTS DE CLIENTES
+// ========================================
+// IMPORTANTE: Los endpoints de clientes ahora se manejan en routes/clientsApi.js
+// No agregar endpoints duplicados aquí para evitar conflictos
+try {
+  console.log('📋 Cargando rutas de clientes desde routes/clientsApi.js...');
+  const clientsApiRouter = require('./routes/clientsApi');
+  app.use('/api/clients', clientsApiRouter);
+  console.log('✅ Rutas de clientes cargadas correctamente');
+} catch (error) {
+  console.error('❌ Error cargando rutas de clientes:', error.message);
+}
 
 // 404
 app.use('*', (req, res) => {

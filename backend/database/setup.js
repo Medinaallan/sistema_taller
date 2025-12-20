@@ -420,19 +420,36 @@ async function setupDatabase() {
     
     await pool.request().query(`
       CREATE PROCEDURE SP_OBTENER_USUARIOS
-        @usuario_id INT
+        @obtener_todos BIT = 0,
+        @usuario_id INT = NULL
       AS
       BEGIN
         SET NOCOUNT ON;
         
-        SELECT 
-          UserId AS usuario_id,
-          FullName AS nombre_completo,
-          Email AS correo,
-          Phone AS telefono,
-          UserType AS rol
-        FROM Users 
-        WHERE UserId = @usuario_id AND IsActive = 1;
+        IF @obtener_todos = 1
+        BEGIN
+          -- Obtener todos los usuarios activos
+          SELECT 
+            UserId AS usuario_id,
+            FullName AS nombre_completo,
+            Email AS correo,
+            Phone AS telefono,
+            UserType AS rol
+          FROM Users 
+          WHERE IsActive = 1;
+        END
+        ELSE
+        BEGIN
+          -- Obtener usuario específico
+          SELECT 
+            UserId AS usuario_id,
+            FullName AS nombre_completo,
+            Email AS correo,
+            Phone AS telefono,
+            UserType AS rol
+          FROM Users 
+          WHERE UserId = @usuario_id AND IsActive = 1;
+        END
       END
     `);
 
