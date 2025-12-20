@@ -65,12 +65,12 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
         try {
           const response = await servicesService.getAll();
           if (response.success) {
-            const mappedServices = response.data.map((csvService: any) => ({
-              id: csvService.id,
-              name: csvService.nombre,
-              description: csvService.descripcion || '',
-              basePrice: parseFloat(csvService.precio) || 0,
-              estimatedTime: csvService.duracion || '',
+            const mappedServices = response.data.map((service: any) => ({
+              id: service.id,
+              name: service.nombre,
+              description: service.descripcion || '',
+              basePrice: parseFloat(service.precio) || 0,
+              estimatedTime: service.duracion || '',
             }));
             setServicios(mappedServices);
           }

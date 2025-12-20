@@ -52,7 +52,7 @@ class LogService {
     return response.json();
   }
 
-  // Exportar logs como CSV
+  // Exportar logs como archivo
   async exportLogs(filters?: LogFilters): Promise<Blob> {
     const params = new URLSearchParams(filters as any);
     const response = await fetch(`${API_URL}/logs/export?${params}`);

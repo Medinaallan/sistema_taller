@@ -101,10 +101,10 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
     try {
       const response = await servicesService.getAll();
       if (response.success) {
-        const mappedServices = response.data.map((csvService: any) => ({
-          id: csvService.id,
-          name: csvService.nombre,
-          nombre: csvService.nombre,
+        const mappedServices = response.data.map((service: any) => ({
+          id: service.id,
+          name: service.nombre,
+          nombre: service.nombre,
         }));
         setServicios(mappedServices);
       }

@@ -28,10 +28,10 @@ const ClientQuotationsPage = () => {
     try {
       const response = await servicesService.getAll();
       if (response.success) {
-        const mappedServices = response.data.map((csvService: any) => ({
-          id: csvService.id,
-          name: csvService.nombre,
-          nombre: csvService.nombre,
+        const mappedServices = response.data.map((service: any) => ({
+          id: service.id,
+          name: service.nombre,
+          nombre: service.nombre,
         }));
         setServicios(mappedServices);
       }
@@ -45,10 +45,10 @@ const ClientQuotationsPage = () => {
     try {
       const response = await appointmentsService.getAll();
       if (response.success) {
-        const appointmentsData = response.data.map((csvAppointment: any) => ({
-          id: csvAppointment.id,
-          date: new Date(csvAppointment.fecha).toLocaleDateString('es-ES'),
-          time: csvAppointment.hora,
+        const appointmentsData = response.data.map((appointment: any) => ({
+          id: appointment.id,
+          date: new Date(appointment.fecha).toLocaleDateString('es-ES'),
+          time: appointment.hora,
         }));
         setAppointments(appointmentsData);
       }

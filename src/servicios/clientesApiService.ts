@@ -1,6 +1,6 @@
 /**
  * 🌐 API SERVICE PARA CLIENTES
- * Maneja todas las operaciones CRUD con el backend CSV
+ * Maneja todas las operaciones CRUD con el backend usando SQL Server
  */
 
 const API_BASE_URL = 'http://localhost:8080/api'; // Usando server-minimal.js en puerto 8080

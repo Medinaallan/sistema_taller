@@ -11,7 +11,7 @@ const API_BASE_URL = 'http://localhost:8080/api';
 export let clientesRegistrados: Client[] = [];
 
 // Función para cargar clientes desde base de datos vía SP_OBTENER_USUARIOS
-async function cargarClientesDesdeCSV(): Promise<Client[]> {
+async function cargarClientesDB(): Promise<Client[]> {
   try {
     console.log(' GET /api/clients/registered - Obteniendo todos los clientes desde BD');
     console.log(' Usando SP_OBTENER_USUARIOS para cargar clientes...');
@@ -67,10 +67,10 @@ async function cargarClientesDesdeCSV(): Promise<Client[]> {
   }
 }
 
-// Función para guardar cliente en CSV vía API
-async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
+// Función para guardar cliente en base de datos vía API
+async function guardarCliente(cliente: Client): Promise<boolean> {
   try {
-    console.log(' Guardando cliente en CSV:', cliente.name);
+    console.log(' Guardando cliente en base de datos:', cliente.name);
     const response = await fetch(`${API_BASE_URL}/clients`, {
       method: 'POST',
       headers: {
@@ -101,21 +101,21 @@ async function guardarClienteEnCSV(cliente: Client): Promise<boolean> {
       return false;
     }
   } catch (error) {
-    console.error(' Error en guardarClienteEnCSV:', error);
+      console.error(' Error en guardarCliente:', error);
     return false;
   }
 }
 
-// Función para inicializar clientes desde CSV
-export async function inicializarClientesDesdeCSV(): Promise<void> {
-  clientesRegistrados = await cargarClientesDesdeCSV();
+// Función para inicializar clientes desde base de datos
+export async function inicializarClientes(): Promise<void> {
+  clientesRegistrados = await cargarClientesDB();
   
   // Configurar recarga automática cada 30 segundos
   setInterval(async () => {
     try {
-      const clientesActualizados = await cargarClientesDesdeCSV();
+      const clientesActualizados = await cargarClientesDB();
       if (clientesActualizados.length !== clientesRegistrados.length) {
-        console.log(`Cambios detectados en CSV: ${clientesActualizados.length} clientes`);
+        console.log(`Cambios detectados en base de datos: ${clientesActualizados.length} clientes`);
         clientesRegistrados = clientesActualizados;
       }
     } catch (error) {
@@ -124,17 +124,17 @@ export async function inicializarClientesDesdeCSV(): Promise<void> {
   }, 30000); // 30 segundos
 }
 
-// Función para recargar clientes desde CSV (para refrescar cambios manuales)
-export async function recargarClientesDesdeCSV(): Promise<void> {
-  console.log('Recargando clientes desde CSV...');
-  clientesRegistrados = await cargarClientesDesdeCSV();
+// Función para recargar clientes desde base de datos (para refrescar cambios manuales)
+export async function recargarClientes(): Promise<void> {
+  console.log('Recargando clientes desde base de datos...');
+  clientesRegistrados = await cargarClientesDB();
 }
 
 // Función para obtener todos los clientes (con opción de recargar)
 export async function obtenerClientes(recargar: boolean = true): Promise<Client[]> {
   if (recargar) {
-    // Recargar datos frescos del CSV
-    clientesRegistrados = await cargarClientesDesdeCSV();
+    // Recargar datos frescos de la base de datos
+    clientesRegistrados = await cargarClientesDB();
   }
   return [...clientesRegistrados];
 }
@@ -146,7 +146,7 @@ export function obtenerClientesEnMemoria(): Client[] {
 
 // Función para obtener todos los clientes con recarga forzada
 export async function obtenerClientesActualizados(): Promise<Client[]> {
-  await recargarClientesDesdeCSV();
+  await recargarClientes();
   return [...clientesRegistrados];
 }
 
@@ -154,12 +154,12 @@ export async function obtenerClientesActualizados(): Promise<Client[]> {
 export async function agregarCliente(nuevoCliente: Client): Promise<Client | null> {
   console.log(' Agregando nuevo cliente:', nuevoCliente.name);
   
-  // Guardar en CSV vía API
-  const guardado = await guardarClienteEnCSV(nuevoCliente);
+  // Guardar en base de datos vía API
+  const guardado = await guardarCliente(nuevoCliente);
   
   if (guardado) {
-    // Recargar datos desde el CSV para obtener el cliente con ID generado
-    await recargarClientesDesdeCSV();
+    // Recargar datos desde la base de datos para obtener el cliente con ID generado
+    await recargarClientes();
     
     // Buscar el cliente recién creado por email
     const clienteCreado = clientesRegistrados.find(c => c.email === nuevoCliente.email);
@@ -168,7 +168,7 @@ export async function agregarCliente(nuevoCliente: Client): Promise<Client | nul
     console.log(' Total clientes registrados:', clientesRegistrados.length);
     return clienteCreado || nuevoCliente;
   } else {
-    console.error(' Error al agregar cliente en CSV');
+    console.error(' Error al agregar cliente en base de datos');
     return null;
   }
 }
@@ -198,7 +198,7 @@ export async function actualizarCliente(id: string, datosActualizados: Partial<C
       updatedAt: new Date()
     };
     
-    // Aquí podrías agregar lógica para actualizar en CSV si es necesario
+    // Aquí podrías agregar lógica para actualizar en la base de datos si es necesario
     console.log('Cliente actualizado:', clientesRegistrados[index]);
     return clientesRegistrados[index];
   }

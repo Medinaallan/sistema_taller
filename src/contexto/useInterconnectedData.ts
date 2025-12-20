@@ -1,7 +1,7 @@
 // Hook personalizado para funciones de datos interconectados
 import { useCallback } from 'react';
 import { useApp } from './useApp';
-import { agregarCliente, recargarClientesDesdeCSV } from '../utilidades/BaseDatosJS';
+import { agregarCliente, recargarClientes } from '../utilidades/BaseDatosJS';
 import { businessLogService } from '../servicios/businessLogService';
 import type { Client, Vehicle, WorkOrder, Invoice, Payment, Quotation, Appointment } from '../tipos/index';
 
@@ -101,7 +101,7 @@ export const useInterconnectedData = () => {
     try {
       console.log('🔄 Creando cliente con log:', client.name);
       
-      // Guardar cliente en CSV vía API
+      // Guardar cliente en base de datos vía API
       const clienteGuardado = await agregarCliente(client);
       
       if (clienteGuardado) {
@@ -121,7 +121,7 @@ export const useInterconnectedData = () => {
         
         // Recargar datos para sincronizar
         setTimeout(async () => {
-          await recargarClientesDesdeCSV();
+          await recargarClientes();
         }, 1000);
         
         console.log('✅ Cliente creado exitosamente:', clienteGuardado.name);

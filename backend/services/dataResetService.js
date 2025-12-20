@@ -1,11 +1,10 @@
 const fs = require('fs-extra');
 const path = require('path');
-const csvService = require('./csvService');
 
 /**
  * 🔄 SERVICIO DE RESTABLECIMIENTO DE DATOS
  * 
- * Permite restablecer todos los CSVs del sistema con datos de ejemplo
+ * Servicio para restablecer datos (basado en SQL Server - csvService deshabilitado)
  */
 
 class DataResetService {
@@ -249,40 +248,16 @@ class DataResetService {
 
   /**
    * 🔄 RESTABLECER TODOS LOS DATOS (VACIAR COMPLETAMENTE)
+   * DESHABILITADO - Sistema ahora usa SQL Server en lugar de CSV
    */
   async resetAllData() {
     try {
-      console.log('🔄 Iniciando restablecimiento de datos (VACÍO)...');
-      
-      // 1. Crear backup de datos actuales
-      await this.createBackup();
-      
-      // 2. Vaciar completamente cada archivo CSV
-      await csvService.writeCSV('clients', 'clients.csv', [], ['id', 'nombre', 'email', 'telefono', 'direccion', 'vehiculos']);
-      console.log('✅ clients.csv vaciado completamente');
-      
-      await csvService.writeCSV('vehicles', 'vehicles.csv', [], ['id', 'clienteId', 'marca', 'modelo', 'año', 'placa', 'color']);
-      console.log('✅ vehicles.csv vaciado completamente');
-      
-      await csvService.writeCSV('appointments', 'appointments.csv', [], ['id', 'clienteId', 'vehiculoId', 'fecha', 'hora', 'servicio', 'estado', 'notas']);
-      console.log('✅ appointments.csv vaciado completamente');
-      
-      await csvService.writeCSV('services', 'services.csv', [], ['id', 'nombre', 'descripcion', 'precio', 'duracion', 'categoria']);
-      console.log('✅ services.csv vaciado completamente');
-      
-      console.log('✅ TODOS LOS DATOS BORRADOS - Sistema completamente limpio');
+      console.log('⚠️  csvService ha sido eliminado - Usando SQL Server para datos');
       return {
-        success: true,
-        message: 'Todos los archivos CSV han sido vaciados completamente',
-        details: {
-          clients: 'Vaciado',
-          vehicles: 'Vaciado',
-          appointments: 'Vaciado',
-          services: 'Vaciado'
-        },
-        timestamp: new Date().toISOString()
+        success: false,
+        message: 'El servicio de restablecimiento CSV ha sido deshabilitado. Usar SQL Server directamente.',
+        error: 'CSV service removed'
       };
-      
     } catch (error) {
       console.error('❌ Error durante el restablecimiento:', error);
       throw error;
@@ -316,46 +291,42 @@ class DataResetService {
 
   /**
    * 👥 RESTABLECER CLIENTES
+   * DESHABILITADO - Sistema ahora usa SQL Server
    */
   async resetClients() {
-    const clients = this.getSampleClients();
-    await csvService.writeCSV('clients', 'clients.csv', clients);
-    console.log(`✅ ${clients.length} clientes restablecidos`);
-    return { count: clients.length, module: 'clients' };
+    console.log('  csvService ha sido eliminado');
+    return { count: 0, module: 'clients', error: 'CSV service removed' };
   }
 
   /**
    * 🚗 RESTABLECER VEHÍCULOS
+   * DESHABILITADO - Sistema ahora usa SQL Server
    */
   async resetVehicles() {
-    const vehicles = this.getSampleVehicles();
-    await csvService.writeCSV('vehicles', 'vehicles.csv', vehicles);
-    console.log(`✅ ${vehicles.length} vehículos restablecidos`);
-    return { count: vehicles.length, module: 'vehicles' };
+    console.log('  csvService ha sido eliminado');
+    return { count: 0, module: 'vehicles', error: 'CSV service removed' };
   }
 
   /**
-   * 📅 RESTABLECER CITAS
+   *  RESTABLECER CITAS
+   * DESHABILITADO - Sistema ahora usa SQL Server
    */
   async resetAppointments() {
-    const appointments = this.getSampleAppointments();
-    await csvService.writeCSV('appointments', 'appointments.csv', appointments);
-    console.log(`✅ ${appointments.length} citas restablecidas`);
-    return { count: appointments.length, module: 'appointments' };
+    console.log('  csvService ha sido eliminado');
+    return { count: 0, module: 'appointments', error: 'CSV service removed' };
   }
 
   /**
    * 🔧 RESTABLECER SERVICIOS
+   * DESHABILITADO - Sistema ahora usa SQL Server
    */
   async resetServices() {
-    const services = this.getSampleServices();
-    await csvService.writeCSV('services', 'services.csv', services);
-    console.log(`✅ ${services.length} servicios restablecidos`);
-    return { count: services.length, module: 'services' };
+    console.log('  csvService ha sido eliminado');
+    return { count: 0, module: 'services', error: 'CSV service removed' };
   }
 
   /**
-   * 📊 OBTENER ESTADÍSTICAS DE DATOS
+   *  OBTENER ESTADÍSTICAS DE DATOS
    */
   async getDataStats() {
     try {
@@ -372,31 +343,23 @@ class DataResetService {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('❌ Error obteniendo estadísticas:', error);
+      console.error(' Error obteniendo estadísticas:', error);
       throw error;
     }
   }
 
   /**
-   * 📈 OBTENER ESTADÍSTICAS DE UN MÓDULO
+   * OBTENER ESTADÍSTICAS DE UN MÓDULO
+   * DESHABILITADO - csvService eliminado
    */
   async getModuleStats(module, filename) {
     try {
-      const data = await csvService.readCSV(module, filename);
-      const filePath = path.join(this.dataPath, module, filename);
-      const exists = await fs.pathExists(filePath);
-      
-      let lastModified = null;
-      if (exists) {
-        const stats = await fs.stat(filePath);
-        lastModified = stats.mtime.toISOString();
-      }
-      
+      console.log('  csvService ha sido eliminado');
       return {
-        count: data.length,
-        exists,
-        lastModified,
-        path: filePath
+        count: 0,
+        exists: false,
+        lastModified: null,
+        error: 'CSV service removed'
       };
     } catch (error) {
       return {

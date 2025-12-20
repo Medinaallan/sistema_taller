@@ -8,9 +8,6 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const spacesService = require('./services/spacesService');
 
-// Servicios CSV
-const csvService = require('./services/csvService');
-
 // Configuración del servidor
 const app = express();
 const server = http.createServer(app);
@@ -61,17 +58,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 👥 IMPORTAR Y CONFIGURAR RUTAS DE API CSV
+// 👥 IMPORTAR Y CONFIGURAR RUTAS DE API CSV - DESHABILITADO
+// csvService ha sido eliminado - Sistema ahora usa SQL Server
 try {
-  console.log('🔄 Cargando rutas de API CSV...');
-  const clientsApiRouter = require('./routes/clientsApi');
-  app.use('/api/clients', clientsApiRouter);
-  console.log('✅ Rutas de API CSV cargadas exitosamente');
-  console.log('   📍 /api/clients/* endpoints disponibles');
+  console.log('⚠️  API CSV deshabilitada - Usar SQL Server');
 } catch (error) {
-  console.error('❌ Error cargando rutas de API CSV:', error.message);
-  console.error('   Stack:', error.stack);
-  console.warn('⚠️  El servidor continuará sin las rutas de clientes CSV');
+  console.error('❌ Error cargando rutas:', error.message);
 }
 
 //  IMPORTAR Y CONFIGURAR RUTAS DE SERVICIOS
@@ -848,12 +840,12 @@ io.on('connection', (socket) => {
 
 // Registrar endpoint para historial desde factura pagada
 try {
-  console.log('🧾 Cargando endpoint de historial desde factura pagada...');
+  console.log(' Cargando endpoint de historial desde factura pagada...');
   const serviceHistoryFromInvoiceRouter = require('./routes/serviceHistoryFromInvoice');
   app.use('/api/service-history', serviceHistoryFromInvoiceRouter);
-  console.log('✅ Endpoint /api/service-history/from-invoice habilitado');
+  console.log(' Endpoint /api/service-history/from-invoice habilitado');
 } catch (error) {
-  console.error('❌ Error cargando endpoint de historial desde factura pagada:', error.message);
+  console.error(' Error cargando endpoint de historial desde factura pagada:', error.message);
 }
 
 server.listen(PORT, () => {
