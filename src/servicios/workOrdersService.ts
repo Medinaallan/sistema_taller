@@ -98,6 +98,28 @@ class WorkOrdersService {
     }
   }
 
+  // Obtener órdenes de trabajo por estado
+  async getWorkOrdersByStatus(estado: string): Promise<WorkOrderData[]> {
+    try {
+      const allWorkOrders = await this.getAllWorkOrders();
+      return allWorkOrders.filter(workOrder => workOrder.estado === estado);
+    } catch (error) {
+      console.error('Error fetching work orders by status:', error);
+      throw error;
+    }
+  }
+
+  // Obtener primera orden completada (para mostrar en el dashboard)
+  async getFirstCompletedWorkOrder(): Promise<WorkOrderData | null> {
+    try {
+      const completedOrders = await this.getWorkOrdersByStatus('completed');
+      return completedOrders.length > 0 ? completedOrders[0] : null;
+    } catch (error) {
+      console.error('Error fetching first completed work order:', error);
+      return null;
+    }
+  }
+
   // Obtener orden de trabajo por ID
   async getWorkOrderById(id: string): Promise<WorkOrderData | null> {
     try {

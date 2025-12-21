@@ -49,6 +49,7 @@ export function DashboardPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [totalWorkOrders, setTotalWorkOrders] = useState(0);
+  const [completedWorkOrders, setCompletedWorkOrders] = useState(0);
   const { clientes: clientesAPI } = useClientesFromAPI();
 
   useEffect(() => {
@@ -64,6 +65,10 @@ export function DashboardPage() {
         if (response && Array.isArray(response)) {
           setWorkOrders(response);
           setTotalWorkOrders(response.length);
+          
+          // Contar órdenes completadas
+          const completed = response.filter(order => order.estado === 'completed').length;
+          setCompletedWorkOrders(completed);
         }
       } catch (error) {
         console.error('Error cargando órdenes de trabajo:', error);
@@ -160,7 +165,7 @@ export function DashboardPage() {
           />
           <StatCard
             title="Órdenes Completadas"
-            value={stats.completedOrders}
+            value={completedWorkOrders}
             icon={ChartBarIcon}
             color="bg-blue-600"
           />
