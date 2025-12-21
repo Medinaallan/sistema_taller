@@ -706,12 +706,12 @@ app.post('/api/clients', async (req, res) => {
 // IMPORTANTE: Los endpoints de clientes ahora se manejan en routes/clientsApi.js
 // No agregar endpoints duplicados aquí para evitar conflictos
 try {
-  console.log('📋 Cargando rutas de clientes desde routes/clientsApi.js...');
+  console.log(' Cargando rutas de clientes desde routes/clientsApi.js...');
   const clientsApiRouter = require('./routes/clientsApi');
   app.use('/api/clients', clientsApiRouter);
-  console.log('✅ Rutas de clientes cargadas correctamente');
+  console.log(' Rutas de clientes cargadas correctamente');
 } catch (error) {
-  console.error('❌ Error cargando rutas de clientes:', error.message);
+  console.error(' Error cargando rutas de clientes:', error.message);
 }
 
 // 404
