@@ -78,7 +78,7 @@ const AppointmentsPage = () => {
       // 1. Cargar vehículos
       const vehiculosRes = await vehiclesService.getAll();
       if (vehiculosRes.success) {
-        // Mapear igual que en VehiclesPage
+        // Mapear igual que en VehiclesPage 
         const mappedVehicles = vehiculosRes.data.map((spVehicle: any) => ({
           id: spVehicle.vehiculo_id?.toString() || spVehicle.id,
           clientId: spVehicle.cliente_id?.toString() || spVehicle.clientId,

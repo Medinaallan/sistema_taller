@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/comunes/UI';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
-import additionalQuotationsService from '../../servicios/additionalQuotationsService';
-import { chatService } from '../../servicios/chatService';
-import AdditionalQuotationForm from '../../componentes/ordenes-trabajo/AdditionalQuotationForm';
+import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
+import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { obtenerClientes } from '../../servicios/clientesApiService';
 
@@ -18,11 +17,10 @@ const WorkOrdersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrderData | null>(null);
   
-  // Estados para subcotización
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showQuotationModal, setShowQuotationModal] = useState(false);
-  const [password, setPassword] = useState('');
-  const [selectedOrderForQuotation, setSelectedOrderForQuotation] = useState<WorkOrderData | null>(null);
+  // Estados para gestión de tareas
+  const [showTasksModal, setShowTasksModal] = useState(false);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [selectedOrderForTasks, setSelectedOrderForTasks] = useState<WorkOrderData | null>(null);
   
   // Estados para datos de mapeo
   const [clientes, setClientes] = useState<any[]>([]);
@@ -156,8 +154,8 @@ const WorkOrdersPage = () => {
   const handleStartWorkOrder = async (orderId: string) => {
     if (confirm('¿Deseas iniciar esta orden de trabajo?')) {
       try {
-        // TODO: Implementar cambio de estado a in-progress
-        alert('Orden iniciada (TODO: implementar en backend)');
+        await workOrdersService.startWorkOrder(orderId);
+        alert('Orden iniciada exitosamente');
         await loadWorkOrders();
       } catch (err) {
         alert('Error iniciando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
@@ -165,11 +163,11 @@ const WorkOrdersPage = () => {
     }
   };
 
-  const handlePauseWorkOrder = async (orderId: string) => {
+  const handlePauseWorkOrder = async (_orderId: string) => {
     if (confirm('¿Deseas pausar esta orden de trabajo?')) {
       try {
-        // TODO: Implementar cambio de estado a paused
-        alert('Orden pausada (TODO: implementar en backend)');
+        // TODO: Implementar cambio de estado a paused en el backend
+        alert('Orden pausada (funcionalidad pendiente en backend)');
         await loadWorkOrders();
       } catch (err) {
         alert('Error pausando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
@@ -201,71 +199,36 @@ const WorkOrdersPage = () => {
     }
   };
 
+  // Funciones para gestionar tareas
+  const handleViewTasks = (order: WorkOrderData) => {
+    setSelectedOrderForTasks(order);
+    setShowTasksModal(true);
+  };
+
+  const handleAddTask = (order: WorkOrderData) => {
+    setSelectedOrderForTasks(order);
+    setShowAddTaskModal(true);
+  };
+
+  const handleTaskModalClose = () => {
+    setShowTasksModal(false);
+    setSelectedOrderForTasks(null);
+  };
+
+  const handleAddTaskModalClose = () => {
+    setShowAddTaskModal(false);
+  };
+
+  const handleAddTaskSuccess = () => {
+    // Cerrar modal de agregar tarea y reabrir modal de lista de tareas
+    setShowAddTaskModal(false);
+    setShowTasksModal(true);
+  };
+
   // Funciones para subcotización
-  const handleAdditionalQuotationAccess = (order: WorkOrderData) => {
-    setSelectedOrderForQuotation(order);
-    setShowPasswordModal(true);
-  };
-
-  const handlePasswordSubmit = () => {
-    if (password === 'admin123') {
-      setShowPasswordModal(false);
-      setShowQuotationModal(true);
-      setPassword('');
-    } else {
-      alert('Contraseña incorrecta');
-    }
-  };
-
-  const handleQuotationSubmit = async (quotationData: any) => {
-    try {
-      if (!selectedOrderForQuotation || !selectedOrderForQuotation.id) return;
-
-      // Crear la subcotización
-      await additionalQuotationsService.createAdditionalQuotation({
-        workOrderId: selectedOrderForQuotation.id,
-        clienteId: selectedOrderForQuotation.clienteId,
-        vehiculoId: selectedOrderForQuotation.vehiculoId,
-        tipo: 'adicional',
-        serviciosEncontrados: quotationData.serviciosEncontrados,
-        descripcionProblema: quotationData.descripcionProblema,
-        serviciosRecomendados: quotationData.serviciosRecomendados,
-        costoEstimado: parseFloat(quotationData.costoEstimado),
-        urgencia: quotationData.urgencia,
-        estado: 'pendiente-aprobacion',
-        requiereAprobacion: true,
-        notas: quotationData.notas
-      });
-
-      // Enviar mensaje al chat del cliente
-      const chatMessage = `🔧 **Nueva Subcotización Detectada**
-
-Durante la revisión de su vehículo (${selectedOrderForQuotation.vehiculoId}), hemos encontrado servicios adicionales que requieren atención:
-
-**Servicios encontrados:** ${quotationData.serviciosEncontrados}
-**Problema detectado:** ${quotationData.descripcionProblema}
-**Servicios recomendados:** ${quotationData.serviciosRecomendados}
-**Costo estimado:** ${formatCurrency(parseFloat(quotationData.costoEstimado))}
-**Urgencia:** ${quotationData.urgencia.toUpperCase()}
-
-Por favor, revise esta cotización adicional en su panel de cliente y confirme si desea proceder con los servicios recomendados.`;
-
-      await chatService.sendMessage({
-        clientId: selectedOrderForQuotation.clienteId,
-        message: chatMessage,
-        sender: 'admin',
-        timestamp: new Date().toISOString(),
-        type: 'subcotizacion'
-      });
-
-      setShowQuotationModal(false);
-      setSelectedOrderForQuotation(null);
-      alert('Subcotización creada y enviada al cliente exitosamente');
-
-    } catch (error) {
-      console.error('Error creando subcotización:', error);
-      alert('Error creando subcotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
-    }
+  const handleAdditionalQuotationAccess = (_order: WorkOrderData) => {
+    // TODO: Implementar lógica de subcotización
+    alert('Funcionalidad de subcotización en desarrollo. Usar botón "Agregar Tarea" para agregar servicios adicionales.');
   };
 
   const statusOptions = workOrdersService.getAvailableStates().map(state => ({
@@ -281,9 +244,9 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
     // TODO: Aquí podrías cargar los nombres reales de clientes desde la API
   ];
 
-  const pendingOrders = workOrders.filter(wo => wo.estado === 'pending' || wo.estado === 'Pendiente' || wo.estado === 'Aprobada');
+  const pendingOrders = workOrders.filter(wo => wo.estado === 'pending');
   const inProgressOrders = workOrders.filter(wo => wo.estado === 'in-progress');
-  const completedOrders = workOrders.filter(wo => wo.estado === 'completed' || wo.estado === 'Completada');
+  const completedOrders = workOrders.filter(wo => wo.estado === 'completed');
 
   return (
     <div className="space-y-6">
@@ -458,6 +421,20 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
                         >
                           👁️ Ver
                         </button>
+                        <button
+                          onClick={() => handleViewTasks(order)}
+                          className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-xs"
+                          title="Ver tareas de la orden"
+                        >
+                          📋 Ver tareas
+                        </button>
+                        <button
+                          onClick={() => handleAddTask(order)}
+                          className="px-2 py-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 text-xs"
+                          title="Agregar tarea a la orden"
+                        >
+                          ➕ Agregar Tarea
+                        </button>
                         {/* Botón Iniciar - disponible si está pending */}
                         {order.estado === 'pending' && (
                           <button
@@ -542,6 +519,28 @@ Por favor, revise esta cotización adicional en su panel de cliente y confirme s
           />
         )}
       </Modal>
+
+      {/* Modal de tareas */}
+      {selectedOrderForTasks && (
+        <>
+          <TasksListModal
+            isOpen={showTasksModal}
+            onClose={handleTaskModalClose}
+            workOrder={selectedOrderForTasks}
+            onAddTaskClick={() => {
+              setShowTasksModal(false);
+              setShowAddTaskModal(true);
+            }}
+          />
+
+          <AddTaskModal
+            isOpen={showAddTaskModal}
+            onClose={handleAddTaskModalClose}
+            workOrder={selectedOrderForTasks}
+            onSuccess={handleAddTaskSuccess}
+          />
+        </>
+      )}
     </div>
   );
 }

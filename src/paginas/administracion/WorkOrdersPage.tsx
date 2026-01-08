@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, DocumentPlusIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../componentes/comunes/UI';
 import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderModal';
+import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
+import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
@@ -22,6 +24,11 @@ const WorkOrdersPage = () => {
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [workOrdersWithNames, setWorkOrdersWithNames] = useState<Map<string, { clientName: string; vehicleName: string }>>(new Map());
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Estados para gestión de tareas
+  const [showTasksModal, setShowTasksModal] = useState(false);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [selectedOrderForTasks, setSelectedOrderForTasks] = useState<WorkOrderData | null>(null);
 
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
@@ -139,6 +146,32 @@ const WorkOrdersPage = () => {
     setWorkOrders(prev => [newWorkOrder, ...prev]);
     // Cerrar modal
     setIsCreateModalOpen(false);
+  };
+
+  // Funciones para gestionar tareas
+  const handleViewTasks = (order: WorkOrderData) => {
+    setSelectedOrderForTasks(order);
+    setShowTasksModal(true);
+  };
+
+  const handleAddTask = (order: WorkOrderData) => {
+    setSelectedOrderForTasks(order);
+    setShowAddTaskModal(true);
+  };
+
+  const handleTaskModalClose = () => {
+    setShowTasksModal(false);
+    setSelectedOrderForTasks(null);
+  };
+
+  const handleAddTaskModalClose = () => {
+    setShowAddTaskModal(false);
+  };
+
+  const handleAddTaskSuccess = () => {
+    // Cerrar modal de agregar tarea y reabrir modal de lista de tareas
+    setShowAddTaskModal(false);
+    setShowTasksModal(true);
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
@@ -382,6 +415,23 @@ const WorkOrdersPage = () => {
                           <EyeIcon className="h-4 w-4" />
                         </button>
 
+                        {/* Botones de gestión de tareas */}
+                        <button
+                          onClick={() => handleViewTasks(order)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="Ver tareas de la orden"
+                        >
+                          📋
+                        </button>
+
+                        <button
+                          onClick={() => handleAddTask(order)}
+                          className="text-teal-600 hover:text-teal-900"
+                          title="Agregar tarea a la orden"
+                        >
+                          ➕
+                        </button>
+
                         {/* Botón Iniciar - solo para órdenes pendientes */}
                         {order.estado === 'pending' && (
                           <button
@@ -570,6 +620,28 @@ const WorkOrdersPage = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateWorkOrderSuccess}
       />
+
+      {/* Modales de gestión de tareas */}
+      {selectedOrderForTasks && (
+        <>
+          <TasksListModal
+            isOpen={showTasksModal}
+            onClose={handleTaskModalClose}
+            workOrder={selectedOrderForTasks}
+            onAddTaskClick={() => {
+              setShowTasksModal(false);
+              setShowAddTaskModal(true);
+            }}
+          />
+
+          <AddTaskModal
+            isOpen={showAddTaskModal}
+            onClose={handleAddTaskModalClose}
+            workOrder={selectedOrderForTasks}
+            onSuccess={handleAddTaskSuccess}
+          />
+        </>
+      )}
     </div>
   );
 };

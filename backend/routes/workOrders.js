@@ -345,4 +345,180 @@ router.delete('/:id', (req, res) => {
   }
 });
 
+// ==================== GESTIÓN DE TAREAS DE OT ====================
+
+// GET - Obtener todas las tareas de una orden de trabajo
+router.get('/:id/tareas', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    console.log(`📋 Obteniendo tareas de OT ${id}`);
+    
+    const pool = await getConnection();
+    
+    const result = await pool.request()
+      .input('ot_id', sql.Int, parseInt(id))
+      .execute('SP_OBTENER_TAREAS_OT');
+
+    console.log('✅ SP_OBTENER_TAREAS_OT ejecutado exitosamente');
+    console.log('📊 Tareas encontradas:', result.recordset.length);
+
+    res.json({
+      success: true,
+      data: result.recordset,
+      count: result.recordset.length
+    });
+  } catch (error) {
+    console.error('❌ Error al obtener tareas de OT:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener tareas de la orden de trabajo',
+      error: error.message
+    });
+  }
+});
+
+// POST - Agregar nueva tarea a una orden de trabajo
+router.post('/:id/tareas', async (req, res) => {
+  const { id } = req.params;
+  const {
+    tipo_servicio_id,
+    descripcion = null,
+    horas_estimadas = null,
+    horas_reales = null,
+    prioridad = 3, // Normal por defecto
+    registrado_por = null
+  } = req.body;
+
+  try {
+    console.log(`➕ Agregando tarea a OT ${id}`);
+    console.log('Datos de tarea:', { tipo_servicio_id, descripcion, horas_estimadas, prioridad });
+
+    // Validar parámetros requeridos
+    if (!tipo_servicio_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'El campo tipo_servicio_id es requerido'
+      });
+    }
+
+    const pool = await getConnection();
+    
+    const result = await pool.request()
+      .input('ot_id', sql.Int, parseInt(id))
+      .input('tipo_servicio_id', sql.Int, parseInt(tipo_servicio_id))
+      .input('descripcion', sql.VarChar(300), descripcion)
+      .input('horas_estimadas', sql.Decimal(9, 2), horas_estimadas ? parseFloat(horas_estimadas) : null)
+      .input('horas_reales', sql.Decimal(9, 2), horas_reales ? parseFloat(horas_reales) : null)
+      .input('prioridad', sql.TinyInt, prioridad)
+      .input('registrado_por', sql.Int, registrado_por ? parseInt(registrado_por) : null)
+      .execute('SP_AGREGAR_TAREA_OT');
+
+    console.log('✅ SP_AGREGAR_TAREA_OT ejecutado exitosamente');
+    console.log('Resultado:', result.recordset);
+
+    const output = result.recordset?.[0] || {};
+    
+    res.status(200).json({
+      success: output.allow || false,
+      msg: output.msg || 'Tarea agregada exitosamente',
+      allow: output.allow || false,
+      ot_tarea_id: output.ot_tarea_id,
+      data: output
+    });
+  } catch (error) {
+    console.error('❌ Error al agregar tarea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al agregar tarea a la orden de trabajo',
+      error: error.message
+    });
+  }
+});
+
+// DELETE - Eliminar una tarea de OT
+router.delete('/tareas/:tareaId', async (req, res) => {
+  const { tareaId } = req.params;
+  const { eliminado_por = null } = req.body;
+
+  try {
+    console.log(`🗑️ Eliminando tarea ${tareaId}`);
+
+    const pool = await getConnection();
+    
+    const result = await pool.request()
+      .input('ot_tarea_id', sql.Int, parseInt(tareaId))
+      .input('eliminado_por', sql.Int, eliminado_por ? parseInt(eliminado_por) : null)
+      .execute('SP_ELIMINAR_TAREA_OT');
+
+    console.log('✅ SP_ELIMINAR_TAREA_OT ejecutado exitosamente');
+    console.log('Resultado:', result.recordset);
+
+    const output = result.recordset?.[0] || {};
+    
+    res.status(200).json({
+      success: output.allow || false,
+      msg: output.msg || 'Tarea eliminada exitosamente',
+      allow: output.allow || false
+    });
+  } catch (error) {
+    console.error('❌ Error al eliminar tarea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar tarea',
+      error: error.message
+    });
+  }
+});
+
+// PUT - Gestionar estado de una tarea
+router.put('/tareas/:tareaId/estado', async (req, res) => {
+  const { tareaId } = req.params;
+  const {
+    nuevo_estado,
+    horas_estimadas = null,
+    registrado_por = null
+  } = req.body;
+
+  try {
+    console.log(`🔄 Gestionando estado de tarea ${tareaId} a ${nuevo_estado}`);
+
+    // Validar parámetros requeridos
+    if (!nuevo_estado) {
+      return res.status(400).json({
+        success: false,
+        message: 'El campo nuevo_estado es requerido'
+      });
+    }
+
+    const pool = await getConnection();
+    
+    const result = await pool.request()
+      .input('ot_tarea_id', sql.Int, parseInt(tareaId))
+      .input('nuevo_estado', sql.VarChar(50), nuevo_estado)
+      .input('horas_estimadas', sql.Decimal(9, 2), horas_estimadas ? parseFloat(horas_estimadas) : null)
+      .input('registrado_por', sql.Int, registrado_por ? parseInt(registrado_por) : null)
+      .execute('SP_GESTIONAR_ESTADO_TAREA');
+
+    console.log('✅ SP_GESTIONAR_ESTADO_TAREA ejecutado exitosamente');
+    console.log('Resultado:', result.recordset);
+
+    const output = result.recordset?.[0] || {};
+    
+    res.status(200).json({
+      success: output.allow || false,
+      msg: output.msg || 'Estado de tarea gestionado exitosamente',
+      allow: output.allow || false,
+      data: output
+    });
+  } catch (error) {
+    console.error('❌ Error al gestionar estado de tarea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al gestionar estado de tarea',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
