@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, DocumentPlusIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, StopIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../componentes/comunes/UI';
 import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderModal';
 import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
@@ -124,12 +124,6 @@ const WorkOrdersPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleAdditionalQuotationAccess = (order: WorkOrderData) => {
-    setSelectedOrderForQuotation(order);
-    setShowPasswordPrompt(true);
-    setAdminPassword('');
-  };
-
   const handlePasswordSubmit = () => {
     if (adminPassword === 'admin123') {
       setShowPasswordPrompt(false);
@@ -152,11 +146,6 @@ const WorkOrdersPage = () => {
   const handleViewTasks = (order: WorkOrderData) => {
     setSelectedOrderForTasks(order);
     setShowTasksModal(true);
-  };
-
-  const handleAddTask = (order: WorkOrderData) => {
-    setSelectedOrderForTasks(order);
-    setShowAddTaskModal(true);
   };
 
   const handleTaskModalClose = () => {
@@ -198,22 +187,10 @@ const WorkOrdersPage = () => {
     }
   };
 
-  const handleStartWorkOrder = async (orderId: string) => {
-    if (confirm('¿Estás seguro de que quieres iniciar esta orden de trabajo?')) {
-      try {
-        await workOrdersService.startWorkOrder(orderId);
-        alert('Orden de trabajo iniciada exitosamente');
-        await loadWorkOrders(); // Recargar datos
-      } catch (err) {
-        alert('Error iniciando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
-      }
-    }
-  };
-
   const handlePauseWorkOrder = async (orderId: string) => {
     if (confirm('¿Estás seguro de que quieres pausar esta orden de trabajo?')) {
       try {
-        await workOrdersService.changeStatus(orderId, 'pending');
+        await workOrdersService.changeStatus(orderId, 'En espera de repuestos');
         alert('Orden de trabajo pausada exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
@@ -222,22 +199,23 @@ const WorkOrdersPage = () => {
     }
   };
 
-  const statusOptions = workOrdersService.getAvailableStates().map(state => ({
-    value: state.value === 'pending' ? '' : state.value, // Valor vacío para "todos"
-    label: state.value === 'pending' ? 'Todos los estados' : state.label
-  }));
-  
-  // Agregar opción "Todos los estados" al principio
-  statusOptions.unshift({ value: '', label: 'Todos los estados' });
+  // Agregar opción "Todos los estados" al inicio
+  const statusOptions = [
+    { value: '', label: 'Todos los estados' },
+    ...workOrdersService.getAvailableStates().map(state => ({
+      value: state.value,
+      label: state.label
+    }))
+  ];
 
   const clientOptions = [
     { value: '', label: 'Todos los clientes' },
     // TODO: Aquí podrías cargar los nombres reales de clientes desde la API
   ];
 
-  const pendingOrders = workOrders.filter(wo => wo.estado === 'pending');
-  const inProgressOrders = workOrders.filter(wo => wo.estado === 'in-progress');
-  const completedOrders = workOrders.filter(wo => wo.estado === 'completed');
+  const pendingOrders = workOrders.filter(wo => wo.estado === 'Abierta');
+  const inProgressOrders = workOrders.filter(wo => wo.estado === 'En proceso');
+  const completedOrders = workOrders.filter(wo => wo.estado === 'Completada');
 
   return (
     <div className="space-y-6">
@@ -376,16 +354,9 @@ const WorkOrdersPage = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge 
-                        variant={
-                          order.estado === 'completed' ? 'success' : 
-                          order.estado === 'in-progress' ? 'warning' : 
-                          'default'
-                        }
-                        size="sm"
-                      >
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${workOrdersService.getStatusColor(order.estado).bg} ${workOrdersService.getStatusColor(order.estado).text}`}>
                         {workOrdersService.formatStatus(order.estado)}
-                      </Badge>
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
@@ -415,36 +386,17 @@ const WorkOrdersPage = () => {
                           <EyeIcon className="h-4 w-4" />
                         </button>
 
-                        {/* Botones de gestión de tareas */}
+                        {/* Botón de gestión de tareas */}
                         <button
                           onClick={() => handleViewTasks(order)}
                           className="text-indigo-600 hover:text-indigo-900"
-                          title="Ver tareas de la orden"
+                          title="Ver y gestionar tareas"
                         >
                           📋
                         </button>
 
-                        <button
-                          onClick={() => handleAddTask(order)}
-                          className="text-teal-600 hover:text-teal-900"
-                          title="Agregar tarea a la orden"
-                        >
-                          ➕
-                        </button>
-
-                        {/* Botón Iniciar - solo para órdenes pendientes */}
-                        {order.estado === 'pending' && (
-                          <button
-                            onClick={() => handleStartWorkOrder(order.id!)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Iniciar orden de trabajo"
-                          >
-                            <PlayIcon className="h-4 w-4" />
-                          </button>
-                        )}
-
                         {/* Botón Pausar - solo para órdenes en progreso */}
-                        {order.estado === 'in-progress' && (
+                        {order.estado === 'En proceso' && (
                           <button
                             onClick={() => handlePauseWorkOrder(order.id!)}
                             className="text-orange-600 hover:text-orange-900"
@@ -455,7 +407,7 @@ const WorkOrdersPage = () => {
                         )}
 
                         {/* Botón Completar - solo para órdenes en progreso */}
-                        {order.estado === 'in-progress' && (
+                        {order.estado === 'En proceso' && (
                           <button
                             onClick={() => handleCompleteWorkOrder(order.id!)}
                             className="text-green-600 hover:text-green-900"
@@ -465,19 +417,8 @@ const WorkOrdersPage = () => {
                           </button>
                         )}
 
-                        {/* Botón Cotización Adicional - para órdenes en progreso o pendientes */}
-                        {(order.estado === 'in-progress' || order.estado === 'pending') && (
-                          <button
-                            onClick={() => handleAdditionalQuotationAccess(order)}
-                            className="text-purple-600 hover:text-purple-900"
-                            title="Cotización adicional (Admin)"
-                          >
-                            <DocumentPlusIcon className="h-4 w-4" />
-                          </button>
-                        )}
-
-                        {/* Botón Editar - para órdenes no completadas */}
-                        {order.estado !== 'completed' && (
+                        {/* Botón Editar - para órdenes no completadas ni cerradas */}
+                        {order.estado !== 'Completada' && order.estado !== 'Cerrada' && (
                           <button
                             onClick={() => {/* TODO: Implementar edición */}}
                             className="text-yellow-600 hover:text-yellow-900"
@@ -488,23 +429,23 @@ const WorkOrdersPage = () => {
                         )}
 
                         {/* Estados para órdenes completadas o canceladas */}
-                        {order.estado === 'completed' && (
+                        {order.estado === 'Completada' && (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             ✅ Completada
                           </span>
                         )}
 
-                        {order.estado === 'cancelled' && (
+                        {order.estado === 'Cancelada' && (
                           <>
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               ❌ Cancelada
                             </span>
                             <button
-                              onClick={() => workOrdersService.changeStatus(order.id!, 'pending').then(() => loadWorkOrders())}
+                              onClick={() => workOrdersService.changeStatus(order.id!, 'Abierta').then(() => loadWorkOrders())}
                               className="text-blue-600 hover:text-blue-900"
                               title="Reactivar orden"
                             >
-                              <PlayIcon className="h-4 w-4" />
+                              🔄
                             </button>
                           </>
                         )}
@@ -680,16 +621,9 @@ function WorkOrderDetails({ order, clientName, vehicleName }: WorkOrderDetailsPr
             <div>
               <dt className="text-sm font-medium text-gray-500">Estado</dt>
               <dd>
-                <Badge 
-                  variant={
-                    order.estado === 'completed' ? 'success' : 
-                    order.estado === 'in-progress' ? 'warning' : 
-                    'default'
-                  }
-                  size="sm"
-                >
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${workOrdersService.getStatusColor(order.estado).bg} ${workOrdersService.getStatusColor(order.estado).text}`}>
                   {workOrdersService.formatStatus(order.estado)}
-                </Badge>
+                </span>
               </dd>
             </div>
             <div>

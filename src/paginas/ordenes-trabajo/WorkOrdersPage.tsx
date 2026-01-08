@@ -151,18 +151,6 @@ const WorkOrdersPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleStartWorkOrder = async (orderId: string) => {
-    if (confirm('¿Deseas iniciar esta orden de trabajo?')) {
-      try {
-        await workOrdersService.startWorkOrder(orderId);
-        alert('Orden iniciada exitosamente');
-        await loadWorkOrders();
-      } catch (err) {
-        alert('Error iniciando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
-      }
-    }
-  };
-
   const handlePauseWorkOrder = async (_orderId: string) => {
     if (confirm('¿Deseas pausar esta orden de trabajo?')) {
       try {
@@ -200,14 +188,10 @@ const WorkOrdersPage = () => {
   };
 
   // Funciones para gestionar tareas
+  // Funciones para gestionar tareas
   const handleViewTasks = (order: WorkOrderData) => {
     setSelectedOrderForTasks(order);
     setShowTasksModal(true);
-  };
-
-  const handleAddTask = (order: WorkOrderData) => {
-    setSelectedOrderForTasks(order);
-    setShowAddTaskModal(true);
   };
 
   const handleTaskModalClose = () => {
@@ -225,28 +209,23 @@ const WorkOrdersPage = () => {
     setShowTasksModal(true);
   };
 
-  // Funciones para subcotización
-  const handleAdditionalQuotationAccess = (_order: WorkOrderData) => {
-    // TODO: Implementar lógica de subcotización
-    alert('Funcionalidad de subcotización en desarrollo. Usar botón "Agregar Tarea" para agregar servicios adicionales.');
-  };
-
-  const statusOptions = workOrdersService.getAvailableStates().map(state => ({
-    value: state.value === 'pending' ? '' : state.value, // Valor vacío para "todos"
-    label: state.value === 'pending' ? 'Todos los estados' : state.label
-  }));
-  
-  // Agregar opción "Todos los estados" al principio
-  statusOptions.unshift({ value: '', label: 'Todos los estados' });
+  // Agregar opción "Todos los estados" al inicio
+  const statusOptions = [
+    { value: '', label: 'Todos los estados' },
+    ...workOrdersService.getAvailableStates().map(state => ({
+      value: state.value,
+      label: state.label
+    }))
+  ];
 
   const clientOptions = [
     { value: '', label: 'Todos los clientes' },
     // TODO: Aquí podrías cargar los nombres reales de clientes desde la API
   ];
 
-  const pendingOrders = workOrders.filter(wo => wo.estado === 'pending');
-  const inProgressOrders = workOrders.filter(wo => wo.estado === 'in-progress');
-  const completedOrders = workOrders.filter(wo => wo.estado === 'completed');
+  const pendingOrders = workOrders.filter(wo => wo.estado === 'Abierta');
+  const inProgressOrders = workOrders.filter(wo => wo.estado === 'En proceso');
+  const completedOrders = workOrders.filter(wo => wo.estado === 'Completada');
 
   return (
     <div className="space-y-6">
@@ -382,17 +361,9 @@ const WorkOrdersPage = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge 
-                        variant={
-                          order.estado === 'completed' ? 'success' : 
-                          order.estado === 'in-progress' ? 'warning' : 
-                          order.estado === 'pending' ? 'default' :
-                          'default'
-                        }
-                        size="sm"
-                      >
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${workOrdersService.getStatusColor(order.estado).bg} ${workOrdersService.getStatusColor(order.estado).text}`}>
                         {workOrdersService.formatStatus(order.estado)}
-                      </Badge>
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
@@ -424,29 +395,12 @@ const WorkOrdersPage = () => {
                         <button
                           onClick={() => handleViewTasks(order)}
                           className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-xs"
-                          title="Ver tareas de la orden"
+                          title="Ver y gestionar tareas"
                         >
-                          📋 Ver tareas
+                          📋 Tareas
                         </button>
-                        <button
-                          onClick={() => handleAddTask(order)}
-                          className="px-2 py-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200 text-xs"
-                          title="Agregar tarea a la orden"
-                        >
-                          ➕ Agregar Tarea
-                        </button>
-                        {/* Botón Iniciar - disponible si está pending */}
-                        {order.estado === 'pending' && (
-                          <button
-                            onClick={() => handleStartWorkOrder(order.id!)}
-                            className="px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 text-xs font-semibold"
-                            title="Iniciar orden"
-                          >
-                            ▶️ Iniciar
-                          </button>
-                        )}
                         {/* Botón Pausar - disponible si está en progreso */}
-                        {order.estado === 'in-progress' && (
+                        {order.estado === 'En proceso' && (
                           <button
                             onClick={() => handlePauseWorkOrder(order.id!)}
                             className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-xs font-semibold"
@@ -456,7 +410,7 @@ const WorkOrdersPage = () => {
                           </button>
                         )}
                         {/* Botón Completar - disponible si está en progreso */}
-                        {order.estado === 'in-progress' && (
+                        {order.estado === 'En proceso' && (
                           <button
                             onClick={() => handleCompleteWorkOrder(order.id!)}
                             className="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-semibold"
@@ -471,13 +425,6 @@ const WorkOrdersPage = () => {
                           title="Editar"
                         >
                           ✏️ Editar
-                        </button>
-                        <button
-                          onClick={() => handleAdditionalQuotationAccess(order)}
-                          className="px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 text-xs"
-                          title="Subcotización (Admin)"
-                        >
-                          🔒 Subcot
                         </button>
                         <button
                           onClick={() => handleDeleteWorkOrder(order.id!)}
@@ -582,16 +529,9 @@ function WorkOrderDetails({ order, clientName, vehicleName, serviceName, appoint
             <div>
               <dt className="text-sm font-medium text-gray-500">Estado</dt>
               <dd>
-                <Badge 
-                  variant={
-                    order.estado === 'completed' ? 'success' : 
-                    order.estado === 'in-progress' ? 'warning' : 
-                    'default'
-                  }
-                  size="sm"
-                >
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${workOrdersService.getStatusColor(order.estado).bg} ${workOrdersService.getStatusColor(order.estado).text}`}>
                   {workOrdersService.formatStatus(order.estado)}
-                </Badge>
+                </span>
               </dd>
             </div>
             <div>

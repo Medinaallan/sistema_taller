@@ -26,6 +26,9 @@ export default function ApproveQuotationModal({
   });
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<Array<{ id: number; nombre: string; rol: string }>>([]);
+  
+  // Detectar si la cotización ya está aprobada (solo necesitamos generar OT)
+  const isAlreadyApproved = quotation?.estado_cotizacion === 'Aprobada';
 
   // Cargar lista de usuarios (asesores y mecánicos) y establecer asesor actual
   useEffect(() => {
@@ -168,11 +171,20 @@ export default function ApproveQuotationModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Aprobar Cotización y Generar Orden de Trabajo"
+      title={isAlreadyApproved ? "Generar Orden de Trabajo" : "Aprobar Cotización y Generar Orden de Trabajo"}
       size="lg"
     >
       {quotation && (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Alerta si la cotización ya está aprobada */}
+          {isAlreadyApproved && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>ℹ️ Información:</strong> Esta cotización ya fue aprobada previamente. Este formulario generará la orden de trabajo asociada.
+              </p>
+            </div>
+          )}
+          
           {/* Información de la cotización */}
           <Card className="bg-blue-50 border-blue-200">
             <div className="space-y-2">
@@ -257,7 +269,9 @@ export default function ApproveQuotationModal({
           {/* Información importante */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-800">
-              <strong>ℹ️ Nota:</strong> Al aprobar esta cotización, se generará automáticamente una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.
+              <strong>ℹ️ Nota:</strong> {isAlreadyApproved 
+                ? 'Se generará una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.'
+                : 'Al aprobar esta cotización, se generará automáticamente una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.'}
             </p>
           </div>
 
@@ -276,7 +290,9 @@ export default function ApproveQuotationModal({
               variant="primary"
               disabled={loading}
             >
-              {loading ? ' Aprobando y generando OT...' : ' Aprobar y Generar OT'}
+              {loading 
+                ? (isAlreadyApproved ? '⏳ Generando OT...' : '⏳ Aprobando y generando OT...') 
+                : (isAlreadyApproved ? '📋 Generar OT' : '✅ Aprobar y Generar OT')}
             </Button>
           </div>
         </form>

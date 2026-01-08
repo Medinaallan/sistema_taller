@@ -1,6 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { workOrderStatesManager } from './workOrderStatesManager';
 
-// Estados de Órdenes de Trabajo (Temporal - hasta implementar SP reales)
+// Estados de Órdenes de Trabajo (gestionados por JSON local)
 export type WorkOrderStatus = 
   | 'Abierta'
   | 'En proceso'
@@ -71,7 +72,7 @@ export interface WorkOrderData {
   notas?: string;
   recomendaciones?: string;
   estadoPago: 'pending' | 'partial' | 'completed';
-  estado: 'pending' | 'in-progress' | 'completed' | 'cancelled';
+  estado: WorkOrderStatus; // Ahora usa los 8 estados del negocio
   fechaCreacion?: string;
   fechaActualizacion?: string;
 }
@@ -85,8 +86,23 @@ export interface WorkOrderResponse {
 class WorkOrdersService {
   // Mapear datos del SP al modelo WorkOrderData
   private mapSpDataToWorkOrder(spData: any): WorkOrderData {
+    const otId = spData.ot_id?.toString() || '';
+    
+    // 🔥 PRIMERO: Obtener el estado desde el JSON local (tiene prioridad)
+    const estadoFromJson = workOrderStatesManager.getState(otId);
+    
+    // Si no existe en el JSON, inicializar con el estado del SP o 'Abierta' por defecto
+    const estado = estadoFromJson || (spData.estado_ot as WorkOrderStatus) || 'Abierta';
+    
+    // Si no estaba en el JSON, inicializarlo ahora
+    if (!estadoFromJson && otId) {
+      workOrderStatesManager.initializeState(otId, estado);
+    }
+    
+    console.log(`🔄 OT ${otId}: Estado del SP: ${spData.estado_ot} | Estado del JSON: ${estadoFromJson || 'N/A'} | Estado final: ${estado}`);
+    
     return {
-      id: spData.ot_id?.toString() || '',
+      id: otId,
       quotationId: undefined,
       appointmentId: undefined,
       clienteId: spData.cliente_id?.toString() || '',
@@ -105,7 +121,7 @@ class WorkOrdersService {
       notas: `Placa: ${spData.placa} | Odómetro: ${spData.odometro_ingreso}km | Asesor: ${spData.nombre_asesor}`,
       recomendaciones: spData.nombre_mecanico ? `Mecánico asignado: ${spData.nombre_mecanico}` : '',
       estadoPago: 'pending',
-      estado: spData.estado_ot === 'Abierta' ? 'pending' : spData.estado_ot === 'Completada' ? 'completed' : 'in-progress',
+      estado: estado, // 🔥 Usa el estado del JSON (prioridad) o del SP
       fechaCreacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
       fechaActualizacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
     };
@@ -260,27 +276,40 @@ class WorkOrdersService {
     }
   }
 
-  // Cambiar estado de orden de trabajo
+  // Cambiar estado de orden de trabajo (AHORA GUARDA EN JSON LOCAL, NO EN SP)
   async changeStatus(id: string, newStatus: WorkOrderData['estado']): Promise<WorkOrderData> {
-    return this.updateWorkOrder(id, { estado: newStatus });
+    console.log(`🔄 Cambiando estado de OT ${id} a ${newStatus} (solo JSON)`);
+    
+    // Actualizar en el JSON local
+    await workOrderStatesManager.updateState(id, newStatus);
+    
+    // Obtener la orden actual para devolverla actualizada
+    const orders = await this.getAllWorkOrders();
+    const updatedOrder = orders.find(o => o.id === id);
+    
+    if (!updatedOrder) {
+      throw new Error('Orden de trabajo no encontrada');
+    }
+    
+    return updatedOrder;
   }
 
-  // Iniciar orden de trabajo
+  // Iniciar orden de trabajo (AHORA GUARDA EN JSON LOCAL)
   async startWorkOrder(id: string): Promise<WorkOrderData> {
-    return this.updateWorkOrder(id, { 
-      estado: 'in-progress',
-      fechaInicioReal: new Date().toISOString()
-    });
+    console.log(`🚀 Iniciando OT ${id} (solo cambia estado en JSON)`);
+    return this.changeStatus(id, 'En proceso');
   }
 
-  // Completar orden de trabajo
+  // Completar orden de trabajo (AHORA GUARDA EN JSON LOCAL)
   async completeWorkOrder(id: string): Promise<WorkOrderData> {
-    return this.updateWorkOrder(id, { estado: 'completed' });
+    console.log(`✅ Completando OT ${id} (solo cambia estado en JSON)`);
+    return this.changeStatus(id, 'Completada');
   }
 
-  // Cancelar orden de trabajo
+  // Cancelar orden de trabajo (AHORA GUARDA EN JSON LOCAL)
   async cancelWorkOrder(id: string): Promise<WorkOrderData> {
-    return this.updateWorkOrder(id, { estado: 'cancelled' });
+    console.log(`❌ Cancelando OT ${id} (solo cambia estado en JSON)`);
+    return this.changeStatus(id, 'Cancelada');
   }
 
   // Eliminar orden de trabajo
@@ -342,13 +371,57 @@ class WorkOrdersService {
     }
   }
 
-  // Obtener estados disponibles
-  getAvailableStates(): Array<{ value: string; label: string }> {
+  // Obtener estados disponibles (ahora con los 8 estados del negocio)
+  getAvailableStates(): Array<{ value: WorkOrderStatus; label: string; color: string; description: string }> {
     return [
-      { value: 'pending', label: 'Pendiente' },
-      { value: 'in-progress', label: 'En Progreso' },
-      { value: 'completed', label: 'Completada' },
-      { value: 'cancelled', label: 'Cancelada' }
+      { 
+        value: 'Abierta', 
+        label: 'Abierta', 
+        color: 'yellow',
+        description: 'Orden de trabajo creada y lista para iniciar'
+      },
+      { 
+        value: 'En proceso', 
+        label: 'En Proceso', 
+        color: 'blue',
+        description: 'Trabajo actualmente en ejecución'
+      },
+      { 
+        value: 'Control de calidad', 
+        label: 'Control de Calidad', 
+        color: 'purple',
+        description: 'En revisión de calidad'
+      },
+      { 
+        value: 'Completada', 
+        label: 'Completada', 
+        color: 'green',
+        description: 'Trabajo finalizado exitosamente'
+      },
+      { 
+        value: 'Cerrada', 
+        label: 'Cerrada', 
+        color: 'gray',
+        description: 'Orden cerrada y archivada'
+      },
+      { 
+        value: 'En espera de repuestos', 
+        label: 'Espera de Repuestos', 
+        color: 'orange',
+        description: 'Pausada esperando repuestos'
+      },
+      { 
+        value: 'En espera de aprobación', 
+        label: 'Espera de Aprobación', 
+        color: 'amber',
+        description: 'Requiere aprobación del cliente'
+      },
+      { 
+        value: 'Cancelada', 
+        label: 'Cancelada', 
+        color: 'red',
+        description: 'Orden cancelada'
+      }
     ];
   }
 
@@ -370,10 +443,25 @@ class WorkOrdersService {
   }
 
   // Formatear estado para mostrar
-  formatStatus(status: string): string {
+  formatStatus(status: WorkOrderStatus): string {
     const states = this.getAvailableStates();
     const state = states.find(s => s.value === status);
     return state?.label || status;
+  }
+
+  // Obtener color del estado para badges
+  getStatusColor(status: WorkOrderStatus): { bg: string; text: string } {
+    const colorMap: Record<WorkOrderStatus, { bg: string; text: string }> = {
+      'Abierta': { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+      'En proceso': { bg: 'bg-blue-100', text: 'text-blue-800' },
+      'Control de calidad': { bg: 'bg-purple-100', text: 'text-purple-800' },
+      'Completada': { bg: 'bg-green-100', text: 'text-green-800' },
+      'Cerrada': { bg: 'bg-gray-100', text: 'text-gray-800' },
+      'En espera de repuestos': { bg: 'bg-orange-100', text: 'text-orange-800' },
+      'En espera de aprobación': { bg: 'bg-amber-100', text: 'text-amber-800' },
+      'Cancelada': { bg: 'bg-red-100', text: 'text-red-800' }
+    };
+    return colorMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800' };
   }
 
   // Formatear tipo de servicio para mostrar

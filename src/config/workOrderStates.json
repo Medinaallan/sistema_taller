@@ -1,0 +1,68 @@
+{
+  "states": [
+    {
+      "value": "Abierta",
+      "label": "Abierta",
+      "color": "yellow",
+      "bgColor": "bg-yellow-100",
+      "textColor": "text-yellow-800",
+      "description": "Orden de trabajo creada y lista para iniciar"
+    },
+    {
+      "value": "En proceso",
+      "label": "En Proceso",
+      "color": "blue",
+      "bgColor": "bg-blue-100",
+      "textColor": "text-blue-800",
+      "description": "Trabajo actualmente en ejecución"
+    },
+    {
+      "value": "Control de calidad",
+      "label": "Control de Calidad",
+      "color": "purple",
+      "bgColor": "bg-purple-100",
+      "textColor": "text-purple-800",
+      "description": "En revisión de calidad"
+    },
+    {
+      "value": "Completada",
+      "label": "Completada",
+      "color": "green",
+      "bgColor": "bg-green-100",
+      "textColor": "text-green-800",
+      "description": "Trabajo finalizado exitosamente"
+    },
+    {
+      "value": "Cerrada",
+      "label": "Cerrada",
+      "color": "gray",
+      "bgColor": "bg-gray-100",
+      "textColor": "text-gray-800",
+      "description": "Orden cerrada y archivada"
+    },
+    {
+      "value": "En espera de repuestos",
+      "label": "Espera de Repuestos",
+      "color": "orange",
+      "bgColor": "bg-orange-100",
+      "textColor": "text-orange-800",
+      "description": "Pausada esperando repuestos"
+    },
+    {
+      "value": "En espera de aprobación",
+      "label": "Espera de Aprobación",
+      "color": "amber",
+      "bgColor": "bg-amber-100",
+      "textColor": "text-amber-800",
+      "description": "Requiere aprobación del cliente"
+    },
+    {
+      "value": "Cancelada",
+      "label": "Cancelada",
+      "color": "red",
+      "bgColor": "bg-red-100",
+      "textColor": "text-red-800",
+      "description": "Orden Cancelada"
+    }
+  ]
+}

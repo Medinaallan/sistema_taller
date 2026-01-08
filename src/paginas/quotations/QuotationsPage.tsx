@@ -275,9 +275,22 @@ const QuotationsPage = () => {
                       
                       {/* Estados terminales - Solo botones de lectura */}
                       {quotation.estado_cotizacion === 'Aprobada' && (
-                        <span className="text-green-600 text-sm font-medium px-2 py-1 bg-green-50 rounded">
-                           Aprobada
-                        </span>
+                        <>
+                          <span className="text-green-600 text-sm font-medium px-2 py-1 bg-green-50 rounded">
+                            ✅ Aprobada
+                          </span>
+                          {/* Mostrar botón para generar OT si no existe */}
+                          {!quotation.numero_ot && (
+                            <Button 
+                              size="sm" 
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={() => handleApprove(quotation)}
+                              title="Generar Orden de Trabajo"
+                            >
+                              📋 Generar OT
+                            </Button>
+                          )}
+                        </>
                       )}
                       {quotation.estado_cotizacion === 'Rechazada' && (
                         <span className="text-red-600 text-sm font-medium px-2 py-1 bg-red-50 rounded">

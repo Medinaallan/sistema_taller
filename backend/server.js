@@ -17,6 +17,7 @@ const serviceHistoryRoutes = require('./routes/serviceHistory');
 const appointmentsRoutes = require('./routes/appointments');
 const quotationsRoutes = require('./routes/quotations');
 const logsRoutes = require('./routes/logs');
+const workOrderStatesRoutes = require('./routes/workOrderStates');
 
 const app = express();
 const server = http.createServer(app);

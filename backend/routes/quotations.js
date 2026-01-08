@@ -335,7 +335,7 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 		// Normalizar el formato de hora
 		const horaFormateada = normalizeTimeFormat(hora_estimada);
 
-		console.log(`📋 Generando OT desde cotización ${cotizacionId}`);
+		console.log(`Generando OT desde cotización ${cotizacionId}`);
 		console.log('Parámetros originales:', {
 			cotizacion_id: parseInt(cotizacionId),
 			asesor_id,
@@ -364,6 +364,51 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 			});
 		}
 
+		// Paso 1: Obtener información de la cotización y cita para conocer el tipo de servicio
+		console.log('📋 Paso 1: Obteniendo información de la cotización...');
+		const cotizacionResult = await pool.request()
+			.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
+			.input('cita_id', sql.Int, null)
+			.input('ot_id', sql.Int, null)
+			.input('estado', sql.VarChar(50), null)
+			.input('numero_cotizacion', sql.VarChar(20), null)
+			.execute('SP_OBTENER_COTIZACIONES');
+
+		const cotizacion = cotizacionResult.recordset?.[0];
+		if (!cotizacion) {
+			return res.status(404).json({
+				success: false,
+				message: 'Cotización no encontrada'
+			});
+		}
+
+		console.log('Cotización encontrada:', cotizacion);
+
+		// Obtener la cita asociada para saber el tipo de servicio
+		let tipoServicioId = null;
+		let servicioNombre = 'Servicio inicial';
+		
+		if (cotizacion.cita_id) {
+			console.log(`Obteniendo información de la cita ${cotizacion.cita_id}...`);
+			const citaResult = await pool.request()
+				.input('cita_id', sql.Int, cotizacion.cita_id)
+				.input('cliente_id', sql.Int, null)
+				.input('vehiculo_id', sql.Int, null)
+				.input('estado', sql.VarChar(50), null)
+				.input('fecha_inicio', sql.Date, null)
+				.input('numero_cita', sql.VarChar(20), null)
+				.execute('SP_OBTENER_CITAS');
+
+			const cita = citaResult.recordset?.[0];
+			if (cita && cita.tipo_servicio_id) {
+				tipoServicioId = cita.tipo_servicio_id;
+				servicioNombre = cita.servicio_nombre || 'Servicio inicial';
+				console.log(`Tipo de servicio encontrado: ${servicioNombre} (ID: ${tipoServicioId})`);
+			}
+		}
+
+		// Paso 2: Generar la orden de trabajo
+		console.log('Paso 2: Generando orden de trabajo...');
 		const result = await pool.request()
 			.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
 			.input('asesor_id', sql.Int, asesor_id)
@@ -374,10 +419,38 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 			.input('generado_por', sql.Int, generado_por || null)
 			.execute('SP_GENERAR_OT_DESDE_COTIZACION');
 
-		console.log('✅ SP_GENERAR_OT_DESDE_COTIZACION ejecutado exitosamente');
+		console.log('SP_GENERAR_OT_DESDE_COTIZACION ejecutado exitosamente');
 		console.log('Recordset:', result.recordset);
 
 		const output = result.recordset?.[0] || {};
+		
+		// Paso 3: Crear tarea inicial automáticamente si hay tipo de servicio
+		if (output.allow && output.ot_id && tipoServicioId) {
+			console.log(`Paso 3: Creando tarea inicial para OT ${output.ot_id}...`);
+			try {
+				const tareaResult = await pool.request()
+					.input('ot_id', sql.Int, output.ot_id)
+					.input('tipo_servicio_id', sql.Int, tipoServicioId)
+					.input('descripcion', sql.VarChar(300), `Tarea inicial: ${servicioNombre}`)
+					.input('horas_estimadas', sql.Decimal(9, 2), horaFormateada ? parseFloat(hora_estimada) : null)
+					.input('horas_reales', sql.Decimal(9, 2), null)
+					.input('prioridad', sql.TinyInt, 3) // Prioridad media
+					.input('registrado_por', sql.Int, generado_por || asesor_id)
+					.execute('SP_AGREGAR_TAREA_OT');
+
+				const tareaOutput = tareaResult.recordset?.[0] || {};
+				if (tareaOutput.allow) {
+					console.log(`Tarea inicial creada exitosamente (ID: ${tareaOutput.ot_tarea_id})`);
+				} else {
+					console.warn(`No se pudo crear tarea inicial: ${tareaOutput.msg}`);
+				}
+			} catch (tareaError) {
+				// No fallar la creación de OT si la tarea falla
+				console.error('Error al crear tarea inicial (no crítico):', tareaError);
+			}
+		} else if (!tipoServicioId) {
+			console.warn('No se encontró tipo de servicio para crear tarea inicial');
+		}
 		
 		res.status(200).json({
 			success: true,
@@ -388,7 +461,7 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 			data: output
 		});
 	} catch (error) {
-		console.error('❌ Error al generar OT desde cotización:', error);
+		console.error('Error al generar OT desde cotización:', error);
 		console.error('Detalles del error:', error.originalError || error);
 		res.status(500).json({
 			success: false,

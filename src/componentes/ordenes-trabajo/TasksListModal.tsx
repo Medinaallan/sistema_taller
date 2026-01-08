@@ -46,9 +46,31 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
 
   const handleChangeStatus = async (tareaId: number, nuevoEstado: any) => {
     try {
+      // Cambiar estado de la tarea
       await workOrdersService.gestionarEstadoTarea(tareaId, nuevoEstado);
-      alert('Estado de tarea actualizado exitosamente');
+      
+      // Si se está iniciando una tarea por primera vez y la OT está en estado 'Abierta', iniciarla automáticamente
+      if (nuevoEstado === 'En proceso' && workOrder.estado === 'Abierta') {
+        console.log('🚀 Iniciando OT automáticamente al iniciar primera tarea...');
+        try {
+          await workOrdersService.startWorkOrder(workOrder.id!);
+          console.log('✅ OT iniciada automáticamente');
+          alert('Tarea iniciada. La orden de trabajo se ha iniciado automáticamente.');
+        } catch (otError) {
+          console.error('⚠️ Error al iniciar OT automáticamente:', otError);
+          // No fallar si no se puede iniciar la OT, la tarea ya se inició
+          alert('Tarea iniciada (nota: la orden de trabajo no se pudo iniciar automáticamente)');
+        }
+      } else {
+        alert('Estado de tarea actualizado exitosamente');
+      }
+      
       await loadTareas(); // Recargar tareas
+      
+      // Recargar la página para actualizar el estado de la OT
+      if (nuevoEstado === 'En proceso' && workOrder.estado === 'Abierta') {
+        window.location.reload();
+      }
     } catch (err) {
       alert('Error al cambiar estado: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
@@ -94,6 +116,29 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
               <span className="font-semibold">{tareas.length}</span>
             </div>
           </div>
+          
+          {/* Botón para iniciar OT si está Abierta y hay tareas en proceso */}
+          {workOrder.estado === 'Abierta' && tareas.some(t => t.estado_tarea === 'En proceso') && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <p className="text-sm text-yellow-800 mb-2">
+                ⚠️ Hay tareas en proceso pero la OT sigue en estado "Abierta"
+              </p>
+              <button
+                onClick={async () => {
+                  try {
+                    await workOrdersService.startWorkOrder(workOrder.id!);
+                    alert('Orden de trabajo iniciada correctamente');
+                    window.location.reload();
+                  } catch (error) {
+                    alert('Error al iniciar OT: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+                  }
+                }}
+                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+              >
+                🚀 Iniciar Orden de Trabajo
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Botón para agregar nueva tarea */}
