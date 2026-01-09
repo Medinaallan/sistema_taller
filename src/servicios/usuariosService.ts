@@ -57,7 +57,7 @@ class UsuariosService {
    */
   async obtenerUsuario(userId: number): Promise<UsuarioResponse> {
     try {
-      console.log('👤 Obteniendo usuario ID:', userId);
+      console.log('Obteniendo usuario ID:', userId);
       
       const response = await fetch(`${API_BASE}/users/${userId}`, {
         method: 'GET',
@@ -67,23 +67,23 @@ class UsuariosService {
       });
 
       const data = await response.json();
-      console.log('📝 Respuesta del servidor:', data);
+      console.log('Respuesta del servidor:', data);
 
       if (data.success) {
-        console.log('✅ Usuario obtenido:', data.data.nombre_completo);
+        console.log('Usuario obtenido:', data.data.nombre_completo);
         return {
           success: true,
           data: data.data
         };
       } else {
-        console.log('❌ Usuario no encontrado:', data.message);
+        console.log('Usuario no encontrado:', data.message);
         return {
           success: false,
           message: data.message || 'Usuario no encontrado'
         };
       }
     } catch (error) {
-      console.error('❌ Error de conexión:', error);
+      console.error('Error de conexión:', error);
       return {
         success: false,
         message: 'Error de conexión con el servidor'
@@ -100,7 +100,7 @@ class UsuariosService {
     telefono: string;
   }): Promise<UsuarioResponse> {
     try {
-      console.log('✏️ Editando usuario ID:', userId, datosUsuario);
+      console.log('Editando usuario ID:', userId, datosUsuario);
       
       const response = await fetch(`${API_BASE}/users/${userId}`, {
         method: 'PUT',
@@ -111,23 +111,23 @@ class UsuariosService {
       });
 
       const data = await response.json();
-      console.log('📝 Respuesta del servidor:', data);
+      console.log('Respuesta del servidor:', data);
 
       if (data.success) {
-        console.log('✅ Usuario editado exitosamente');
+        console.log('Usuario editado exitosamente');
         return {
           success: true,
           message: data.message
         };
       } else {
-        console.log('❌ Error editando usuario:', data.message);
+        console.log('Error editando usuario:', data.message);
         return {
           success: false,
           message: data.message || 'Error al editar usuario'
         };
       }
     } catch (error) {
-      console.error('❌ Error de conexión:', error);
+      console.error('Error de conexión:', error);
       return {
         success: false,
         message: 'Error de conexión con el servidor'
