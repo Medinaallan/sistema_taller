@@ -62,6 +62,7 @@ app.use('/api/service-history', serviceHistoryRoutes);
 app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/quotations', quotationsRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/workorder-states', workOrderStatesRoutes);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {

@@ -85,18 +85,18 @@ export interface WorkOrderResponse {
 
 class WorkOrdersService {
   // Mapear datos del SP al modelo WorkOrderData
-  private mapSpDataToWorkOrder(spData: any): WorkOrderData {
+  private async mapSpDataToWorkOrder(spData: any): Promise<WorkOrderData> {
     const otId = spData.ot_id?.toString() || '';
     
     // 🔥 PRIMERO: Obtener el estado desde el JSON local (tiene prioridad)
-    const estadoFromJson = workOrderStatesManager.getState(otId);
+    const estadoFromJson = await workOrderStatesManager.getState(otId);
     
     // Si no existe en el JSON, inicializar con el estado del SP o 'Abierta' por defecto
     const estado = estadoFromJson || (spData.estado_ot as WorkOrderStatus) || 'Abierta';
     
     // Si no estaba en el JSON, inicializarlo ahora
     if (!estadoFromJson && otId) {
-      workOrderStatesManager.initializeState(otId, estado);
+      await workOrderStatesManager.initializeState(otId, estado);
     }
     
     console.log(`🔄 OT ${otId}: Estado del SP: ${spData.estado_ot} | Estado del JSON: ${estadoFromJson || 'N/A'} | Estado final: ${estado}`);
@@ -143,7 +143,7 @@ class WorkOrdersService {
       
       // Mapear datos del SP al modelo WorkOrderData
       const rawOrders = Array.isArray(result.data) ? result.data : [];
-      const orders = rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order));
+      const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
       
       console.log('Órdenes procesadas:', orders.length, 'elementos');
       console.log('Órdenes mapeadas:', orders);
@@ -278,7 +278,7 @@ class WorkOrdersService {
 
   // Cambiar estado de orden de trabajo (AHORA GUARDA EN JSON LOCAL, NO EN SP)
   async changeStatus(id: string, newStatus: WorkOrderData['estado']): Promise<WorkOrderData> {
-    console.log(`🔄 Cambiando estado de OT ${id} a ${newStatus} (solo JSON)`);
+    console.log(`Cambiando estado de OT ${id} a ${newStatus} (solo JSON)`);
     
     // Actualizar en el JSON local
     await workOrderStatesManager.updateState(id, newStatus);

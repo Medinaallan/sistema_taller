@@ -714,21 +714,6 @@ try {
   console.error(' Error cargando rutas de clientes:', error.message);
 }
 
-// 404
-app.use('*', (req, res) => {
-  console.log('Ruta no encontrada:', req.originalUrl);
-  res.status(404).json({ msg: 'Ruta no encontrada' });
-});
-
-// Manejo de errores
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection:', reason);
-});
-
 const PORT = process.env.PORT || 8080;
 
 // ====== CHAT AVANZADO (rooms + historial en memoria) ======
@@ -891,6 +876,21 @@ app.get('/api/workorder-states/:otId', async (req, res) => {
 });
 
 console.log('✅ Rutas de estados de OT cargadas: /api/workorder-states');
+
+// 404 - Debe estar AL FINAL, después de todas las rutas
+app.use('*', (req, res) => {
+  console.log('Ruta no encontrada:', req.originalUrl);
+  res.status(404).json({ msg: 'Ruta no encontrada' });
+});
+
+// Manejo de errores
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
 
 server.listen(PORT, () => {
   console.log('\n===============================================');

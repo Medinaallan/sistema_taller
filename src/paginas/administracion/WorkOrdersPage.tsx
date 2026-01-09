@@ -4,6 +4,7 @@ import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../compo
 import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderModal';
 import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
 import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
+import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
@@ -29,6 +30,11 @@ const WorkOrdersPage = () => {
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedOrderForTasks, setSelectedOrderForTasks] = useState<WorkOrderData | null>(null);
+
+  // Estados para control de calidad
+  const [showQualityControlModal, setShowQualityControlModal] = useState(false);
+  const [selectedOrderForQC, setSelectedOrderForQC] = useState<WorkOrderData | null>(null);
+  const [completedTasksMap, setCompletedTasksMap] = useState<Map<string, boolean>>(new Map());
 
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
@@ -148,8 +154,19 @@ const WorkOrdersPage = () => {
     setShowTasksModal(true);
   };
 
-  const handleTaskModalClose = () => {
+  const handleTaskModalClose = async () => {
     setShowTasksModal(false);
+    
+    // Actualizar el estado de tareas completadas para esta orden
+    if (selectedOrderForTasks?.id && selectedOrderForTasks.estado === 'En proceso') {
+      const allCompleted = await checkAllTasksCompleted(selectedOrderForTasks.id);
+      setCompletedTasksMap(prev => {
+        const newMap = new Map(prev);
+        newMap.set(selectedOrderForTasks.id!, allCompleted);
+        return newMap;
+      });
+    }
+    
     setSelectedOrderForTasks(null);
   };
 
@@ -161,6 +178,57 @@ const WorkOrdersPage = () => {
     // Cerrar modal de agregar tarea y reabrir modal de lista de tareas
     setShowAddTaskModal(false);
     setShowTasksModal(true);
+  };
+
+  // Verificar si todas las tareas de una OT están completadas
+  const checkAllTasksCompleted = async (orderId: string): Promise<boolean> => {
+    try {
+      const tareas = await workOrdersService.getTareasByOT(orderId);
+      if (tareas.length === 0) return false; // No hay tareas
+      const allCompleted = tareas.every(t => t.estado_tarea === 'Completada');
+      return allCompleted;
+    } catch (error) {
+      console.error('Error verificando tareas:', error);
+      return false;
+    }
+  };
+
+  // Actualizar el mapa de tareas completadas al cargar órdenes
+  useEffect(() => {
+    const updateCompletedTasksMap = async () => {
+      const map = new Map<string, boolean>();
+      for (const order of workOrders) {
+        if (order.id && order.estado === 'En proceso') {
+          const allCompleted = await checkAllTasksCompleted(order.id);
+          map.set(order.id, allCompleted);
+        }
+      }
+      setCompletedTasksMap(map);
+    };
+    
+    if (workOrders.length > 0) {
+      updateCompletedTasksMap();
+    }
+  }, [workOrders]);
+
+  // Manejar control de calidad
+  const handleQualityControl = (order: WorkOrderData) => {
+    setSelectedOrderForQC(order);
+    setShowQualityControlModal(true);
+  };
+
+  const handleQualityControlComplete = async () => {
+    if (selectedOrderForQC?.id) {
+      try {
+        // Cambiar estado de la OT a "Control de calidad"
+        await workOrdersService.changeStatus(selectedOrderForQC.id, 'Control de calidad');
+        alert('Vehículo movido a Control de Calidad exitosamente');
+        await loadWorkOrders(); // Recargar datos
+      } catch (error) {
+        console.error('Error moviendo a control de calidad:', error);
+        alert('Error al cambiar estado');
+      }
+    }
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
@@ -395,19 +463,40 @@ const WorkOrdersPage = () => {
                           📋
                         </button>
 
-                        {/* Botón Pausar - solo para órdenes en progreso */}
+                        {/* Botones específicos para órdenes "En proceso" */}
                         {order.estado === 'En proceso' && (
-                          <button
-                            onClick={() => handlePauseWorkOrder(order.id!)}
-                            className="text-orange-600 hover:text-orange-900"
-                            title="Pausar orden de trabajo"
-                          >
-                            <StopIcon className="h-4 w-4" />
-                          </button>
+                          <>
+                            {/* Botón Control de Calidad - solo si todas las tareas están completadas */}
+                            <button
+                              onClick={() => handleQualityControl(order)}
+                              disabled={!completedTasksMap.get(order.id || '')}
+                              className={`${
+                                completedTasksMap.get(order.id || '')
+                                  ? 'text-purple-600 hover:text-purple-900 cursor-pointer'
+                                  : 'text-gray-400 cursor-not-allowed'
+                              }`}
+                              title={
+                                completedTasksMap.get(order.id || '')
+                                  ? 'Control de Calidad - Autorización del cliente'
+                                  : 'Completa todas las tareas primero'
+                              }
+                            >
+                              🔍
+                            </button>
+
+                            {/* Botón Pausar */}
+                            <button
+                              onClick={() => handlePauseWorkOrder(order.id!)}
+                              className="text-orange-600 hover:text-orange-900"
+                              title="Pausar orden de trabajo"
+                            >
+                              <StopIcon className="h-4 w-4" />
+                            </button>
+                          </>
                         )}
 
-                        {/* Botón Completar - solo para órdenes en progreso */}
-                        {order.estado === 'En proceso' && (
+                        {/* Botón Completar - para órdenes NO en proceso */}
+                        {order.estado !== 'En proceso' && order.estado !== 'Completada' && order.estado !== 'Cerrada' && (
                           <button
                             onClick={() => handleCompleteWorkOrder(order.id!)}
                             className="text-green-600 hover:text-green-900"
@@ -582,6 +671,21 @@ const WorkOrdersPage = () => {
             onSuccess={handleAddTaskSuccess}
           />
         </>
+      )}
+
+      {/* Modal de control de calidad */}
+      {selectedOrderForQC && (
+        <QualityControlModal
+          isOpen={showQualityControlModal}
+          onClose={() => {
+            setShowQualityControlModal(false);
+            setSelectedOrderForQC(null);
+          }}
+          workOrder={selectedOrderForQC}
+          clientName={getClientDisplayName(selectedOrderForQC)}
+          vehicleName={getVehicleDisplayName(selectedOrderForQC)}
+          onComplete={handleQualityControlComplete}
+        />
       )}
     </div>
   );

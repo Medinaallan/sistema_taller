@@ -84,7 +84,7 @@ export const usePendingInvoices = () => {
         
         // Filtrar órdenes completadas que no tienen factura
         const completed = workOrders.filter((order: WorkOrderData) => 
-          order.estado === 'completed' && order.estadoPago !== 'completed'
+          order.estado === 'Completada' && order.estadoPago !== 'completed'
         );
 
         // Enriquecer con información de clientes y vehículos
@@ -124,7 +124,7 @@ export const usePendingInvoices = () => {
     try {
       const workOrders = await workOrdersService.getAllWorkOrders();
       const completed = workOrders.filter((order: WorkOrderData) => 
-        order.estado === 'completed' && order.estadoPago !== 'completed'
+        order.estado === 'Completada' && order.estadoPago !== 'completed'
       );
 
       const enrichedInvoices = await fetchClientAndVehicleInfo(completed);

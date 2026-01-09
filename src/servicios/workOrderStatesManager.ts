@@ -10,16 +10,22 @@ interface WorkOrderStatesStorage {
 class WorkOrderStatesManager {
   private states: Record<string, WorkOrderStatus> = {};
   private initialized: boolean = false;
+  private initPromise: Promise<void>;
 
   constructor() {
-    this.loadStates();
+    this.initPromise = this.loadStates();
   }
 
   // Cargar estados desde el backend
-  private async loadStates() {
+  private async loadStates(): Promise<void> {
     try {
       console.log('📂 Cargando estados desde backend...');
       const response = await fetch(`${API_BASE_URL}/workorder-states`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const result = await response.json();
       
       if (result.success) {
@@ -29,19 +35,23 @@ class WorkOrderStatesManager {
       } else {
         console.error('❌ Error en respuesta:', result.message);
         this.states = {};
+        this.initialized = true; // Marcar como inicializado aunque esté vacío
       }
     } catch (error) {
       console.error('❌ Error cargando estados desde backend:', error);
       this.states = {};
+      this.initialized = true; // Marcar como inicializado aunque haya error
     }
   }
 
-  // Obtener el estado de una OT específica
-  getState(otId: string): WorkOrderStatus | null {
-    if (!this.initialized) {
-      console.warn('⚠️ Estados no inicializados aún');
-      return null;
-    }
+  // Esperar a que se complete la inicialización
+  async waitForInit(): Promise<void> {
+    await this.initPromise;
+  }
+
+  // Obtener el estado de una OT específica (ahora asíncrono)
+  async getState(otId: string): Promise<WorkOrderStatus | null> {
+    await this.waitForInit();
     const state = this.states[otId];
     if (state) {
       console.log(`📋 Estado de OT ${otId}: ${state}`);
@@ -52,6 +62,7 @@ class WorkOrderStatesManager {
   // Actualizar el estado de una OT en el backend
   async updateState(otId: string, newState: WorkOrderStatus): Promise<void> {
     console.log(`💾 Actualizando estado de OT ${otId} a ${newState}...`);
+    console.log(`🔗 URL: ${API_BASE_URL}/workorder-states/${otId}`);
     
     try {
       const response = await fetch(`${API_BASE_URL}/workorder-states/${otId}`, {
@@ -62,7 +73,16 @@ class WorkOrderStatesManager {
         body: JSON.stringify({ estado: newState }),
       });
 
+      console.log(`📡 Respuesta HTTP: ${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Error HTTP ${response.status}:`, errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const result = await response.json();
+      console.log('📦 Resultado:', result);
       
       if (result.success) {
         this.states[otId] = newState;
@@ -81,10 +101,12 @@ class WorkOrderStatesManager {
     return { ...this.states };
   }
 
-  // Inicializar estado de una nueva OT
+  // Inicializar estado de una nueva OT (solo en memoria, sin backend)
   async initializeState(otId: string, initialState: WorkOrderStatus = 'Abierta'): Promise<void> {
+    await this.waitForInit();
     if (!this.states[otId]) {
-      await this.updateState(otId, initialState);
+      console.log(`🆕 Inicializando estado de OT ${otId} a ${initialState} (solo memoria)`);
+      this.states[otId] = initialState;
     }
   }
 
