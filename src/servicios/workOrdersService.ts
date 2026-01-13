@@ -487,11 +487,14 @@ class WorkOrdersService {
       const response = await fetch(`${API_BASE_URL}/workorders/${otId}/tareas`);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Error en respuesta:', errorText);
         throw new Error('Error al obtener tareas de la orden');
       }
       
       const result: TareasResponse = await response.json();
       console.log('✅ Tareas obtenidas:', result);
+      console.log('✅ Número de tareas:', Array.isArray(result.data) ? result.data.length : 0);
       
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {

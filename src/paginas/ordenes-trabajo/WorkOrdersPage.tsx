@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase'
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
 import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
+import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { obtenerClientes } from '../../servicios/clientesApiService';
 
@@ -21,6 +22,10 @@ const WorkOrdersPage = () => {
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedOrderForTasks, setSelectedOrderForTasks] = useState<WorkOrderData | null>(null);
+  
+  // Estados para control de calidad
+  const [showQualityControlModal, setShowQualityControlModal] = useState(false);
+  const [selectedOrderForQuality, setSelectedOrderForQuality] = useState<WorkOrderData | null>(null);
   
   // Estados para datos de mapeo
   const [clientes, setClientes] = useState<any[]>([]);
@@ -207,6 +212,18 @@ const WorkOrdersPage = () => {
     // Cerrar modal de agregar tarea y reabrir modal de lista de tareas
     setShowAddTaskModal(false);
     setShowTasksModal(true);
+  };
+
+  const handleQualityControl = (order: WorkOrderData) => {
+    setSelectedOrderForQuality(order);
+    setShowQualityControlModal(true);
+  };
+
+  const handleQualityControlComplete = async () => {
+    // Recargar órdenes después de completar control de calidad
+    await loadWorkOrders();
+    setShowQualityControlModal(false);
+    setSelectedOrderForQuality(null);
   };
 
   // Agregar opción "Todos los estados" al inicio
@@ -399,6 +416,16 @@ const WorkOrdersPage = () => {
                         >
                           📋 Tareas
                         </button>
+                        {/* Botón Control de Calidad - disponible si está en proceso */}
+                        {order.estado === 'En proceso' && (
+                          <button
+                            onClick={() => handleQualityControl(order)}
+                            className="px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 text-xs font-semibold"
+                            title="Control de Calidad"
+                          >
+                            🔍 Calidad
+                          </button>
+                        )}
                         {/* Botón Pausar - disponible si está en progreso */}
                         {order.estado === 'En proceso' && (
                           <button
@@ -487,6 +514,18 @@ const WorkOrdersPage = () => {
             onSuccess={handleAddTaskSuccess}
           />
         </>
+      )}
+
+      {/* Modal de control de calidad */}
+      {selectedOrderForQuality && (
+        <QualityControlModal
+          isOpen={showQualityControlModal}
+          onClose={() => setShowQualityControlModal(false)}
+          workOrder={selectedOrderForQuality}
+          clientName={getClienteName(selectedOrderForQuality.clienteId)}
+          vehicleName={getVehicleName(selectedOrderForQuality.vehiculoId)}
+          onComplete={handleQualityControlComplete}
+        />
       )}
     </div>
   );
