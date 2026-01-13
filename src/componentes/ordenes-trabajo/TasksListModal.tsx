@@ -32,12 +32,12 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
     try {
       setLoading(true);
       setError(null);
-      console.log(`📋 Cargando tareas de OT ${workOrder.id}`);
+      console.log(`Cargando tareas de OT ${workOrder.id}`);
       const tareasData = await workOrdersService.getTareasByOT(workOrder.id);
-      console.log('✅ Tareas cargadas:', tareasData);
+      console.log('Tareas cargadas:', tareasData);
       setTareas(tareasData);
     } catch (err) {
-      console.error('❌ Error cargando tareas:', err);
+      console.error('Error cargando tareas:', err);
       setError('Error al cargar las tareas de la orden de trabajo');
     } finally {
       setLoading(false);
@@ -51,13 +51,13 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
       
       // Si se está iniciando una tarea por primera vez y la OT está en estado 'Abierta', iniciarla automáticamente
       if (nuevoEstado === 'En proceso' && workOrder.estado === 'Abierta') {
-        console.log('🚀 Iniciando OT automáticamente al iniciar primera tarea...');
+        console.log('Iniciando OT automáticamente al iniciar primera tarea...');
         try {
           await workOrdersService.startWorkOrder(workOrder.id!);
-          console.log('✅ OT iniciada automáticamente');
+          console.log('OT iniciada automáticamente');
           alert('Tarea iniciada. La orden de trabajo se ha iniciado automáticamente.');
         } catch (otError) {
-          console.error('⚠️ Error al iniciar OT automáticamente:', otError);
+          console.error('Error al iniciar OT automáticamente:', otError);
           // No fallar si no se puede iniciar la OT, la tarea ya se inició
           alert('Tarea iniciada (nota: la orden de trabajo no se pudo iniciar automáticamente)');
         }
