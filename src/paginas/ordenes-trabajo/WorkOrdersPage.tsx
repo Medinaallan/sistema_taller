@@ -7,7 +7,7 @@ import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
 import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
-import { obtenerClientes } from '../../servicios/clientesApiService';
+import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -28,20 +28,44 @@ const WorkOrdersPage = () => {
   const [selectedOrderForQuality, setSelectedOrderForQuality] = useState<WorkOrderData | null>(null);
   
   // Estados para datos de mapeo
-  const [clientes, setClientes] = useState<any[]>([]);
+  const { clientes: clientesAPI } = useClientesFromAPI();
   const [vehiculos, setVehiculos] = useState<any[]>([]);
   const [servicios, setServicios] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
 
   // Funciones de mapeo
   const getClienteName = (clienteId: string) => {
-    const cliente = clientes.find(c => c.id === clienteId);
-    return cliente ? cliente.name : clienteId?.substring(0, 20) || 'Cliente no encontrado';
+    if (!clienteId) return 'Sin cliente';
+    const clientIdStr = String(clienteId).trim();
+    
+    // Debug temporal
+    if (clientesAPI.length === 0) {
+      console.warn('⚠️ clientesAPI está vacío!');
+      return `Cliente #${clienteId}`;
+    }
+    
+    const cliente = clientesAPI.find((c: any) => {
+      const cId = String(c.id || c.usuario_id).trim();
+      return cId === clientIdStr;
+    });
+    
+    if (cliente) {
+      return cliente.nombre_completo || cliente.name || 'Sin nombre';
+    }
+    
+    // Si no encuentra, mostrar debug
+    console.warn(`❌ Cliente ${clienteId} no encontrado. IDs disponibles:`, clientesAPI.map((c: any) => c.id || c.usuario_id));
+    return `Cliente #${clienteId}`;
   };
 
   const getVehicleName = (vehiculoId: string) => {
-    const vehiculo = vehiculos.find(v => v.id === vehiculoId);
-    return vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}` : vehiculoId?.substring(0, 20) || 'Vehículo no encontrado';
+    if (!vehiculoId) return 'Sin vehículo';
+    const vehicleIdStr = String(vehiculoId).trim();
+    const vehiculo = vehiculos.find((v: any) => String(v.id).trim() === vehicleIdStr);
+    if (vehiculo) {
+      return `${vehiculo.brand || vehiculo.marca || ''} ${vehiculo.model || vehiculo.modelo || ''} - ${vehiculo.licensePlate || vehiculo.placa || ''}`.trim();
+    }
+    return `Vehículo #${vehiculoId}`;
   };
 
   const getServiceName = (servicioId: string) => {
@@ -55,23 +79,29 @@ const WorkOrdersPage = () => {
   };
 
   // Funciones para cargar datos de referencia
-  const loadClientes = async () => {
-    try {
-      const clientesData = await obtenerClientes();
-      setClientes(clientesData);
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-    }
-  };
-
   const loadVehiculos = async () => {
     try {
       const response = await vehiclesService.getAll();
       if (response.success) {
-        setVehiculos(response.data);
+        // Mapear igual que en AppointmentsPage
+        const mappedVehicles = response.data.map((spVehicle: any) => ({
+          id: String(spVehicle.vehiculo_id || spVehicle.id),
+          clientId: String(spVehicle.cliente_id || spVehicle.clientId),
+          brand: spVehicle.marca,
+          model: spVehicle.modelo,
+          year: parseInt(spVehicle.anio),
+          licensePlate: spVehicle.placa,
+          color: spVehicle.color,
+          mileage: parseInt(spVehicle.kilometraje) || 0,
+          vin: spVehicle.vin || '',
+          numeroMotor: spVehicle.numero_motor || '',
+          fotoUrl: spVehicle.foto_url || '',
+        }));
+        console.log('🚗 Vehículos cargados:', mappedVehicles.length, mappedVehicles);
+        setVehiculos(mappedVehicles);
       }
     } catch (error) {
-      console.error('Error cargando vehículos:', error);
+      console.error('❌ Error cargando vehículos:', error);
     }
   };
 
@@ -113,8 +143,17 @@ const WorkOrdersPage = () => {
       console.log('🔄 Iniciando carga de órdenes de trabajo...');
       setLoading(true);
       const orders = await workOrdersService.getAllWorkOrders();
-      console.log('✅ Órdenes de trabajo cargadas:', orders);
-      console.log('📊 Número de órdenes:', orders.length);
+      console.log('✅ Órdenes de trabajo cargadas:', orders.length);
+      if (orders.length > 0) {
+        console.log('📋 Ejemplo de orden:', {
+          id: orders[0].id,
+          clienteId: orders[0].clienteId,
+          vehiculoId: orders[0].vehiculoId,
+          descripcion: orders[0].descripcion
+        });
+        console.log('📋 Primeras 3 órdenes - ClienteIDs:', orders.slice(0, 3).map(o => o.clienteId));
+        console.log('📋 Primeras 3 órdenes - VehiculoIDs:', orders.slice(0, 3).map(o => o.vehiculoId));
+      }
       setWorkOrders(orders);
     } catch (err) {
       console.error('❌ Error cargando órdenes de trabajo:', err);
@@ -126,9 +165,9 @@ const WorkOrdersPage = () => {
 
   useEffect(() => {
     const loadAllData = async () => {
+      console.log('📊 ClientesAPI disponibles:', clientesAPI.length, clientesAPI);
       await Promise.all([
         loadWorkOrders(),
-        loadClientes(),
         loadVehiculos(),
         loadServicios(),
         loadAppointments()
@@ -136,7 +175,7 @@ const WorkOrdersPage = () => {
     };
     
     loadAllData();
-  }, []);
+  }, [clientesAPI]);
 
   const filteredWorkOrders = workOrders.filter(order => {
     const matchesSearch = 
