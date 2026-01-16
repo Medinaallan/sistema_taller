@@ -66,15 +66,31 @@ export function ClientAppointmentsPage() {
       setLoadingServices(true);
       try {
         const response = await servicesService.getAll();
+        console.log('Respuesta de servicios RAW:', response);
+        
         if (response.success && response.data) {
           // Mapear los servicios del CSV al formato esperado
-          const mappedServices = response.data.map((service: any) => ({
-            id: service.id || service.codigo,
-            name: service.nombre || service.name,
-            description: service.descripcion || service.description || 'Servicio disponible',
-            precio: service.precio || 0,
-            categoria: service.categoria || 'general'
-          }));
+          const mappedServices = response.data.map((service: any, index: number) => {
+            // Intentar obtener un ID numérico válido
+            let serviceId = service.id || service.codigo || service.tipo_servicio_id;
+            
+            // Si el ID no es numérico, usar el índice + 1 como fallback
+            if (!serviceId || isNaN(Number(serviceId))) {
+              serviceId = index + 1;
+              console.warn('Servicio sin ID numérico válido, usando índice:', service, 'ID asignado:', serviceId);
+            }
+            
+            return {
+              id: String(serviceId), // Convertir a string para consistencia
+              name: service.nombre || service.name || 'Servicio sin nombre',
+              description: service.descripcion || service.description || 'Servicio disponible',
+              precio: service.precio || 0,
+              categoria: service.categoria || 'general'
+            };
+          });
+          
+          console.log('Servicios mapeados:', mappedServices);
+          console.log('IDs de servicios:', mappedServices.map((srv: any) => srv.id));
           
           // Si no hay servicios en el CSV, usar servicios básicos
           if (mappedServices.length === 0) {
@@ -122,20 +138,31 @@ export function ClientAppointmentsPage() {
       setLoadingVehicles(true);
       try {
         const response = await vehiclesService.getAll();
+        console.log('Respuesta de vehículos:', response);
+        console.log('Usuario actual ID:', state.user?.id);
+        
         if (response.success && response.data) {
           // Filtrar solo los vehículos del cliente actual
+          // Probar con diferentes nombres de campos que puede tener el backend
           const userVehicles = response.data
-            .filter((vehicle: any) => vehicle.clienteId === state.user?.id)
+            .filter((vehicle: any) => {
+              const clientId = vehicle.cliente_id || vehicle.clienteId || vehicle.ClienteId;
+              const userId = state.user?.id;
+              console.log('Comparando vehículo:', { vehicleClientId: clientId, userId, vehicle });
+              return clientId == userId; // Usar == para comparar sin importar el tipo
+            })
             .map((vehicle: any) => ({
-              id: vehicle.id,
-              brand: vehicle.marca,
-              model: vehicle.modelo,
-              year: parseInt(vehicle.año),
-              color: vehicle.color,
-              licensePlate: vehicle.placa,
-              vin: vehicle.vin || '',
-              mileage: parseInt(vehicle.mileage) || 0
+              id: vehicle.id || vehicle.vehiculo_id || vehicle.VehiculoId,
+              brand: vehicle.marca || vehicle.Marca,
+              model: vehicle.modelo || vehicle.Modelo,
+              year: parseInt(vehicle.año || vehicle.anio || vehicle.Anio || vehicle.year || '0'),
+              color: vehicle.color || vehicle.Color,
+              licensePlate: vehicle.placa || vehicle.Placa,
+              vin: vehicle.vin || vehicle.VIN || '',
+              mileage: parseInt(vehicle.kilometraje || vehicle.mileage || vehicle.Kilometraje || '0')
             }));
+          
+          console.log('Vehículos filtrados del usuario:', userVehicles);
           setClientVehicles(userVehicles);
         } else {
           console.error('Error cargando vehículos:', response.message);
@@ -160,45 +187,58 @@ export function ClientAppointmentsPage() {
       setLoadingAppointments(true);
       try {
         const response = await appointmentsService.getAll();
+        console.log('Respuesta de citas:', response);
+        
         if (response.success && response.data) {
           // Filtrar solo las citas del cliente actual y mapear a formato frontend
           const userAppointments = response.data
-            .filter((appointment: any) => appointment.clienteId === state.user?.id)
+            .filter((appointment: any) => {
+              const clientId = appointment.cliente_id || appointment.clienteId || appointment.ClienteId;
+              return clientId == state.user?.id; // Usar == para comparar sin importar el tipo
+            })
             .map((appointment: any) => {
               // Encontrar el vehículo correspondiente
-              const vehicle = clientVehicles.find(v => v.id === appointment.vehiculoId);
-              const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})` : appointment.vehiculoId;
+              const vehicleId = appointment.vehiculo_id || appointment.vehiculoId || appointment.VehiculoId;
+              const vehicle = clientVehicles.find(v => v.id == vehicleId);
+              const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model} (${vehicle.licensePlate})` : vehicleId;
               
               // Parsear las notas que vienen como JSON string
               let problemText = 'Sin descripción';
               let notesText = '';
+              let timeText = '';
               try {
-                const notesData = JSON.parse(appointment.notas?.replace(/^"|"$/g, '') || '{}');
+                const notesField = appointment.notas_cliente || appointment.notas || '';
+                const notesData = JSON.parse(notesField.replace(/^"|"$/g, '') || '{}');
                 problemText = notesData.problem || 'Sin descripción';
                 notesText = notesData.additionalNotes || '';
+                timeText = notesData.hora || '';
               } catch (e) {
-                problemText = appointment.notas?.replace(/^"|"$/g, '') || 'Sin descripción';
+                const notesField = appointment.notas_cliente || appointment.notas || '';
+                problemText = notesField.replace(/^"|"$/g, '') || 'Sin descripción';
               }
 
               // Encontrar el servicio correspondiente
-              const service = serviceTypes.find(s => s.id === appointment.servicio);
+              const serviceTypeId = appointment.tipo_servicio_id || appointment.servicio;
+              const service = serviceTypes.find(s => s.id == serviceTypeId);
               const serviceName = service ? service.name : 'Servicio no especificado';
 
               return {
-                id: appointment.id,
-                vehicleId: appointment.vehiculoId,
+                id: appointment.cita_id || appointment.id || appointment.CitaId,
+                vehicleId: vehicleId,
                 vehicleName: vehicleName,
                 serviceType: serviceName,
-                date: appointment.fecha,
-                time: appointment.hora,
-                status: appointment.estado as any,
+                date: appointment.fecha_inicio || appointment.fecha || appointment.Fecha,
+                time: timeText || appointment.hora || appointment.Hora || 'No especificada',
+                status: (appointment.estado || appointment.Estado || 'pending') as any,
                 priority: 'medium' as any, // Default priority desde notas si está disponible
                 problem: problemText,
                 contactPhone: state.user?.phone || '',
                 notes: notesText,
-                createdDate: appointment.fecha
+                createdDate: appointment.fecha_inicio || appointment.fecha || appointment.Fecha
               };
             });
+          
+          console.log('Citas filtradas del usuario:', userAppointments);
           setAppointments(userAppointments);
         } else {
           console.error('Error cargando citas:', response.message);
@@ -289,17 +329,35 @@ export function ClientAppointmentsPage() {
         additionalNotes: formData.additionalNotes,
         priority: formData.priority,
         contactPhone: formData.contactPhone,
+        hora: formData.preferredTime, // Guardar la hora preferida en las notas
       });
 
+      // El backend espera estos campos específicos
       const payload = {
-        clienteId: state.user.id,
-        vehiculoId: formData.vehicleId,
-        fecha: formData.preferredDate,
-        hora: formData.preferredTime,
-        servicio: formData.serviceType,
-        estado: 'pending',
-        notas,
+        cliente_id: state.user.id,
+        vehiculo_id: Number(formData.vehicleId),
+        tipo_servicio_id: Number(formData.serviceType),
+        fecha_inicio: formData.preferredDate,
+        asesor_id: null, // No hay asesor asignado por el momento
+        notas_cliente: notas,
+        canal_origen: 'portal_cliente', // Identificar que viene del portal del cliente
+        registrado_por: state.user.id // El cliente que registra
       };
+
+      console.log('Payload a enviar:', payload);
+      console.log('vehiculo_id tipo:', typeof payload.vehiculo_id, 'valor:', payload.vehiculo_id);
+      console.log('tipo_servicio_id tipo:', typeof payload.tipo_servicio_id, 'valor:', payload.tipo_servicio_id);
+      
+      // Validar que los IDs sean números válidos
+      if (isNaN(payload.vehiculo_id) || isNaN(payload.tipo_servicio_id)) {
+        alert('Error: Los IDs de vehículo o servicio no son válidos. Por favor, selecciona nuevamente.');
+        console.error('IDs inválidos:', {
+          vehiculo_id: payload.vehiculo_id,
+          tipo_servicio_id: payload.tipo_servicio_id,
+          formData
+        });
+        return;
+      }
 
       const res = await appointmentsService.create(payload as any);
       if (res.success) {
@@ -397,11 +455,6 @@ export function ClientAppointmentsPage() {
               <span className={`font-medium ${priorityConfig.color}`}>{priorityConfig.text}</span>
             </div>
             <div className="flex space-x-2">
-              {appointment.status === 'pending' && (
-                <button className="text-green-600 hover:text-green-700 text-sm font-medium">
-                  Confirmar
-                </button>
-              )}
               <button 
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
               >
@@ -461,7 +514,7 @@ export function ClientAppointmentsPage() {
                 {clientVehicles.map((vehicle) => (
                   <div
                     key={vehicle.id}
-                    onClick={() => setFormData({...formData, vehicleId: vehicle.id})}
+                    onClick={() => setFormData(prev => ({...prev, vehicleId: vehicle.id}))}
                     className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                       formData.vehicleId === vehicle.id
                         ? 'border-blue-500 bg-blue-50'
@@ -505,25 +558,43 @@ export function ClientAppointmentsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {serviceTypes.map((service) => (
-                  <div
-                    key={service.id}
-                    onClick={() => setFormData({...formData, serviceType: service.id})}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.serviceType === service.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-start">
-                      <span className="text-2xl mr-3"></span>
-                      <div>
-                        <p className="font-medium text-gray-900">{service.name}</p>
-                        <p className="text-sm text-gray-500">{service.description}</p>
+                {serviceTypes.map((service) => {
+                  const isSelected = formData.serviceType === service.id;
+                  console.log('Renderizando servicio:', { 
+                    serviceId: service.id, 
+                    serviceName: service.name,
+                    formDataServiceType: formData.serviceType, 
+                    isSelected 
+                  });
+                  
+                  return (
+                    <div
+                      key={service.id}
+                      onClick={() => {
+                        console.log('Click en servicio:', service.id, service.name);
+                        setFormData(prev => {
+                          console.log('Estado anterior:', prev);
+                          const newState = {...prev, serviceType: service.id};
+                          console.log('Estado nuevo:', newState);
+                          return newState;
+                        });
+                      }}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start">
+                        <span className="text-2xl mr-3"></span>
+                        <div>
+                          <p className="font-medium text-gray-900">{service.name}</p>
+                          <p className="text-sm text-gray-500">{service.description}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -537,7 +608,7 @@ export function ClientAppointmentsPage() {
               <input
                 type="date"
                 value={formData.preferredDate}
-                onChange={(e) => setFormData({...formData, preferredDate: e.target.value})}
+                onChange={(e) => setFormData(prev => ({...prev, preferredDate: e.target.value}))}
                 min={new Date().toISOString().split('T')[0]}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
@@ -550,7 +621,7 @@ export function ClientAppointmentsPage() {
               </label>
               <select
                 value={formData.preferredTime}
-                onChange={(e) => setFormData({...formData, preferredTime: e.target.value})}
+                onChange={(e) => setFormData(prev => ({...prev, preferredTime: e.target.value}))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
@@ -569,7 +640,7 @@ export function ClientAppointmentsPage() {
             </label>
             <textarea
               value={formData.problem}
-              onChange={(e) => setFormData({...formData, problem: e.target.value})}
+              onChange={(e) => setFormData(prev => ({...prev, problem: e.target.value}))}
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Describe detalladamente el problema o el servicio que necesitas..."
@@ -584,7 +655,7 @@ export function ClientAppointmentsPage() {
               </label>
               <select
                 value={formData.priority}
-                onChange={(e) => setFormData({...formData, priority: e.target.value as any})}
+                onChange={(e) => setFormData(prev => ({...prev, priority: e.target.value as any}))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="low">Baja - No es urgente</option>
@@ -601,7 +672,7 @@ export function ClientAppointmentsPage() {
               <input
                 type="tel"
                 value={formData.contactPhone}
-                onChange={(e) => setFormData({...formData, contactPhone: e.target.value})}
+                onChange={(e) => setFormData(prev => ({...prev, contactPhone: e.target.value}))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Ingresa tu número de teléfono"
                 required
@@ -616,7 +687,7 @@ export function ClientAppointmentsPage() {
             </label>
             <textarea
               value={formData.additionalNotes}
-              onChange={(e) => setFormData({...formData, additionalNotes: e.target.value})}
+              onChange={(e) => setFormData(prev => ({...prev, additionalNotes: e.target.value}))}
               rows={3}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Información adicional que consideres importante..."
