@@ -60,6 +60,9 @@ export interface WorkOrderData {
   vehiculoId: string;
   servicioId: string;
   descripcion: string;
+  // Nombres para display (vienen del SP)
+  nombreCliente?: string;
+  nombreVehiculo?: string;
   problema?: string;
   diagnostico?: string;
   tipoServicio: 'preventive' | 'corrective';
@@ -88,18 +91,14 @@ class WorkOrdersService {
   private async mapSpDataToWorkOrder(spData: any): Promise<WorkOrderData> {
     const otId = spData.ot_id?.toString() || '';
     
-    // 🔥 PRIMERO: Obtener el estado desde el JSON local (tiene prioridad)
+    // Obtener el estado desde el JSON local (tiene prioridad)
     const estadoFromJson = await workOrderStatesManager.getState(otId);
-    
-    // Si no existe en el JSON, inicializar con el estado del SP o 'Abierta' por defecto
     const estado = estadoFromJson || (spData.estado_ot as WorkOrderStatus) || 'Abierta';
     
     // Si no estaba en el JSON, inicializarlo ahora
     if (!estadoFromJson && otId) {
       await workOrderStatesManager.initializeState(otId, estado);
     }
-    
-    console.log(`🔄 OT ${otId}: Estado del SP: ${spData.estado_ot} | Estado del JSON: ${estadoFromJson || 'N/A'} | Estado final: ${estado}`);
     
     return {
       id: otId,
@@ -109,6 +108,10 @@ class WorkOrdersService {
       vehiculoId: spData.vehiculo_id?.toString() || '',
       servicioId: '',
       descripcion: spData.vehiculo_info || '',
+      // Nombre del cliente - buscar en múltiples campos posibles del SP
+      nombreCliente: spData.nombre_completo || spData.nombre_cliente || spData.cliente_nombre || spData.nombre_asesor || '',
+      // Nombre del vehículo - usar vehiculo_info que ya funciona
+      nombreVehiculo: spData.vehiculo_info || '',
       problema: spData.notas_recepcion || '',
       diagnostico: '',
       tipoServicio: 'corrective',
@@ -130,12 +133,8 @@ class WorkOrdersService {
   // Obtener todas las órdenes de trabajo
   async getAllWorkOrders(): Promise<WorkOrderData[]> {
     try {
-      console.log('🌐 Llamando API:', `${API_BASE_URL}/workorders`);
       const response = await fetch(`${API_BASE_URL}/workorders`);
-      console.log('📡 Respuesta recibida. Status:', response.status);
-      
       const result: any = await response.json();
-      console.log('📦 Datos recibidos:', result);
       
       if (!response.ok) {
         throw new Error(result.message || 'Error al obtener órdenes de trabajo');
@@ -145,8 +144,6 @@ class WorkOrdersService {
       const rawOrders = Array.isArray(result.data) ? result.data : [];
       const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
       
-      console.log('Órdenes procesadas:', orders.length, 'elementos');
-      console.log('Órdenes mapeadas:', orders);
       return orders;
     } catch (error) {
       console.error('Error fetching work orders:', error);
@@ -483,22 +480,16 @@ class WorkOrdersService {
   // Obtener todas las tareas de una orden de trabajo
   async getTareasByOT(otId: string): Promise<OTTarea[]> {
     try {
-      console.log(`📋 Obteniendo tareas de OT ${otId}`);
       const response = await fetch(`${API_BASE_URL}/workorders/${otId}/tareas`);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Error en respuesta:', errorText);
         throw new Error('Error al obtener tareas de la orden');
       }
       
       const result: TareasResponse = await response.json();
-      console.log('✅ Tareas obtenidas:', result);
-      console.log('✅ Número de tareas:', Array.isArray(result.data) ? result.data.length : 0);
-      
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
-      console.error('❌ Error obteniendo tareas:', error);
+      console.error('Error obteniendo tareas:', error);
       throw error;
     }
   }

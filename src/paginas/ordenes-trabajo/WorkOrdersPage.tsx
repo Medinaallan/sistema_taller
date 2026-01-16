@@ -34,38 +34,16 @@ const WorkOrdersPage = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
 
   // Funciones de mapeo
-  const getClienteName = (clienteId: string) => {
-    if (!clienteId) return 'Sin cliente';
-    const clientIdStr = String(clienteId).trim();
-    
-    // Debug temporal
-    if (clientesAPI.length === 0) {
-      console.warn('⚠️ clientesAPI está vacío!');
-      return `Cliente #${clienteId}`;
-    }
-    
-    const cliente = clientesAPI.find((c: any) => {
-      const cId = String(c.id || c.usuario_id).trim();
-      return cId === clientIdStr;
-    });
-    
-    if (cliente) {
-      return cliente.nombre_completo || cliente.name || 'Sin nombre';
-    }
-    
-    // Si no encuentra, mostrar debug
-    console.warn(`❌ Cliente ${clienteId} no encontrado. IDs disponibles:`, clientesAPI.map((c: any) => c.id || c.usuario_id));
-    return `Cliente #${clienteId}`;
+  const getClienteName = (order: WorkOrderData) => {
+    const cliente = clientesAPI.find((c: any) => 
+      String(c.usuario_id).trim() === String(order.clienteId).trim()
+    );
+    return cliente ? cliente.nombre_completo : `Cliente #${order.clienteId}`;
   };
 
-  const getVehicleName = (vehiculoId: string) => {
-    if (!vehiculoId) return 'Sin vehículo';
-    const vehicleIdStr = String(vehiculoId).trim();
-    const vehiculo = vehiculos.find((v: any) => String(v.id).trim() === vehicleIdStr);
-    if (vehiculo) {
-      return `${vehiculo.brand || vehiculo.marca || ''} ${vehiculo.model || vehiculo.modelo || ''} - ${vehiculo.licensePlate || vehiculo.placa || ''}`.trim();
-    }
-    return `Vehículo #${vehiculoId}`;
+  const getVehicleName = (order: WorkOrderData) => {
+    // Usar la descripción que ya tiene el nombre del vehículo
+    return order.descripcion || `Vehículo #${order.vehiculoId}`;
   };
 
   const getServiceName = (servicioId: string) => {
@@ -97,11 +75,10 @@ const WorkOrdersPage = () => {
           numeroMotor: spVehicle.numero_motor || '',
           fotoUrl: spVehicle.foto_url || '',
         }));
-        console.log('🚗 Vehículos cargados:', mappedVehicles.length, mappedVehicles);
         setVehiculos(mappedVehicles);
       }
     } catch (error) {
-      console.error('❌ Error cargando vehículos:', error);
+      console.error('Error cargando vehículos:', error);
     }
   };
 
@@ -140,23 +117,11 @@ const WorkOrdersPage = () => {
   // Cargar órdenes de trabajo
   const loadWorkOrders = async () => {
     try {
-      console.log('🔄 Iniciando carga de órdenes de trabajo...');
       setLoading(true);
       const orders = await workOrdersService.getAllWorkOrders();
-      console.log('✅ Órdenes de trabajo cargadas:', orders.length);
-      if (orders.length > 0) {
-        console.log('📋 Ejemplo de orden:', {
-          id: orders[0].id,
-          clienteId: orders[0].clienteId,
-          vehiculoId: orders[0].vehiculoId,
-          descripcion: orders[0].descripcion
-        });
-        console.log('📋 Primeras 3 órdenes - ClienteIDs:', orders.slice(0, 3).map(o => o.clienteId));
-        console.log('📋 Primeras 3 órdenes - VehiculoIDs:', orders.slice(0, 3).map(o => o.vehiculoId));
-      }
       setWorkOrders(orders);
     } catch (err) {
-      console.error('❌ Error cargando órdenes de trabajo:', err);
+      console.error('Error cargando órdenes de trabajo:', err);
       alert('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -165,7 +130,6 @@ const WorkOrdersPage = () => {
 
   useEffect(() => {
     const loadAllData = async () => {
-      console.log('📊 ClientesAPI disponibles:', clientesAPI.length, clientesAPI);
       await Promise.all([
         loadWorkOrders(),
         loadVehiculos(),
@@ -289,7 +253,6 @@ const WorkOrdersPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Órdenes de Trabajo</h1>
           <p className="text-gray-600">Gestiona todas las órdenes de trabajo del taller</p>
-          <p className="text-sm text-blue-600">Debug: {workOrders.length} órdenes cargadas | Loading: {loading ? 'Sí' : 'No'}</p>
         </div>
         <div className="flex space-x-2">
           <Button 
@@ -395,7 +358,7 @@ const WorkOrdersPage = () => {
                 </tr>
               ) : (
                 filteredWorkOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
+                  <tr key={`${order.id}-${order.descripcion}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -406,13 +369,13 @@ const WorkOrdersPage = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap" style={{backgroundColor: 'yellow'}}>
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {getClienteName(order.clienteId)}
+                          {getClienteName(order)}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {getVehicleName(order.vehiculoId)}
+                        <div className="text-sm text-red-500 font-bold">
+                          🚗 CAMBIO APLICADO: {order.descripcion}
                         </div>
                       </div>
                     </td>
@@ -524,8 +487,8 @@ const WorkOrdersPage = () => {
         {selectedWorkOrder && (
           <WorkOrderDetails 
             order={selectedWorkOrder} 
-            clientName={getClienteName(selectedWorkOrder.clienteId)} 
-            vehicleName={getVehicleName(selectedWorkOrder.vehiculoId)} 
+            clientName={getClienteName(selectedWorkOrder)} 
+            vehicleName={getVehicleName(selectedWorkOrder)} 
             serviceName={getServiceName(selectedWorkOrder.servicioId)} 
             appointmentName={selectedWorkOrder.appointmentId ? getAppointmentName(selectedWorkOrder.appointmentId) : undefined}
             quotationName={selectedWorkOrder.quotationId ? `COT-${selectedWorkOrder.quotationId?.substring(0, 8)}` : undefined}
@@ -561,8 +524,8 @@ const WorkOrdersPage = () => {
           isOpen={showQualityControlModal}
           onClose={() => setShowQualityControlModal(false)}
           workOrder={selectedOrderForQuality}
-          clientName={getClienteName(selectedOrderForQuality.clienteId)}
-          vehicleName={getVehicleName(selectedOrderForQuality.vehiculoId)}
+          clientName={getClienteName(selectedOrderForQuality)}
+          vehicleName={getVehicleName(selectedOrderForQuality)}
           onComplete={handleQualityControlComplete}
         />
       )}
