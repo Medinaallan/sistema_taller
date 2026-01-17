@@ -39,11 +39,15 @@ class QuotationsService {
     }
   }
 
-  // Obtener cotizaciones por cliente
-  async getQuotationsByClient(clienteId: string): Promise<QuotationData[]> {
+  // Obtener cotizaciones por usuario cliente
+  async getQuotationsByClient(userId: string): Promise<QuotationData[]> {
     try {
-      const allQuotations = await this.getAllQuotations();
-      return allQuotations.filter(quotation => quotation.clienteId === clienteId);
+      const response = await fetch(`${API_BASE_URL}/quotations/client/${userId}`);
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al obtener cotizaciones del cliente');
+      }
+      return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
       console.error('Error fetching client quotations:', error);
       throw error;

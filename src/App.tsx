@@ -22,6 +22,7 @@ import { WorkOrdersPage } from './paginas/administracion/WorkOrdersPage';
 import AppointmentsPage from './paginas/appointments/AppointmentsPage';
 import QuotationsPage from './paginas/quotations/QuotationsPage';
 import ClientQuotationsPage from './paginas/quotations/ClientQuotationsPage';
+import ClientWorkOrdersPage from './paginas/workorders/ClientWorkOrdersPage';
 import InvoicesPage from './paginas/invoices/InvoicesPage';
 import PaymentsPage from './paginas/payments/PaymentsPage';
 import InventoryPage from './paginas/inventory/InventoryPage';
@@ -129,6 +130,20 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ClientQuotationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route        path="/client-workorders"
+        element={
+          <ProtectedRoute>
+            <ClientWorkOrdersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route        path="/client-workorders"
+        element={
+          <ProtectedRoute>
+            <ClientWorkOrdersPage />
           </ProtectedRoute>
         }
       />

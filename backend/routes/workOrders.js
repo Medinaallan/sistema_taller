@@ -56,6 +56,67 @@ function normalizeTimeFormat(timeStr) {
   return null;
 }
 
+// GET - Obtener órdenes de trabajo del cliente por usuario_id
+router.get('/client/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    console.log(`🔍 Buscando órdenes de trabajo para usuario_id: ${userId}`);
+    
+    const pool = await getConnection();
+    
+    // Paso 1: Obtener el usuario usando SP_OBTENER_USUARIOS
+    const usuarioResult = await pool.request()
+      .input('usuario_id', sql.Int, parseInt(userId))
+      .execute('SP_OBTENER_USUARIOS');
+
+    if (usuarioResult.recordset.length === 0) {
+      console.log(`⚠️ Usuario ${userId} no encontrado`);
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const usuario = usuarioResult.recordset[0];
+    const cliente_id = usuario.usuario_id;
+    
+    console.log(`✅ Usuario encontrado: ${usuario.nombre_completo}, cliente_id: ${cliente_id}`);
+
+    // Paso 2: Obtener las órdenes de trabajo del cliente
+    const result = await pool.request()
+      .input('ot_id', sql.Int, null)
+      .input('cliente_id', sql.Int, cliente_id)
+      .input('placa', sql.VarChar(50), null)
+      .input('estado', sql.VarChar(50), null)
+      .input('numero_ot', sql.VarChar(20), null)
+      .execute('SP_OBTENER_ORDENES_TRABAJO');
+
+    console.log(`✅ Órdenes de trabajo encontradas: ${result.recordset.length}`);
+    if (result.recordset.length > 0) {
+      console.log('📋 OTs:', result.recordset.map(ot => ({
+        numero_ot: ot.numero_ot,
+        estado: ot.estado_ot,
+        vehiculo: ot.placa
+      })));
+    }
+
+    res.json({
+      success: true,
+      data: result.recordset,
+      count: result.recordset.length
+    });
+  } catch (error) {
+    console.error('❌ Error al obtener órdenes de trabajo del cliente:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener órdenes de trabajo del cliente',
+      error: error.message
+    });
+  }
+});
+
 // GET - Obtener todas las órdenes de trabajo con filtros
 router.get('/', async (req, res) => {
   const { ot_id, cliente_id, placa, estado, numero_ot } = req.query;

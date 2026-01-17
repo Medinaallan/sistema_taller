@@ -34,6 +34,107 @@ router.post('/', async (req, res) => {
 
 
 
+// GET /quotations/client/:userId - Obtener cotizaciones de un cliente específico por usuario
+router.get('/client/:userId', async (req, res) => {
+	const { userId } = req.params;
+
+	try {
+		const pool = await getConnection();
+		
+		console.log(`🔍 Buscando cotizaciones para usuario_id: ${userId}`);
+		
+		// Paso 1: Obtener el usuario específico usando SP_OBTENER_USUARIOS
+		const usuarioResult = await pool.request()
+			.input('usuario_id', sql.Int, parseInt(userId))
+			.execute('SP_OBTENER_USUARIOS');
+
+		console.log(`👤 Resultado SP_OBTENER_USUARIOS:`, usuarioResult.recordset);
+
+		if (usuarioResult.recordset.length === 0) {
+			console.log(`⚠️ Usuario ${userId} no encontrado en SP_OBTENER_USUARIOS`);
+			return res.json({
+				success: true,
+				data: [],
+				message: 'Usuario no encontrado'
+			});
+		}
+
+		const usuario = usuarioResult.recordset[0];
+		const cliente_id = usuario.usuario_id; // En tu sistema, usuario_id es el cliente_id
+		
+		console.log(`✅ Usuario encontrado: ${usuario.nombre_completo}, usando cliente_id: ${cliente_id}`);
+
+		// Paso 2: Obtener las citas del cliente usando SP_OBTENER_CITAS
+		const citasResult = await pool.request()
+			.input('cita_id', sql.Int, null)
+			.input('cliente_id', sql.Int, cliente_id)
+			.input('vehiculo_id', sql.Int, null)
+			.input('estado', sql.VarChar(50), null)
+			.input('fecha_inicio', sql.Date, null)
+			.input('numero_cita', sql.VarChar(20), null)
+			.execute('SP_OBTENER_CITAS');
+
+		console.log(`📋 Citas encontradas para cliente_id ${cliente_id}: ${citasResult.recordset.length}`);
+		
+		if (citasResult.recordset.length === 0) {
+			console.log(`⚠️ No hay citas para el cliente_id ${cliente_id}`);
+			return res.json({
+				success: true,
+				data: [],
+				message: 'No se encontraron citas para este cliente'
+			});
+		}
+
+		// Mostrar info de las citas
+		console.log('📌 Citas:', citasResult.recordset.map(c => ({
+			cita_id: c.cita_id,
+			numero_cita: c.numero_cita,
+			nombre_cliente: c.nombre_cliente
+		})));
+
+		// Obtener los IDs de las citas del cliente
+		const citaIds = citasResult.recordset.map(cita => cita.cita_id);
+		console.log(`🎯 IDs de citas a buscar: ${citaIds.join(', ')}`);
+
+		// Paso 3: Obtener todas las cotizaciones
+		const cotizacionesResult = await pool.request()
+			.input('cotizacion_id', sql.Int, null)
+			.input('cita_id', sql.Int, null)
+			.input('ot_id', sql.Int, null)
+			.input('estado', sql.VarChar(50), null)
+			.input('numero_cotizacion', sql.VarChar(20), null)
+			.execute('SP_OBTENER_COTIZACIONES');
+
+		console.log(`💼 Total cotizaciones en sistema: ${cotizacionesResult.recordset.length}`);
+
+		// Paso 4: Filtrar las cotizaciones que pertenecen a las citas del cliente
+		const cotizacionesCliente = cotizacionesResult.recordset.filter(cot => 
+			citaIds.includes(cot.cita_id)
+		);
+
+		console.log(`✅ Cotizaciones del cliente: ${cotizacionesCliente.length}`);
+		if (cotizacionesCliente.length > 0) {
+			console.log('📄 Cotizaciones encontradas:', cotizacionesCliente.map(c => ({
+				numero: c.numero_cotizacion,
+				cita_id: c.cita_id,
+				cliente: c.nombre_cliente
+			})));
+		}
+
+		res.json({
+			success: true,
+			data: cotizacionesCliente
+		});
+	} catch (error) {
+		console.error('❌ Error al obtener cotizaciones del cliente:', error);
+		res.status(500).json({
+			success: false,
+			message: 'Error al obtener cotizaciones del cliente',
+			error: error.message
+		});
+	}
+});
+
 // GET /quotations - Obtener cotizaciones con filtros
 router.get('/', async (req, res) => {
 	const {
