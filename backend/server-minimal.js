@@ -215,6 +215,28 @@ try {
   console.warn('⚠️ El servidor continuará sin las rutas de órdenes de trabajo');
 }
 
+//IMPORTAR Y CONFIGURAR RUTAS DE ESTADOS DE OT
+try {
+  console.log('📊 Cargando rutas de estados de órdenes de trabajo...');
+  const workOrderStatesRouter = require('./routes/workOrderStates');
+  app.use('/api/workorder-states', workOrderStatesRouter);
+  console.log('✅ Rutas de estados de OT cargadas exitosamente');
+} catch (error) {
+  console.error('❌ Error cargando rutas de estados de OT:', error.message);
+  console.warn('⚠️ El servidor continuará sin las rutas de estados de OT');
+}
+
+//IMPORTAR Y CONFIGURAR RUTAS DE SOLICITUDES DE FIRMA
+try {
+  console.log('✍️ Cargando rutas de solicitudes de firma...');
+  const signatureRequestsRouter = require('./routes/signatureRequests');
+  app.use('/api/signature-requests', signatureRequestsRouter);
+  console.log('✅ Rutas de solicitudes de firma cargadas exitosamente');
+} catch (error) {
+  console.error('❌ Error cargando rutas de solicitudes de firma:', error.message);
+  console.warn('⚠️ El servidor continuará sin las rutas de solicitudes de firma');
+}
+
 //IMPORTAR Y CONFIGURAR RUTAS DE LOGS
 try {
   console.log('📋 Cargando rutas de logs del sistema...');

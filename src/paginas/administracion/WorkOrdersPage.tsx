@@ -5,11 +5,13 @@ import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderMo
 import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
 import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
+import AuthorizationDecisionModal from '../../componentes/ordenes-trabajo/AuthorizationDecisionModal';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 import { getDisplayNames, getClientDisplayName, getVehicleDisplayName } from '../../utilidades/dataMappers';
+import signatureRequestsService from '../../servicios/signatureRequestsService';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -36,7 +38,10 @@ const WorkOrdersPage = () => {
   const [selectedOrderForQC, setSelectedOrderForQC] = useState<WorkOrderData | null>(null);
   const [completedTasksMap, setCompletedTasksMap] = useState<Map<string, boolean>>(new Map());
 
-  // Cargar órdenes de trabajo
+  // Estados para el modal de decisión de autorización
+  const [showDecisionModal, setShowDecisionModal] = useState(false);
+  const [selectedOrderForDecision, setSelectedOrderForDecision] = useState<WorkOrderData | null>(null);
+  
   const loadWorkOrders = async () => {
     try {
       console.log(' Iniciando carga de órdenes de trabajo...');
@@ -213,8 +218,44 @@ const WorkOrdersPage = () => {
 
   // Manejar control de calidad
   const handleQualityControl = (order: WorkOrderData) => {
-    setSelectedOrderForQC(order);
-    setShowQualityControlModal(true);
+    // En lugar de abrir directamente el modal de QC, abrir el modal de decisión
+    setSelectedOrderForDecision(order);
+    setShowDecisionModal(true);
+  };
+
+  // Cuando el admin elige procesar en panel administrador
+  const handleProcessInAdmin = () => {
+    if (selectedOrderForDecision) {
+      setSelectedOrderForQC(selectedOrderForDecision);
+      setShowQualityControlModal(true);
+      setSelectedOrderForDecision(null);
+    }
+  };
+
+  // Cuando el admin elige enviar al cliente
+  const handleSendToClientFromDecision = async () => {
+    if (!selectedOrderForDecision) return;
+
+    try {
+      // Crear solicitud de firma para el cliente
+      await signatureRequestsService.createSignatureRequest({
+        otId: selectedOrderForDecision.id || '',
+        clienteId: selectedOrderForDecision.clienteId,
+        clienteNombre: getClientDisplayName(selectedOrderForDecision),
+        vehiculoInfo: getVehicleDisplayName(selectedOrderForDecision),
+        descripcion: selectedOrderForDecision.descripcion || 'Control de calidad del servicio'
+      });
+
+      // Cambiar estado de la OT a "En espera de aprobación"
+      await workOrdersService.changeStatus(selectedOrderForDecision.id!, 'En espera de aprobación');
+
+      alert('✅ Solicitud de firma enviada al cliente. El cliente podrá firmar la autorización desde su panel.');
+      await loadWorkOrders();
+      setSelectedOrderForDecision(null);
+    } catch (error) {
+      console.error('Error enviando solicitud al cliente:', error);
+      alert('Error al enviar solicitud al cliente');
+    }
   };
 
   const handleQualityControlComplete = async () => {
@@ -229,6 +270,12 @@ const WorkOrdersPage = () => {
         alert('Error al cambiar estado');
       }
     }
+  };
+
+  // Manejar envío de autorización al cliente
+  const handleSendAuthorization = (order: WorkOrderData) => {
+    setSelectedOrderForAuth(order);
+    setShowAuthorizationModal(true);
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
@@ -687,6 +734,21 @@ const WorkOrdersPage = () => {
           onComplete={handleQualityControlComplete}
         />
       )}
+
+      {/* Modal de decisión de autorización */}
+      {selectedOrderForDecision && (
+        <AuthorizationDecisionModal
+          isOpen={showDecisionModal}
+          onClose={() => {
+            setShowDecisionModal(false);
+            setSelectedOrderForDecision(null);
+          }}
+          onProcessInAdmin={handleProcessInAdmin}
+          onSendToClient={handleSendToClientFromDecision}
+          workOrderNumber={selectedOrderForDecision.id}
+        />
+      )}
+
     </div>
   );
 };

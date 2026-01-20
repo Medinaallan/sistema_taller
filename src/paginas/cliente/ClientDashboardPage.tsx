@@ -20,6 +20,9 @@ import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 import { vehiclesService } from '../../servicios/apiService';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 import type { ServiceHistoryRecord, ClientServiceStats } from '../../tipos';
+import SignatureRequestAlerts from '../../componentes/cliente/SignatureRequestAlerts';
+import { ClientSignatureModal } from '../../componentes/cliente/ClientSignatureModal';
+import signatureRequestsService, { SignatureRequest } from '../../servicios/signatureRequestsService';
 
 interface Vehicle {
   id: string;
@@ -89,6 +92,10 @@ export function ClientDashboardPage() {
   const [clientVehicles, setClientVehicles] = useState<Vehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [additionalQuotations, setAdditionalQuotations] = useState<AdditionalQuotation[]>([]);
+
+  // Estados para solicitudes de firma
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [selectedSignatureRequest, setSelectedSignatureRequest] = useState<SignatureRequest | null>(null);
 
   // Cargar historial de servicios del cliente
   useEffect(() => {
@@ -240,6 +247,18 @@ export function ClientDashboardPage() {
       console.error('Error respondiendo a subcotización:', error);
       alert('Error al procesar la respuesta. Por favor intenta de nuevo.');
     }
+  };
+
+  // Manejar click en alerta de autorización
+  const handleSignatureRequestClick = (request: SignatureRequest) => {
+    setSelectedSignatureRequest(request);
+    setShowSignatureModal(true);
+  };
+
+  // Manejar firma de autorización
+  const handleSignatureSigned = () => {
+    // Recargar para actualizar la UI
+    // Las alertas se refrescarán automáticamente
   };
 
   const renderOverviewTab = () => (
@@ -994,6 +1013,14 @@ export function ClientDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Alertas de solicitud de firma pendiente */}
+        {state.user?.id && (
+          <SignatureRequestAlerts
+            clienteId={state.user.id}
+            onSignatureRequestClick={handleSignatureRequestClick}
+          />
+        )}
+
         {/* Header - Improved Responsive Design */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 sm:p-6 text-white mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
@@ -1119,6 +1146,21 @@ export function ClientDashboardPage() {
         {/* Tab Content */}
         {renderTabContent()}
       </div>
+
+      {/* Modal de firma de autorización */}
+      {selectedSignatureRequest && (
+        <ClientSignatureModal
+          isOpen={showSignatureModal}
+          onClose={() => {
+            setShowSignatureModal(false);
+            setSelectedSignatureRequest(null);
+          }}
+          signatureRequest={selectedSignatureRequest}
+          clientName={state.user?.name || 'Cliente'}
+          vehicleName="Vehículo" // This should come from the work order data
+          onSigned={handleSignatureSigned}
+        />
+      )}
     </div>
   );
 }

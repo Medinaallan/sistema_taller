@@ -18,6 +18,8 @@ const appointmentsRoutes = require('./routes/appointments');
 const quotationsRoutes = require('./routes/quotations');
 const logsRoutes = require('./routes/logs');
 const workOrderStatesRoutes = require('./routes/workOrderStates');
+const workOrderAuthorizationsRoutes = require('./routes/workOrderAuthorizations');
+const signatureRequestsRoutes = require('./routes/signatureRequests');
 
 const app = express();
 const server = http.createServer(app);
@@ -63,6 +65,8 @@ app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/quotations', quotationsRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/workorder-states', workOrderStatesRoutes);
+app.use('/api/workorder-authorizations', workOrderAuthorizationsRoutes);
+app.use('/api/signature-requests', signatureRequestsRoutes);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {
