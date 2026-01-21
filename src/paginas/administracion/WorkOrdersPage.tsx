@@ -42,6 +42,10 @@ const WorkOrdersPage = () => {
   const [showDecisionModal, setShowDecisionModal] = useState(false);
   const [selectedOrderForDecision, setSelectedOrderForDecision] = useState<WorkOrderData | null>(null);
   
+  // Estados para el modal de autorización
+  const [showAuthorizationModal, setShowAuthorizationModal] = useState(false);
+  const [selectedOrderForAuth, setSelectedOrderForAuth] = useState<WorkOrderData | null>(null);
+  
   const loadWorkOrders = async () => {
     try {
       console.log(' Iniciando carga de órdenes de trabajo...');

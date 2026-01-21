@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, TextArea } from '../comunes/UI';
 import workOrdersService, { WorkOrderData, TaskPriority } from '../../servicios/workOrdersService';
-import { servicesService } from '../../servicios/apiService';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -43,17 +44,31 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const loadServicios = async () => {
     try {
       setLoadingServicios(true);
-      const response = await servicesService.getAll();
-      if (response.success) {
-        const mappedServices = response.data.map((service: any) => ({
-          value: service.id.toString(),
+      console.log('📥 Cargando tipos de servicio desde SP_OBTENER_TIPOS_SERVICIO...');
+      
+      const response = await fetch(`${API_BASE_URL}/service-types?obtener_activos=1`);
+      
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Tipos de servicio recibidos:', data);
+      
+      if (Array.isArray(data)) {
+        const mappedServices = data.map((service: any) => ({
+          value: service.tipo_servicio_id.toString(),
           label: service.nombre
         }));
+        console.log('✅ Servicios mapeados:', mappedServices);
         setServicios(mappedServices);
+      } else {
+        console.error('❌ Formato de respuesta inesperado:', data);
+        throw new Error('Formato de respuesta inválido');
       }
     } catch (error) {
-      console.error('Error cargando servicios:', error);
-      alert('Error al cargar servicios disponibles');
+      console.error('❌ Error cargando tipos de servicio:', error);
+      alert('Error al cargar tipos de servicio disponibles');
     } finally {
       setLoadingServicios(false);
     }

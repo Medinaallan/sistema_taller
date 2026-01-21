@@ -65,6 +65,48 @@
       "leido": false
     }
   ],
+  "11": [
+    {
+      "mensaje_id": 1768943841484,
+      "sala_id": "11",
+      "usuario_id": "13",
+      "rol": "admin",
+      "contenido": "HOLA",
+      "es_sistema": false,
+      "enviado_en": "2026-01-20T21:17:20.554Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1768943848442,
+      "sala_id": "11",
+      "usuario_id": "11",
+      "rol": "client",
+      "contenido": "COMO ESTA",
+      "es_sistema": false,
+      "enviado_en": "2026-01-20T21:17:28.041Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1768943864629,
+      "sala_id": "11",
+      "usuario_id": "13",
+      "rol": "admin",
+      "contenido": "BIEN Y USTED??",
+      "es_sistema": false,
+      "enviado_en": "2026-01-20T21:17:43.717Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1768943881101,
+      "sala_id": "11",
+      "usuario_id": "11",
+      "rol": "client",
+      "contenido": "BIEN IGUAL",
+      "es_sistema": false,
+      "enviado_en": "2026-01-20T21:18:00.593Z",
+      "leido": false
+    }
+  ],
   "client-1": [
     {
       "mensaje_id": 1757141853142,

@@ -81,17 +81,28 @@ router.put('/:otId/sign', async (req, res) => {
     
     await fs.writeFile(REQUESTS_FILE, JSON.stringify(requestsData, null, 2), 'utf8');
     
-    // Cambiar estado de la orden de trabajo a "Control de calidad"
+    // Cambiar estado de la orden de trabajo a "Control de calidad" usando workOrderStatesManager
     try {
-      const pool = await sql.connect();
-      await pool.request()
-        .input('ordenTrabajoId', sql.UniqueIdentifier, otId)
-        .input('nuevoEstado', sql.NVarChar, 'Control de calidad')
-        .execute('sp_CambiarEstadoOrdenTrabajo');
+      const statesFilePath = path.join(__dirname, '../../src/data/workOrders.json');
+      console.log(`📂 Ruta del archivo de estados: ${statesFilePath}`);
       
-      console.log(`Estado de OT ${otId} cambiado a "Control de calidad"`);
-    } catch (dbError) {
-      console.error('Error actualizando estado de OT:', dbError);
+      const statesData = await fs.readFile(statesFilePath, 'utf8');
+      const statesJson = JSON.parse(statesData);
+      
+      if (!statesJson.workOrderStates) {
+        statesJson.workOrderStates = {};
+      }
+      
+      console.log(`🔄 Cambiando estado de OT ${otId} a "Control de calidad"`);
+      statesJson.workOrderStates[otId] = 'Control de calidad';
+      
+      await fs.writeFile(statesFilePath, JSON.stringify(statesJson, null, 2), 'utf8');
+      
+      console.log(`✅ Estado de OT ${otId} cambiado exitosamente a "Control de calidad"`);
+      console.log(`📄 Contenido actualizado:`, statesJson.workOrderStates);
+    } catch (stateError) {
+      console.error('❌ Error actualizando estado de OT:', stateError);
+      console.error('❌ Stack trace:', stateError.stack);
       // No fallar la firma si no se puede actualizar el estado
     }
     

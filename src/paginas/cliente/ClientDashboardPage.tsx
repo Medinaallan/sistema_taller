@@ -18,6 +18,7 @@ import {
 import { useApp } from '../../contexto/useApp';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 import { vehiclesService } from '../../servicios/apiService';
+import workOrdersService from '../../servicios/workOrdersService';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 import type { ServiceHistoryRecord, ClientServiceStats } from '../../tipos';
 import SignatureRequestAlerts from '../../componentes/cliente/SignatureRequestAlerts';
@@ -80,7 +81,7 @@ interface Appointment {
 
 export function ClientDashboardPage() {
   const { state } = useApp();
-  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'appointments' | 'orders' | 'quotations' | 'subcotizaciones' | 'history' | 'payments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'appointments' | 'orders' | 'history' | 'payments'>('overview');
   
   // Estado para el historial de servicios
   const [serviceHistoryRecords, setServiceHistoryRecords] = useState<ServiceHistoryRecord[]>([]);
@@ -92,10 +93,25 @@ export function ClientDashboardPage() {
   const [clientVehicles, setClientVehicles] = useState<Vehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(false);
   const [additionalQuotations, setAdditionalQuotations] = useState<AdditionalQuotation[]>([]);
+  
+  // Estado para órdenes de trabajo del cliente
+  const [clientWorkOrders, setClientWorkOrders] = useState<any[]>([]);
+  const [workOrdersLoading, setWorkOrdersLoading] = useState(false);
 
   // Estados para solicitudes de firma
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [selectedSignatureRequest, setSelectedSignatureRequest] = useState<SignatureRequest | null>(null);
+
+  // Guard para evitar errores si no hay usuario
+  if (!state?.user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Cargar historial de servicios del cliente
   useEffect(() => {
@@ -131,15 +147,6 @@ export function ClientDashboardPage() {
     loadServiceHistory();
   }, [state.user?.id]);
 
-  // Funciones para modales (implementación futura)
-  const handleAddVehicle = () => {
-    alert('Funcionalidad de agregar vehículo - En desarrollo');
-  };
-
-  const handleViewVehicle = (vehicle: Vehicle) => {
-    alert(`Ver detalles de ${vehicle.brand} ${vehicle.model} - En desarrollo`);
-  };
-
   // Cargar vehículos del cliente desde la API
   useEffect(() => {
     const loadClientVehicles = async () => {
@@ -147,28 +154,37 @@ export function ClientDashboardPage() {
       
       setVehiclesLoading(true);
       try {
-        const response = await vehiclesService.getAll();
-        if (response.success && response.data) {
-          // Filtrar solo los vehículos del cliente actual
-          const userVehicles = response.data
-            .filter((vehicle: any) => vehicle.clienteId === state.user?.id)
-            .map((vehicle: any) => ({
-              id: vehicle.id,
-              brand: vehicle.marca,
-              model: vehicle.modelo,
-              year: parseInt(vehicle.año),
-              color: vehicle.color,
-              licensePlate: vehicle.placa,
-              vin: vehicle.vin || '',
-              mileage: parseInt(vehicle.mileage) || 0
-            }));
+        console.log('📥 Cargando vehículos para cliente:', state.user.id);
+        
+        // Llamar al endpoint con el parámetro cliente_id para usar SP_OBTENER_VEHICULOS
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
+        
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Respuesta de vehículos:', result);
+        
+        if (result.success && result.data) {
+          const userVehicles = result.data.map((vehicle: any) => ({
+            id: vehicle.vehiculo_id?.toString() || vehicle.id?.toString(),
+            brand: vehicle.marca || '',
+            model: vehicle.modelo || '',
+            year: parseInt(vehicle.anio || vehicle.año) || 0,
+            color: vehicle.color || '',
+            licensePlate: vehicle.placa || '',
+            vin: vehicle.vin || '',
+            mileage: parseInt(vehicle.kilometraje || vehicle.mileage) || 0
+          }));
+          console.log('✅ Vehículos mapeados:', userVehicles);
           setClientVehicles(userVehicles);
         } else {
-          console.error('Error cargando vehículos:', response.message);
+          console.error('❌ Error en respuesta:', result.message);
           setClientVehicles([]);
         }
       } catch (error) {
-        console.error('Error cargando vehículos:', error);
+        console.error('❌ Error cargando vehículos:', error);
         setClientVehicles([]);
       } finally {
         setVehiclesLoading(false);
@@ -189,10 +205,34 @@ export function ClientDashboardPage() {
 
     loadAdditionalQuotations();
   }, [state?.user?.id]);
+  
+  // Cargar órdenes de trabajo del cliente
+  useEffect(() => {
+    const loadClientWorkOrders = async () => {
+      if (!state?.user?.id) {
+        console.log('⚠️ No hay usuario autenticado, omitiendo carga de órdenes de trabajo');
+        return;
+      }
+      
+      try {
+        setWorkOrdersLoading(true);
+        console.log('📥 Cargando órdenes de trabajo para cliente:', state.user.id);
+        
+        const orders = await workOrdersService.getWorkOrdersByClient(state.user.id.toString());
+        console.log('✅ Órdenes de trabajo cargadas:', orders);
+        
+        setClientWorkOrders(orders || []);
+      } catch (error) {
+        console.error('❌ Error cargando órdenes de trabajo:', error);
+        // No romper la UI si falla la carga de órdenes
+        setClientWorkOrders([]);
+      } finally {
+        setWorkOrdersLoading(false);
+      }
+    };
 
-  const workOrders: WorkOrder[] = [
-    
-  ];
+    loadClientWorkOrders();
+  }, [state?.user?.id]);
 
   const quotations: Quotation[] = [
     
@@ -256,9 +296,18 @@ export function ClientDashboardPage() {
   };
 
   // Manejar firma de autorización
-  const handleSignatureSigned = () => {
-    // Recargar para actualizar la UI
-    // Las alertas se refrescarán automáticamente
+  const handleSignatureSigned = async () => {
+    // Recargar órdenes de trabajo para actualizar el estado
+    if (state?.user?.id) {
+      try {
+        console.log('🔄 Recargando órdenes de trabajo después de firma...');
+        const orders = await workOrdersService.getWorkOrdersByClient(state.user.id.toString());
+        setClientWorkOrders(orders);
+        console.log('✅ Órdenes de trabajo actualizadas:', orders);
+      } catch (error) {
+        console.error('❌ Error recargando órdenes de trabajo:', error);
+      }
+    }
   };
 
   const renderOverviewTab = () => (
@@ -291,7 +340,7 @@ export function ClientDashboardPage() {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Servicios Activos</dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {workOrders.filter(o => ['pending', 'in-progress', 'pending-parts'].includes(o.status)).length}
+                    {clientWorkOrders.filter(o => o.estado !== 'Completada' && o.estado !== 'Cerrada' && o.estado !== 'Cancelada').length}
                   </dd>
                 </dl>
               </div>
@@ -341,24 +390,32 @@ export function ClientDashboardPage() {
         </div>
         <div className="border-t border-gray-200">
           <ul role="list" className="divide-y divide-gray-200">
-            {workOrders.slice(0, 3).map((order) => (
-              <li key={order.id} className="px-4 py-4">
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
-                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                      {order.statusText}
+            {clientWorkOrders.slice(0, 3).map((order) => {
+              const statusColors = workOrdersService.getStatusColor(order.estado);
+              return (
+                <li key={order.id} className="px-4 py-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}>
+                        {workOrdersService.formatStatus(order.estado)}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{order.descripcion || 'Servicio general'}</p>
+                      <p className="text-sm text-gray-500">{order.nombreVehiculo || `Vehículo #${order.vehiculoId}`}</p>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      OT #{order.id?.slice(-8)}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{order.service}</p>
-                    <p className="text-sm text-gray-500">{order.vehicleName}</p>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {order.createdDate}
-                  </div>
-                </div>
+                </li>
+              );
+            })}
+            {clientWorkOrders.length === 0 && (
+              <li className="px-4 py-8 text-center text-gray-500">
+                No tienes órdenes de trabajo recientes
               </li>
-            ))}
+            )}
           </ul>
         </div>
       </div>
@@ -370,16 +427,7 @@ export function ClientDashboardPage() {
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Mis Vehículos</h1>
-          <p className="mt-2 text-sm text-gray-700">Gestiona todos tus vehículos registrados</p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            onClick={handleAddVehicle}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Agregar Vehículo
-          </button>
+          <p className="mt-2 text-sm text-gray-700">Información de tus vehículos registrados</p>
         </div>
       </div>
 
@@ -404,62 +452,70 @@ export function ClientDashboardPage() {
             No tienes vehículos registrados
           </h3>
           <p className="text-gray-500 mb-8">
-            Comienza registrando tu primer vehículo para acceder a nuestros servicios
+            Contacta al taller para registrar tus vehículos
           </p>
-          <button
-            onClick={handleAddVehicle}
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Registrar Primer Vehículo
-          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {clientVehicles.map((vehicle) => (
-            <div key={vehicle.id} className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {vehicle.brand} {vehicle.model}
-                    </h3>
-                    <p className="text-sm text-gray-500">Año {vehicle.year}</p>
-                  </div>
-                  <button
-                    onClick={() => handleViewVehicle(vehicle)}
-                    className="text-blue-600 hover:text-blue-500"
-                  >
-                    <EyeIcon className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Placa:</span>
-                    <span className="text-gray-900">{vehicle.licensePlate}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Color:</span>
-                    <span className="text-gray-900">{vehicle.color}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Kilometraje:</span>
-                    <span className="text-gray-900">{vehicle.mileage.toLocaleString()} km</span>
-                  </div>
-                </div>
-
-                {!vehicle.photo && (
-                  <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-4">
-                    <div className="text-center">
-                      <PhotoIcon className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="mt-1 text-xs text-gray-500">Agregar foto del vehículo</p>
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vehículo
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Placa
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Color
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Año
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Kilometraje
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  VIN
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {clientVehicles.map((vehicle) => (
+                <tr key={vehicle.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <TruckIcon className="h-6 w-6 text-blue-600" />
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {vehicle.brand} {vehicle.model}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 font-semibold">{vehicle.licensePlate}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{vehicle.color}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{vehicle.year}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{vehicle.mileage.toLocaleString()} km</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{vehicle.vin || 'N/A'}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -528,53 +584,79 @@ export function ClientDashboardPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
-        {workOrders.map((order) => (
-          <div key={order.id} className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-4 py-5 sm:px-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    {order.service}
-                  </h3>
-                  <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                    {order.vehicleName} • Orden #{order.id}
-                  </p>
-                </div>
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-                  {order.statusText}
-                </div>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Descripción</p>
-                  <p className="mt-1 text-sm text-gray-900">{order.description}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Fecha de entrega estimada</p>
-                  <p className="mt-1 text-sm text-gray-900">{order.estimatedDelivery}</p>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-700">Progreso</span>
-                  <span className="text-gray-500">{order.progress}%</span>
-                </div>
-                <div className="mt-2 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${order.progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+      {workOrdersLoading ? (
+        <div className="bg-white shadow rounded-lg p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Cargando órdenes de trabajo...</span>
           </div>
-        ))}
-      </div>
+        </div>
+      ) : clientWorkOrders.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-8">
+          <div className="text-center text-gray-500">
+            <WrenchScrewdriverIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <p className="mt-2">No tienes órdenes de trabajo activas</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {clientWorkOrders.map((order) => {
+            const statusColors = workOrdersService.getStatusColor(order.estado);
+            
+            return (
+              <div key={order.id} className="bg-white shadow rounded-lg overflow-hidden">
+                <div className="px-4 py-5 sm:px-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        {order.descripcion || 'Servicio general'}
+                      </h3>
+                      <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                        {order.nombreVehiculo || `Vehículo #${order.vehiculoId}`} • OT #{order.id?.slice(-8)}
+                      </p>
+                    </div>
+                    <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors.bg} ${statusColors.text}`}>
+                      {workOrdersService.formatStatus(order.estado)}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Problema reportado</p>
+                      <p className="mt-1 text-sm text-gray-900">{order.problema || 'No especificado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Diagnóstico</p>
+                      <p className="mt-1 text-sm text-gray-900">{order.diagnostico || 'Pendiente'}</p>
+                    </div>
+                    {order.fechaEstimadaCompletado && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Fecha estimada de entrega</p>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {new Date(order.fechaEstimadaCompletado).toLocaleDateString('es-ES')}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Costo estimado</p>
+                      <p className="mt-1 text-sm text-gray-900 font-semibold">L {order.costoEstimado?.toFixed(2) || '0.00'}</p>
+                    </div>
+                  </div>
+                  
+                  {order.notas && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-500">Notas</p>
+                      <p className="mt-1 text-sm text-gray-900">{order.notas}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -1002,8 +1084,6 @@ export function ClientDashboardPage() {
       case 'vehicles': return renderVehiclesTab();
       case 'appointments': return renderAppointmentsTab();
       case 'orders': return renderWorkOrdersTab();
-      case 'quotations': return renderQuotationsTab();
-      case 'subcotizaciones': return renderSubcotizacionesTab();
       case 'history': return renderHistoryTab();
       case 'payments': return renderPaymentsTab();
       default: return renderOverviewTab();
@@ -1063,7 +1143,7 @@ export function ClientDashboardPage() {
                 <div className="ml-2 sm:ml-3">
                   <p className="text-xs sm:text-sm text-blue-200">Órdenes Activas</p>
                   <p className="text-lg sm:text-xl font-semibold text-white">
-                    {workOrders.filter(o => ['pending', 'in-progress', 'pending-parts'].includes(o.status)).length}
+                    {clientWorkOrders.filter(o => o.estado !== 'Completada' && o.estado !== 'Cerrada' && o.estado !== 'Cancelada').length}
                   </p>
                 </div>
               </div>
@@ -1074,15 +1154,6 @@ export function ClientDashboardPage() {
                 <div className="ml-2 sm:ml-3">
                   <p className="text-xs sm:text-sm text-blue-200">Próximas Citas</p>
                   <p className="text-lg sm:text-xl font-semibold text-white">{appointments.length}</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white/10 rounded-lg p-3">
-              <div className="flex items-center">
-                <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
-                <div className="ml-2 sm:ml-3">
-                  <p className="text-xs sm:text-sm text-blue-200">Cotizaciones</p>
-                  <p className="text-lg sm:text-xl font-semibold text-white">{quotations.filter(q => q.status === 'pending' || q.status === 'sent').length}</p>
                 </div>
               </div>
             </div>
@@ -1103,8 +1174,6 @@ export function ClientDashboardPage() {
                 { id: 'vehicles', name: 'Mis Vehículos' },
                 { id: 'appointments', name: 'Citas' },
                 { id: 'orders', name: 'Órdenes de Trabajo' },
-                { id: 'quotations', name: 'Cotizaciones' },
-                { id: 'subcotizaciones', name: 'Subcotizaciones' },
                 { id: 'history', name: 'Historial' },
                 { id: 'payments', name: 'Pagos' },
               ].map((tab) => (
@@ -1121,8 +1190,6 @@ export function ClientDashboardPage() {
               { id: 'overview', name: 'Resumen', icon: InformationCircleIcon },
               { id: 'vehicles', name: 'Mis Vehículos', icon: TruckIcon },
               { id: 'orders', name: 'Órdenes de Trabajo', icon: WrenchScrewdriverIcon },
-              { id: 'quotations', name: 'Cotizaciones', icon: DocumentTextIcon },
-              { id: 'subcotizaciones', name: 'Subcotizaciones', icon: ExclamationTriangleIcon },
               { id: 'history', name: 'Historial', icon: CheckCircleIcon },
               { id: 'payments', name: 'Pagos', icon: CreditCardIcon },
             ].map((tab) => (

@@ -143,16 +143,19 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
 
         {/* Botón para agregar nueva tarea */}
         <div className="flex justify-end">
-          <Button
-            onClick={() => {
-              onClose();
-              onAddTaskClick();
-            }}
-            className="flex items-center space-x-2"
-          >
-            <span>➕</span>
-            <span>Agregar Tarea</span>
-          </Button>
+          {workOrder.estado === 'Completada' ? (
+            <div className="text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-md">
+              ⚠️ No se pueden agregar tareas a una orden completada
+            </div>
+          ) : (
+            <Button
+              onClick={onAddTaskClick}
+              className="flex items-center space-x-2"
+            >
+              <span>➕</span>
+              <span>Agregar Tarea</span>
+            </Button>
+          )}
         </div>
 
         {/* Tabla de tareas */}
@@ -237,47 +240,53 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                       <div className="flex items-center space-x-2">
-                        {/* Botón para iniciar tarea */}
-                        {tarea.estado_tarea === 'Pendiente' && (
-                          <button
-                            onClick={() => handleChangeStatus(tarea.ot_tarea_id, 'En proceso')}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Iniciar tarea"
-                          >
-                            <PlayIcon className="h-5 w-5" />
-                          </button>
-                        )}
+                        {workOrder.estado === 'Completada' ? (
+                          <span className="text-xs text-gray-400 italic">Orden completada</span>
+                        ) : (
+                          <>
+                            {/* Botón para iniciar tarea */}
+                            {tarea.estado_tarea === 'Pendiente' && (
+                              <button
+                                onClick={() => handleChangeStatus(tarea.ot_tarea_id, 'En proceso')}
+                                className="text-blue-600 hover:text-blue-800"
+                                title="Iniciar tarea"
+                              >
+                                <PlayIcon className="h-5 w-5" />
+                              </button>
+                            )}
 
-                        {/* Botón para completar tarea */}
-                        {tarea.estado_tarea === 'En proceso' && (
-                          <button
-                            onClick={() => handleChangeStatus(tarea.ot_tarea_id, 'Completada')}
-                            className="text-green-600 hover:text-green-800"
-                            title="Completar tarea"
-                          >
-                            <CheckIcon className="h-5 w-5" />
-                          </button>
-                        )}
+                            {/* Botón para completar tarea */}
+                            {tarea.estado_tarea === 'En proceso' && (
+                              <button
+                                onClick={() => handleChangeStatus(tarea.ot_tarea_id, 'Completada')}
+                                className="text-green-600 hover:text-green-800"
+                                title="Completar tarea"
+                              >
+                                <CheckIcon className="h-5 w-5" />
+                              </button>
+                            )}
 
-                        {/* Botón para cancelar tarea */}
-                        {(tarea.estado_tarea === 'Pendiente' || tarea.estado_tarea === 'En proceso') && (
-                          <button
-                            onClick={() => handleChangeStatus(tarea.ot_tarea_id, 'Cancelada')}
-                            className="text-orange-600 hover:text-orange-800"
-                            title="Cancelar tarea"
-                          >
-                            <XMarkIcon className="h-5 w-5" />
-                          </button>
-                        )}
+                            {/* Botón para cancelar tarea */}
+                            {(tarea.estado_tarea === 'Pendiente' || tarea.estado_tarea === 'En proceso') && (
+                              <button
+                                onClick={() => handleChangeStatus(tarea.ot_tarea_id, 'Cancelada')}
+                                className="text-orange-600 hover:text-orange-800"
+                                title="Cancelar tarea"
+                              >
+                                <XMarkIcon className="h-5 w-5" />
+                              </button>
+                            )}
 
-                        {/* Botón para eliminar tarea */}
-                        <button
-                          onClick={() => handleDeleteTask(tarea.ot_tarea_id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Eliminar tarea"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
+                            {/* Botón para eliminar tarea */}
+                            <button
+                              onClick={() => handleDeleteTask(tarea.ot_tarea_id)}
+                              className="text-red-600 hover:text-red-800"
+                              title="Eliminar tarea"
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
