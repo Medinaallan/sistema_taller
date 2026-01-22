@@ -42,8 +42,13 @@ const WorkOrdersPage = () => {
   };
 
   const getVehicleName = (order: WorkOrderData) => {
-    // Usar la descripción que ya tiene el nombre del vehículo
-    return order.descripcion || `Vehículo #${order.vehiculoId}`;
+    const vehiculo = vehiculos.find((v: any) => 
+      String(v.vehiculo_id).trim() === String(order.vehiculoId).trim()
+    );
+    if (vehiculo) {
+      return `${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.anio} - ${vehiculo.placa}`;
+    }
+    return `Vehículo #${order.vehiculoId}`;
   };
 
   const getServiceName = (servicioId: string) => {
@@ -61,21 +66,21 @@ const WorkOrdersPage = () => {
     try {
       const response = await vehiclesService.getAll();
       if (response.success) {
-        // Mapear igual que en AppointmentsPage
-        const mappedVehicles = response.data.map((spVehicle: any) => ({
-          id: String(spVehicle.vehiculo_id || spVehicle.id),
-          clientId: String(spVehicle.cliente_id || spVehicle.clientId),
-          brand: spVehicle.marca,
-          model: spVehicle.modelo,
-          year: parseInt(spVehicle.anio),
-          licensePlate: spVehicle.placa,
+        // Mantener los datos del SP tal cual vienen, sin mapear
+        const rawVehicles = response.data.map((spVehicle: any) => ({
+          vehiculo_id: String(spVehicle.vehiculo_id || spVehicle.id),
+          cliente_id: String(spVehicle.cliente_id || spVehicle.clientId),
+          marca: spVehicle.marca,
+          modelo: spVehicle.modelo,
+          anio: parseInt(spVehicle.anio),
+          placa: spVehicle.placa,
           color: spVehicle.color,
-          mileage: parseInt(spVehicle.kilometraje) || 0,
+          kilometraje: parseInt(spVehicle.kilometraje) || 0,
           vin: spVehicle.vin || '',
-          numeroMotor: spVehicle.numero_motor || '',
-          fotoUrl: spVehicle.foto_url || '',
+          numero_motor: spVehicle.numero_motor || '',
+          foto_url: spVehicle.foto_url || '',
         }));
-        setVehiculos(mappedVehicles);
+        setVehiculos(rawVehicles);
       }
     } catch (error) {
       console.error('Error cargando vehículos:', error);
@@ -369,13 +374,13 @@ const WorkOrdersPage = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap" style={{backgroundColor: 'yellow'}}>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {getClienteName(order)}
                         </div>
-                        <div className="text-sm text-red-500 font-bold">
-                          🚗 CAMBIO APLICADO: {order.descripcion}
+                        <div className="text-sm text-gray-500">
+                          {getVehicleName(order)}
                         </div>
                       </div>
                     </td>

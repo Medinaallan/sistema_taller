@@ -56,6 +56,31 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     serviceName: 'Cargando...'
   });
 
+  // Handler para cuando cambia el servicio seleccionado
+  const handleServiceChange = (servicioId: string) => {
+    setItemForm(prev => ({ ...prev, tipo_servicio_id: servicioId }));
+    
+    if (servicioId) {
+      // Buscar el servicio seleccionado
+      const servicioSeleccionado = services.find(s => 
+        (s.tipo_servicio_id?.toString() || s.id?.toString()) === servicioId
+      );
+      
+      if (servicioSeleccionado) {
+        const precio = parseFloat(servicioSeleccionado.precio_base || servicioSeleccionado.basePrice || 0);
+        const descripcion = servicioSeleccionado.nombre || servicioSeleccionado.name || '';
+        
+        setItemForm(prev => ({
+          ...prev,
+          descripcion: descripcion,
+          precio_unitario: precio
+        }));
+        
+        console.log(`💰 Servicio seleccionado: ${descripcion} - Precio: L${precio}`);
+      }
+    }
+  };
+
   // Cargar servicios cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
@@ -426,7 +451,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                   </label>
                   <Select
                     value={itemForm.tipo_servicio_id}
-                    onChange={(e) => setItemForm({ ...itemForm, tipo_servicio_id: e.target.value })}
+                    onChange={(e) => handleServiceChange(e.target.value)}
                     options={
                       loadingServices 
                         ? [{ value: '', label: 'Cargando servicios...' }]
@@ -434,12 +459,15 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                             { value: '', label: '-- Seleccionar servicio --' },
                             ...(Array.isArray(services) ? services.map((s) => ({
                               value: s.tipo_servicio_id?.toString() || s.id?.toString() || '',
-                              label: s.nombre || s.name || 'Servicio sin nombre'
+                              label: `${s.nombre || s.name || 'Servicio sin nombre'} - L${(s.precio_base || s.basePrice || 0).toLocaleString()}`
                             })).filter(opt => opt.value) : [])
                           ]
                     }
                     disabled={loadingServices}
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Al seleccionar un servicio, el precio y descripción se completarán automáticamente
+                  </p>
                 </div>
               )}
 
@@ -454,6 +482,9 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                   rows={2}
                   maxLength={200}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {itemForm.tipo_item === 'Servicio' ? 'Se completa automáticamente al seleccionar servicio' : 'Describe el repuesto'}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -471,7 +502,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Precio Unitario *
+                    Precio Unitario * {itemForm.tipo_item === 'Servicio' && '(bloqueado)'}
                   </label>
                   <Input
                     type="number"
@@ -479,7 +510,20 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                     step="0.01"
                     value={itemForm.precio_unitario}
                     onChange={(e) => setItemForm({ ...itemForm, precio_unitario: parseFloat(e.target.value) || 0 })}
+                    placeholder={itemForm.tipo_item === 'Servicio' ? 'Se completa al seleccionar servicio' : 'Ingrese precio'}
+                    readOnly={itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0}
+                    className={itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0 ? 'bg-gray-100 cursor-not-allowed' : ''}
                   />
+                  {itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ Precio del servicio: L{itemForm.precio_unitario.toLocaleString()} (no editable)
+                    </p>
+                  )}
+                  {itemForm.tipo_item === 'Repuesto' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ingrese el precio del repuesto manualmente
+                    </p>
+                  )}
                 </div>
               </div>
 

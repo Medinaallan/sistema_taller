@@ -13,7 +13,7 @@ import {
   CameraIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
-import { vehiclesService } from '../../servicios/apiService';
+import { vehiclesService, servicesService } from '../../servicios/apiService';
 
 interface Vehicle {
   id: string;
@@ -49,6 +49,10 @@ export function ClientVehiclesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [serviceHistory, setServiceHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [activeView, setActiveView] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,6 +65,18 @@ export function ClientVehiclesPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
 
   const [vehicleForm, setVehicleForm] = useState<VehicleForm>({
+    brand: '',
+    model: '',
+    year: new Date().getFullYear(),
+    color: '',
+    vin: '',
+    licensePlate: '',
+    mileage: 0,
+    numeroMotor: '',
+    fotoUrl: ''
+  });
+
+  const [editForm, setEditForm] = useState<VehicleForm>({
     brand: '',
     model: '',
     year: new Date().getFullYear(),
@@ -324,9 +340,103 @@ export function ClientVehiclesPage() {
     }
   };
 
-  const handleEditVehicle = () => {
-    console.log('Editando vehículo:', selectedVehicle);
-    setShowEditModal(false);
+  const handleEditVehicle = async () => {
+    if (!selectedVehicle) return;
+
+    // Validaciones básicas
+    if (!editForm.brand || !editForm.model || !editForm.licensePlate) {
+      alert('Por favor, completa todos los campos obligatorios (marca, modelo y placa)');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Subir nueva imagen si hay una seleccionada
+      let fotoUrl = selectedVehicle.fotoUrl || editForm.fotoUrl;
+      if (selectedImage) {
+        console.log('📷 Subiendo nueva imagen a S3...');
+        const newImageUrl = await uploadImageToS3();
+        if (newImageUrl) {
+          fotoUrl = newImageUrl;
+          console.log('✅ Nueva imagen subida:', fotoUrl);
+        }
+      }
+
+      // Preparar datos para la API usando los nombres del SP_EDITAR_VEHICULO
+      const vehicleData = {
+        marca: editForm.brand,
+        modelo: editForm.model,
+        anio: editForm.year,
+        placa: editForm.licensePlate,
+        color: editForm.color || null,
+        vin: editForm.vin || null,
+        numero_motor: editForm.numeroMotor || null,
+        kilometraje: editForm.mileage || null,
+        foto_url: fotoUrl
+      };
+
+      const response = await vehiclesService.update(selectedVehicle.id, vehicleData);
+      
+      if (response.success) {
+        // Actualizar vehículo en la lista local
+        const updatedVehicle: Vehicle = {
+          ...selectedVehicle,
+          brand: editForm.brand,
+          model: editForm.model,
+          year: editForm.year,
+          color: editForm.color,
+          vin: editForm.vin,
+          numeroMotor: editForm.numeroMotor,
+          licensePlate: editForm.licensePlate,
+          mileage: editForm.mileage,
+          fotoUrl: fotoUrl,
+          photo: fotoUrl
+        };
+        
+        setClientVehicles(prev => 
+          prev.map(v => v.id === selectedVehicle.id ? updatedVehicle : v)
+        );
+        
+        setShowEditModal(false);
+        setSelectedVehicle(null);
+        setSelectedImage(null);
+        setImagePreview(null);
+
+        alert('¡Vehículo actualizado exitosamente!');
+      } else {
+        alert('Error al actualizar el vehículo: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error actualizando vehículo:', error);
+      alert('Error de conexión al actualizar el vehículo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadServiceHistory = async (vehicleId: string) => {
+    if (!state?.user?.id) return;
+    
+    setLoadingHistory(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/service-history/client/${state.user.id}`);
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // Filtrar por vehículo específico
+        const vehicleHistory = result.data.filter((item: any) => 
+          item.vehiculo_id?.toString() === vehicleId
+        );
+        setServiceHistory(vehicleHistory);
+      } else {
+        setServiceHistory([]);
+      }
+    } catch (error) {
+      console.error('Error cargando historial:', error);
+      setServiceHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
   const renderVehicleCard = (vehicle: Vehicle) => {
@@ -382,6 +492,18 @@ export function ClientVehiclesPage() {
               <button
                 onClick={() => {
                   setSelectedVehicle(vehicle);
+                  setEditForm({
+                    brand: vehicle.brand,
+                    model: vehicle.model,
+                    year: vehicle.year,
+                    color: vehicle.color,
+                    vin: vehicle.vin,
+                    licensePlate: vehicle.licensePlate,
+                    mileage: vehicle.mileage,
+                    numeroMotor: vehicle.numeroMotor || '',
+                    fotoUrl: vehicle.fotoUrl || ''
+                  });
+                  setImagePreview(vehicle.photo || vehicle.fotoUrl || null);
                   setShowEditModal(true);
                 }}
                 className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-50 rounded-md sm:rounded-lg transition-colors"
@@ -432,11 +554,24 @@ export function ClientVehiclesPage() {
 
           {/* Acciones rápidas */}
           <div className="flex space-x-2">
-            <button className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <button 
+              onClick={() => {
+                setSelectedVehicle(vehicle);
+                setShowAppointmentModal(true);
+              }}
+              className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            >
               <CalendarDaysIcon className="h-4 w-4 mr-2" />
               Agendar Cita
             </button>
-            <button className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <button 
+              onClick={() => {
+                setSelectedVehicle(vehicle);
+                loadServiceHistory(vehicle.id);
+                setShowHistoryModal(true);
+              }}
+              className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            >
               <ClockIcon className="h-4 w-4 mr-2" />
               Ver Historial
             </button>
@@ -827,7 +962,649 @@ export function ClientVehiclesPage() {
 
         {/* Modales */}
         {showAddModal && renderAddVehicleModal()}
+        {showDetailModal && renderDetailModal()}
+        {showEditModal && renderEditModal()}
+        {showHistoryModal && renderHistoryModal()}
+        {showAppointmentModal && renderAppointmentModal()}
       </div>
     </div>
+  );
+
+  // Modal de detalles del vehículo
+  function renderDetailModal() {
+    if (!selectedVehicle) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="bg-white/20 p-2 rounded-lg mr-3">
+                  <EyeIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Detalles del Vehículo</h3>
+                  <p className="text-blue-100 text-sm">{selectedVehicle.brand} {selectedVehicle.model}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedVehicle(null);
+                }}
+                className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido */}
+          <div className="p-6">
+            {/* Foto */}
+            {selectedVehicle.photo && (
+              <div className="mb-6">
+                <img 
+                  src={selectedVehicle.photo} 
+                  alt={`${selectedVehicle.brand} ${selectedVehicle.model}`}
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+              </div>
+            )}
+
+            {/* Información */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Marca</label>
+                <p className="text-gray-900">{selectedVehicle.brand}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Modelo</label>
+                <p className="text-gray-900">{selectedVehicle.model}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Año</label>
+                <p className="text-gray-900">{selectedVehicle.year}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Color</label>
+                <p className="text-gray-900">{selectedVehicle.color || 'No especificado'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Placa</label>
+                <p className="text-gray-900 font-semibold">{selectedVehicle.licensePlate}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Kilometraje</label>
+                <p className="text-gray-900">{selectedVehicle.mileage?.toLocaleString()} km</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">VIN</label>
+                <p className="text-gray-900 text-sm">{selectedVehicle.vin || 'No especificado'}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Número de Motor</label>
+                <p className="text-gray-900 text-sm">{selectedVehicle.numeroMotor || 'No especificado'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end">
+            <button
+              onClick={() => {
+                setShowDetailModal(false);
+                setSelectedVehicle(null);
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Modal de edición del vehículo
+  function renderEditModal() {
+    if (!selectedVehicle) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="bg-white/20 p-2 rounded-lg mr-3">
+                  <PencilIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Editar Vehículo</h3>
+                  <p className="text-blue-100 text-sm">Actualiza la información de tu vehículo</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedVehicle(null);
+                  setSelectedImage(null);
+                  setImagePreview(null);
+                }}
+                className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Formulario */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Marca *</label>
+                <input
+                  type="text"
+                  value={editForm.brand}
+                  onChange={(e) => setEditForm({...editForm, brand: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Modelo *</label>
+                <input
+                  type="text"
+                  value={editForm.model}
+                  onChange={(e) => setEditForm({...editForm, model: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Año *</label>
+                <input
+                  type="number"
+                  value={editForm.year}
+                  onChange={(e) => setEditForm({...editForm, year: parseInt(e.target.value)})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="1980"
+                  max={new Date().getFullYear() + 1}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Color</label>
+                <input
+                  type="text"
+                  value={editForm.color}
+                  onChange={(e) => setEditForm({...editForm, color: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Placa *</label>
+                <input
+                  type="text"
+                  value={editForm.licensePlate}
+                  onChange={(e) => setEditForm({...editForm, licensePlate: e.target.value.toUpperCase()})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={8}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Kilometraje</label>
+                <input
+                  type="number"
+                  value={editForm.mileage}
+                  onChange={(e) => setEditForm({...editForm, mileage: parseInt(e.target.value) || 0})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">VIN (opcional)</label>
+              <input
+                type="text"
+                value={editForm.vin}
+                onChange={(e) => setEditForm({...editForm, vin: e.target.value.toUpperCase()})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                maxLength={17}
+              />
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Número de Motor (opcional)</label>
+              <input
+                type="text"
+                value={editForm.numeroMotor}
+                onChange={(e) => setEditForm({...editForm, numeroMotor: e.target.value.toUpperCase()})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Foto del vehículo */}
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Foto del Vehículo</label>
+              
+              {imagePreview ? (
+                <div className="relative">
+                  <img 
+                    src={imagePreview} 
+                    alt="Vista previa" 
+                    className="w-full h-64 object-cover rounded-lg border-2 border-gray-300"
+                  />
+                  <button
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => document.getElementById('edit-vehicle-photo-input')?.click()}
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
+                >
+                  <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">Arrastra una foto aquí o haz clic para seleccionar</p>
+                  <button 
+                    type="button"
+                    className="text-blue-600 font-medium hover:text-blue-500 px-4 py-2 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    Seleccionar archivo
+                  </button>
+                </div>
+              )}
+              
+              <input
+                id="edit-vehicle-photo-input"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowEditModal(false);
+                setSelectedVehicle(null);
+                setSelectedImage(null);
+                setImagePreview(null);
+              }}
+              className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+              disabled={loading || uploadingImage}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleEditVehicle}
+              disabled={loading || uploadingImage}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center disabled:bg-blue-400 disabled:cursor-not-allowed"
+            >
+              {uploadingImage ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Subiendo foto...
+                </>
+              ) : loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Actualizando...
+                </>
+              ) : (
+                <>
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  Guardar Cambios
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Modal de historial de servicios
+  function renderHistoryModal() {
+    if (!selectedVehicle) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="bg-white/20 p-2 rounded-lg mr-3">
+                  <ClockIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Historial de Servicios</h3>
+                  <p className="text-blue-100 text-sm">{selectedVehicle.brand} {selectedVehicle.model} - {selectedVehicle.licensePlate}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setSelectedVehicle(null);
+                  setServiceHistory([]);
+                }}
+                className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido */}
+          <div className="p-6">
+            {loadingHistory ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando historial...</p>
+              </div>
+            ) : serviceHistory.length > 0 ? (
+              <div className="space-y-4">
+                {serviceHistory.map((service, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{service.tipo_servicio || 'Servicio'}</h4>
+                        <p className="text-sm text-gray-600">{service.descripcion || 'Sin descripción'}</p>
+                      </div>
+                      <span className="text-sm font-medium text-blue-600">
+                        {service.fecha_servicio ? new Date(service.fecha_servicio).toLocaleDateString() : 'Sin fecha'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <p className="text-xs text-gray-500">Kilometraje</p>
+                        <p className="text-sm font-medium">{service.kilometraje ? service.kilometraje.toLocaleString() : 'N/A'} km</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Costo</p>
+                        <p className="text-sm font-medium">${service.costo ? service.costo.toLocaleString() : '0'}</p>
+                      </div>
+                    </div>
+                    {service.notas && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-500">Notas</p>
+                        <p className="text-sm text-gray-700">{service.notas}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <WrenchScrewdriverIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin historial de servicios</h3>
+                <p className="text-gray-500">Este vehículo aún no tiene servicios registrados</p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end">
+            <button
+              onClick={() => {
+                setShowHistoryModal(false);
+                setSelectedVehicle(null);
+                setServiceHistory([]);
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Modal de agendar cita
+  function renderAppointmentModal() {
+    if (!selectedVehicle || !state?.user?.id) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="bg-white/20 p-2 rounded-lg mr-3">
+                  <CalendarDaysIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Agendar Cita</h3>
+                  <p className="text-blue-100 text-sm">{selectedVehicle.brand} {selectedVehicle.model} - {selectedVehicle.licensePlate}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAppointmentModal(false);
+                  setSelectedVehicle(null);
+                }}
+                className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Usar el mismo componente NewAppointmentModal pero adaptado para cliente */}
+          <ClientAppointmentForm 
+            vehicleId={selectedVehicle.id}
+            clientId={state.user.id}
+            onClose={() => {
+              setShowAppointmentModal(false);
+              setSelectedVehicle(null);
+            }}
+            onSuccess={() => {
+              setShowAppointmentModal(false);
+              setSelectedVehicle(null);
+              alert('¡Cita agendada exitosamente!');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+}
+
+// Componente para el formulario de cita del cliente
+function ClientAppointmentForm({ vehicleId, clientId, onClose, onSuccess }: { 
+  vehicleId: string; 
+  clientId: string; 
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    date: '',
+    time: '',
+    serviceTypeId: '',
+    notes: ''
+  });
+  const [servicios, setServicios] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const response = await servicesService.getAll();
+        if (response.success) {
+          console.log('Servicios cargados:', response.data);
+          // Mapear servicios al formato correcto
+          const mappedServices = response.data.map((servicio: any) => ({
+            tipo_servicio_id: servicio.tipo_servicio_id,
+            nombre: servicio.nombre,
+            descripcion: servicio.descripcion || '',
+            precio_base: servicio.precio_base !== null && servicio.precio_base !== undefined ? Number(servicio.precio_base) : 0,
+            horas_estimadas: servicio.horas_estimadas || '',
+          }));
+          console.log('Servicios mapeados:', mappedServices);
+          setServicios(mappedServices);
+        }
+      } catch (error) {
+        console.error('Error cargando servicios:', error);
+        setServicios([]);
+      }
+    };
+    loadServices();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validaciones
+    const newErrors: Record<string, string> = {};
+    if (!formData.date) newErrors.date = 'La fecha es requerida';
+    if (!formData.time) newErrors.time = 'La hora es requerida';
+    if (!formData.serviceTypeId) newErrors.serviceTypeId = 'El servicio es requerido';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const usuarioId = localStorage.getItem('usuario_id');
+      const registradoPor = usuarioId ? Number(usuarioId) : Number(clientId);
+      
+      const appointmentData = {
+        cliente_id: Number(clientId),
+        vehiculo_id: Number(vehicleId),
+        tipo_servicio_id: Number(formData.serviceTypeId),
+        fecha_inicio: formData.date,
+        asesor_id: registradoPor,
+        notas_cliente: formData.notes || '',
+        canal_origen: 'WEB',
+        registrado_por: registradoPor
+      };
+
+      const response = await fetch('http://localhost:8080/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appointmentData)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        onSuccess();
+      } else {
+        alert('Error al agendar la cita: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error agendando cita:', error);
+      alert('Error de conexión al agendar la cita');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha *</label>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Hora *</label>
+            <input
+              type="time"
+              value={formData.time}
+              onChange={(e) => setFormData({...formData, time: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {errors.time && <p className="text-red-500 text-sm mt-1">{errors.time}</p>}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Tipo de Servicio *</label>
+          <select
+            value={formData.serviceTypeId}
+            onChange={(e) => setFormData({...formData, serviceTypeId: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Seleccionar servicio...</option>
+            {servicios.map((servicio) => (
+              <option key={servicio.tipo_servicio_id} value={servicio.tipo_servicio_id}>
+                {servicio.nombre} - L{servicio.precio_base?.toLocaleString()}
+              </option>
+            ))}
+          </select>
+          {errors.serviceTypeId && <p className="text-red-500 text-sm mt-1">{errors.serviceTypeId}</p>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Notas adicionales (opcional)</label>
+          <textarea
+            value={formData.notes}
+            onChange={(e) => setFormData({...formData, notes: e.target.value})}
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Describe cualquier detalle importante sobre el servicio que necesitas..."
+          />
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-6 flex justify-end space-x-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+          disabled={loading}
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center disabled:bg-blue-400 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Agendando...
+            </>
+          ) : (
+            <>
+              <CheckCircleIcon className="h-5 w-5 mr-2" />
+              Agendar Cita
+            </>
+          )}
+        </button>
+      </div>
+    </form>
   );
 }

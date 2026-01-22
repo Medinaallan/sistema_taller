@@ -3,7 +3,7 @@
  * Estas funciones convierten IDs crípticos en nombres legibles para la UI
  */
 
-import { obtenerClientes } from '../servicios/clientesApiService';
+import clientesService from '../servicios/clientesService';
 import { vehiclesService } from '../servicios/apiService';
 import { servicesService } from '../servicios/apiService';
 
@@ -29,28 +29,57 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 export async function getClientDisplayName(clientId: string): Promise<string> {
   if (!clientId) return 'Cliente no especificado';
 
-  // Verificar cache
   const now = Date.now();
-  if (cache.clients.has(clientId) && (now - cache.lastUpdate.clients) < CACHE_DURATION) {
-    return cache.clients.get(clientId) || clientId;
-  }
+  const clientIdStr = clientId?.toString();
 
   try {
     // Cargar clientes si el cache está vacío o expirado
     if ((now - cache.lastUpdate.clients) >= CACHE_DURATION) {
-      const clientes = await obtenerClientes();
-      cache.clients.clear();
-      clientes.forEach(cliente => {
-        cache.clients.set(cliente.id, cliente.name || cliente.email);
-      });
-      cache.lastUpdate.clients = now;
+      console.log('🔄 Actualizando cache de clientes...');
+      const resultado = await clientesService.obtenerClientes();
+      if (resultado.success && resultado.data) {
+        const clientes = Array.isArray(resultado.data) ? resultado.data : [resultado.data];
+        cache.clients.clear();
+        clientes.forEach(cliente => {
+          const id = cliente.usuario_id?.toString();
+          cache.clients.set(id, cliente.nombre_completo || cliente.correo);
+          console.log(`  ✓ Cliente ${id}: ${cliente.nombre_completo}`);
+        });
+        cache.lastUpdate.clients = now;
+        console.log('✅ Cache de clientes actualizado:', cache.clients.size, 'clientes');
+      }
     }
 
-    const name = cache.clients.get(clientId);
-    return name || `Cliente #${clientId}`;
+    // Verificar si existe en cache
+    if (cache.clients.has(clientIdStr)) {
+      const name = cache.clients.get(clientIdStr);
+      console.log(`🔍 Cliente encontrado - ID: ${clientIdStr} -> ${name}`);
+      return name || clientIdStr;
+    }
+
+    // Si no está en cache y el cache es reciente, intentar recargar una vez
+    if ((now - cache.lastUpdate.clients) < CACHE_DURATION) {
+      console.log(`⚠️ Cliente ${clientIdStr} no encontrado en cache, recargando...`);
+      const resultado = await clientesService.obtenerClientes();
+      if (resultado.success && resultado.data) {
+        const clientes = Array.isArray(resultado.data) ? resultado.data : [resultado.data];
+        clientes.forEach(cliente => {
+          const id = cliente.usuario_id?.toString();
+          cache.clients.set(id, cliente.nombre_completo || cliente.correo);
+        });
+        cache.lastUpdate.clients = now;
+        
+        if (cache.clients.has(clientIdStr)) {
+          return cache.clients.get(clientIdStr) || clientIdStr;
+        }
+      }
+    }
+
+    console.log(`❌ Cliente ${clientIdStr} NO encontrado en ninguna fuente`);
+    return `Cliente #${clientIdStr}`;
   } catch (error) {
     console.error('Error obteniendo nombre de cliente:', error);
-    return `Cliente #${clientId}`;
+    return `Cliente #${clientIdStr}`;
   }
 }
 
@@ -75,8 +104,9 @@ export async function getVehicleDisplayName(vehicleId: string): Promise<string> 
       if (response.success && response.data) {
         cache.vehicles.clear();
         response.data.forEach((vehiculo: any) => {
-          const displayName = `${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.año} - ${vehiculo.placa}`;
-          cache.vehicles.set(vehiculo.id, displayName);
+          const vehiculoId = vehiculo.vehiculo_id?.toString() || vehiculo.id?.toString();
+          const displayName = `${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.anio} - ${vehiculo.placa}`;
+          cache.vehicles.set(vehiculoId, displayName);
         });
         cache.lastUpdate.vehicles = now;
       }
@@ -111,15 +141,18 @@ export async function getServiceDisplayName(serviceId: string): Promise<string> 
       if (response.success && response.data) {
         cache.services.clear();
         response.data.forEach((servicio: any) => {
-          const precio = parseFloat(servicio.precio || servicio.basePrice || 0);
+          const servicioId = servicio.tipo_servicio_id?.toString() || servicio.id?.toString();
+          const precio = parseFloat(servicio.precio_base || servicio.basePrice || 0);
           const displayName = `${servicio.nombre || servicio.name} - L${precio.toLocaleString('es-HN')}`;
-          cache.services.set(servicio.id, displayName);
+          cache.services.set(servicioId, displayName);
         });
         cache.lastUpdate.services = now;
+        console.log('📋 Cache de servicios actualizado:', cache.services.size, 'servicios');
       }
     }
 
-    const name = cache.services.get(serviceId);
+    const name = cache.services.get(serviceId?.toString());
+    console.log(`🔍 Buscando servicio ID: ${serviceId}, encontrado: ${name || 'NO ENCONTRADO'}`);
     return name || `Servicio #${serviceId}`;
   } catch (error) {
     console.error('Error obteniendo nombre de servicio:', error);

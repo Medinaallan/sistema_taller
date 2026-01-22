@@ -12,6 +12,7 @@ import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 import { getDisplayNames, getClientDisplayName, getVehicleDisplayName } from '../../utilidades/dataMappers';
 import signatureRequestsService from '../../servicios/signatureRequestsService';
+import { servicesService } from '../../servicios/apiService';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -37,6 +38,9 @@ const WorkOrdersPage = () => {
   const [showQualityControlModal, setShowQualityControlModal] = useState(false);
   const [selectedOrderForQC, setSelectedOrderForQC] = useState<WorkOrderData | null>(null);
   const [completedTasksMap, setCompletedTasksMap] = useState<Map<string, boolean>>(new Map());
+  
+  // Estado para costos calculados de cada orden
+  const [orderCostsMap, setOrderCostsMap] = useState<Map<string, number>>(new Map());
 
   // Estados para el modal de decisión de autorización
   const [showDecisionModal, setShowDecisionModal] = useState(false);
@@ -57,12 +61,56 @@ const WorkOrdersPage = () => {
       
       // Cargar nombres descriptivos para cada orden
       await loadDisplayNamesForOrders(orders);
+      
+      // Cargar costos totales de cada orden
+      await loadOrderCosts(orders);
     } catch (err) {
       console.error(' Error cargando órdenes de trabajo:', err);
       alert('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Cargar y calcular costos totales para cada orden
+  const loadOrderCosts = async (orders: WorkOrderData[]) => {
+    try {
+      const costsMap = new Map<string, number>();
+      
+      // Cargar servicios para obtener precios
+      const serviciosResponse = await servicesService.getAll();
+      const servicios = serviciosResponse.success ? serviciosResponse.data : [];
+      
+      for (const order of orders) {
+        if (order.id) {
+          try {
+            const tareas = await workOrdersService.getTareasByOT(order.id);
+            // Calcular costo sumando los precios de los servicios de cada tarea
+            const totalCost = tareas.reduce((sum, tarea) => {
+              const servicio = servicios.find((s: any) => 
+                String(s.tipo_servicio_id || s.id) === String(tarea.tipo_servicio_id)
+              );
+              const precio = servicio ? parseFloat(servicio.precio_base || servicio.basePrice || 0) : 0;
+              return sum + precio;
+            }, 0);
+            costsMap.set(order.id, totalCost);
+          } catch (error) {
+            console.error(`Error calculando costo para orden ${order.id}:`, error);
+            costsMap.set(order.id, 0);
+          }
+        }
+      }
+      
+      setOrderCostsMap(costsMap);
+    } catch (error) {
+      console.error('Error cargando costos de órdenes:', error);
+    }
+  };
+  
+  // Helper para obtener el costo total calculado de una orden
+  const getOrderTotalCost = (order: WorkOrderData): number => {
+    if (!order.id) return 0;
+    return orderCostsMap.get(order.id) || 0;
   };
 
   // Cargar nombres descriptivos para las órdenes
@@ -357,7 +405,7 @@ const WorkOrdersPage = () => {
             className="flex items-center space-x-2"
           >
             <PlusIcon className="h-4 w-4" />
-            <span>Nueva Orden</span>
+            <span>Nueva rden</span>
           </Button>
         </div>
       </div>
@@ -465,10 +513,10 @@ const WorkOrdersPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {order.nombreCliente || `Cliente #${order.clienteId}`}
+                          {getClientDisplayName(order)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {order.descripcion}
+                          {getVehicleDisplayName(order)}
                         </div>
                       </div>
                     </td>
@@ -478,11 +526,8 @@ const WorkOrdersPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatCurrency(order.costoTotal)}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Est: {formatCurrency(order.costoEstimado)}
+                      <div className="text-sm font-medium text-gray-900">
+                        {getOrderTotalCost(order) > 0 ? formatCurrency(getOrderTotalCost(order)) : 'L 0.00'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

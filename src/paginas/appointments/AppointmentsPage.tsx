@@ -30,8 +30,8 @@ const AppointmentsPage = () => {
 
   // Función para buscar el nombre del servicio por ID
   const getServiceName = (servicioId: string) => {
-    const servicio = servicios.find(s => s.id === servicioId);
-    return servicio ? servicio.name || servicio.nombre : `ID: ${servicioId}`;
+    const servicio = servicios.find(s => s.tipo_servicio_id?.toString() === servicioId?.toString());
+    return servicio ? servicio.nombre : `ID: ${servicioId}`;
   };
 
 
@@ -44,9 +44,9 @@ const AppointmentsPage = () => {
       const response = await servicesService.getAll();
       if (response.success) {
         const mappedServices = response.data.map((service: any) => ({
-          id: service.id,
-          name: service.nombre,
+          tipo_servicio_id: service.tipo_servicio_id,
           nombre: service.nombre,
+          descripcion: service.descripcion || '',
         }));
         setServicios(mappedServices);
       }
