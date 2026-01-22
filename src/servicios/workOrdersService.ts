@@ -100,6 +100,11 @@ class WorkOrdersService {
       await workOrderStatesManager.initializeState(otId, estado);
     }
     
+    // Construir nombre del vehículo con marca, modelo y año
+    const vehiculoNombre = spData.marca && spData.modelo 
+      ? `${spData.marca} ${spData.modelo} ${spData.anio || ''}`.trim()
+      : spData.vehiculo_info || 'Vehículo no especificado';
+    
     return {
       id: otId,
       quotationId: undefined,
@@ -107,11 +112,12 @@ class WorkOrdersService {
       clienteId: spData.cliente_id?.toString() || '',
       vehiculoId: spData.vehiculo_id?.toString() || '',
       servicioId: '',
-      descripcion: spData.vehiculo_info || '',
-      // Nombre del cliente - buscar en múltiples campos posibles del SP
-      nombreCliente: spData.nombre_completo || spData.nombre_cliente || spData.cliente_nombre || spData.nombre_asesor || '',
-      // Nombre del vehículo - usar vehiculo_info que ya funciona
-      nombreVehiculo: spData.vehiculo_info || '',
+      // CORRECCIÓN: descripcion debe ser las notas de recepción (la tarea inicial)
+      descripcion: spData.notas_recepcion || spData.descripcion || 'Servicio de taller',
+      // CORRECCIÓN: nombreCliente debe venir de nombre_cliente del SP
+      nombreCliente: spData.nombre_cliente || spData.nombre_completo || 'Cliente no especificado',
+      // CORRECCIÓN: nombreVehiculo construido correctamente con marca/modelo/año
+      nombreVehiculo: vehiculoNombre,
       problema: spData.notas_recepcion || '',
       diagnostico: '',
       tipoServicio: 'corrective',
@@ -119,9 +125,10 @@ class WorkOrdersService {
       fechaInicioReal: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
       costoManoObra: 0,
       costoPartes: 0,
-      costoTotal: 0,
-      costoEstimado: 0,
-      notas: `Placa: ${spData.placa} | Odómetro: ${spData.odometro_ingreso}km | Asesor: ${spData.nombre_asesor}`,
+      // CORRECCIÓN: costoTotal debe venir del SP
+      costoTotal: spData.costo_total || spData.costoTotal || 0,
+      costoEstimado: spData.costo_total || spData.costoTotal || 0,
+      notas: `Placa: ${spData.placa} | Odómetro: ${spData.odometro_ingreso}km | Asesor: ${spData.nombre_asesor || 'N/A'}`,
       recomendaciones: spData.nombre_mecanico ? `Mecánico asignado: ${spData.nombre_mecanico}` : '',
       estadoPago: 'pending',
       estado: estado, // 🔥 Usa el estado del JSON (prioridad) o del SP

@@ -21,54 +21,16 @@ export const usePendingInvoices = () => {
     const enrichedOrders: PendingInvoice[] = [];
 
     for (const order of workOrders) {
-      let clientInfo: any = {};
-      let vehicleInfo: any = {};
-
-      try {
-        // Obtener información del cliente
-        const clients = await obtenerClientes();
-        if (clients && Array.isArray(clients)) {
-          const client = clients.find((c: any) => c.id === order.clienteId);
-          if (client) {
-            clientInfo = {
-              name: client.name || 'Cliente no especificado',
-              email: client.email || '',
-              phone: client.phone || ''
-            };
-          }
-        }
-      } catch (error) {
-        console.error('Error obteniendo cliente:', error);
-        clientInfo = { name: 'Cliente no especificado', email: '', phone: '' };
-      }
-
-      try {
-        // Obtener información del vehículo
-        const vehiclesResponse = await vehiclesService.getAll();
-        if (vehiclesResponse.success && vehiclesResponse.data) {
-          const vehicle = vehiclesResponse.data.find((v: any) => v.id === order.vehiculoId);
-          if (vehicle) {
-            vehicleInfo = {
-              name: `${vehicle.marca || ''} ${vehicle.modelo || ''} ${vehicle.anio || ''}`.trim(),
-              plate: vehicle.placa || '',
-              color: vehicle.color || ''
-            };
-          }
-        }
-      } catch (error) {
-        console.error('Error obteniendo vehículo:', error);
-        vehicleInfo = { name: 'Vehículo no especificado', plate: '', color: '' };
-      }
-
+      // Los datos ya vienen correctamente mapeados del workOrdersService
       enrichedOrders.push({
         ...order,
-        clientName: clientInfo.name || 'Cliente no especificado',
-        clientEmail: clientInfo.email || '',
-        clientPhone: clientInfo.phone || '',
-        vehicleName: vehicleInfo.name || 'Vehículo no especificado',
-        vehiclePlate: vehicleInfo.plate || '',
-        vehicleColor: vehicleInfo.color || '',
-        totalAmount: order.costoTotal
+        clientName: order.nombreCliente || 'Cliente no especificado',
+        vehicleName: order.nombreVehiculo || 'Vehículo no especificado',
+        totalAmount: order.costoTotal || 0,
+        clientEmail: '',
+        clientPhone: '',
+        vehiclePlate: '',
+        vehicleColor: ''
       });
     }
 

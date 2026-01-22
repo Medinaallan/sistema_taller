@@ -123,6 +123,7 @@ router.post('/', async (req, res) => {
     }
     
     console.log('📊 Cliente ID numérico validado:', clienteIdFinal);
+    console.log('📸 foto_url a guardar:', foto_url);
     
     const pool = await getConnection();
     
@@ -138,7 +139,7 @@ router.post('/', async (req, res) => {
       .input('vin', sql.VarChar(50), vin || null)
       .input('numero_motor', sql.VarChar(50), numero_motor || null)
       .input('kilometraje', sql.Int, kilometraje ? parseInt(kilometraje) : null)
-      // NOTA: SP_REGISTRAR_VEHICULO NO tiene foto_url según las specs
+      .input('foto_url', sql.VarChar(255), foto_url || null)
       .execute('SP_REGISTRAR_VEHICULO');
     
     const response = result.recordset[0];
@@ -296,6 +297,10 @@ router.get('/client/:clientId', async (req, res) => {
       .execute('SP_OBTENER_VEHICULOS');
     
     console.log(`Vehículos del cliente ${cliente_id}:`, result.recordset.length);
+    if (result.recordset.length > 0) {
+      console.log('Campos del primer vehículo:', Object.keys(result.recordset[0]));
+      console.log('Primer vehículo completo:', result.recordset[0]);
+    }
     res.json({
       success: true,
       data: result.recordset,

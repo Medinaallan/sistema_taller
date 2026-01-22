@@ -77,6 +77,29 @@ router.get('/list', async (req, res) => {
   }
 });
 
+// Obtener todos los roles disponibles - DEBE IR ANTES DE /:id
+router.get('/roles', async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .execute('SP_OBTENER_ROLES');
+
+    res.json({
+      success: true,
+      data: result.recordset,
+      count: result.recordset.length
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo roles:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Obtener usuario específico por ID
 router.get('/:id', async (req, res) => {
   console.log('👤 [ROUTER] Obteniendo usuario por ID:', req.params.id);
@@ -119,29 +142,6 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error al obtener usuario',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// Obtener todos los roles disponibles (ya que no hay SP para obtener usuarios)
-router.get('/roles', async (req, res) => {
-  try {
-    const pool = await getConnection();
-    const result = await pool.request()
-      .execute('SP_OBTENER_ROLES');
-
-    res.json({
-      success: true,
-      data: result.recordset,
-      count: result.recordset.length
-    });
-
-  } catch (error) {
-    console.error('Error obteniendo roles:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -317,29 +317,50 @@ router.put('/:usuarioId', async (req, res) => {
     }
 
     const pool = await getConnection();
+    const userIdParsed = parseInt(usuarioId);
 
-    // Si se proporciona correo, validar primero con SP_VALIDAR_CORREO_USUARIO
+    if (isNaN(userIdParsed)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de usuario inválido'
+      });
+    }
+
+    // Si se proporciona correo, validar que no esté en uso por OTRO usuario
     if (correo) {
-      console.log(`🔍 Validando correo: ${correo}`);
-      const validationResult = await pool.request()
-        .input('correo', sql.VarChar(100), correo)
-        .execute('SP_VALIDAR_CORREO_USUARIO');
+      console.log(`🔍 Validando correo: ${correo} para usuario ${userIdParsed}`);
+      
+      // Obtener el correo actual del usuario
+      const currentUserResult = await pool.request()
+        .input('usuario_id', sql.Int, userIdParsed)
+        .execute('SP_OBTENER_USUARIOS');
+      
+      const currentUser = currentUserResult.recordset?.[0];
+      
+      // Si el correo es diferente al actual, validar que no esté en uso
+      if (currentUser && currentUser.correo !== correo.toLowerCase()) {
+        const validationResult = await pool.request()
+          .input('correo', sql.VarChar(100), correo)
+          .execute('SP_VALIDAR_CORREO_USUARIO');
 
-      const validationOutput = validationResult.recordset?.[0] || {};
-      console.log('Resultado validación:', validationOutput);
+        const validationOutput = validationResult.recordset?.[0] || {};
+        console.log('Resultado validación:', validationOutput);
 
-      if (!validationOutput.allow) {
-        return res.status(400).json({
-          success: false,
-          message: validationOutput.msg || 'El correo ya está en uso'
-        });
+        if (!validationOutput.allow) {
+          return res.status(400).json({
+            success: false,
+            message: validationOutput.msg || 'El correo ya está en uso por otro usuario'
+          });
+        }
+      } else {
+        console.log('✅ El correo es el mismo, no requiere validación');
       }
     }
 
     // Ejecutar SP_EDITAR_USUARIO
     console.log('📤 Ejecutando SP_EDITAR_USUARIO');
     const result = await pool.request()
-      .input('usuario_id', sql.Int, parseInt(usuarioId))
+      .input('usuario_id', sql.Int, userIdParsed)
       .input('nombre_completo', sql.VarChar(100), nombre_completo || null)
       .input('correo', sql.VarChar(100), correo || null)
       .input('telefono', sql.VarChar(30), telefono || null)

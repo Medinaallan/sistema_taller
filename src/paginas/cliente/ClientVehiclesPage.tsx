@@ -54,6 +54,11 @@ export function ClientVehiclesPage() {
   const [loading, setLoading] = useState(false);
   const [clientVehicles, setClientVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
+  
+  // Estados para manejo de imagen
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [vehicleForm, setVehicleForm] = useState<VehicleForm>({
     brand: '',
@@ -151,6 +156,64 @@ export function ClientVehiclesPage() {
     return { type: 'up-to-date', text: 'Al día', color: 'bg-gray-100 text-gray-800' };
   };
 
+  // Manejar selección de imagen
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido');
+        return;
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen no debe superar los 5MB');
+        return;
+      }
+      
+      setSelectedImage(file);
+      
+      // Crear vista previa
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Subir imagen a S3 y obtener URL
+  const uploadImageToS3 = async (): Promise<string | null> => {
+    if (!selectedImage) return null;
+    
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      formData.append('folder', 'vehicle-photos');
+      
+      const response = await fetch('http://localhost:8080/api/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.imageUrl) {
+        return result.imageUrl;
+      } else {
+        throw new Error(result.error || 'Error al subir imagen');
+      }
+    } catch (error) {
+      console.error('Error subiendo imagen:', error);
+      alert('Error al subir la imagen. Por favor intenta de nuevo.');
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleAddVehicle = async () => {
     if (!state?.user?.id) {
       alert('Error: Usuario no identificado');
@@ -165,6 +228,19 @@ export function ClientVehiclesPage() {
 
     setLoading(true);
     try {
+      // Subir imagen a S3 si hay una seleccionada
+      let fotoUrl = null;
+      if (selectedImage) {
+        console.log('📷 Subiendo imagen a S3...');
+        fotoUrl = await uploadImageToS3();
+        if (!fotoUrl) {
+          alert('Error al subir la imagen. ¿Deseas continuar sin foto?');
+          setLoading(false);
+          return;
+        }
+        console.log('✅ Imagen subida exitosamente:', fotoUrl);
+      }
+
       // Preparar datos para la API usando los nombres de campos del SP
       const vehicleData = {
         cliente_id: parseInt(state.user.id), // Usar cliente_id como espera el SP
@@ -174,9 +250,9 @@ export function ClientVehiclesPage() {
         placa: vehicleForm.licensePlate,
         color: vehicleForm.color,
         vin: vehicleForm.vin || null,
-        numero_motor: vehicleForm.numeroMotor || null, // Campo nuevo del SP
+        numero_motor: vehicleForm.numeroMotor || null,
         kilometraje: vehicleForm.mileage || null,
-        foto_url: vehicleForm.fotoUrl || null // Campo nuevo del SP
+        foto_url: fotoUrl // URL generada por S3
       };
 
       const response = await vehiclesService.create(vehicleData);
@@ -191,9 +267,10 @@ export function ClientVehiclesPage() {
           color: response.data.color,
           vin: response.data.vin || '',
           numeroMotor: response.data.numero_motor || '',
-          fotoUrl: response.data.foto_url || '',
+          fotoUrl: fotoUrl || '',
           licensePlate: response.data.placa,
-          mileage: parseInt(response.data.kilometraje) || 0
+          mileage: parseInt(response.data.kilometraje) || 0,
+          photo: fotoUrl || undefined
         };
         
         setClientVehicles(prev => [...prev, newVehicle]);
@@ -220,7 +297,7 @@ export function ClientVehiclesPage() {
         
         setShowAddModal(false);
         
-        // Resetear formulario
+        // Resetear formulario y estados de imagen
         setVehicleForm({
           brand: '',
           model: '',
@@ -232,6 +309,8 @@ export function ClientVehiclesPage() {
           numeroMotor: '',
           fotoUrl: ''
         });
+        setSelectedImage(null);
+        setImagePreview(null);
 
         alert('¡Vehículo registrado exitosamente!');
       } else {
@@ -508,51 +587,87 @@ export function ClientVehiclesPage() {
             </p>
           </div>
 
-          <div className="mt-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              URL de Foto del Vehículo (opcional)
-            </label>
-            <input
-              type="url"
-              value={vehicleForm.fotoUrl}
-              onChange={(e) => setVehicleForm({...vehicleForm, fotoUrl: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://ejemplo.com/foto-vehiculo.jpg"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              URL donde está alojada la foto de tu vehículo
-            </p>
-          </div>
-
-          {/* Foto del vehículo */}
+          {/* Foto del vehículo - Funcional con S3 */}
           <div className="mt-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Foto del Vehículo (Opcional)
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-              <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">Arrastra una foto aquí o haz clic para seleccionar</p>
-              <button className="text-blue-600 font-medium hover:text-blue-500">
-                Seleccionar archivo
-              </button>
-            </div>
+            
+            {imagePreview ? (
+              <div className="relative">
+                <img 
+                  src={imagePreview} 
+                  alt="Vista previa" 
+                  className="w-full h-64 object-cover rounded-lg border-2 border-gray-300"
+                />
+                <button
+                  onClick={() => {
+                    setSelectedImage(null);
+                    setImagePreview(null);
+                  }}
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <div 
+                onClick={() => document.getElementById('vehicle-photo-input')?.click()}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
+              >
+                <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">Arrastra una foto aquí o haz clic para seleccionar</p>
+                <p className="text-sm text-gray-500 mb-3">JPG, PNG o WebP (máx. 5MB)</p>
+                <button 
+                  type="button"
+                  className="text-blue-600 font-medium hover:text-blue-500 px-4 py-2 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                  Seleccionar archivo
+                </button>
+              </div>
+            )}
+            
+            <input
+              id="vehicle-photo-input"
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            
+            {selectedImage && (
+              <p className="text-sm text-green-600 mt-2 flex items-center">
+                <CheckCircleIcon className="h-4 w-4 mr-1" />
+                Imagen seleccionada: {selectedImage.name}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Footer */}
         <div className="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end space-x-3">
           <button
-            onClick={() => setShowAddModal(false)}
+            onClick={() => {
+              setShowAddModal(false);
+              setSelectedImage(null);
+              setImagePreview(null);
+            }}
             className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+            disabled={loading || uploadingImage}
           >
             Cancelar
           </button>
           <button
             onClick={handleAddVehicle}
-            disabled={loading}
+            disabled={loading || uploadingImage}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center disabled:bg-blue-400 disabled:cursor-not-allowed"
           >
-            {loading ? (
+            {uploadingImage ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Subiendo foto...
+              </>
+            ) : loading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                 Registrando...

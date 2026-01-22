@@ -84,7 +84,7 @@
       "contenido": "COMO ESTA",
       "es_sistema": false,
       "enviado_en": "2026-01-20T21:17:28.041Z",
-      "leido": false
+      "leido": true
     },
     {
       "mensaje_id": 1768943864629,
@@ -104,6 +104,16 @@
       "contenido": "BIEN IGUAL",
       "es_sistema": false,
       "enviado_en": "2026-01-20T21:18:00.593Z",
+      "leido": true
+    },
+    {
+      "mensaje_id": 1769037187226,
+      "sala_id": "11",
+      "usuario_id": "11",
+      "rol": "client",
+      "contenido": "esta es una prueba ",
+      "es_sistema": false,
+      "enviado_en": "2026-01-21T23:13:07.013Z",
       "leido": false
     }
   ],

@@ -440,7 +440,7 @@ app.post('/api/auth/verify-security-code', async (req, res) => {
 
 // Registrar password (Paso 4) - USANDO SP REAL
 app.post('/api/auth/register-password', async (req, res) => {
-  console.log('🔒 Registrar password:', req.body);
+  console.log('🔒 Registrar password para correo:', req.body.correo);
   try {
     const { correo, password } = req.body;
     if (!correo || !password) {
@@ -564,7 +564,7 @@ app.post('/api/auth/register-client', async (req, res) => {
 
 // Login - USANDO SP REAL CON FORMATO CORRECTO
 app.post('/api/auth/login', async (req, res) => {
-  console.log('🔐 Login:', req.body);
+  console.log('🔐 Login attempt for:', req.body.correo);
   
   try {
     const { correo, password } = req.body;
@@ -663,11 +663,8 @@ app.get('/api/clients', async (req, res) => {
     const dataLines = lines.slice(1);
     console.log('Líneas de datos:', dataLines.length);
     
-    // Debug: mostrar cada línea
-    dataLines.forEach((line, index) => {
-      const columns = line.split(';');
-      console.log(`Línea ${index + 1}: email=${columns[2]}, password=${columns[4]}`);
-    });
+    // Debug: mostrar cada línea (sin datos sensibles)
+    console.log(`Procesando ${dataLines.length} líneas de clientes`);
     
     const clients = dataLines.map((line, index) => {
       const columns = line.split(';');
