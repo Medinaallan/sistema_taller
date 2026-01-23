@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -21,9 +21,11 @@ import {
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { useTheme } from '../../hooks/useTheme';
+import { useNotifications } from '../../hooks/useNotifications';
 import { getRoleText } from '../../utilidades/globalMockDatabase';
 import { clsx } from 'clsx';
 import { ThemeDropdown } from '../ui/ThemeDropdown';
+import NotificationsDropdown from '../cliente/NotificationsDropdown';
 
 interface LayoutProps {
   children: ReactNode;
@@ -87,6 +89,11 @@ export function Layout({ children }: LayoutProps) {
   const { colors } = useTheme();
   const location = useLocation();
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  
+  // Obtener cliente ID si el usuario es cliente
+  const clientId = state.user?.role === 'client' ? state.user.id : null;
+  const { unreadCount, refreshCount } = useNotifications(clientId, state.user?.role === 'client');
 
   const handleLogout = () => {
     dispatch({ type: 'LOGOUT' });
@@ -318,14 +325,35 @@ export function Layout({ children }: LayoutProps) {
             {/* Botón de Tema */}
             <ThemeDropdown />
 
-            {/* Notificaciones */}
-            <button className="p-2 hover:opacity-80 transition-opacity relative" style={{ color: colors.text.primary }}>
-              <BellIcon className="h-5 w-5" />
-              {/* Indicador de notificaciones */}
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-xs text-white font-medium">2</span>
-              </span>
-            </button>
+            {/* Notificaciones (solo para clientes) */}
+            {state.user?.role === 'client' && (
+              <>
+                <button 
+                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  className="p-2 hover:opacity-80 transition-opacity relative" 
+                  style={{ color: colors.text.primary }}
+                >
+                  <BellIcon className="h-5 w-5" />
+                  {/* Indicador de notificaciones */}
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-xs text-white font-medium">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                    </span>
+                  )}
+                </button>
+                
+                {clientId && (
+                  <NotificationsDropdown
+                    clientId={clientId}
+                    isOpen={notificationsOpen}
+                    onClose={() => {
+                      setNotificationsOpen(false);
+                      refreshCount();
+                    }}
+                  />
+                )}
+              </>
+            )}
             
             {/* Información del usuario */}
             <div className="text-sm" style={{ color: colors.text.primary }}>

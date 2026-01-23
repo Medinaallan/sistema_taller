@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Reminder, Vehicle } from '../../tipos';
-import { mockReminders } from '../../utilidades/globalMockDatabase';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
+import remindersService from '../../servicios/remindersService';
+import clientesService, { Cliente } from '../../servicios/clientesService';
 
 interface ReminderFormData {
   title: string;
@@ -20,6 +21,9 @@ export default function RemindersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
   const [selectedClientVehicles, setSelectedClientVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [clients, setClients] = useState<Cliente[]>([]);
   const [formData, setFormData] = useState<ReminderFormData>({
     title: '',
     description: '',
@@ -30,55 +34,132 @@ export default function RemindersPage() {
     services: []
   });
 
-  useEffect(() => {
-    // Cargar datos iniciales si no están cargados
-    if (!state.reminders || state.reminders.length === 0) {
-      dispatch({ type: 'SET_REMINDERS', payload: mockReminders });
+  // Cargar clientes desde la API
+  const loadClients = async () => {
+    try {
+      const response = await clientesService.obtenerClientes();
+      if (response.success && response.data) {
+        const clientsArray = Array.isArray(response.data) ? response.data : [response.data];
+        setClients(clientsArray);
+        console.log('✅ Clientes cargados:', clientsArray.length);
+      }
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
     }
-  }, [dispatch, state.reminders]);
+  };
+
+  // Cargar recordatorios desde la API
+  const loadReminders = async () => {
+    setLoading(true);
+    try {
+      const response = await remindersService.obtenerRecordatorios();
+      if (response.success && response.data) {
+        const remindersArray = Array.isArray(response.data) ? response.data : [response.data];
+        setReminders(remindersArray as Reminder[]);
+        dispatch({ type: 'SET_REMINDERS', payload: remindersArray as Reminder[] });
+      }
+    } catch (error) {
+      console.error('Error al cargar recordatorios:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadClients();
+    loadReminders();
+  }, []);
+
+  // Cargar vehículos de un cliente desde la API
+  const loadClientVehicles = async (clientId: string) => {
+    try {
+      console.log('🚗 Cargando vehículos del cliente:', clientId);
+      const response = await fetch(`http://localhost:8080/api/vehicles/client/${clientId}`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const vehiclesArray = Array.isArray(data.data) ? data.data : [data.data];
+        // Mapear los vehículos a la estructura esperada
+        const mappedVehicles = vehiclesArray.map((v: any) => ({
+          id: v.vehiculo_id?.toString() || v.id?.toString(),
+          brand: v.marca || '',
+          model: v.modelo || '',
+          year: v.anio || 0,
+          licensePlate: v.placa || '',
+          color: v.color || '',
+          clientId: v.cliente_id?.toString() || clientId
+        }));
+        setSelectedClientVehicles(mappedVehicles);
+        console.log('✅ Vehículos cargados:', mappedVehicles.length);
+      } else {
+        setSelectedClientVehicles([]);
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar vehículos:', error);
+      setSelectedClientVehicles([]);
+    }
+  };
 
   useEffect(() => {
     // Actualizar vehículos cuando se selecciona un cliente
     if (formData.clientId) {
-      const clientVehicles = data.getVehiclesByClient(formData.clientId);
-      setSelectedClientVehicles(clientVehicles);
+      loadClientVehicles(formData.clientId);
       
-      // Limpiar vehículo seleccionado si no pertenece al cliente
-      if (!clientVehicles.find(v => v.id === formData.vehicleId)) {
-        setFormData(prev => ({ ...prev, vehicleId: '' }));
-      }
+      // Limpiar vehículo seleccionado
+      setFormData(prev => ({ ...prev, vehicleId: '' }));
     } else {
       setSelectedClientVehicles([]);
       setFormData(prev => ({ ...prev, vehicleId: '' }));
     }
-  }, [formData.clientId, data]);
+  }, [formData.clientId]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    const newReminder: Reminder = {
-      id: selectedReminder?.id || Date.now().toString(),
-      title: formData.title,
-      description: formData.description,
-      type: formData.type,
-      triggerValue: formData.type === 'date' 
-        ? new Date(formData.triggerValue) 
-        : parseInt(formData.triggerValue),
-      vehicleId: formData.vehicleId,
-      clientId: formData.clientId,
-      services: formData.services,
-      isActive: true,
-      isCompleted: false,
-      createdAt: selectedReminder?.createdAt || new Date()
-    };
+    try {
+      const reminderData = {
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        triggerValue: formData.type === 'date' 
+          ? formData.triggerValue
+          : parseInt(formData.triggerValue),
+        vehicleId: formData.vehicleId || null,
+        clientId: formData.clientId,
+        services: formData.services
+      };
 
-    if (selectedReminder) {
-      dispatch({ type: 'UPDATE_REMINDER', payload: newReminder });
-    } else {
-      dispatch({ type: 'ADD_REMINDER', payload: newReminder });
+      if (selectedReminder) {
+        // Actualizar recordatorio existente
+        const response = await remindersService.actualizarRecordatorio(
+          selectedReminder.id, 
+          { ...reminderData, isActive: selectedReminder.isActive, isCompleted: selectedReminder.isCompleted }
+        );
+        
+        if (response.success) {
+          await loadReminders();
+          handleCloseModal();
+        } else {
+          alert('Error al actualizar recordatorio: ' + response.message);
+        }
+      } else {
+        // Crear nuevo recordatorio
+        const response = await remindersService.crearRecordatorio(reminderData);
+        
+        if (response.success) {
+          await loadReminders();
+          handleCloseModal();
+        } else {
+          alert('Error al crear recordatorio: ' + response.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error en handleSubmit:', error);
+      alert('Error al guardar el recordatorio');
+    } finally {
+      setLoading(false);
     }
-
-    handleCloseModal();
   };
 
   const handleCloseModal = () => {
@@ -114,29 +195,58 @@ export default function RemindersPage() {
     setIsModalOpen(true);
   };
 
-  const toggleReminder = (id: string) => {
-    const reminder = state.reminders?.find(r => r.id === id);
-    if (reminder) {
-      dispatch({ 
-        type: 'UPDATE_REMINDER', 
-        payload: { ...reminder, isActive: !reminder.isActive }
-      });
+  const toggleReminder = async (id: string) => {
+    setLoading(true);
+    try {
+      const response = await remindersService.alternarEstadoRecordatorio(id);
+      if (response.success) {
+        await loadReminders();
+      } else {
+        alert('Error al cambiar estado: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error al alternar estado:', error);
+      alert('Error al cambiar el estado del recordatorio');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este recordatorio?')) {
-      dispatch({ type: 'DELETE_REMINDER', payload: id });
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este recordatorio?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await remindersService.eliminarRecordatorio(id);
+      if (response.success) {
+        await loadReminders();
+      } else {
+        alert('Error al eliminar: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error al eliminar recordatorio:', error);
+      alert('Error al eliminar el recordatorio');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleComplete = (id: string) => {
-    const reminder = state.reminders?.find(r => r.id === id);
-    if (reminder) {
-      dispatch({ 
-        type: 'UPDATE_REMINDER', 
-        payload: { ...reminder, isCompleted: true }
-      });
+  const handleComplete = async (id: string) => {
+    setLoading(true);
+    try {
+      const response = await remindersService.completarRecordatorio(id);
+      if (response.success) {
+        await loadReminders();
+      } else {
+        alert('Error al completar: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error al completar recordatorio:', error);
+      alert('Error al marcar como completado');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -149,8 +259,24 @@ export default function RemindersPage() {
     });
   };
 
-  const reminders = state.reminders || [];
-  const clients = state.clients || [];
+  // Agregar función para enviar notificación
+  const handleSendNotification = async (id: string) => {
+    setLoading(true);
+    try {
+      const response = await remindersService.enviarNotificacion(id);
+      if (response.success) {
+        alert('Notificación enviada correctamente al cliente');
+        await loadReminders();
+      } else {
+        alert('Error al enviar notificación: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error al enviar notificación:', error);
+      alert('Error al enviar la notificación');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -289,15 +415,26 @@ export default function RemindersPage() {
 
                   <div className="flex items-center space-x-2 ml-4">
                     {!reminder.isCompleted && reminder.isActive && (
-                      <button
-                        onClick={() => handleComplete(reminder.id)}
-                        className="text-green-600 hover:text-green-800"
-                        title="Marcar como completado"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleSendNotification(reminder.id)}
+                          className="text-purple-600 hover:text-purple-800"
+                          title="Enviar notificación al cliente"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleComplete(reminder.id)}
+                          className="text-green-600 hover:text-green-800"
+                          title="Marcar como completado"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                          </svg>
+                        </button>
+                      </>
                     )}
 
                     <button
@@ -436,8 +573,8 @@ export default function RemindersPage() {
                     >
                       <option value="">Seleccionar cliente</option>
                       {clients.map(client => (
-                        <option key={client.id} value={client.id}>
-                          {client.name}
+                        <option key={client.usuario_id} value={client.usuario_id}>
+                          {client.nombre_completo} - {client.correo}
                         </option>
                       ))}
                     </select>

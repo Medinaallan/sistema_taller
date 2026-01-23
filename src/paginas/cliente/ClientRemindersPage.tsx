@@ -2,63 +2,43 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../../contexto/useApp';
 import { Reminder } from '../../tipos';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
-
-// Función helper para obtener recordatorios de un cliente
-const getClientReminders = (_clientId: string): Reminder[] => {
-  // Por ahora retornamos un array vacío ya que no hay implementación de recordatorios
-  return [];
-};
+import remindersService from '../../servicios/remindersService';
 
 export default function ClientRemindersPage() {
   const { state } = useApp();
   const data = useInterconnectedData();
   const [clientReminders, setClientReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Cargar recordatorios del cliente desde la API
+  const loadClientReminders = async (clientId: string) => {
+    setLoading(true);
+    try {
+      const response = await remindersService.obtenerRecordatoriosPorCliente(clientId);
+      if (response.success && response.data) {
+        const remindersArray = Array.isArray(response.data) ? response.data : [response.data];
+        setClientReminders(remindersArray as Reminder[]);
+      } else {
+        setClientReminders([]);
+      }
+    } catch (error) {
+      console.error('Error al cargar recordatorios del cliente:', error);
+      setClientReminders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Solo cargar recordatorios si el usuario está autenticado y es cliente
     if (state.user && state.user.role === 'client') {
       // Buscar el cliente que corresponde al usuario autenticado
       const client = state.clients.find(c => c.email === state.user?.email);
-      let reminders: Reminder[] = [];
       if (client) {
-        reminders = getClientReminders(client.id);
+        loadClientReminders(client.id);
       } else {
-        reminders = getClientReminders(state.user.id);
+        loadClientReminders(state.user.id);
       }
-      // Si no hay recordatorios, mostrar dos ejemplos mock
-      if (reminders.length === 0) {
-        reminders = [
-          {
-            id: 'mock-1',
-            vehicleId: 'vehicle-mock-1',
-            clientId: client?.id || state.user.id,
-            type: 'date',
-            title: 'Mantenimiento Toyota Corolla',
-            description: 'Cambio de aceite y revisión general.',
-            triggerValue: new Date('2025-10-01'),
-            isActive: true,
-            isCompleted: false,
-            services: ['Cambio de aceite', 'Revisión de frenos'],
-            createdAt: new Date('2024-09-01'),
-            triggerDate: new Date('2025-09-04'),
-          },
-          {
-            id: 'mock-2',
-            vehicleId: 'vehicle-mock-2',
-            clientId: client?.id || state.user.id,
-            type: 'mileage',
-            title: 'Servicio mayor Honda CRV',
-            description: 'Reemplazo de banda de distribución y revisión completa.',
-            triggerValue: 125000,
-            currentValue: 120000,
-            isActive: true,
-            isCompleted: false,
-            services: ['Banda de distribución', 'Revisión general'],
-            createdAt: new Date('2025-09-04'),
-          },
-        ];
-      }
-      setClientReminders(reminders);
     }
   }, [state.user, state.clients]);
 
@@ -246,7 +226,12 @@ export default function ClientRemindersPage() {
         {/* Lista de recordatorios responsiva */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100">
           <div className="p-4 sm:p-6 lg:p-8">
-            {clientReminders.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8 sm:py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="text-gray-500 mt-4">Cargando recordatorios...</p>
+              </div>
+            ) : clientReminders.length === 0 ? (
               <div className="text-center py-8 sm:py-12">
                 <div className="p-3 sm:p-4 bg-gray-100 rounded-full w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
                   <svg className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

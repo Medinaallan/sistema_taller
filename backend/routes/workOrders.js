@@ -1,5 +1,6 @@
 const express = require('express');
 const { sql, getConnection } = require('../config/database');
+const notificationsService = require('../services/notificationsService');
 const router = express.Router();
 
 
@@ -237,6 +238,21 @@ router.post('/manual', async (req, res) => {
     console.log('Recordset:', result.recordset);
 
     const output = result.recordset?.[0] || {};
+    
+    // Enviar notificación al cliente si la OT fue creada exitosamente
+    if (output.allow && output.ot_id) {
+      try {
+        await notificationsService.notifyOTCreated(cliente_id, {
+          ot_id: output.ot_id,
+          numero_ot: output.numero_ot,
+          vehiculo_id: vehiculo_id
+        });
+        console.log('✅ Notificación de OT creada enviada al cliente');
+      } catch (notifError) {
+        console.error('⚠️ Error al enviar notificación:', notifError);
+        // No fallar la operación si la notificación falla
+      }
+    }
     
     res.status(200).json({
       success: output.allow || false,
@@ -565,6 +581,39 @@ router.put('/tareas/:tareaId/estado', async (req, res) => {
     console.log('Resultado:', result.recordset);
 
     const output = result.recordset?.[0] || {};
+    
+    // Enviar notificación al cliente si el estado cambió exitosamente
+    if (output.allow) {
+      try {
+        // Obtener información de la OT y cliente
+        const otInfo = await pool.request()
+          .input('ot_id', sql.Int, null)
+          .input('cliente_id', sql.Int, null)
+          .input('placa', sql.VarChar(50), null)
+          .input('estado', sql.VarChar(50), null)
+          .input('numero_ot', sql.VarChar(20), null)
+          .execute('SP_OBTENER_ORDENES_TRABAJO');
+        
+        // Buscar la OT relacionada con esta tarea
+        const tareaInfo = await pool.request()
+          .query(`SELECT ot_id, tipo_servicio_id FROM OT_Tareas WHERE ot_tarea_id = ${parseInt(tareaId)}`);
+        
+        if (tareaInfo.recordset.length > 0 && otInfo.recordset.length > 0) {
+          const ot = otInfo.recordset.find(o => o.ot_id === tareaInfo.recordset[0].ot_id);
+          if (ot) {
+            await notificationsService.notifyTaskStatusChange(ot.cliente_id, {
+              tarea_id: tareaId,
+              ot_id: ot.ot_id,
+              servicio: 'Servicio'
+            }, nuevo_estado);
+            console.log('✅ Notificación de cambio de estado de tarea enviada');
+          }
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error al enviar notificación de tarea:', notifError);
+        // No fallar la operación si la notificación falla
+      }
+    }
     
     res.status(200).json({
       success: output.allow || false,

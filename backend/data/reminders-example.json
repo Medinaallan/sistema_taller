@@ -1,0 +1,53 @@
+[
+  {
+    "id": "1737571200000",
+    "vehicleId": "1",
+    "clientId": "1",
+    "type": "date",
+    "title": "Mantenimiento Toyota Corolla",
+    "description": "Cambio de aceite y revisión general programada",
+    "triggerValue": "2026-02-15T00:00:00.000Z",
+    "currentValue": null,
+    "isActive": true,
+    "isCompleted": false,
+    "services": ["Cambio de aceite", "Revisión de frenos", "Rotación de neumáticos"],
+    "notificationSent": false,
+    "createdAt": "2026-01-22T10:00:00.000Z",
+    "triggerDate": "2026-02-15T00:00:00.000Z",
+    "createdBy": "admin"
+  },
+  {
+    "id": "1737571300000",
+    "vehicleId": "2",
+    "clientId": "1",
+    "type": "mileage",
+    "title": "Servicio mayor Honda CRV",
+    "description": "Reemplazo de banda de distribución y revisión completa del motor",
+    "triggerValue": 125000,
+    "currentValue": 120500,
+    "isActive": true,
+    "isCompleted": false,
+    "services": ["Banda de distribución", "Kit de distribución", "Revisión general", "Cambio de aceite"],
+    "notificationSent": false,
+    "createdAt": "2026-01-15T14:30:00.000Z",
+    "triggerDate": null,
+    "createdBy": "admin"
+  },
+  {
+    "id": "1737571400000",
+    "vehicleId": "3",
+    "clientId": "2",
+    "type": "date",
+    "title": "Revisión anual Mazda 3",
+    "description": "Inspección completa anual del vehículo",
+    "triggerValue": "2026-03-01T00:00:00.000Z",
+    "currentValue": null,
+    "isActive": true,
+    "isCompleted": false,
+    "services": ["Inspección general", "Cambio de filtros", "Revisión de frenos"],
+    "notificationSent": false,
+    "createdAt": "2026-01-20T09:00:00.000Z",
+    "triggerDate": "2026-03-01T00:00:00.000Z",
+    "createdBy": "admin"
+  }
+]

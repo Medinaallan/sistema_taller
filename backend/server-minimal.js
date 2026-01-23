@@ -163,6 +163,19 @@ try {
   console.warn('⚠️  El servidor continuará sin las rutas de historial de servicios');
 }
 
+//IMPORTAR Y CONFIGURAR RUTAS DE NOTIFICACIONES
+try {
+  console.log('🔔 Cargando rutas de notificaciones...');
+  const notificationsRouter = require('./routes/notifications');
+  app.use('/api/notifications', notificationsRouter);
+  console.log('✅ Rutas de notificaciones cargadas exitosamente');
+  console.log('📬 /api/notifications/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de notificaciones:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️  El servidor continuará sin las rutas de notificaciones');
+}
+
 //IMPORTAR Y CONFIGURAR RUTAS DE CITAS
 try {
   console.log(' Cargando rutas de citas...');
@@ -248,6 +261,19 @@ try {
   console.error('❌ Error cargando rutas de logs:', error.message);
   console.error('Stack:', error.stack);
   console.warn('⚠️ El servidor continuará sin las rutas de logs');
+}
+
+//IMPORTAR Y CONFIGURAR RUTAS DE RECORDATORIOS
+try {
+  console.log('🔔 Cargando rutas de recordatorios...');
+  const remindersRouter = require('./routes/reminders');
+  app.use('/api/reminders', remindersRouter);
+  console.log('✅ Rutas de recordatorios cargadas exitosamente');
+  console.log('📍 /api/reminders/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de recordatorios:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de recordatorios');
 }
 
 // IMPORTAR Y CONFIGURAR RUTAS DE TIPOS DE SERVICIO (SP)

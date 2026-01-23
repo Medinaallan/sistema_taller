@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
+const notificationsService = require('../services/notificationsService');
 
 
 // GET /api/appointments - Obtener todas las citas (SP_OBTENER_CITAS)
@@ -158,6 +159,37 @@ router.put('/:id/status', async (req, res) => {
       .input('comentario', sql.VarChar(300), comentario ?? '')
       .input('registrado_por', sql.Int, registrado_por)
       .execute('SP_CAMBIAR_ESTADO_CITA');
+    
+    // Enviar notificación al cliente sobre el cambio de estado
+    if (result.recordset[0]) {
+      try {
+        // Obtener información completa de la cita
+        const citaInfo = await pool.request()
+          .input('cita_id', sql.Int, req.params.id)
+          .input('cliente_id', sql.Int, null)
+          .input('vehiculo_id', sql.Int, null)
+          .input('estado', sql.VarChar(50), null)
+          .input('fecha_inicio', sql.Date, null)
+          .input('numero_cita', sql.VarChar(20), null)
+          .execute('SP_OBTENER_CITAS');
+        
+        if (citaInfo.recordset.length > 0) {
+          const cita = citaInfo.recordset[0];
+          
+          // Notificar aprobación especial si el nuevo estado es "Confirmada" o "Aprobada"
+          if (nuevo_estado === 'Confirmada' || nuevo_estado === 'Aprobada') {
+            await notificationsService.notifyAppointmentApproved(cita.cliente_id, cita);
+          } else {
+            await notificationsService.notifyAppointmentStatusChange(cita.cliente_id, cita, nuevo_estado);
+          }
+          console.log('✅ Notificación de cambio de estado de cita enviada');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error al enviar notificación de cita:', notifError);
+        // No fallar la operación si la notificación falla
+      }
+    }
+    
     res.json({
       success: true,
       data: result.recordset[0],

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
+const { getConnection, sql } = require('../config/database');
+const notificationsService = require('../services/notificationsService');
 
 // Ruta al archivo JSON de estados (en el frontend)
 const STATES_FILE = path.join(__dirname, '../../src/data/workOrders.json');
@@ -62,6 +64,32 @@ router.put('/:otId', async (req, res) => {
     await fs.writeFile(STATES_FILE, JSON.stringify(statesData, null, 2), 'utf8');
     
     console.log(`✅ Estado de OT ${otId} actualizado a: ${estado}`);
+    
+    // Enviar notificación al cliente sobre el cambio de estado
+    try {
+      const pool = await getConnection();
+      const otInfo = await pool.request()
+        .input('ot_id', sql.Int, parseInt(otId))
+        .input('cliente_id', sql.Int, null)
+        .input('placa', sql.VarChar(50), null)
+        .input('estado', sql.VarChar(50), null)
+        .input('numero_ot', sql.VarChar(20), null)
+        .execute('SP_OBTENER_ORDENES_TRABAJO');
+      
+      if (otInfo.recordset.length > 0) {
+        const ot = otInfo.recordset[0];
+        await notificationsService.notifyOTStatusChange(ot.cliente_id, {
+          ot_id: ot.ot_id,
+          numero_ot: ot.numero_ot,
+          vehiculo_id: ot.vehiculo_id,
+          placa: ot.placa
+        }, estado);
+        console.log('✅ Notificación de cambio de estado de OT enviada');
+      }
+    } catch (notifError) {
+      console.error('⚠️ Error al enviar notificación de OT:', notifError);
+      // No fallar la operación si la notificación falla
+    }
     
     res.json({
       success: true,
