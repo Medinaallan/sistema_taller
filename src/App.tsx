@@ -24,6 +24,7 @@ import QuotationsPage from './paginas/quotations/QuotationsPage';
 import ClientQuotationsPage from './paginas/quotations/ClientQuotationsPage';
 import ClientWorkOrdersPage from './paginas/workorders/ClientWorkOrdersPage';
 import InvoicesPage from './paginas/invoices/InvoicesPage';
+import InvoiceHistoryPage from './paginas/administracion/InvoiceHistoryPage';
 import PaymentsPage from './paginas/payments/PaymentsPage';
 import InventoryPage from './paginas/inventory/InventoryPage';
 import POSPage from './paginas/pos/POSPage';
@@ -295,6 +296,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <POSPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/invoice-history"
+        element={
+          <ProtectedRoute>
+            <InvoiceHistoryPage />
           </ProtectedRoute>
         }
       />

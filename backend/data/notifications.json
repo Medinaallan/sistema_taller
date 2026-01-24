@@ -17,6 +17,24 @@
       "createdAt": "2026-01-23T00:24:59.513Z",
       "sentAt": "2026-01-23T00:24:59.513Z",
       "readAt": "2026-01-23T00:48:47.238Z"
+    },
+    {
+      "id": "notif-1769196624659-ovn0h9h11",
+      "clientId": "11",
+      "type": "ot_status_change",
+      "title": "OT OT-00000024: Completada",
+      "message": "¡Su vehículo está listo! La orden de trabajo ha sido completada.",
+      "metadata": {
+        "otId": 24,
+        "numeroOt": "OT-00000024",
+        "newStatus": "Completada",
+        "vehicleId": 33,
+        "placa": "PBT-9401"
+      },
+      "isRead": true,
+      "createdAt": "2026-01-23T19:30:24.659Z",
+      "sentAt": "2026-01-23T19:30:24.659Z",
+      "readAt": "2026-01-23T19:31:07.681Z"
     }
   ]
 }

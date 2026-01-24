@@ -1,5 +1,5 @@
 // Página de perfil completo del cliente - Vista 360°
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Card, Button, Select, Badge, Modal, Tabs, Tab
 } from '../../componentes/comunes/UI';
@@ -20,13 +20,147 @@ import {
 } from '@heroicons/react/24/outline';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
+import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
+import { useApp } from '../../contexto/useApp';
 
 export function ClientProfilePage() {
   const data = useInterconnectedData();
+  const { state, dispatch } = useApp();
+  
+  // 🔥 Cargar clientes desde la API
+  const { 
+    clientes, 
+    clientesLegacy, 
+    loading: loadingClientes, 
+    error: errorClientes,
+    count
+  } = useClientesFromAPI();
+  
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState<'create-appointment' | 'create-quotation' | 'new-work-order'>('create-appointment');
+  
+  // 🔥 Estados para datos relacionados del cliente
+  const [vehiclesData, setVehiclesData] = useState<any[]>([]);
+  const [workOrdersData, setWorkOrdersData] = useState<any[]>([]);
+  const [appointmentsData, setAppointmentsData] = useState<any[]>([]);
+  const [quotationsData, setQuotationsData] = useState<any[]>([]);
+  const [loadingRelatedData, setLoadingRelatedData] = useState(false);
+
+  // 🔥 Actualizar el estado global con los clientes cargados
+  useEffect(() => {
+    if (clientesLegacy && clientesLegacy.length > 0) {
+      console.log('✅ ClientProfilePage: Actualizando estado con', clientesLegacy.length, 'clientes');
+      dispatch({ type: 'SET_CLIENTS', payload: clientesLegacy });
+    }
+  }, [clientesLegacy, dispatch]);
+
+  // 🔥 Cargar datos relacionados cuando se selecciona un cliente
+  useEffect(() => {
+    const loadClientRelatedData = async () => {
+      if (!selectedClientId) {
+        setVehiclesData([]);
+        setWorkOrdersData([]);
+        setAppointmentsData([]);
+        setQuotationsData([]);
+        return;
+      }
+
+      setLoadingRelatedData(true);
+      console.log('🔄 Cargando datos relacionados para cliente:', selectedClientId);
+
+      try {
+        // Cargar vehículos
+        const vehiclesResponse = await fetch(`http://localhost:8080/api/vehicles/client/${selectedClientId}`);
+        const vehiclesResult = await vehiclesResponse.json();
+        if (vehiclesResult.success && vehiclesResult.data) {
+          console.log('✅ Vehículos cargados:', vehiclesResult.data.length);
+          setVehiclesData(vehiclesResult.data);
+          
+          // Actualizar estado global
+          const mappedVehicles = vehiclesResult.data.map((v: any) => ({
+            id: v.vehiculo_id?.toString(),
+            clientId: selectedClientId,
+            brand: v.marca,
+            model: v.modelo,
+            year: v.anio,
+            plate: v.placa,
+            color: v.color,
+            vin: v.vin || '',
+            mileage: v.kilometraje || 0
+          }));
+          dispatch({ type: 'SET_VEHICLES', payload: mappedVehicles });
+        }
+
+        // Cargar órdenes de trabajo
+        const ordersResponse = await fetch(`http://localhost:8080/api/work-orders/client/${selectedClientId}`);
+        const ordersResult = await ordersResponse.json();
+        if (ordersResult.success && ordersResult.data) {
+          console.log('✅ Órdenes de trabajo cargadas:', ordersResult.data.length);
+          setWorkOrdersData(ordersResult.data);
+          
+          // Actualizar estado global
+          const mappedOrders = ordersResult.data.map((wo: any) => ({
+            id: wo.ot_id?.toString(),
+            clientId: selectedClientId,
+            vehicleId: wo.vehiculo_id?.toString(),
+            status: wo.estado || 'pendiente',
+            createdAt: wo.fecha_creacion || new Date(),
+            description: wo.descripcion || ''
+          }));
+          dispatch({ type: 'SET_WORK_ORDERS', payload: mappedOrders });
+        }
+
+        // Cargar citas
+        const appointmentsResponse = await fetch(`http://localhost:8080/api/appointments`);
+        const appointmentsResult = await appointmentsResponse.json();
+        if (appointmentsResult.success && appointmentsResult.data) {
+          const clientAppointments = appointmentsResult.data.filter((a: any) => 
+            a.cliente_id?.toString() === selectedClientId
+          );
+          console.log('✅ Citas cargadas:', clientAppointments.length);
+          setAppointmentsData(clientAppointments);
+          
+          // Actualizar estado global
+          const mappedAppointments = clientAppointments.map((app: any) => ({
+            id: app.cita_id?.toString(),
+            clientId: selectedClientId,
+            vehicleId: app.vehiculo_id?.toString(),
+            date: app.fecha,
+            status: app.estado || 'scheduled'
+          }));
+          dispatch({ type: 'SET_APPOINTMENTS', payload: mappedAppointments });
+        }
+
+        // Cargar cotizaciones
+        const quotationsResponse = await fetch(`http://localhost:8080/api/quotations/client/${selectedClientId}`);
+        const quotationsResult = await quotationsResponse.json();
+        if (quotationsResult.success && quotationsResult.data) {
+          console.log('✅ Cotizaciones cargadas:', quotationsResult.data.length);
+          setQuotationsData(quotationsResult.data);
+          
+          // Actualizar estado global
+          const mappedQuotations = quotationsResult.data.map((q: any) => ({
+            id: q.cotizacion_id?.toString(),
+            clientId: selectedClientId,
+            vehicleId: q.vehiculo_id?.toString(),
+            total: q.total || 0,
+            status: q.estado || 'pending',
+            createdAt: q.fecha_creacion || new Date()
+          }));
+          dispatch({ type: 'SET_QUOTATIONS', payload: mappedQuotations });
+        }
+
+      } catch (error) {
+        console.error('❌ Error cargando datos relacionados:', error);
+      } finally {
+        setLoadingRelatedData(false);
+      }
+    };
+
+    loadClientRelatedData();
+  }, [selectedClientId, dispatch]);
 
   const selectedClient = selectedClientId ? data.getClientById(selectedClientId) : null;
   
@@ -86,7 +220,7 @@ export function ClientProfilePage() {
       monthlySpending,
       vehicleStats
     };
-  }, [selectedClientId, data]);
+  }, [selectedClientId, data, state.vehicles, state.workOrders, state.appointments, state.quotations, state.invoices]);
 
   const handleCompleteWorkOrder = (workOrderId: string) => {
     data.completeWorkOrderWithInvoice(workOrderId);
@@ -159,20 +293,53 @@ export function ClientProfilePage() {
       {/* Selector de Cliente */}
       <Card>
         <h3 className="text-lg font-medium mb-4">Seleccionar Cliente</h3>
-        <Select
-          value={selectedClientId}
-          onChange={(e) => setSelectedClientId(e.target.value)}
-          options={[
-            { value: '', label: 'Selecciona un cliente para ver su perfil completo...' },
-            ...data.clients.map(client => ({
-              value: client.id,
-              label: `${client.name} - ${client.email} - ${client.phone}`
-            }))
-          ]}
-        />
+        
+        {loadingClientes ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-600">Cargando clientes...</p>
+          </div>
+        ) : errorClientes ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600">Error al cargar clientes: {errorClientes}</p>
+          </div>
+        ) : data.clients.length === 0 ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-yellow-700">No hay clientes registrados en el sistema.</p>
+          </div>
+        ) : (
+          <Select
+            value={selectedClientId}
+            onChange={(e) => setSelectedClientId(e.target.value)}
+            options={[
+              { value: '', label: 'Selecciona un cliente para ver su perfil completo...' },
+              ...data.clients.map(client => ({
+                value: client.id,
+                label: `${client.name} - ${client.email} - ${client.phone}`
+              }))
+            ]}
+          />
+        )}
+        
+        {!loadingClientes && !errorClientes && data.clients.length > 0 && (
+          <p className="text-sm text-gray-500 mt-2">
+            {count} cliente{count !== 1 ? 's' : ''} disponible{count !== 1 ? 's' : ''}
+          </p>
+        )}
       </Card>
 
-      {selectedClient && clientData && (
+      {/* Indicador de carga de datos relacionados */}
+      {selectedClientId && loadingRelatedData && (
+        <Card>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 font-medium">Cargando información del cliente...</p>
+            <p className="text-sm text-gray-500 mt-1">Obteniendo vehículos, órdenes, citas y cotizaciones...</p>
+          </div>
+        </Card>
+      )}
+
+      {selectedClient && clientData && !loadingRelatedData && (
         <>
           {/* Header del Cliente */}
           <Card>

@@ -5,6 +5,9 @@ import usePendingInvoices from '../../hooks/usePendingInvoices';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 import { obtenerClientes } from '../../servicios/clientesApiService';
 import { vehiclesService } from '../../servicios/apiService';
+import Swal from 'sweetalert2';
+import invoicesService from '../../servicios/invoicesService';
+import { useApp } from '../../contexto/useApp';
 
 interface POSItem {
   id: string;
@@ -61,6 +64,7 @@ const categories = [
 ];
 
 const POSPage: React.FC = () => {
+  const { state } = useApp();
   const [posState, setPosState] = useState<POSState>({
     cart: [],
     selectedClient: null,
@@ -121,12 +125,14 @@ const POSPage: React.FC = () => {
   };
 
   const addPendingInvoiceToCart = (pendingInvoice: any) => {
+    const precio = Number(pendingInvoice.totalAmount) || Number(pendingInvoice.costoTotal) || Number(pendingInvoice.costoEstimado) || 0;
+    
     const invoiceItem: CartItem = {
       id: `invoice-${pendingInvoice.id}`,
       name: `Factura Pendiente - OT #${pendingInvoice.id?.slice(-8) || ''}`,
-      price: pendingInvoice.totalAmount || pendingInvoice.costoTotal,
+      price: precio,
       quantity: 1,
-      total: pendingInvoice.totalAmount || pendingInvoice.costoTotal,
+      total: precio,
       category: 'SERVICIOS',
       type: 'service'
     };
@@ -183,46 +189,86 @@ const POSPage: React.FC = () => {
 
   const handleCheckout = async () => {
     if (posState.cart.length === 0) {
-      alert('El carrito está vacío');
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Carrito vacío',
+        text: 'No hay productos o servicios en el carrito',
+        confirmButtonColor: '#3b82f6'
+      });
       return;
     }
 
+    // Paso 1: Confirmar el cobro
+    const confirmResult = await Swal.fire({
+      title: '¿Confirmar Cobro?',
+      html: `
+        <div style="text-align: left; margin: 20px 0;">
+          <p><strong>Cliente:</strong> ${posState.selectedClient?.name || 'CONSUMIDOR FINAL'}</p>
+          <p><strong>Subtotal:</strong> L ${posState.subtotal.toFixed(2)}</p>
+          ${posState.discount > 0 ? `<p><strong>Descuento:</strong> - L ${posState.discount.toFixed(2)}</p>` : ''}
+          <p><strong>ISV (15%):</strong> L ${posState.tax.toFixed(2)}</p>
+          <p style="font-size: 1.2em; margin-top: 10px;"><strong>TOTAL:</strong> L ${posState.total.toFixed(2)}</p>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: '✓ Confirmar Cobro',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
+    // Paso 2: Mostrar animación de generando factura
+    Swal.fire({
+      title: 'Generando Factura...',
+      html: '<div style="font-size: 3em;">📄</div>',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      willOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
     try {
-      // Separar productos y servicios (facturas pendientes)
-      const productItems = posState.cart.filter(item => item.type === 'product');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const serviceItems = posState.cart.filter(item => item.type === 'service');
 
-      // Crear la factura
-      const invoice = {
-        id: Date.now().toString(),
-        items: posState.cart,
-        client: posState.selectedClient,
+      // Crear la factura y guardarla
+      const newInvoice = invoicesService.createInvoice({
+        fecha: new Date().toISOString(),
+        clientId: posState.selectedClient?.id || null,
+        clientName: posState.selectedClient?.name || 'CONSUMIDOR FINAL',
+        items: posState.cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          type: item.type
+        })),
         subtotal: posState.subtotal,
         tax: posState.tax,
         discount: posState.discount,
         total: posState.total,
-        date: new Date(),
-        hasProducts: productItems.length > 0,
-        hasServices: serviceItems.length > 0
-      };
+        metodoPago: 'Efectivo',
+        createdBy: state.user?.name || 'Usuario'
+      });
 
-      console.log('Factura generada:', invoice);
-
-      // Procesar servicios facturados (órdenes de trabajo)
+      // Procesar servicios facturados
       for (const serviceItem of serviceItems) {
         if (serviceItem.id.startsWith('invoice-')) {
           const workOrderId = serviceItem.id.replace('invoice-', '');
           
           try {
-            // Marcar orden como facturada
             await markAsInvoiced(workOrderId);
             
-            // Buscar la orden original para obtener información completa
             const originalInvoice = pendingInvoices.find(inv => inv.id === workOrderId);
             if (originalInvoice) {
-              console.log('Datos de la factura original:', originalInvoice);
-              
-              // Registrar en el historial global de servicios
               const historyRecord = {
                 workOrderId: workOrderId,
                 clientId: originalInvoice.clienteId,
@@ -238,55 +284,69 @@ const POSPage: React.FC = () => {
                 serviceDescription: originalInvoice.descripcion || 'Servicio completado y facturado',
                 serviceCategory: originalInvoice.tipoServicio || 'Mantenimiento',
                 servicePrice: originalInvoice.costoTotal,
-                serviceDuration: '1 hora', // Valor por defecto
+                serviceDuration: '1 hora',
                 status: 'completed',
                 paymentStatus: 'paid',
-                invoiceId: invoice.id,
+                invoiceId: newInvoice.id,
                 invoiceTotal: posState.total,
                 date: new Date().toISOString(),
-                notes: `Facturado en POS el ${new Date().toLocaleDateString()} - Total: L.${posState.total.toFixed(2)}`
+                notes: `Facturado - Total: L.${posState.total.toFixed(2)}`
               };
 
-              console.log('Datos a enviar al historial:', historyRecord);
-
-              // Agregar al historial
               try {
-                const historyResult = await serviceHistoryService.addServiceHistory(historyRecord);
-                console.log('Resultado del historial:', historyResult);
-                if (historyResult.success) {
-                  console.log(`Servicio ${workOrderId} agregado al historial global exitosamente`);
-                } else {
-                  console.error('Error al agregar al historial:', historyResult.message);
-                }
+                await serviceHistoryService.addServiceHistory(historyRecord);
               } catch (historyError) {
                 console.error('Error al agregar al historial:', historyError);
-                // No fallar toda la operación por esto
               }
-            } else {
-              console.warn(`No se encontró la factura original para la orden ${workOrderId}`);
             }
-            
-            console.log(`Orden de trabajo ${workOrderId} marcada como facturada`);
           } catch (error) {
             console.error(`Error al marcar como facturada la orden ${workOrderId}:`, error);
-            throw error; // Re-lanzar para manejar en el catch principal
           }
         }
       }
 
-      alert(`Factura generada exitosamente por L.${posState.total.toFixed(2)}`);
+      // Limpiar carrito
       clearCart();
       setPosState(prev => ({ ...prev, selectedClient: null }));
       setDiscountPercentage(0);
 
-      // Actualizar lista de facturas pendientes
       if (serviceItems.length > 0) {
         refreshPendingInvoices();
+      }
+
+      Swal.close();
+
+      // Paso 3: Mostrar éxito y preguntar si quiere imprimir
+      const printResult = await Swal.fire({
+        icon: 'success',
+        title: '¡Factura Generada!',
+        html: `
+          <div style="text-align: left; margin: 20px 0;">
+            <p><strong>Número de Factura:</strong> ${newInvoice.numero}</p>
+            <p><strong>Total:</strong> L ${newInvoice.total.toFixed(2)}</p>
+            <p style="margin-top: 15px;">¿Desea imprimir la factura?</p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '🖨️ Imprimir',
+        cancelButtonText: 'No, gracias'
+      });
+
+      // Paso 4: Imprimir si lo solicitó
+      if (printResult.isConfirmed) {
+        invoicesService.printInvoice(newInvoice);
       }
       
     } catch (error) {
       console.error('Error durante el checkout:', error);
-      alert('Error al procesar la factura. Por favor, inténtelo de nuevo.');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error al procesar la factura. Por favor, inténtelo de nuevo.',
+        confirmButtonColor: '#ef4444'
+      });
     }
   };
 

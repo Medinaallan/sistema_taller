@@ -52,5 +52,32 @@
     "notes": "Facturado en POS el 2/12/2025 - Total: L.263.41",
     "createdAt": "2025-12-02T21:34:56.116Z",
     "updatedAt": "2025-12-02T21:34:56.116Z"
+  },
+  {
+    "id": "hist_1769213311352_menwyimc6",
+    "orderId": "12",
+    "workOrderId": "12",
+    "clientId": "20",
+    "clientName": "Usuario Test",
+    "clientEmail": "",
+    "clientPhone": "",
+    "vehicleId": "30",
+    "vehicleName": "Test20 Model20",
+    "vehiclePlate": "",
+    "vehicleColor": "",
+    "serviceId": "general",
+    "serviceName": "Servicio de Taller",
+    "serviceDescription": "Generada desde Cotización #25",
+    "servicePrice": 0,
+    "serviceDuration": "1 hora",
+    "serviceCategory": "corrective",
+    "date": "2026-01-24T00:08:31.350Z",
+    "status": "completed",
+    "paymentStatus": "paid",
+    "invoiceId": "invoice-1769213311334-tn8nf4u78",
+    "invoiceTotal": 3220,
+    "notes": "Facturado - Total: L.3220.00",
+    "createdAt": "2026-01-24T00:08:31.352Z",
+    "updatedAt": "2026-01-24T00:08:31.352Z"
   }
 ]

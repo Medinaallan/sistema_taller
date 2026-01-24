@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import workOrdersService, { type WorkOrderData } from '../servicios/workOrdersService';
 import { obtenerClientes } from '../servicios/clientesApiService';
-import { vehiclesService } from '../servicios/apiService';
+import { vehiclesService, servicesService } from '../servicios/apiService';
 
 interface PendingInvoice extends WorkOrderData {
   clientName: string;
@@ -19,14 +19,31 @@ export const usePendingInvoices = () => {
 
   const fetchClientAndVehicleInfo = async (workOrders: WorkOrderData[]): Promise<PendingInvoice[]> => {
     const enrichedOrders: PendingInvoice[] = [];
+    
+    const serviciosResponse = await servicesService.getAll();
+    const servicios = serviciosResponse.success ? serviciosResponse.data : [];
 
     for (const order of workOrders) {
-      // Los datos ya vienen correctamente mapeados del workOrdersService
+      let totalAmount = 0;
+      
+      if (order.id) {
+        try {
+          const tareas = await workOrdersService.getTareasByOT(order.id);
+          totalAmount = tareas.reduce((sum, tarea) => {
+            const servicio = servicios.find((s: any) => s.tipo_servicio_id === tarea.tipo_servicio_id);
+            const precio = servicio ? parseFloat(servicio.precio_base || servicio.basePrice || 0) : 0;
+            return sum + precio;
+          }, 0);
+        } catch (error) {
+          console.error('Error calculando costo:', error);
+        }
+      }
+
       enrichedOrders.push({
         ...order,
         clientName: order.nombreCliente || 'Cliente no especificado',
         vehicleName: order.nombreVehiculo || 'Vehículo no especificado',
-        totalAmount: order.costoTotal || 0,
+        totalAmount,
         clientEmail: '',
         clientPhone: '',
         vehiclePlate: '',
