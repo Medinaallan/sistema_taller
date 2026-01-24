@@ -242,9 +242,9 @@ export const useInterconnectedData = () => {
           total: workOrder.totalCost
         }
       ],
-      subtotal: workOrder.totalCost,
-      tax: workOrder.totalCost * 0.15, // ISV 15%
-      total: workOrder.totalCost * 1.15,
+      subtotal: workOrder.totalCost / 1.15, // Base gravable (ISV ya incluido en totalCost)
+      tax: (workOrder.totalCost / 1.15) * 0.15, // ISV 15% de la base
+      total: workOrder.totalCost, // Total con ISV incluido
       status: 'pending',
       createdAt: new Date(),
       updatedAt: new Date(),

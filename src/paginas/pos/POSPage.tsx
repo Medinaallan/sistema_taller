@@ -85,13 +85,19 @@ const POSPage: React.FC = () => {
   // Hook para manejar facturas pendientes
   const { pendingInvoices, loading: pendingLoading, markAsInvoiced, refreshPendingInvoices } = usePendingInvoices();
 
-  // Calcular totales
+  // Calcular totales (ISV incluido en el precio)
   useEffect(() => {
-    const subtotal = posState.cart.reduce((sum, item) => sum + item.total, 0);
-    const discountAmount = (subtotal * discountPercentage) / 100;
-    const subtotalAfterDiscount = subtotal - discountAmount;
-    const tax = subtotalAfterDiscount * taxRate;
-    const total = subtotalAfterDiscount + tax;
+    // El total del carrito ya incluye el ISV (precio con impuesto)
+    const totalConISV = posState.cart.reduce((sum, item) => sum + item.total, 0);
+    const discountAmount = (totalConISV * discountPercentage) / 100;
+    const totalConISVAfterDiscount = totalConISV - discountAmount;
+    
+    // Desglosar el ISV que ya está incluido en el precio
+    // Si Total = Base + ISV y ISV = Base * 0.15, entonces Total = Base * 1.15
+    // Por lo tanto: Base = Total / 1.15
+    const subtotal = totalConISVAfterDiscount / 1.15; // Base gravable (importe gravado)
+    const tax = subtotal * taxRate; // ISV = 15% de la base
+    const total = totalConISVAfterDiscount; // El total ya incluye el ISV
 
     setPosState(prev => ({
       ...prev,

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import workOrdersService, { type WorkOrderData } from '../servicios/workOrdersService';
 import { obtenerClientes } from '../servicios/clientesApiService';
 import { vehiclesService, servicesService } from '../servicios/apiService';
+import invoicePaymentManager from '../servicios/invoicePaymentManager';
 
 interface PendingInvoice extends WorkOrderData {
   clientName: string;
@@ -58,12 +59,19 @@ export const usePendingInvoices = () => {
     const fetchPendingInvoices = async () => {
       try {
         setLoading(true);
-        // Obtener órdenes de trabajo completadas pero no facturadas
+        
+        // Inicializar el gestor de pagos
+        await invoicePaymentManager.initialize();
+        
+        // Obtener IDs de facturas ya pagadas
+        const paidInvoiceIds = await invoicePaymentManager.getAllPaid();
+        
+        // Obtener órdenes de trabajo completadas
         const workOrders = await workOrdersService.getAllWorkOrders();
         
-        // Filtrar órdenes completadas que no tienen factura
+        // Filtrar órdenes completadas que NO están en la lista de pagadas
         const completed = workOrders.filter((order: WorkOrderData) => 
-          order.estado === 'Completada' && order.estadoPago !== 'completed'
+          order.estado === 'Completada' && !paidInvoiceIds.includes(order.id || '')
         );
 
         // Enriquecer con información de clientes y vehículos
@@ -82,9 +90,8 @@ export const usePendingInvoices = () => {
 
   const markAsInvoiced = async (workOrderId: string) => {
     try {
-      // Actualizar la orden como facturada
-      const updateData = { estadoPago: 'completed' as const };
-      await workOrdersService.updateWorkOrder(workOrderId, updateData);
+      // Marcar como pagada en el JSON
+      await invoicePaymentManager.markAsPaid(workOrderId);
       
       // Actualizar el estado local
       setPendingInvoices(prev => 
@@ -101,9 +108,12 @@ export const usePendingInvoices = () => {
   const refreshPendingInvoices = async () => {
     setLoading(true);
     try {
+      // Obtener IDs de facturas ya pagadas
+      const paidInvoiceIds = await invoicePaymentManager.getAllPaid();
+      
       const workOrders = await workOrdersService.getAllWorkOrders();
       const completed = workOrders.filter((order: WorkOrderData) => 
-        order.estado === 'Completada' && order.estadoPago !== 'completed'
+        order.estado === 'Completada' && !paidInvoiceIds.includes(order.id || '')
       );
 
       const enrichedInvoices = await fetchClientAndVehicleInfo(completed);

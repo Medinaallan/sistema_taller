@@ -20,6 +20,7 @@ const logsRoutes = require('./routes/logs');
 const workOrderStatesRoutes = require('./routes/workOrderStates');
 const workOrderAuthorizationsRoutes = require('./routes/workOrderAuthorizations');
 const signatureRequestsRoutes = require('./routes/signatureRequests');
+const invoicePaymentsRoutes = require('./routes/invoicePayments');
 
 const app = express();
 const server = http.createServer(app);
@@ -67,6 +68,7 @@ app.use('/api/logs', logsRoutes);
 app.use('/api/workorder-states', workOrderStatesRoutes);
 app.use('/api/workorder-authorizations', workOrderAuthorizationsRoutes);
 app.use('/api/signature-requests', signatureRequestsRoutes);
+app.use('/api/invoice-payments', invoicePaymentsRoutes);
 
 // Ruta de salud
 app.get('/api/health', (req, res) => {

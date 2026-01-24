@@ -393,17 +393,113 @@ router.post('/', (req, res) => {
 });
 
 // PUT - Actualizar orden de trabajo
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    res.status(501).json({ 
-      success: false, 
-      message: 'Este endpoint necesita ser implementado con SP (Stored Procedure)',
-      note: 'Por favor, crear SP_ACTUALIZAR_ORDEN_TRABAJO',
-      orderId: id
+    const updateData = req.body;
+    
+    console.log(`🔄 Actualizando orden de trabajo ${id}:`, updateData);
+
+    const pool = await getConnection();
+    
+    // Construir la consulta de actualización dinámicamente
+    const updates = [];
+    const request = pool.request().input('ot_id', sql.Int, parseInt(id));
+    
+    // Campos que se pueden actualizar
+    if (updateData.estadoPago !== undefined) {
+      updates.push('estado_pago = @estadoPago');
+      request.input('estadoPago', sql.VarChar(50), updateData.estadoPago);
+    }
+    if (updateData.estado !== undefined) {
+      updates.push('estado = @estado');
+      request.input('estado', sql.VarChar(50), updateData.estado);
+    }
+    if (updateData.descripcion !== undefined) {
+      updates.push('descripcion = @descripcion');
+      request.input('descripcion', sql.VarChar(sql.MAX), updateData.descripcion);
+    }
+    if (updateData.costoTotal !== undefined) {
+      updates.push('costo_total = @costoTotal');
+      request.input('costoTotal', sql.Decimal(10, 2), parseFloat(updateData.costoTotal));
+    }
+    if (updateData.costoManoObra !== undefined) {
+      updates.push('costo_mano_obra = @costoManoObra');
+      request.input('costoManoObra', sql.Decimal(10, 2), parseFloat(updateData.costoManoObra));
+    }
+    if (updateData.costoPartes !== undefined) {
+      updates.push('costo_partes = @costoPartes');
+      request.input('costoPartes', sql.Decimal(10, 2), parseFloat(updateData.costoPartes));
+    }
+    
+    // Si no hay nada que actualizar, devolver error
+    if (updates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No hay campos para actualizar'
+      });
+    }
+    
+    // Ejecutar la actualización
+    const query = `
+      UPDATE orden_trabajo 
+      SET ${updates.join(', ')}, fecha_actualizacion = GETDATE()
+      WHERE ot_id = @ot_id
+    `;
+    
+    await request.query(query);
+    
+    // Obtener la orden actualizada
+    const result = await pool.request()
+      .input('ot_id', sql.Int, parseInt(id))
+      .query(`
+        SELECT 
+          ot_id as id,
+          cliente_id as clienteId,
+          vehiculo_id as vehiculoId,
+          servicio_id as servicioId,
+          cita_id as citaId,
+          cotizacion_id as cotizacionId,
+          numero_ot as numeroOT,
+          descripcion,
+          estado,
+          prioridad,
+          tipo_servicio as tipoServicio,
+          costo_estimado as costoEstimado,
+          costo_total as costoTotal,
+          costo_mano_obra as costoManoObra,
+          costo_partes as costoPartes,
+          estado_pago as estadoPago,
+          fecha_inicio as fechaInicio,
+          fecha_fin_estimada as fechaFinEstimada,
+          fecha_fin_real as fechaFinReal,
+          fecha_creacion as fechaCreacion,
+          fecha_actualizacion as fechaActualizacion
+        FROM orden_trabajo
+        WHERE ot_id = @ot_id
+      `);
+    
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Orden de trabajo no encontrada'
+      });
+    }
+    
+    console.log('✅ Orden de trabajo actualizada exitosamente');
+    
+    res.json({
+      success: true,
+      message: 'Orden de trabajo actualizada exitosamente',
+      data: result.recordset[0]
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al actualizar orden de trabajo', error: error.message });
+    console.error('❌ Error actualizando orden de trabajo:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al actualizar orden de trabajo', 
+      error: error.message 
+    });
   }
 });
 
