@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   BuildingOfficeIcon,
   MapPinIcon,
@@ -6,6 +6,7 @@ import {
   IdentificationIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
+import { companyConfigService } from '../../../servicios/companyConfigService';
 
 interface CompanyData {
   businessName: string;
@@ -54,6 +55,24 @@ export function CompanyDataSection() {
   const [companyData, setCompanyData] = useState<CompanyData>(initialCompanyData);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<CompanyData>(initialCompanyData);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadCompanyData();
+  }, []);
+
+  const loadCompanyData = async () => {
+    try {
+      await companyConfigService.initialize();
+      const data = companyConfigService.getCompanyInfo();
+      if (data) {
+        setCompanyData(data as CompanyData);
+        setEditData(data as CompanyData);
+      }
+    } catch (error) {
+      console.error('Error al cargar datos de la empresa:', error);
+    }
+  };
 
   const handleInputChange = (field: keyof CompanyData, value: string) => {
     setEditData(prev => ({
@@ -62,9 +81,23 @@ export function CompanyDataSection() {
     }));
   };
 
-  const handleSave = () => {
-    setCompanyData(editData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const result = await companyConfigService.updateCompanyInfo(editData);
+      if (result.success) {
+        setCompanyData(editData);
+        setIsEditing(false);
+        alert('Datos guardados correctamente');
+      } else {
+        alert('Error al guardar: ' + result.message);
+      }
+    } catch (error) {
+      alert('Error al guardar los datos');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {

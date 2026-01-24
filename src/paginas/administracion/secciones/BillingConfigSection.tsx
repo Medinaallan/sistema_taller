@@ -1,65 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, Button, Input, Select } from '../../../componentes/comunes/UI';
+import { showError, showSuccess, showWarning, showConfirm } from '../../../utilidades/sweetAlertHelpers';
+import companyConfigService, {
+  type CompanyInfo,
+  type BillingConfig as BillingConfigType,
+  type CAIConfig as CAIConfigType
+} from '../../../servicios/companyConfigService';
 
-interface CAIConfig {
+interface CAIFormData {
   cai: string;
   fechaLimiteEmision: string;
-  rangeFrom: string;
-  rangeTo: string;
-  currentNumber: string;
+  rangoInicial: string;
+  rangoFinal: string;
+  numeroActual: string;
   tipoDocumento: 'factura' | 'nota-debito' | 'nota-credito' | 'nota-remision' | 'comprobante-retencion';
   puntoEmision: string;
   establecimiento: string;
 }
 
-interface CompanyData {
-  businessName: string;
-  tradeName: string;
-  rtn: string;
-  address: string;
-  city: string;
-  state: string;
-  phone: string;
-  email: string;
-}
-
-interface BillingConfig {
-  regimenFiscal: 'normal' | 'simplificado' | 'opcional';
-  obligadoLlevarContabilidad: boolean;
-  contribuyenteISV: boolean;
-  agenteRetencionISV: boolean;
-  sujetoPercepcionISV: boolean;
-  cais: CAIConfig[];
-}
-
-// Datos de la empresa simulados (normalmente vendrían del contexto global o API)
-const mockCompanyData: CompanyData = {
-  businessName: 'Taller Mecánico XD',
-  tradeName: 'La Esperanza',
-  rtn: '1001200300188',
-  address: 'Col. Las Flores, Calle Principal #123',
-  city: 'LA ESPERANZA',
-  state: 'INTIBUCA',
-  phone: '2783-5678',
-  email: 'info@talleresp.com'
-};
-
 export function BillingConfigSection() {
-  const [config, setConfig] = useState<BillingConfig>({
-    regimenFiscal: 'normal',
-    obligadoLlevarContabilidad: true,
-    contribuyenteISV: true,
-    agenteRetencionISV: false,
-    sujetoPercepcionISV: false,
-    cais: []
-  });
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+  const [config, setConfig] = useState<BillingConfigType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [newCAI, setNewCAI] = useState<CAIConfig>({
+  const [newCAI, setNewCAI] = useState<CAIFormData>({
     cai: '',
     fechaLimiteEmision: '',
-    rangeFrom: '',
-    rangeTo: '',
-    currentNumber: '',
+    rangoInicial: '',
+    rangoFinal: '',
+    numeroActual: '',
     tipoDocumento: 'factura',
     puntoEmision: '001',
     establecimiento: '001'
@@ -67,8 +36,28 @@ export function BillingConfigSection() {
 
   const [showCAIForm, setShowCAIForm] = useState(false);
 
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    try {
+      setLoading(true);
+      await companyConfigService.initialize();
+      const fullConfig = companyConfigService.getConfig();
+      setCompanyInfo(fullConfig.companyInfo);
+      setConfig(fullConfig.billingConfig);
+    } catch (error) {
+      console.error('Error cargando configuración:', error);
+      showError('Error al cargar la configuración');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Función para obtener el código numérico del tipo de documento
-  const getDocumentCode = (tipoDocumento: CAIConfig['tipoDocumento']): string => {
+  const getDocumentCode = (tipoDocumento: CAIFormData['tipoDocumento']): string => {
     const codes = {
       'factura': '01',
       'nota-debito': '02',
@@ -80,7 +69,7 @@ export function BillingConfigSection() {
   };
 
   // Función para obtener el nombre legible del tipo de documento
-  const getDocumentTypeName = (tipoDocumento: CAIConfig['tipoDocumento']): string => {
+  const getDocumentTypeName = (tipoDocumento: CAIFormData['tipoDocumento']): string => {
     const names = {
       'factura': 'Factura',
       'nota-debito': 'Nota de Débito',
@@ -91,49 +80,86 @@ export function BillingConfigSection() {
     return names[tipoDocumento] || 'Factura';
   };
 
-  const handleConfigChange = (field: keyof BillingConfig, value: any) => {
-    setConfig(prev => ({
-      ...prev,
+  const handleConfigChange = (field: keyof BillingConfigType, value: any) => {
+    if (!config) return;
+    
+    const updatedConfig = {
+      ...config,
       [field]: value
-    }));
+    };
+    setConfig(updatedConfig);
   };
 
-  const handleCAIChange = (field: keyof CAIConfig, value: string) => {
+  const handleCAIChange = (field: keyof CAIFormData, value: string) => {
     setNewCAI(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const addCAI = () => {
-    if (!newCAI.cai || !newCAI.fechaLimiteEmision || !newCAI.rangeFrom || !newCAI.rangeTo) {
-      alert('Por favor complete todos los campos obligatorios del CAI');
+  const addCAI = async () => {
+    if (!newCAI.cai || !newCAI.fechaLimiteEmision || !newCAI.rangoInicial || !newCAI.rangoFinal) {
+      showError('Por favor complete todos los campos obligatorios del CAI');
       return;
     }
 
-    setConfig(prev => ({
-      ...prev,
-      cais: [...prev.cais, { ...newCAI }]
-    }));
+    try {
+      const caiData: Omit<CAIConfigType, 'id'> = {
+        cai: newCAI.cai,
+        fechaLimiteEmision: newCAI.fechaLimiteEmision,
+        rangoInicial: newCAI.rangoInicial,
+        rangoFinal: newCAI.rangoFinal,
+        numeroActual: newCAI.numeroActual || newCAI.rangoInicial,
+        tipoDocumento: newCAI.tipoDocumento,
+        puntoEmision: newCAI.puntoEmision,
+        establecimiento: newCAI.establecimiento,
+        activo: true
+      };
 
-    setNewCAI({
-      cai: '',
-      fechaLimiteEmision: '',
-      rangeFrom: '',
-      rangeTo: '',
-      currentNumber: '',
-      tipoDocumento: 'factura',
-      puntoEmision: '001',
-      establecimiento: '001'
-    });
-    setShowCAIForm(false);
+      const result = await companyConfigService.addCAI(caiData);
+      
+      if (result.success) {
+        // Actualizar el estado local
+        await loadConfig();
+
+        setNewCAI({
+          cai: '',
+          fechaLimiteEmision: '',
+          rangoInicial: '',
+          rangoFinal: '',
+          numeroActual: '',
+          tipoDocumento: 'factura',
+          puntoEmision: '001',
+          establecimiento: '001'
+        });
+        setShowCAIForm(false);
+        showSuccess('CAI agregado exitosamente');
+      } else {
+        showError(result.message || 'Error al agregar el CAI');
+      }
+    } catch (error) {
+      console.error('Error agregando CAI:', error);
+      showError('Error al agregar el CAI');
+    }
   };
 
-  const removeCAI = (index: number) => {
-    setConfig(prev => ({
-      ...prev,
-      cais: prev.cais.filter((_, i) => i !== index)
-    }));
+  const removeCAI = async (caiId: string) => {
+    if (!await showConfirm('¿Está seguro de que desea eliminar este CAI?')) {
+      return;
+    }
+
+    try {
+      const result = await companyConfigService.deleteCAI(caiId);
+      if (result.success) {
+        await loadConfig();
+        showSuccess('CAI eliminado exitosamente');
+      } else {
+        showError(result.message || 'No se pudo eliminar el CAI');
+      }
+    } catch (error) {
+      console.error('Error eliminando CAI:', error);
+      showError('Error al eliminar el CAI');
+    }
   };
 
   const validateRTN = (rtn: string): boolean => {
@@ -150,27 +176,63 @@ export function BillingConfigSection() {
     return cleaned;
   };
 
-  const handleSave = () => {
-    // Validar que los datos de la empresa estén configurados
-    if (!mockCompanyData.rtn || !validateRTN(mockCompanyData.rtn)) {
-      alert('RTN de la empresa no válido. Por favor configure primero los datos de la empresa.');
+  const handleSave = async () => {
+    if (!config || !companyInfo) {
+      showError('Error: No se ha cargado la configuración');
       return;
     }
 
-    if (!mockCompanyData.businessName || !mockCompanyData.address) {
-      alert('Faltan datos obligatorios de la empresa. Por favor configure primero los datos de la empresa.');
+    // Validar que los datos de la empresa estén configurados
+    if (!companyInfo.rtn || !validateRTN(companyInfo.rtn)) {
+      showError('RTN de la empresa no válido. Por favor configure primero los datos de la empresa.');
+      return;
+    }
+
+    if (!companyInfo.businessName || !companyInfo.address) {
+      showError('Faltan datos obligatorios de la empresa. Por favor configure primero los datos de la empresa.');
       return;
     }
 
     if (config.cais.length === 0) {
-      alert('Debe configurar al menos un CAI para poder facturar');
+      showWarning('Debe configurar al menos un CAI para poder facturar');
       return;
     }
 
-    // Aquí se guardaría la configuración
-    console.log('Configuración de facturación guardada:', config);
-    alert('Configuración de facturación guardada exitosamente');
+    try {
+      // Guardar la configuración de facturación
+      const result = await companyConfigService.updateBillingConfig(config);
+      if (result.success) {
+        showSuccess('Configuración de facturación guardada exitosamente');
+      } else {
+        showError(result.message || 'Error al guardar la configuración');
+      }
+    } catch (error) {
+      console.error('Error guardando configuración:', error);
+      showError('Error al guardar la configuración');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando configuración...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!config || !companyInfo) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">Error al cargar la configuración</p>
+        <Button onClick={loadConfig} className="mt-4">
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -197,27 +259,27 @@ export function BillingConfigSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <p className="text-sm font-medium text-gray-700">RTN (Registro Tributario Nacional)</p>
-                <p className="text-lg text-gray-900 font-mono">{formatRTN(mockCompanyData.rtn)}</p>
+                <p className="text-lg text-gray-900 font-mono">{formatRTN(companyInfo.rtn)}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">Nombre Comercial</p>
-                <p className="text-lg text-gray-900">{mockCompanyData.tradeName}</p>
+                <p className="text-lg text-gray-900">{companyInfo.tradeName}</p>
               </div>
               <div className="md:col-span-2">
                 <p className="text-sm font-medium text-gray-700">Razón Social</p>
-                <p className="text-lg text-gray-900">{mockCompanyData.businessName}</p>
+                <p className="text-lg text-gray-900">{companyInfo.businessName}</p>
               </div>
               <div className="md:col-span-2">
                 <p className="text-sm font-medium text-gray-700">Dirección Fiscal</p>
-                <p className="text-lg text-gray-900">{mockCompanyData.address}, {mockCompanyData.city}, {mockCompanyData.state}</p>
+                <p className="text-lg text-gray-900">{companyInfo.address}, {companyInfo.city}, {companyInfo.state}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">Teléfono</p>
-                <p className="text-lg text-gray-900">{mockCompanyData.phone}</p>
+                <p className="text-lg text-gray-900">{companyInfo.phone}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700">Correo Electrónico</p>
-                <p className="text-lg text-gray-900">{mockCompanyData.email}</p>
+                <p className="text-lg text-gray-900">{companyInfo.email}</p>
               </div>
             </div>
             
@@ -243,7 +305,7 @@ export function BillingConfigSection() {
               <Select
                 label="Régimen Fiscal"
                 value={config.regimenFiscal}
-                onChange={(e) => handleConfigChange('regimenFiscal', e.target.value as BillingConfig['regimenFiscal'])}
+                onChange={(e) => handleConfigChange('regimenFiscal', e.target.value as BillingConfigType['regimenFiscal'])}
                 options={[
                   { value: 'normal', label: 'Régimen Normal' },
                   { value: 'simplificado', label: 'Régimen Simplificado' },
@@ -325,8 +387,8 @@ export function BillingConfigSection() {
           {/* Lista de CAIs existentes */}
           {config.cais.length > 0 && (
             <div className="space-y-4 mb-6">
-              {config.cais.map((cai, index) => (
-                <div key={index} className="border rounded-lg p-4 bg-gray-50">
+              {config.cais.map((cai) => (
+                <div key={cai.id} className="border rounded-lg p-4 bg-gray-50">
                   <div className="flex justify-between items-start">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
                       <div>
@@ -341,19 +403,28 @@ export function BillingConfigSection() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700">Rango</p>
-                        <p className="text-sm text-gray-900">{cai.rangeFrom} - {cai.rangeTo}</p>
+                        <p className="text-sm text-gray-900">{cai.rangoInicial} - {cai.rangoFinal}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700">Vencimiento</p>
                         <p className="text-sm text-gray-900">{cai.fechaLimiteEmision}</p>
                       </div>
                     </div>
-                    <Button
-                      onClick={() => removeCAI(index)}
-                      className="ml-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-sm"
-                    >
-                      Eliminar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        cai.activo 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {cai.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                      <Button
+                        onClick={() => removeCAI(cai.id)}
+                        className="ml-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-sm"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -420,17 +491,22 @@ export function BillingConfigSection() {
                 </div>
                 <Input
                   label="Desde (Número)*"
-                  value={newCAI.rangeFrom}
-                  onChange={(e) => handleCAIChange('rangeFrom', e.target.value)}
-                  placeholder="00000001"
-                  maxLength={8}
+                  value={newCAI.rangoInicial}
+                  onChange={(e) => handleCAIChange('rangoInicial', e.target.value)}
+                  placeholder="FAC-00000001"
                 />
                 <Input
                   label="Hasta (Número)*"
-                  value={newCAI.rangeTo}
-                  onChange={(e) => handleCAIChange('rangeTo', e.target.value)}
-                  placeholder="10000000"
-                  maxLength={8}
+                  value={newCAI.rangoFinal}
+                  onChange={(e) => handleCAIChange('rangoFinal', e.target.value)}
+                  placeholder="FAC-99999999"
+                />
+                <Input
+                  label="Número Actual"
+                  value={newCAI.numeroActual}
+                  onChange={(e) => handleCAIChange('numeroActual', e.target.value)}
+                  placeholder="FAC-00000001"
+                  helperText="Se usará el rango inicial si se deja vacío"
                 />
               </div>
               <div className="flex justify-end space-x-3 mt-4">

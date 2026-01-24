@@ -9,6 +9,7 @@ import {
   WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 import { servicesService, vehiclesService, appointmentsService } from '../../servicios/apiService';
 
@@ -303,22 +304,22 @@ export function ClientAppointmentsPage() {
     e.preventDefault();
 
     if (!state?.user?.id) {
-      alert('No se puede agendar la cita: usuario no identificado');
+      showError('No se puede agendar la cita: usuario no identificado');
       return;
     }
 
     if (!formData.vehicleId) {
-      alert('Selecciona un vehículo antes de agendar la cita');
+      showWarning('Selecciona un vehículo antes de agendar la cita');
       return;
     }
 
     if (!formData.serviceType) {
-      alert('Selecciona un tipo de servicio');
+      showWarning('Selecciona un tipo de servicio');
       return;
     }
 
     if (!formData.preferredDate || !formData.preferredTime) {
-      alert('Selecciona fecha y hora preferida');
+      showWarning('Selecciona fecha y hora preferida');
       return;
     }
 
@@ -350,7 +351,7 @@ export function ClientAppointmentsPage() {
       
       // Validar que los IDs sean números válidos
       if (isNaN(payload.vehiculo_id) || isNaN(payload.tipo_servicio_id)) {
-        alert('Error: Los IDs de vehículo o servicio no son válidos. Por favor, selecciona nuevamente.');
+        showError('Error: Los IDs de vehículo o servicio no son válidos. Por favor, selecciona nuevamente.');
         console.error('IDs inválidos:', {
           vehiculo_id: payload.vehiculo_id,
           tipo_servicio_id: payload.tipo_servicio_id,
@@ -361,7 +362,7 @@ export function ClientAppointmentsPage() {
 
       const res = await appointmentsService.create(payload as any);
       if (res.success) {
-        alert('Cita creada correctamente. El administrador la verá para confirmar.');
+        showSuccess('Cita creada correctamente. El administrador la verá para confirmar.');
         
         // Agregar la nueva cita al estado local inmediatamente
         const vehicle = clientVehicles.find(v => v.id === formData.vehicleId);
@@ -399,11 +400,11 @@ export function ClientAppointmentsPage() {
         });
       } else {
         console.error('Error creando cita:', res.message, res);
-        alert('Error al crear la cita: ' + (res.message || 'Error desconocido'));
+        showError('Error al crear la cita: ' + (res.message || 'Error desconocido'));
       }
     } catch (error) {
       console.error('Error creando cita:', error);
-      alert('No se pudo conectar con el servidor al crear la cita');
+      showError('No se pudo conectar con el servidor al crear la cita');
     }
   };
 

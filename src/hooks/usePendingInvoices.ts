@@ -42,6 +42,7 @@ export const usePendingInvoices = () => {
 
       enrichedOrders.push({
         ...order,
+        clienteId: order.clienteId, // Preservar el clienteId original
         clientName: order.nombreCliente || 'Cliente no especificado',
         vehicleName: order.nombreVehiculo || 'Vehículo no especificado',
         totalAmount,

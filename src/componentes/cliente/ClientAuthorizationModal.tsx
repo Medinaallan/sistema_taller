@@ -8,6 +8,7 @@ import {
 import { Modal, Button, TextArea } from '../comunes/UI';
 import { WorkOrderAuthorization, workOrderAuthorizationsService } from '../../servicios/workOrderAuthorizationsService';
 import { workOrdersService } from '../../servicios/workOrdersService';
+import { showError, showSuccess } from '../../utilidades/sweetAlertHelpers';
 
 interface ClientAuthorizationModalProps {
   isOpen: boolean;
@@ -48,9 +49,9 @@ export default function ClientAuthorizationModal({
         await workOrdersService.changeStatus(authorization.otId, 'En espera de aprobación');
       }
 
-      alert(action === 'approved' 
-        ? '✅ Autorización aprobada. El trabajo continuará.' 
-        : '❌ Autorización rechazada. El taller será notificado.'
+      showSuccess(action === 'approved' 
+        ? 'Autorización aprobada. El trabajo continuará.' 
+        : 'Autorización rechazada. El taller será notificado.'
       );
 
       setComments('');
@@ -58,7 +59,7 @@ export default function ClientAuthorizationModal({
       onClose();
     } catch (error) {
       console.error('Error respondiendo autorización:', error);
-      alert('Error al enviar respuesta: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error al enviar respuesta: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setResponding(false);
       setShowConfirmation(false);

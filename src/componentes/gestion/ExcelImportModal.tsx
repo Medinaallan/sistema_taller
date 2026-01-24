@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, Download, FileSpreadsheet, Users, Car, AlertCircle, CheckCircle, X } from 'lucide-react';
 import ProgressBar from '../ui/ProgressBar';
 import DataPreviewModal from './DataPreviewModal';
+import { showError, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface ImportStats {
   clientsProcessed: number;
@@ -46,7 +47,7 @@ const ExcelImportModal: React.FC<{
                  file.type === 'application/vnd.ms-excel')) {
       processFileForPreview(file);
     } else {
-      alert('Por favor seleccione un archivo Excel (.xlsx o .xls)');
+      showWarning('Por favor seleccione un archivo Excel (.xlsx o .xls)');
     }
   };
 
@@ -101,7 +102,7 @@ const ExcelImportModal: React.FC<{
 
   const handleConfirmImport = async () => {
     if (!previewData?.tempFilePath) {
-      alert('Error: No se encontró el archivo temporal');
+      showError('Error: No se encontró el archivo temporal');
       return;
     }
 
@@ -158,10 +159,10 @@ const ExcelImportModal: React.FC<{
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
       } else {
-        alert('Error descargando plantilla');
+        showError('Error descargando plantilla');
       }
     } catch (error) {
-      alert('Error descargando plantilla');
+      showError('Error descargando plantilla');
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Modal, Button } from '../comunes/UI';
 import signatureRequestsService, { SignatureRequest } from '../../servicios/signatureRequestsService';
+import { showError, showSuccess, showWarning, showConfirm } from '../../utilidades/sweetAlertHelpers';
 
 interface ClientSignatureModalProps {
   isOpen: boolean;
@@ -111,7 +112,7 @@ export const ClientSignatureModal: React.FC<ClientSignatureModalProps> = ({
 
   const handleSign = async () => {
     if (!hasSignature) {
-      alert('Por favor, firma el documento antes de continuar');
+      showWarning('Por favor, firma el documento antes de continuar');
       return;
     }
 
@@ -125,20 +126,20 @@ export const ClientSignatureModal: React.FC<ClientSignatureModalProps> = ({
 
       await signatureRequestsService.signRequest(signatureRequest.otId, signatureDataUrl);
 
-      alert('Autorización firmada exitosamente. El vehículo puede pasar a Control de Calidad.');
+      showSuccess('Autorización firmada exitosamente. El vehículo puede pasar a Control de Calidad.');
       
       onSigned();
       onClose();
     } catch (error) {
       console.error('Error firmando autorización:', error);
-      alert('Error al firmar la autorización');
+      showError('Error al firmar la autorización');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleReject = async () => {
-    if (!confirm('¿Estás seguro de que deseas rechazar esta autorización?')) {
+    if (!await showConfirm('¿Estás seguro de que deseas rechazar esta autorización?')) {
       return;
     }
 
@@ -146,12 +147,12 @@ export const ClientSignatureModal: React.FC<ClientSignatureModalProps> = ({
 
     try {
       await signatureRequestsService.rejectRequest(signatureRequest.otId);
-      alert('Autorización rechazada.');
+      showSuccess('Autorización rechazada.');
       onSigned(); // Refresh
       onClose();
     } catch (error) {
       console.error('Error rechazando autorización:', error);
-      alert('Error al rechazar la autorización');
+      showError('Error al rechazar la autorización');
     } finally {
       setIsSubmitting(false);
     }

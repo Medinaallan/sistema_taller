@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { mockSuppliers } from '../../utilidades/globalMockDatabase';
+import { showAlert } from '../../utilidades/sweetAlertHelpers';
 import type { Supplier } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -17,7 +18,7 @@ const SuppliersPage = () => {
   const [data, setData] = useState<Supplier[]>(mockSuppliers);
 
   const handleEdit = (item: Supplier) => {
-    alert('Editar proveedor: ' + item.id);
+    showAlert('Editar proveedor: ' + item.id);
   };
   
   const handleDelete = (item: Supplier) => {
@@ -25,7 +26,7 @@ const SuppliersPage = () => {
   };
 
   return (
-    <Card title="Proveedores" actions={<Button onClick={() => alert('Nuevo registro')}>Nuevo</Button>}>
+    <Card title="Proveedores" actions={<Button onClick={() => showAlert('Nuevo registro')}>Nuevo</Button>}>
       <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
     </Card>
   );

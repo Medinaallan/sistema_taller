@@ -8,6 +8,7 @@ import CreateQuotationModal from '../../componentes/quotations/CreateQuotationMo
 import AppointmentActions from '../../componentes/appointments/AppointmentActions';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
+import { showError, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import { useBusinessLogs } from '../../hooks/useBusinessLogs';
 type AppointmentWithNames = Appointment & {
   clientName?: string;
@@ -169,7 +170,7 @@ const AppointmentsPage = () => {
   };;
   
   const handleDelete = async (item: Appointment) => {
-    if (window.confirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
+    if (await showConfirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
       try {
         // Obtener información para el log antes de eliminar
         const cliente = clientesAPI.find((c: any) => String(c.id || c.usuario_id) === String(item.clientId));
@@ -199,11 +200,11 @@ const AppointmentsPage = () => {
           // Recargar la lista después de eliminar
           await loadAppointments();
         } else {
-          alert('Error al eliminar la cita: ' + response.message);
+          showError('Error al eliminar la cita: ' + response.message);
         }
       } catch (error) {
         console.error('Error eliminando cita:', error);
-        alert('Error al eliminar la cita');
+        showError('Error al eliminar la cita');
       }
     }
   };

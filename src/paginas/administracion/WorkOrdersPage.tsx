@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, StopIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../componentes/comunes/UI';
+import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderModal';
 import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
 import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
@@ -66,7 +67,7 @@ const WorkOrdersPage = () => {
       await loadOrderCosts(orders);
     } catch (err) {
       console.error(' Error cargando órdenes de trabajo:', err);
-      alert('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -193,7 +194,7 @@ const WorkOrdersPage = () => {
       setIsAdditionalQuotationModalOpen(true);
       setAdminPassword('');
     } else {
-      alert('Contraseña incorrecta');
+      showError('Contraseña incorrecta');
       setAdminPassword('');
     }
   };
@@ -301,12 +302,12 @@ const WorkOrdersPage = () => {
       // Cambiar estado de la OT a "En espera de aprobación"
       await workOrdersService.changeStatus(selectedOrderForDecision.id!, 'En espera de aprobación');
 
-      alert('✅ Solicitud de firma enviada al cliente. El cliente podrá firmar la autorización desde su panel.');
+      showSuccess('Solicitud de firma enviada al cliente. El cliente podrá firmar la autorización desde su panel.');
       await loadWorkOrders();
       setSelectedOrderForDecision(null);
     } catch (error) {
       console.error('Error enviando solicitud al cliente:', error);
-      alert('Error al enviar solicitud al cliente');
+      showError('Error al enviar solicitud al cliente');
     }
   };
 
@@ -315,11 +316,11 @@ const WorkOrdersPage = () => {
       try {
         // Cambiar estado de la OT a "Control de calidad"
         await workOrdersService.changeStatus(selectedOrderForQC.id, 'Control de calidad');
-        alert('Vehículo movido a Control de Calidad exitosamente');
+        showSuccess('Vehículo movido a Control de Calidad exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (error) {
         console.error('Error moviendo a control de calidad:', error);
-        alert('Error al cambiar estado');
+        showError('Error al cambiar estado');
       }
     }
   };
@@ -331,37 +332,37 @@ const WorkOrdersPage = () => {
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
-    if (confirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
+    if (await showConfirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
         await workOrdersService.completeWorkOrder(orderId);
-        alert('Orden de trabajo completada exitosamente');
+        showSuccess('Orden de trabajo completada exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
-        alert('Error completando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+        showError('Error completando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
     }
   };
 
   const handleDeleteWorkOrder = async (orderId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar esta orden de trabajo?')) {
+    if (await showConfirm('¿Estás seguro de que quieres eliminar esta orden de trabajo?')) {
       try {
         await workOrdersService.deleteWorkOrder(orderId);
-        alert('Orden de trabajo eliminada exitosamente');
+        showSuccess('Orden de trabajo eliminada exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
-        alert('Error eliminando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+        showError('Error eliminando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
     }
   };
 
   const handlePauseWorkOrder = async (orderId: string) => {
-    if (confirm('¿Estás seguro de que quieres pausar esta orden de trabajo?')) {
+    if (await showConfirm('¿Estás seguro de que quieres pausar esta orden de trabajo?')) {
       try {
         await workOrdersService.changeStatus(orderId, 'En espera de repuestos');
-        alert('Orden de trabajo pausada exitosamente');
+        showSuccess('Orden de trabajo pausada exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
-        alert('Error pausando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+        showError('Error pausando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
     }
   };
@@ -1032,11 +1033,11 @@ function AdditionalQuotationForm({ workOrder, onClose }: AdditionalQuotationForm
       // Enviar notificación al chat del cliente
       await sendQuotationToClientChat(additionalQuotation, workOrder);
 
-      alert('Cotización adicional creada y enviada al cliente exitosamente');
+      showSuccess('Cotización adicional creada y enviada al cliente exitosamente');
       onClose();
     } catch (error) {
       console.error('Error creando cotización adicional:', error);
-      alert('Error al crear la cotización adicional');
+      showError('Error al crear la cotización adicional');
     } finally {
       setLoading(false);
     }

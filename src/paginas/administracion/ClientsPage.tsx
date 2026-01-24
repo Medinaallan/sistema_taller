@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
-
+import { showError, showSuccess, showAlert, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import ExcelImportModal from '../../componentes/gestion/ExcelImportModal';
 import { useApp } from '../../contexto/useApp';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
@@ -289,7 +289,7 @@ export function ClientsPage() {
       ? `Este cliente tiene ${vehicleCount} vehículo(s) y ${workOrderCount} orden(es) de trabajo. ¿Estás seguro de que deseas eliminar el cliente y todos sus datos relacionados?`
       : '¿Estás seguro de que deseas eliminar este cliente?';
 
-    if (window.confirm(confirmMessage)) {
+    if (await showConfirm(confirmMessage)) {
       // Generar log de negocio con datos reales antes de eliminar
       await businessLogs.logClientDeleted(client.id, client.name);
       
@@ -298,7 +298,7 @@ export function ClientsPage() {
     }
     */
     
-    alert('Funcionalidad de eliminación en desarrollo. Los clientes ahora se gestionan desde la base de datos.');
+    showAlert('Funcionalidad de eliminación en desarrollo. Los clientes ahora se gestionan desde la base de datos.');
   };
 
   const handleFormSubmit = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -352,10 +352,10 @@ export function ClientsPage() {
           await recargarClientes();
           
           // Mensaje de éxito
-          alert(`✅ Cliente creado exitosamente\n\nNombre: ${result.data.name}\nID: ${result.data.id}\nEmail: ${result.data.email}`);
+          showSuccess(`Cliente creado exitosamente\n\nNombre: ${result.data.name}\nID: ${result.data.id}\nEmail: ${result.data.email}`);
         } else {
           console.error('❌ Error del servidor:', result);
-          alert(`Error al crear cliente: ${result.error || result.message || 'Error desconocido'}`);
+          showError(`Error al crear cliente: ${result.error || result.message || 'Error desconocido'}`);
           return;
         }
         
@@ -409,16 +409,16 @@ export function ClientsPage() {
           await recargarClientes();
           
           // Mensaje de éxito
-          alert('✅ Cliente actualizado exitosamente');
+          showSuccess('Cliente actualizado exitosamente');
         } else {
           console.error('❌ Error del servidor:', result);
-          alert(`Error al actualizar cliente: ${result.error || result.message || 'Error desconocido'}`);
+          showError(`Error al actualizar cliente: ${result.error || result.message || 'Error desconocido'}`);
           return;
         }
       }
     } catch (error) {
       console.error('❌ Error en operación de cliente:', error);
-      alert('Error de conexión al procesar la operación');
+      showError('Error de conexión al procesar la operación');
     }
   };
 

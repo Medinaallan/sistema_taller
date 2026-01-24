@@ -4,6 +4,7 @@ import { chatService, ChatMensajeDTO } from '../../../servicios/chatService';
 import { useApp } from '../../../contexto/useApp';
 import { obtenerClientesActualizados } from '../../../utilidades/BaseDatosJS';
 import ImageModal from '../../../componentes/comunes/ImageModal';
+import { showError } from '../../../utilidades/sweetAlertHelpers';
 
 interface LocalMsg extends ChatMensajeDTO {}
 
@@ -132,7 +133,7 @@ export default function ClientChatPage() {
       setImage(null);
     } catch (error) {
       console.error('Error enviando mensaje:', error);
-      alert('Error enviando el mensaje. Intenta de nuevo.');
+      showError('Error enviando el mensaje. Intenta de nuevo.');
     }
   };
 

@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
+import { showSuccess, showError } from '../../utilidades/sweetAlertHelpers';
 
 
 interface WorkOrder {
@@ -254,7 +255,7 @@ export function ClientWorkOrdersPage() {
       const updatedQuotations = additionalQuotationsService.getByClientId(currentClientId);
       setAdditionalQuotations(updatedQuotations);
       
-      alert(`Cotización ${approved ? 'aprobada' : 'rechazada'} exitosamente`);
+      showSuccess(`Cotización ${approved ? 'aprobada' : 'rechazada'} exitosamente`);
       
       // Cerrar modal
       setShowQuotationModal(false);
@@ -263,7 +264,7 @@ export function ClientWorkOrdersPage() {
       console.log(`✅ Cotización ${quotationId} ${approved ? 'aprobada' : 'rechazada'} por ${currentUser}`);
     } catch (error) {
       console.error('Error procesando respuesta de cotización:', error);
-      alert('Error procesando la respuesta: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error procesando la respuesta: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     }
   };
 

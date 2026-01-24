@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Select, TextArea, Button } from '../comunes/UI';
+import { showError, showSuccess } from '../../utilidades/sweetAlertHelpers';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { vehiclesService, appointmentsService } from '../../servicios/apiService';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
@@ -247,11 +248,11 @@ const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
         notas_recepcion: ''
       });
 
-      alert(`✅ Orden de trabajo creada exitosamente\n\nNúmero: ${result.numero_ot}\nID: ${result.ot_id}`);
+      showSuccess(`Orden de trabajo creada exitosamente\n\nNúmero: ${result.numero_ot}\nID: ${result.ot_id}`);
       onClose();
     } catch (error) {
       console.error('Error creando orden:', error);
-      alert('Error al crear la orden de trabajo: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error al crear la orden de trabajo: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }

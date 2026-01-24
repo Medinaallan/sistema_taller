@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button, Card } from '../comunes/UI';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
+import { showError } from '../../utilidades/sweetAlertHelpers';
 
 interface ViewQuotationModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ const ViewQuotationModal = ({ isOpen, onClose, quotationId }: ViewQuotationModal
       setItems(itemsData as QuotationItem[]);
     } catch (error) {
       console.error('Error cargando detalles de cotización:', error);
-      alert('Error cargando detalles: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error cargando detalles: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }

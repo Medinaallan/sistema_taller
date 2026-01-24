@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, Card } from '../comunes/UI';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
 import { appointmentsService } from '../../servicios/apiService';
+import { showError, showSuccess } from '../../utilidades/sweetAlertHelpers';
 
 interface ApproveQuotationModalProps {
   isOpen: boolean;
@@ -149,7 +150,7 @@ export default function ApproveQuotationModal({
         console.warn('⚠️ No hay cita_id en la cotización:', quotation);
       }
       
-      alert(`✅ ${result.msg}`);
+      showSuccess(`${result.msg}`);
       
       onSuccess({
         ot_id: result.ot_id || 0,
@@ -161,7 +162,7 @@ export default function ApproveQuotationModal({
       console.error('❌ Error durante aprobación:', err);
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al aprobar cotización: ${errorMsg}`);
-      alert(`Error: ${errorMsg}`);
+      showError(`Error: ${errorMsg}`);
     } finally {
       setLoading(false);
     }

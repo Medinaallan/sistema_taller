@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Modal, Button } from '../comunes/UI';
 import { WorkOrderData } from '../../servicios/workOrdersService';
+import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface QualityControlModalProps {
   isOpen: boolean;
@@ -114,7 +115,7 @@ export const QualityControlModal: React.FC<QualityControlModalProps> = ({
 
   const handleSubmit = async () => {
     if (!hasSignature) {
-      alert('Por favor, firma el documento antes de continuar');
+      showWarning('Por favor, firma el documento antes de continuar');
       return;
     }
 
@@ -143,13 +144,13 @@ export const QualityControlModal: React.FC<QualityControlModalProps> = ({
       consentimientos.push(consentimiento);
       localStorage.setItem('consentimientos-calidad', JSON.stringify(consentimientos));
 
-      alert('Autorización firmada exitosamente. El vehículo puede pasar a Control de Calidad.');
+      showSuccess('Autorización firmada exitosamente. El vehículo puede pasar a Control de Calidad.');
       
       onComplete();
       onClose();
     } catch (error) {
       console.error('Error guardando autorización:', error);
-      alert('Error al guardar la autorización');
+      showError('Error al guardar la autorización');
     } finally {
       setIsSubmitting(false);
     }

@@ -4,6 +4,7 @@ import { useAdminChat } from '../../../hooks/useAdminChat';
 import { ChatMensajeDTO, chatService } from '../../../servicios/chatService';
 import { useApp } from '../../../contexto/useApp';
 import ImageModal from '../../../componentes/comunes/ImageModal';
+import { showError } from '../../../utilidades/sweetAlertHelpers';
 
 // Página de chat para el administrador
 // Estructura de dos columnas: lista de clientes + ventana de chat
@@ -55,7 +56,7 @@ export default function AdminChatPage() {
       setSelectedImage(null);
     } catch (error) {
       console.error('Error enviando mensaje:', error);
-      alert('Error enviando el mensaje. Intenta de nuevo.');
+      showError('Error enviando el mensaje. Intenta de nuevo.');
     }
   };
 

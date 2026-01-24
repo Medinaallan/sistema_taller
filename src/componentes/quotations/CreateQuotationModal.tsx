@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { Modal, Button, TextArea, Select, Input } from '../comunes/UI';
+import { showError, showSuccess, showWarning, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import quotationsService from '../../servicios/quotationsService';
 import { servicesService, appointmentsService } from '../../servicios/apiService';
 import { getDisplayNames } from '../../utilidades/dataMappers';
@@ -148,11 +149,11 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         setCotizacionId(String(response.cotizacion_id));
         setStep('items');
       } else {
-        alert('Error: No se recibió ID de cotización. Respuesta: ' + JSON.stringify(response));
+        showError('Error: No se recibió ID de cotización. Respuesta: ' + JSON.stringify(response));
       }
     } catch (error) {
       console.error('Error creando cotización:', error);
-      alert('Error creando cotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error creando cotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -172,19 +173,19 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
   const handleAddItem = async () => {
     if (!cotizacionId) return;
     if (!itemForm.descripcion.trim()) {
-      alert('La descripción es requerida');
+      showWarning('La descripción es requerida');
       return;
     }
     if (itemForm.cantidad <= 0) {
-      alert('La cantidad debe ser mayor a 0');
+      showWarning('La cantidad debe ser mayor a 0');
       return;
     }
     if (itemForm.precio_unitario <= 0) {
-      alert('El precio unitario debe ser mayor a 0');
+      showWarning('El precio unitario debe ser mayor a 0');
       return;
     }
     if (itemForm.tipo_item === 'Servicio' && (!itemForm.tipo_servicio_id || itemForm.tipo_servicio_id.trim() === '')) {
-      alert('Debe seleccionar un tipo de servicio');
+      showWarning('Debe seleccionar un tipo de servicio');
       return;
     }
 
@@ -216,10 +217,10 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         tipo_servicio_id: ''
       });
 
-      alert('Item agregado exitosamente');
+      showSuccess('Item agregado exitosamente');
     } catch (error) {
       console.error('Error agregando item:', error);
-      alert('Error agregando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error agregando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -248,10 +249,10 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         await loadQuotationItems(cotizacionId);
       }
 
-      alert('Item eliminado exitosamente');
+      showSuccess('Item eliminado exitosamente');
     } catch (error) {
       console.error('Error eliminando item:', error);
-      alert('Error eliminando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error eliminando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -265,7 +266,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
   // Finalizar cotización
   const handleFinish = async () => {
     if (items.length === 0) {
-      alert('Debe agregar al menos un item a la cotización');
+      showWarning('Debe agregar al menos un item a la cotización');
       return;
     }
 
@@ -296,13 +297,13 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         }
       }
       
-      alert('Cotización creada exitosamente');
+      showSuccess('Cotización creada exitosamente');
       onSuccess();
       resetModal();
       onClose();
     } catch (error) {
       console.error('Error al finalizar cotización:', error);
-      alert('Error al finalizar la cotización');
+      showError('Error al finalizar la cotización');
     } finally {
       setLoading(false);
     }
@@ -326,8 +327,8 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     setItems([]);
   };
 
-  const handleClose = () => {
-    if (step !== 'info' && !confirm('¿Descartar los cambios?')) {
+  const handleClose = async () => {
+    if (step !== 'info' && !await showConfirm('¿Descartar los cambios?')) {
       return;
     }
     resetModal();

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { crearCliente, ClienteNuevo } from '../../servicios/clientesApiService';
+import { showSuccess } from '../../utilidades/sweetAlertHelpers';
 
 interface ClientRegisterFormProps {
   onSuccess: () => void;
@@ -71,7 +72,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
       console.log('✅ Cliente registrado exitosamente:', nuevoCliente);
       
       // Mostrar mensaje de éxito y redirigir
-      alert(`¡Cliente registrado exitosamente!\n\nNombre: ${nuevoCliente.name}\nEmail: ${nuevoCliente.email}\nID: ${nuevoCliente.id}`);
+      showSuccess(`¡Cliente registrado exitosamente!\n\nNombre: ${nuevoCliente.name}\nEmail: ${nuevoCliente.email}\nID: ${nuevoCliente.id}`);
       
       onSuccess();
       

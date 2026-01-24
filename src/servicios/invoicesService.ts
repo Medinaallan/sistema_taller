@@ -253,7 +253,7 @@ class InvoicesService {
     `;
   }
 
-  // Imprimir factura
+  // Imprimir factura (DEPRECADO - usar pdfInvoiceGenerator)
   printInvoice(invoice: Invoice): void {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -265,6 +265,45 @@ class InvoicesService {
         printWindow.print();
       }, 250);
     }
+  }
+
+  // ========== MÉTODOS DE IMPRESIÓN PDF ==========
+  
+  /**
+   * Imprime factura en formato carta SAR (usa pdfInvoiceGenerator)
+   */
+  printInvoiceCarta(invoice: Invoice): void {
+    // Lazy import para evitar cargar jsPDF si no se usa
+    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+      pdfInvoiceGenerator.printInvoice(invoice, 'carta');
+    });
+  }
+
+  /**
+   * Imprime factura en formato ticket 80mm (usa pdfInvoiceGenerator)
+   */
+  printInvoiceTicket(invoice: Invoice): void {
+    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+      pdfInvoiceGenerator.printInvoice(invoice, 'ticket');
+    });
+  }
+
+  /**
+   * Descarga factura en formato carta SAR
+   */
+  downloadInvoiceCarta(invoice: Invoice): void {
+    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+      pdfInvoiceGenerator.downloadInvoice(invoice, 'carta');
+    });
+  }
+
+  /**
+   * Descarga factura en formato ticket 80mm
+   */
+  downloadInvoiceTicket(invoice: Invoice): void {
+    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+      pdfInvoiceGenerator.downloadInvoice(invoice, 'ticket');
+    });
   }
 }
 

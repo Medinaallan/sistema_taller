@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Button, Select } from '../../componentes/comunes/UI';
+import { showError, showSuccess, showWarning, showAlert, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
 import { appointmentsService } from '../../servicios/apiService';
 import CreateQuotationModal from '../../componentes/quotations/CreateQuotationModal';
@@ -28,7 +29,7 @@ const QuotationsPage = () => {
       setData(quotations);
     } catch (err) {
       console.error('Error cargando cotizaciones:', err);
-      alert('Error cargando cotizaciones: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error cargando cotizaciones: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +56,7 @@ const QuotationsPage = () => {
   }, []);
 
   const handleEdit = (item: QuotationData) => {
-    alert('Editar cotización: ' + item.numero_cotizacion);
+    showAlert('Editar cotización: ' + item.numero_cotizacion);
   };
 
   const handleView = (item: QuotationData) => {
@@ -64,14 +65,14 @@ const QuotationsPage = () => {
   };
 
   const handleDelete = async (item: QuotationData) => {
-    if (!confirm(`¿Está seguro de eliminar la cotización ${item.numero_cotizacion}?`)) {
+    if (!await showConfirm(`¿Está seguro de eliminar la cotización ${item.numero_cotizacion}?`)) {
       return;
     }
     try {
       await quotationsService.deleteQuotation(item.cotizacion_id.toString());
       await loadQuotations();
     } catch (err) {
-      alert('Error eliminando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error eliminando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
@@ -81,15 +82,15 @@ const QuotationsPage = () => {
   };
 
   const handleReject = async (item: QuotationData) => {
-    if (!confirm(`¿Está seguro de rechazar la cotización ${item.numero_cotizacion}?`)) {
+    if (!await showConfirm(`¿Está seguro de rechazar la cotización ${item.numero_cotizacion}?`)) {
       return;
     }
     try {
       await quotationsService.rejectQuotation(item.cotizacion_id.toString());
       await loadQuotations();
-      alert('Cotización rechazada exitosamente');
+      showSuccess('Cotización rechazada exitosamente');
     } catch (err) {
-      alert('Error rechazando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error rechazando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       // Recargar para deshacer cambios en la UI si es necesario
       await loadQuotations();
     }
@@ -105,9 +106,9 @@ const QuotationsPage = () => {
             : q
         )
       );
-      alert('Cotización marcada como enviada. Ahora puede ser aprobada o rechazada.');
+      showSuccess('Cotización marcada como enviada. Ahora puede ser aprobada o rechazada.');
     } catch (err) {
-      alert('Error marcando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error marcando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
@@ -123,7 +124,7 @@ const QuotationsPage = () => {
 
   const handleOpenCreateModal = () => {
     if (appointments.length === 0) {
-      alert('No hay citas disponibles. Cree una cita primero.');
+      showWarning('No hay citas disponibles. Cree una cita primero.');
       return;
     }
     setShowCreateModal(true);
@@ -355,7 +356,7 @@ const QuotationsPage = () => {
         quotation={selectedQuotationForApprove}
         onSuccess={async (result) => {
           await loadQuotations();
-          alert(`✅ Cotización aprobada exitosamente\n\nOrden de trabajo generada:\nNúmero: ${result.numero_ot}\nID: ${result.ot_id}`);
+          showSuccess(`Cotización aprobada exitosamente\n\nOrden de trabajo generada:\nNúmero: ${result.numero_ot}\nID: ${result.ot_id}`);
         }}
       />
     </>

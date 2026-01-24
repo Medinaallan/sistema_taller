@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import workOrderStatesManager from '../../servicios/workOrderStatesManager';
+import { showError } from '../../utilidades/sweetAlertHelpers';
 
 interface WorkOrder {
   ot_id: number;
@@ -71,7 +72,7 @@ const ClientWorkOrdersPage = () => {
       setData(workOrdersWithUpdatedStates);
     } catch (err) {
       console.error('Error cargando órdenes de trabajo del cliente:', err);
-      alert('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -90,7 +91,7 @@ const ClientWorkOrdersPage = () => {
       setTasks(result.data || []);
     } catch (err) {
       console.error('Error cargando tareas:', err);
-      alert('Error cargando tareas: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error cargando tareas: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoadingTasks(false);
     }

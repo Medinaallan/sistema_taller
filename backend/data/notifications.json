@@ -35,6 +35,54 @@
       "createdAt": "2026-01-23T19:30:24.659Z",
       "sentAt": "2026-01-23T19:30:24.659Z",
       "readAt": "2026-01-23T19:31:07.681Z"
+    },
+    {
+      "id": "notif-1769289572677-kri01d64a",
+      "clientId": "11",
+      "type": "appointment_status_change",
+      "title": "Cita CITA-00000027: confirmed",
+      "message": "El estado de su cita ha cambiado a: confirmed",
+      "metadata": {
+        "appointmentId": 27,
+        "numeroCita": "CITA-00000027",
+        "newStatus": "confirmed",
+        "fechaInicio": "2026-01-26T00:00:00.000Z"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-24T21:19:32.677Z",
+      "sentAt": "2026-01-24T21:19:32.677Z"
+    },
+    {
+      "id": "notif-1769289636005-p6umrdp4q",
+      "clientId": "11",
+      "type": "appointment_status_change",
+      "title": "Cita CITA-00000026: aprobada",
+      "message": "El estado de su cita ha cambiado a: aprobada",
+      "metadata": {
+        "appointmentId": 26,
+        "numeroCita": "CITA-00000026",
+        "newStatus": "aprobada",
+        "fechaInicio": "2026-01-24T00:00:00.000Z"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-24T21:20:36.005Z",
+      "sentAt": "2026-01-24T21:20:36.005Z"
+    },
+    {
+      "id": "notif-1769290420759-bs5aupap1",
+      "clientId": "20",
+      "type": "appointment_status_change",
+      "title": "Cita CITA-00000022: aprobada",
+      "message": "El estado de su cita ha cambiado a: aprobada",
+      "metadata": {
+        "appointmentId": 22,
+        "numeroCita": "CITA-00000022",
+        "newStatus": "aprobada",
+        "fechaInicio": "2026-01-14T00:00:00.000Z"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-24T21:33:40.759Z",
+      "sentAt": "2026-01-24T21:33:40.759Z"
     }
   ]
 }

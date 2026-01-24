@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
+import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
 import ViewQuotationModal from '../../componentes/quotations/ViewQuotationModal';
 
@@ -21,7 +22,7 @@ const ClientQuotationsPage = () => {
       setData(quotations);
     } catch (err) {
       console.error('Error cargando cotizaciones del cliente:', err);
-      alert('Error cargando cotizaciones: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error cargando cotizaciones: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -32,30 +33,30 @@ const ClientQuotationsPage = () => {
   }, [user?.id]);
 
   const handleApprove = async (quotation: QuotationData) => {
-    if (!confirm(`¿Desea aprobar la cotización por L${quotation.total?.toFixed(2)}?`)) {
+    if (!await showConfirm(`¿Desea aprobar la cotización por L${quotation.total?.toFixed(2)}?`)) {
       return;
     }
     
     try {
       await quotationsService.approveQuotation(quotation.cotizacion_id.toString());
       await loadClientQuotations(); // Recargar datos
-      alert('Cotización aprobada exitosamente. Se convertirá en orden de trabajo.');
+      showSuccess('Cotización aprobada exitosamente. Se convertirá en orden de trabajo.');
     } catch (err) {
-      alert('Error aprobando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error aprobando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
   const handleReject = async (quotation: QuotationData) => {
-    if (!confirm('¿Está seguro de rechazar esta cotización?')) {
+    if (!await showConfirm('¿Está seguro de rechazar esta cotización?')) {
       return;
     }
     
     try {
       await quotationsService.rejectQuotation(quotation.cotizacion_id.toString());
       await loadClientQuotations(); // Recargar datos
-      alert('Cotización rechazada.');
+      showSuccess('Cotización rechazada.');
     } catch (err) {
-      alert('Error rechazando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error rechazando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { mockProducts } from '../../utilidades/globalMockDatabase';
+import { showAlert } from '../../utilidades/sweetAlertHelpers';
 import type { Product } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -18,7 +19,7 @@ const ProductsPage = () => {
   const [data, setData] = useState<Product[]>(mockProducts);
 
   const handleEdit = (item: Product) => {
-    alert('Editar producto: ' + item.id);
+    showAlert('Editar producto: ' + item.id);
   };
   
   const handleDelete = (item: Product) => {
@@ -26,7 +27,7 @@ const ProductsPage = () => {
   };
 
   return (
-    <Card title="Productos" actions={<Button onClick={() => alert('Nuevo registro')}>Nuevo</Button>}>
+    <Card title="Productos" actions={<Button onClick={() => showAlert('Nuevo registro')}>Nuevo</Button>}>
       <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
     </Card>
   );

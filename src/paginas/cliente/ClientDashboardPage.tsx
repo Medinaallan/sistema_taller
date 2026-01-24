@@ -15,6 +15,7 @@ import {
   ClockIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { showSuccess, showError } from '../../utilidades/sweetAlertHelpers';
 import { useApp } from '../../contexto/useApp';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 import { vehiclesService } from '../../servicios/apiService';
@@ -279,13 +280,13 @@ export function ClientDashboardPage() {
       }
 
       // Mostrar mensaje de confirmación
-      alert(response === 'aprobada' ? 
+      showSuccess(response === 'aprobada' ? 
         'Subcotización aprobada exitosamente. Los servicios se añadirán a tu orden de trabajo.' :
         'Subcotización rechazada.'
       );
     } catch (error) {
       console.error('Error respondiendo a subcotización:', error);
-      alert('Error al procesar la respuesta. Por favor intenta de nuevo.');
+      showError('Error al procesar la respuesta. Por favor intenta de nuevo.');
     }
   };
 

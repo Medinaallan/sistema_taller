@@ -8,6 +8,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkOrder, Appointment, Quotation, Invoice } from '../../tipos';
 import { mockWorkOrders, mockQuotations, mockInvoices } from '../../utilidades/globalMockDatabase';
 import { appointmentsService, servicesService } from '../../servicios/apiService';
+import { showError, showAlert, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import { obtenerClientes } from '../../servicios/clientesApiService';
 import { FunnelIcon, ArrowPathIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { formatCurrency } from '../../utilidades/globalMockDatabase';
@@ -250,18 +251,18 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
 
   const handleDelete = async (item: any) => {
     if (type === 'appointments') {
-      if (window.confirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
+      if (await showConfirm(`¿Está seguro de que desea eliminar la cita ${item.id}?`)) {
         try {
           const response = await appointmentsService.delete(item.id);
           if (response.success) {
             // Recargar la lista después de eliminar
             await loadAppointments();
           } else {
-            alert('Error al eliminar la cita: ' + response.message);
+            showError('Error al eliminar la cita: ' + response.message);
           }
         } catch (error) {
           console.error('Error eliminando cita:', error);
-          alert('Error al eliminar la cita');
+          showError('Error al eliminar la cita');
         }
       }
     } else {
@@ -302,7 +303,7 @@ export function GestionModal({ type, isOpen, onClose }: GestionModalProps) {
     if (type === 'appointments') {
       setIsNewAppointmentModalOpen(true);
     } else {
-      alert('Nuevo registro');
+      showAlert('Nuevo registro');
     }
   };
 

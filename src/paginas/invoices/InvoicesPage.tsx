@@ -5,8 +5,11 @@ import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase'
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { obtenerClientes } from '../../servicios/clientesApiService';
 import { vehiclesService } from '../../servicios/apiService';
+import invoicesService from '../../servicios/invoicesService';
+import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import type { Invoice } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
+import Swal from 'sweetalert2';
 
 // Interfaz para las facturas generadas desde órdenes completadas
 interface GeneratedInvoice extends Invoice {
@@ -188,7 +191,7 @@ const InvoicesPage = () => {
       
     } catch (error) {
       console.error(' Error cargando órdenes completadas:', error);
-      alert('Error cargando facturas: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error cargando facturas: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -204,14 +207,42 @@ const InvoicesPage = () => {
     loadAllData();
   }, []);
 
-  const handleEdit = (item: GeneratedInvoice) => {
-    alert(`Editar factura: ${item.invoiceNumber}\nOrden de Trabajo: #${item.workOrderId?.slice(-12)}`);
+  const handleEdit = async (item: GeneratedInvoice) => {
+    const { value: action } = await Swal.fire({
+      title: `Factura ${item.invoiceNumber}`,
+      html: `
+        <div style="text-align: left; padding: 10px;">
+          <p><strong>Cliente:</strong> ${item.clientName}</p>
+          <p><strong>Vehículo:</strong> ${item.vehicleName}</p>
+          <p><strong>Orden de Trabajo:</strong> #${item.workOrderId?.slice(-12)}</p>
+          <p><strong>Total:</strong> ${formatCurrency(item.total)}</p>
+          <hr style="margin: 15px 0;">
+          <p style="font-size: 14px; color: #666;">Seleccione una acción:</p>
+        </div>
+      `,
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: '🖨️ Formato Carta',
+      denyButtonText: '🧾 Formato Ticket',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3b82f6',
+      denyButtonColor: '#10b981',
+      width: 500
+    });
+
+    if (action === true) {
+      // Imprimir formato carta
+      invoicesService.printInvoiceCarta(item);
+    } else if (action === false) {
+      // Imprimir formato ticket
+      invoicesService.printInvoiceTicket(item);
+    }
   };
   
-  const handleDelete = (item: GeneratedInvoice) => {
-    if (confirm(`¿Estás seguro de que quieres eliminar la factura ${item.invoiceNumber}?`)) {
+  const handleDelete = async (item: GeneratedInvoice) => {
+    if (await showConfirm(`¿Estás seguro de que quieres eliminar la factura ${item.invoiceNumber}?`)) {
       setData(data.filter(d => d.id !== item.id));
-      alert('Factura eliminada exitosamente');
+      showSuccess('Factura eliminada exitosamente');
     }
   };
 

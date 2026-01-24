@@ -1,4 +1,3 @@
-// Página de perfil completo del cliente - Vista 360°
 import { useState, useMemo, useEffect } from 'react';
 import { 
   Card, Button, Select, Badge, Modal, Tabs, Tab
@@ -22,6 +21,7 @@ import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
 import { useApp } from '../../contexto/useApp';
+import { showSuccess } from '../../utilidades/sweetAlertHelpers';
 
 export function ClientProfilePage() {
   const data = useInterconnectedData();
@@ -224,7 +224,7 @@ export function ClientProfilePage() {
 
   const handleCompleteWorkOrder = (workOrderId: string) => {
     data.completeWorkOrderWithInvoice(workOrderId);
-    alert('Orden de trabajo completada y factura generada automáticamente!');
+    showSuccess('Orden de trabajo completada y factura generada automáticamente!');
   };
 
   const handleQuickAction = (action: string) => {

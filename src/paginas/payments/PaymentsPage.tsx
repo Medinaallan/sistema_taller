@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { mockPayments, formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
+import { showAlert } from '../../utilidades/sweetAlertHelpers';
 import type { Payment } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -26,7 +27,7 @@ const PaymentsPage = () => {
   const [data, setData] = useState<Payment[]>(mockPayments);
 
   const handleEdit = (item: Payment) => {
-    alert('Editar pago: ' + item.id);
+    showAlert('Editar pago: ' + item.id);
   };
   
   const handleDelete = (item: Payment) => {
@@ -34,7 +35,7 @@ const PaymentsPage = () => {
   };
 
   return (
-    <Card title="Pagos" actions={<Button onClick={() => alert('Nuevo pago')}>Nuevo Pago</Button>}>
+    <Card title="Pagos" actions={<Button onClick={() => showAlert('Nuevo pago')}>Nuevo Pago</Button>}>
       <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
     </Card>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, TextArea } from '../comunes/UI';
 import workOrdersService, { WorkOrderData, TaskPriority } from '../../servicios/workOrdersService';
+import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
@@ -68,7 +69,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
       }
     } catch (error) {
       console.error('❌ Error cargando tipos de servicio:', error);
-      alert('Error al cargar tipos de servicio disponibles');
+      showError('Error al cargar tipos de servicio disponibles');
     } finally {
       setLoadingServicios(false);
     }
@@ -83,12 +84,12 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
     // Validaciones
     if (!formData.tipo_servicio_id) {
-      alert('Por favor selecciona un tipo de servicio');
+      showWarning('Por favor selecciona un tipo de servicio');
       return;
     }
 
     if (!workOrder.id) {
-      alert('No se puede agregar tarea: ID de orden inválido');
+      showError('No se puede agregar tarea: ID de orden inválido');
       return;
     }
 
@@ -106,12 +107,12 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
       
       await workOrdersService.agregarTarea(workOrder.id, tareaData);
       
-      alert('Tarea agregada exitosamente');
+      showSuccess('Tarea agregada exitosamente');
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error agregando tarea:', error);
-      alert('Error al agregar tarea: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error al agregar tarea: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }

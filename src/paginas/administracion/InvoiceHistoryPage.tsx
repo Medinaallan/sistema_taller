@@ -47,8 +47,51 @@ export function InvoiceHistoryPage() {
     setFilteredInvoices(filtered);
   };
 
-  const handlePrintInvoice = (invoice: Invoice) => {
-    invoicesService.printInvoice(invoice);
+  const handlePrintInvoice = async (invoice: Invoice) => {
+    const { value: format } = await Swal.fire({
+      title: 'Seleccionar Formato de Impresión',
+      html: `
+        <div style="display: flex; flex-direction: column; gap: 15px; padding: 20px;">
+          <button id="btn-carta" style="padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <span>📄</span>
+            <div style="text-align: left;">
+              <div style="font-weight: bold;">Formato Carta SAR</div>
+              <div style="font-size: 12px; opacity: 0.9;">Tamaño carta (8.5" x 11") - Formato oficial</div>
+            </div>
+          </button>
+          <button id="btn-ticket" style="padding: 15px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <span>🧾</span>
+            <div style="text-align: left;">
+              <div style="font-weight: bold;">Formato Ticket POS</div>
+              <div style="font-size: 12px; opacity: 0.9;">80mm - Para impresoras térmicas</div>
+            </div>
+          </button>
+        </div>
+      `,
+      showConfirmButton: false,
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      didOpen: () => {
+        const btnCarta = document.getElementById('btn-carta');
+        const btnTicket = document.getElementById('btn-ticket');
+        
+        if (btnCarta) {
+          btnCarta.onclick = () => {
+            Swal.clickConfirm();
+            Swal.close();
+            invoicesService.printInvoiceCarta(invoice);
+          };
+        }
+        
+        if (btnTicket) {
+          btnTicket.onclick = () => {
+            Swal.clickConfirm();
+            Swal.close();
+            invoicesService.printInvoiceTicket(invoice);
+          };
+        }
+      }
+    });
   };
 
   const handleViewInvoice = async (invoice: Invoice) => {

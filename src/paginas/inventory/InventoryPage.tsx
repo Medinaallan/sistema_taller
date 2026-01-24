@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
-import { mockInventory, formatCurrency } from '../../utilidades/globalMockDatabase';
-import type { InventoryItem } from '../../tipos';
+import { mockInventory, formatCurrency } from '../../utilidades/globalMockDatabase';import { showAlert } from '../../utilidades/sweetAlertHelpers';import type { InventoryItem } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columns: ColumnDef<InventoryItem>[] = [
@@ -24,7 +23,7 @@ const InventoryPage = () => {
   const [data, setData] = useState<InventoryItem[]>(mockInventory);
 
   const handleEdit = (item: InventoryItem) => {
-    alert('Editar inventario: ' + item.id);
+    showAlert('Editar inventario: ' + item.id);
   };
   
   const handleDelete = (item: InventoryItem) => {
@@ -32,7 +31,7 @@ const InventoryPage = () => {
   };
 
   return (
-    <Card title="Inventario" actions={<Button onClick={() => alert('Nuevo item')}>Nuevo Item</Button>}>
+    <Card title="Inventario" actions={<Button onClick={() => showAlert('Nuevo item')}>Nuevo Item</Button>}>
       <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
     </Card>
   );

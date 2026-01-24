@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Input, Select } from '../comunes/UI';
 import type { WorkOrderData } from '../../servicios/workOrdersService';
 import { getClientDisplayName, getVehicleDisplayName } from '../../utilidades/dataMappers';
+import { showError, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface AdditionalQuotationFormProps {
   workOrder: WorkOrderData | null;
@@ -48,12 +49,12 @@ const AdditionalQuotationForm: React.FC<AdditionalQuotationFormProps> = ({
         !formData.descripcionProblema.trim() || 
         !formData.serviciosRecomendados.trim() || 
         !formData.costoEstimado.trim()) {
-      alert('Por favor complete todos los campos requeridos');
+      showWarning('Por favor complete todos los campos requeridos');
       return;
     }
 
     if (isNaN(parseFloat(formData.costoEstimado)) || parseFloat(formData.costoEstimado) <= 0) {
-      alert('El costo estimado debe ser un número válido mayor a 0');
+      showError('El costo estimado debe ser un número válido mayor a 0');
       return;
     }
 

@@ -189,6 +189,19 @@ try {
   console.warn(' El servidor continuará sin las rutas de citas');
 }
 
+//IMPORTAR Y CONFIGURAR RUTAS DE CONFIGURACIÓN DE EMPRESA (JSON)
+try {
+  console.log('🏢 Cargando rutas de configuración de empresa...');
+  const companyConfigRouter = require('./routes/companyConfig');
+  app.use('/api/company-config', companyConfigRouter);
+  console.log('✅ Rutas de configuración de empresa cargadas exitosamente');
+  console.log('📍 /api/company-config/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de configuración de empresa:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de configuración de empresa');
+}
+
 //IMPORTAR Y CONFIGURAR RUTAS DE USUARIOS
 try {
   console.log('👥 Cargando rutas de usuarios...');
@@ -302,7 +315,7 @@ try {
   console.warn('⚠️ El servidor continuará sin las rutas de pagos de facturas');
 }
 
-// �🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
+// 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
 // (ya importado arriba)
 
 // Health check

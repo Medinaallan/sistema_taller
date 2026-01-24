@@ -7,6 +7,7 @@ import { useBusinessLogs } from '../../hooks/useBusinessLogs';
 import { mockVehicles, formatDate } from '../../utilidades/globalMockDatabase';
 import { vehiclesService } from '../../servicios/apiService';
 import clientesService from '../../servicios/clientesService'; // Servicio de clientes con SP_OBTENER_USUARIOS
+import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import type { Vehicle, Client } from '../../tipos';
 
 interface VehicleFormProps {
@@ -375,7 +376,7 @@ export function VehiclesPage() {
   };
 
   const handleDeleteVehicle = async (vehicle: Vehicle) => {
-    if (confirm(`¿Estás seguro de que quieres eliminar el vehículo ${vehicle.brand} ${vehicle.model}?`)) {
+    if (await showConfirm(`¿Estás seguro de que quieres eliminar el vehículo ${vehicle.brand} ${vehicle.model}?`)) {
       try {
         setLoading(true);
         
@@ -406,13 +407,13 @@ export function VehiclesPage() {
           // Forzar actualización de estadísticas del dashboard
           dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
           
-          alert('Vehículo eliminado exitosamente');
+          showSuccess('Vehículo eliminado exitosamente');
         } else {
-          alert('Error al eliminar el vehículo: ' + response.message);
+          showError('Error al eliminar el vehículo: ' + response.message);
         }
       } catch (error) {
         console.error('Error deleting vehicle:', error);
-        alert('Error al eliminar el vehículo');
+        showError('Error al eliminar el vehículo');
       } finally {
         setLoading(false);
       }
@@ -473,9 +474,9 @@ export function VehiclesPage() {
           await loadVehicles();
           
           setIsModalOpen(false);
-          alert('Vehículo actualizado exitosamente');
+          showSuccess('Vehículo actualizado exitosamente');
         } else {
-          alert('Error al actualizar el vehículo: ' + response.message);
+          showError('Error al actualizar el vehículo: ' + response.message);
         }
       } else {
         // Create new vehicle - USA EXACTAMENTE EL MISMO ENDPOINT DEL TEST QUE FUNCIONÓ
@@ -484,7 +485,7 @@ export function VehiclesPage() {
         // Convertir clientId a número exactamente como en el test
         const clienteIdNumerico = parseInt(vehicleData.clientId);
         if (isNaN(clienteIdNumerico)) {
-          alert('Error: Solo se pueden asignar clientes con ID numérico válido');
+          showError('Error: Solo se pueden asignar clientes con ID numérico válido');
           return;
         }
         
@@ -544,18 +545,18 @@ export function VehiclesPage() {
           dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
           
           setIsModalOpen(false);
-          alert(`✅ Vehículo creado exitosamente: ${result.data.marca} ${result.data.modelo} (ID: ${result.data.vehiculo_id})`);
+          showSuccess(`Vehículo creado exitosamente: ${result.data.marca} ${result.data.modelo} (ID: ${result.data.vehiculo_id})`);
           
           // Recargar vehículos para mostrar el nuevo
           loadVehicles();
         } else {
           console.error('❌ Error al crear vehículo:', result);
-          alert(`Error al crear el vehículo: ${result.message || 'Error desconocido'}`);
+          showError(`Error al crear el vehículo: ${result.message || 'Error desconocido'}`);
         }
       }
     } catch (error) {
       console.error('❌ Error en operación de vehículo:', error);
-      alert('Error de conexión al procesar la operación');
+      showError('Error de conexión al procesar la operación');
     } finally {
       setLoading(false);
     }

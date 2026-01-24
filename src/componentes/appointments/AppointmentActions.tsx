@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Appointment } from '../../tipos';
 import { appointmentsService } from '../../servicios/apiService';
 import CreateQuotationModal from '../quotations/CreateQuotationModal';
+import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface AppointmentActionsProps {
   appointment: Appointment;
@@ -38,11 +39,11 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
         onUpdate();
       } else {
         console.error('Error al aprobar cita:', result.message);
-        alert('Error al aprobar la cita');
+        showError('Error al aprobar la cita');
       }
     } catch (error) {
       console.error('Error al aprobar cita:', error);
-      alert('Error al aprobar la cita');
+      showError('Error al aprobar la cita');
     } finally {
       setIsProcessing(false);
     }
@@ -55,7 +56,7 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
 
   const handleConfirmReject = async () => {
     if (!rejectReason.trim()) {
-      alert('Debes ingresar el motivo de rechazo.');
+      showWarning('Debes ingresar el motivo de rechazo.');
       return;
     }
     setIsProcessing(true);
@@ -72,11 +73,11 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
         onUpdate();
       } else {
         console.error('Error al rechazar cita:', result.message);
-        alert('Error al rechazar la cita');
+        showError('Error al rechazar la cita');
       }
     } catch (error) {
       console.error('Error al rechazar cita:', error);
-      alert('Error al rechazar la cita');
+      showError('Error al rechazar la cita');
     } finally {
       setIsProcessing(false);
     }
@@ -85,7 +86,7 @@ const AppointmentActions: React.FC<AppointmentActionsProps> = ({
   const handleQuotationSuccess = async () => {
     // NO cambiar el estado de la cita al crear la cotización
     // La cita seguirá en su estado actual hasta que la cotización sea aprobada o rechazada
-    alert('Cotización creada exitosamente');
+    showSuccess('Cotización creada exitosamente');
     setIsQuotationModalOpen(false);
     onUpdate();
   };

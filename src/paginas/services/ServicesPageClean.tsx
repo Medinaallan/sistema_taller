@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { mockServices, formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
+import { showAlert } from '../../utilidades/sweetAlertHelpers';
 import type { Service } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -26,7 +27,7 @@ const ServicesPage = () => {
   const [data, setData] = useState<Service[]>(mockServices);
 
   const handleEdit = (item: Service) => {
-    alert('Editar servicio: ' + item.id);
+    showAlert('Editar servicio: ' + item.id);
   };
   
   const handleDelete = (item: Service) => {
@@ -34,7 +35,7 @@ const ServicesPage = () => {
   };
 
   return (
-    <Card title="Servicios" actions={<Button onClick={() => alert('Nuevo servicio')}>Nuevo Servicio</Button>}>
+    <Card title="Servicios" actions={<Button onClick={() => showAlert('Nuevo servicio')}>Nuevo Servicio</Button>}>
       <TanStackCrudTable columns={columns} data={data} onEdit={handleEdit} onDelete={handleDelete} />
     </Card>
   );

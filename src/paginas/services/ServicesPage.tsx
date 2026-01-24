@@ -3,6 +3,7 @@ import { Card, Button } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { ServiceModal } from '../../componentes/gestion/ServiceModal';
 import { servicesService } from '../../servicios/apiService';
+import { showAlert, showSuccess, showError } from '../../utilidades/sweetAlertHelpers';
 import { mockServices, formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import type { Service } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -69,7 +70,7 @@ const ServicesPage = () => {
   }, []);
 
   const handleEdit = (item: Service) => {
-    alert('Editar servicio: ' + item.id);
+    showAlert('Editar servicio: ' + item.id);
   };
   
   const handleDelete = (item: Service) => {
@@ -122,7 +123,7 @@ const ServicesPage = () => {
         setIsModalOpen(false);
         
         // Mostrar mensaje de éxito
-        alert('Servicio creado exitosamente');
+        showSuccess('Servicio creado exitosamente');
         
         // Recargar la lista de servicios para mostrar el nuevo
         await loadServices();
@@ -130,7 +131,7 @@ const ServicesPage = () => {
         // El SP rechazó la inserción
         const errorMsg = response.data?.msg || response.message || 'Error desconocido';
         console.error('❌ Error del servidor:', errorMsg);
-        alert('Error al crear el servicio: ' + errorMsg);
+        showError('Error al crear el servicio: ' + errorMsg);
       }
     } catch (error) {
       console.error('❌ Error completo:', error);
@@ -138,7 +139,7 @@ const ServicesPage = () => {
         console.error('❌ Error mensaje:', error.message);
         console.error('❌ Error stack:', error.stack);
       }
-      alert('Error al crear el servicio. Por favor, intente nuevamente.');
+      showError('Error al crear el servicio. Por favor, intente nuevamente.');
     } finally {
       setLoading(false);
     }

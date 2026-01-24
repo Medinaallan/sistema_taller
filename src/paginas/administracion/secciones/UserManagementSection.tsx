@@ -13,6 +13,7 @@ import {
   ClockIcon,
   DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
+import { showError, showSuccess, showAlert, showConfirm, showWarning } from '../../../utilidades/sweetAlertHelpers';
 
 interface User {
   id: string;
@@ -247,8 +248,8 @@ export function UserManagementSection() {
     setShowUserModal(true);
   };
 
-  const handleDelete = (user: User) => {
-    if (window.confirm('¿Está seguro de que desea eliminar este usuario?')) {
+  const handleDelete = async (user: User) => {
+    if (await showConfirm('¿Está seguro de que desea eliminar este usuario?')) {
       setUsers(users.filter(u => u.id !== user.id));
     }
   };
@@ -672,9 +673,9 @@ export function UserManagementSection() {
             onClick={() => {
               const inactiveUsers = users.filter(u => u.status === 'inactive');
               if (inactiveUsers.length > 0) {
-                alert(`Hay ${inactiveUsers.length} usuario(s) inactivo(s) que podrían requerir atención.`);
+                showWarning(`Hay ${inactiveUsers.length} usuario(s) inactivo(s) que podrían requerir atención.`);
               } else {
-                alert('Todos los usuarios están activos.');
+                showSuccess('Todos los usuarios están activos.');
               }
             }}
             className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
@@ -687,9 +688,9 @@ export function UserManagementSection() {
             onClick={() => {
               const usersNeedingPasswordChange = users.filter(u => u.mustChangePassword);
               if (usersNeedingPasswordChange.length > 0) {
-                alert(`${usersNeedingPasswordChange.length} usuario(s) necesitan cambiar su contraseña.`);
+                showWarning(`${usersNeedingPasswordChange.length} usuario(s) necesitan cambiar su contraseña.`);
               } else {
-                alert('Todas las contraseñas están actualizadas.');
+                showSuccess('Todas las contraseñas están actualizadas.');
               }
             }}
             className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
@@ -709,7 +710,7 @@ export function UserManagementSection() {
                 'Último Acceso': formatLastLogin(u.lastLogin)
               }));
               console.log('Exportar datos:', data);
-              alert('Funcionalidad de exportación lista para implementar.');
+              showAlert('Funcionalidad de exportación lista para implementar.');
             }}
             className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
           >
@@ -849,7 +850,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
           throw new Error(result.msg || result.message || 'Error al editar usuario');
         }
 
-        alert('✅ Usuario actualizado exitosamente');
+        showSuccess('✅ Usuario actualizado exitosamente');
         onSave(formData);
       } else {
         // Crear nuevo usuario
@@ -859,7 +860,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
       console.error('❌ Error:', errorMsg);
       setError(errorMsg);
-      alert(`Error: ${errorMsg}`);
+      showError(`Error: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -1115,11 +1116,11 @@ function PasswordResetModal({ user, onClose, onSave }: PasswordResetModalProps) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      alert('Las contraseñas no coinciden');
+      showError('Las contraseñas no coinciden');
       return;
     }
     if (newPassword.length < 6) {
-      alert('La contraseña debe tener al menos 6 caracteres');
+      showError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
     onSave();
@@ -1139,7 +1140,7 @@ function PasswordResetModal({ user, onClose, onSave }: PasswordResetModalProps) 
     if (newPassword) {
       try {
         await navigator.clipboard.writeText(newPassword);
-        alert('Contraseña copiada al portapapeles');
+        showSuccess('Contraseña copiada al portapapeles');
       } catch (err) {
         console.error('Error al copiar:', err);
         // Fallback para navegadores que no soportan clipboard API
@@ -1149,7 +1150,7 @@ function PasswordResetModal({ user, onClose, onSave }: PasswordResetModalProps) 
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        alert('Contraseña copiada al portapapeles');
+        showSuccess('Contraseña copiada al portapapeles');
       }
     }
   };

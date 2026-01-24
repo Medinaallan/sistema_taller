@@ -8,6 +8,7 @@ import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
+import { showError, showSuccess, showAlert, showConfirm } from '../../utilidades/sweetAlertHelpers';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
@@ -127,7 +128,7 @@ const WorkOrdersPage = () => {
       setWorkOrders(orders);
     } catch (err) {
       console.error('Error cargando órdenes de trabajo:', err);
-      alert('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -165,37 +166,37 @@ const WorkOrdersPage = () => {
   };
 
   const handlePauseWorkOrder = async (_orderId: string) => {
-    if (confirm('¿Deseas pausar esta orden de trabajo?')) {
+    if (await showConfirm('¿Deseas pausar esta orden de trabajo?')) {
       try {
         // TODO: Implementar cambio de estado a paused en el backend
-        alert('Orden pausada (funcionalidad pendiente en backend)');
+        showAlert('Orden pausada (funcionalidad pendiente en backend)');
         await loadWorkOrders();
       } catch (err) {
-        alert('Error pausando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+        showError('Error pausando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
     }
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
-    if (confirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
+    if (await showConfirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
         await workOrdersService.completeWorkOrder(orderId);
-        alert('Orden de trabajo completada exitosamente');
+        showSuccess('Orden de trabajo completada exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
-        alert('Error completando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+        showError('Error completando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
     }
   };
 
   const handleDeleteWorkOrder = async (orderId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar esta orden de trabajo?')) {
+    if (await showConfirm('¿Estás seguro de que quieres eliminar esta orden de trabajo?')) {
       try {
         await workOrdersService.deleteWorkOrder(orderId);
-        alert('Orden de trabajo eliminada exitosamente');
+        showSuccess('Orden de trabajo eliminada exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
-        alert('Error eliminando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+        showError('Error eliminando orden: ' + (err instanceof Error ? err.message : 'Error desconocido'));
       }
     }
   };

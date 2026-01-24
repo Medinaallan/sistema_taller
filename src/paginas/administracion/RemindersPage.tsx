@@ -4,6 +4,7 @@ import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import remindersService from '../../servicios/remindersService';
 import clientesService, { Cliente } from '../../servicios/clientesService';
+import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlertHelpers';
 
 interface ReminderFormData {
   title: string;
@@ -141,7 +142,7 @@ export default function RemindersPage() {
           await loadReminders();
           handleCloseModal();
         } else {
-          alert('Error al actualizar recordatorio: ' + response.message);
+          showError('Error al actualizar recordatorio: ' + response.message);
         }
       } else {
         // Crear nuevo recordatorio
@@ -151,12 +152,12 @@ export default function RemindersPage() {
           await loadReminders();
           handleCloseModal();
         } else {
-          alert('Error al crear recordatorio: ' + response.message);
+          showError('Error al crear recordatorio: ' + response.message);
         }
       }
     } catch (error) {
       console.error('Error en handleSubmit:', error);
-      alert('Error al guardar el recordatorio');
+      showError('Error al guardar el recordatorio');
     } finally {
       setLoading(false);
     }
@@ -202,18 +203,18 @@ export default function RemindersPage() {
       if (response.success) {
         await loadReminders();
       } else {
-        alert('Error al cambiar estado: ' + response.message);
+        showError('Error al cambiar estado: ' + response.message);
       }
     } catch (error) {
       console.error('Error al alternar estado:', error);
-      alert('Error al cambiar el estado del recordatorio');
+      showError('Error al cambiar el estado del recordatorio');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este recordatorio?')) {
+    if (!await showConfirm('¿Estás seguro de que quieres eliminar este recordatorio?')) {
       return;
     }
     
@@ -223,11 +224,11 @@ export default function RemindersPage() {
       if (response.success) {
         await loadReminders();
       } else {
-        alert('Error al eliminar: ' + response.message);
+        showError('Error al eliminar: ' + response.message);
       }
     } catch (error) {
       console.error('Error al eliminar recordatorio:', error);
-      alert('Error al eliminar el recordatorio');
+      showError('Error al eliminar el recordatorio');
     } finally {
       setLoading(false);
     }
@@ -240,11 +241,11 @@ export default function RemindersPage() {
       if (response.success) {
         await loadReminders();
       } else {
-        alert('Error al completar: ' + response.message);
+        showError('Error al completar: ' + response.message);
       }
     } catch (error) {
       console.error('Error al completar recordatorio:', error);
-      alert('Error al marcar como completado');
+      showError('Error al marcar como completado');
     } finally {
       setLoading(false);
     }
@@ -265,14 +266,14 @@ export default function RemindersPage() {
     try {
       const response = await remindersService.enviarNotificacion(id);
       if (response.success) {
-        alert('Notificación enviada correctamente al cliente');
+        showSuccess('Notificación enviada correctamente al cliente');
         await loadReminders();
       } else {
-        alert('Error al enviar notificación: ' + response.message);
+        showError('Error al enviar notificación: ' + response.message);
       }
     } catch (error) {
       console.error('Error al enviar notificación:', error);
-      alert('Error al enviar la notificación');
+      showError('Error al enviar la notificación');
     } finally {
       setLoading(false);
     }

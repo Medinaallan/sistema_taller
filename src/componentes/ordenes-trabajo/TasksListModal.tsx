@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Button } from '../comunes/UI';
 import workOrdersService, { OTTarea, WorkOrderData } from '../../servicios/workOrdersService';
 import { TrashIcon, PlayIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { showError, showSuccess, showAlert, showConfirm } from '../../utilidades/sweetAlertHelpers';
 
 interface TasksListModalProps {
   isOpen: boolean;
@@ -55,14 +56,14 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
         try {
           await workOrdersService.startWorkOrder(workOrder.id!);
           console.log('OT iniciada automáticamente');
-          alert('Tarea iniciada. La orden de trabajo se ha iniciado automáticamente.');
+          showSuccess('Tarea iniciada. La orden de trabajo se ha iniciado automáticamente.');
         } catch (otError) {
           console.error('Error al iniciar OT automáticamente:', otError);
           // No fallar si no se puede iniciar la OT, la tarea ya se inició
-          alert('Tarea iniciada (nota: la orden de trabajo no se pudo iniciar automáticamente)');
+          showAlert('Tarea iniciada (nota: la orden de trabajo no se pudo iniciar automáticamente)');
         }
       } else {
-        alert('Estado de tarea actualizado exitosamente');
+        showSuccess('Estado de tarea actualizado exitosamente');
       }
       
       await loadTareas(); // Recargar tareas
@@ -72,21 +73,21 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
         window.location.reload();
       }
     } catch (err) {
-      alert('Error al cambiar estado: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error al cambiar estado: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
   const handleDeleteTask = async (tareaId: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+    if (!await showConfirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
       return;
     }
 
     try {
       await workOrdersService.eliminarTarea(tareaId);
-      alert('Tarea eliminada exitosamente');
+      showSuccess('Tarea eliminada exitosamente');
       await loadTareas(); // Recargar tareas
     } catch (err) {
-      alert('Error al eliminar tarea: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+      showError('Error al eliminar tarea: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
   };
 
@@ -127,10 +128,10 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
                 onClick={async () => {
                   try {
                     await workOrdersService.startWorkOrder(workOrder.id!);
-                    alert('Orden de trabajo iniciada correctamente');
+                    showSuccess('Orden de trabajo iniciada correctamente');
                     window.location.reload();
                   } catch (error) {
-                    alert('Error al iniciar OT: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+                    showError('Error al iniciar OT: ' + (error instanceof Error ? error.message : 'Error desconocido'));
                   }
                 }}
                 className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"

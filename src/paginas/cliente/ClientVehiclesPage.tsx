@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { vehiclesService, servicesService } from '../../servicios/apiService';
+import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface Vehicle {
   id: string;
@@ -178,13 +179,13 @@ export function ClientVehiclesPage() {
     if (file) {
       // Validar tipo de archivo
       if (!file.type.startsWith('image/')) {
-        alert('Por favor selecciona un archivo de imagen válido');
+        showWarning('Por favor selecciona un archivo de imagen válido');
         return;
       }
       
       // Validar tamaño (máximo 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('La imagen no debe superar los 5MB');
+        showWarning('La imagen no debe superar los 5MB');
         return;
       }
       
@@ -223,7 +224,7 @@ export function ClientVehiclesPage() {
       }
     } catch (error) {
       console.error('Error subiendo imagen:', error);
-      alert('Error al subir la imagen. Por favor intenta de nuevo.');
+      showError('Error al subir la imagen. Por favor intenta de nuevo.');
       return null;
     } finally {
       setUploadingImage(false);
@@ -232,13 +233,13 @@ export function ClientVehiclesPage() {
 
   const handleAddVehicle = async () => {
     if (!state?.user?.id) {
-      alert('Error: Usuario no identificado');
+      showError('Error: Usuario no identificado');
       return;
     }
 
     // Validaciones básicas - Solo campos obligatorios según SP
     if (!vehicleForm.brand || !vehicleForm.model || !vehicleForm.licensePlate) {
-      alert('Por favor, completa todos los campos obligatorios (marca, modelo y placa)');
+      showWarning('Por favor, completa todos los campos obligatorios (marca, modelo y placa)');
       return;
     }
 
@@ -250,7 +251,7 @@ export function ClientVehiclesPage() {
         console.log('📷 Subiendo imagen a S3...');
         fotoUrl = await uploadImageToS3();
         if (!fotoUrl) {
-          alert('Error al subir la imagen. ¿Deseas continuar sin foto?');
+          showError('Error al subir la imagen. ¿Deseas continuar sin foto?');
           setLoading(false);
           return;
         }
@@ -328,13 +329,13 @@ export function ClientVehiclesPage() {
         setSelectedImage(null);
         setImagePreview(null);
 
-        alert('¡Vehículo registrado exitosamente!');
+        showSuccess('¡Vehículo registrado exitosamente!');
       } else {
-        alert('Error al registrar el vehículo: ' + response.message);
+        showError('Error al registrar el vehículo: ' + response.message);
       }
     } catch (error) {
       console.error('Error registrando vehículo:', error);
-      alert('Error de conexión al registrar el vehículo');
+      showError('Error de conexión al registrar el vehículo');
     } finally {
       setLoading(false);
     }
@@ -345,7 +346,7 @@ export function ClientVehiclesPage() {
 
     // Validaciones básicas
     if (!editForm.brand || !editForm.model || !editForm.licensePlate) {
-      alert('Por favor, completa todos los campos obligatorios (marca, modelo y placa)');
+      showWarning('Por favor, completa todos los campos obligatorios (marca, modelo y placa)');
       return;
     }
 
@@ -402,13 +403,13 @@ export function ClientVehiclesPage() {
         setSelectedImage(null);
         setImagePreview(null);
 
-        alert('¡Vehículo actualizado exitosamente!');
+        showSuccess('¡Vehículo actualizado exitosamente!');
       } else {
-        alert('Error al actualizar el vehículo: ' + response.message);
+        showError('Error al actualizar el vehículo: ' + response.message);
       }
     } catch (error) {
       console.error('Error actualizando vehículo:', error);
-      alert('Error de conexión al actualizar el vehículo');
+      showError('Error de conexión al actualizar el vehículo');
     } finally {
       setLoading(false);
     }
@@ -1418,7 +1419,7 @@ export function ClientVehiclesPage() {
             onSuccess={() => {
               setShowAppointmentModal(false);
               setSelectedVehicle(null);
-              alert('¡Cita agendada exitosamente!');
+              showSuccess('¡Cita agendada exitosamente!');
             }}
           />
         </div>
@@ -1510,11 +1511,11 @@ function ClientAppointmentForm({ vehicleId, clientId, onClose, onSuccess }: {
       if (result.success) {
         onSuccess();
       } else {
-        alert('Error al agendar la cita: ' + result.message);
+        showError('Error al agendar la cita: ' + result.message);
       }
     } catch (error) {
       console.error('Error agendando cita:', error);
-      alert('Error de conexión al agendar la cita');
+      showError('Error de conexión al agendar la cita');
     } finally {
       setLoading(false);
     }

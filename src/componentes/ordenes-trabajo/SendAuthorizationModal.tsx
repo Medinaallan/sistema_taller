@@ -6,6 +6,7 @@ import {
 import { Modal, Button, Select, TextArea, Input } from '../comunes/UI';
 import { WorkOrderData } from '../../servicios/workOrdersService';
 import { workOrderAuthorizationsService } from '../../servicios/workOrderAuthorizationsService';
+import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface SendAuthorizationModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export default function SendAuthorizationModal({
     if (!workOrder) return;
     
     if (!formData.motivo.trim() || !formData.detalles.trim()) {
-      alert('Por favor complete todos los campos requeridos');
+      showWarning('Por favor complete todos los campos requeridos');
       return;
     }
 
@@ -57,7 +58,7 @@ export default function SendAuthorizationModal({
         enviadoPorNombre: 'Admin' // TODO: obtener del usuario actual
       });
 
-      alert(' Autorización enviada al cliente exitosamente');
+      showSuccess('Autorización enviada al cliente exitosamente');
       
       // Resetear formulario
       setFormData({
@@ -70,7 +71,7 @@ export default function SendAuthorizationModal({
       onClose();
     } catch (error) {
       console.error('Error enviando autorización:', error);
-      alert('Error al enviar la autorización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+      showError('Error al enviar la autorización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setSending(false);
     }

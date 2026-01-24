@@ -3,8 +3,6 @@ import { ShoppingCart, Search, Package, FileText, Wrench, User } from 'lucide-re
 import type { Client } from '../../tipos';
 import usePendingInvoices from '../../hooks/usePendingInvoices';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
-import { obtenerClientes } from '../../servicios/clientesApiService';
-import { vehiclesService } from '../../servicios/apiService';
 import Swal from 'sweetalert2';
 import invoicesService from '../../servicios/invoicesService';
 import { useApp } from '../../contexto/useApp';
@@ -133,15 +131,30 @@ const POSPage: React.FC = () => {
   const addPendingInvoiceToCart = (pendingInvoice: any) => {
     const precio = Number(pendingInvoice.totalAmount) || Number(pendingInvoice.costoTotal) || Number(pendingInvoice.costoEstimado) || 0;
     
+    const descripcionServicio = `Servicio Automotriz - ${pendingInvoice.vehicleName || 'Vehículo'} | OT #${pendingInvoice.id?.slice(-8) || ''}`;
+    
     const invoiceItem: CartItem = {
       id: `invoice-${pendingInvoice.id}`,
-      name: `Factura Pendiente - OT #${pendingInvoice.id?.slice(-8) || ''}`,
+      name: descripcionServicio,
       price: precio,
       quantity: 1,
       total: precio,
       category: 'SERVICIOS',
       type: 'service'
     };
+    
+    // Usar directamente los datos del pendingInvoice
+    const clienteToSelect: Client | null = pendingInvoice.clienteId && pendingInvoice.clientName ? {
+      id: pendingInvoice.clienteId,
+      name: pendingInvoice.clientName,
+      phone: pendingInvoice.clientPhone || '',
+      email: pendingInvoice.clientEmail || '',
+      address: '',
+      password: '',
+      vehicles: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as Client : null;
 
     setPosState(prev => {
       const existingItem = prev.cart.find(item => item.id === invoiceItem.id);
@@ -149,7 +162,8 @@ const POSPage: React.FC = () => {
       if (!existingItem) {
         return {
           ...prev,
-          cart: [...prev.cart, invoiceItem]
+          cart: [...prev.cart, invoiceItem],
+          selectedClient: clienteToSelect || prev.selectedClient
         };
       }
       
@@ -244,11 +258,26 @@ const POSPage: React.FC = () => {
 
       const serviceItems = posState.cart.filter(item => item.type === 'service');
 
+      // Determinar el cliente final (priorizar el de la OT si existe)
+      let finalClientId = posState.selectedClient?.id || null;
+      let finalClientName = posState.selectedClient?.name || 'CONSUMIDOR FINAL';
+      
+      // Si hay items de servicio (OT), usar el cliente de la primera OT
+      const firstServiceItem = serviceItems[0];
+      if (firstServiceItem && firstServiceItem.id.startsWith('invoice-')) {
+        const workOrderId = firstServiceItem.id.replace('invoice-', '');
+        const originalInvoice = pendingInvoices.find(inv => inv.id === workOrderId);
+        if (originalInvoice && originalInvoice.clienteId) {
+          finalClientId = originalInvoice.clienteId;
+          finalClientName = originalInvoice.clientName || finalClientName;
+        }
+      }
+      
       // Crear la factura y guardarla
       const newInvoice = invoicesService.createInvoice({
         fecha: new Date().toISOString(),
-        clientId: posState.selectedClient?.id || null,
-        clientName: posState.selectedClient?.name || 'CONSUMIDOR FINAL',
+        clientId: finalClientId,
+        clientName: finalClientName,
         items: posState.cart.map(item => ({
           id: item.id,
           name: item.name,
@@ -333,16 +362,21 @@ const POSPage: React.FC = () => {
             <p style="margin-top: 15px;">¿Desea imprimir la factura?</p>
           </div>
         `,
+        showDenyButton: true,
         showCancelButton: true,
         confirmButtonColor: '#3b82f6',
+        denyButtonColor: '#10b981',
         cancelButtonColor: '#6b7280',
-        confirmButtonText: '🖨️ Imprimir',
-        cancelButtonText: 'No, gracias'
+        confirmButtonText: ' Tamaño Carta ',
+        denyButtonText: ' Ticket',
+        cancelButtonText: 'No imprimir'
       });
 
-      // Paso 4: Imprimir si lo solicitó
+      // Paso 4: Imprimir según el formato seleccionado
       if (printResult.isConfirmed) {
-        invoicesService.printInvoice(newInvoice);
+        invoicesService.printInvoiceCarta(newInvoice);
+      } else if (printResult.isDenied) {
+        invoicesService.printInvoiceTicket(newInvoice);
       }
       
     } catch (error) {
@@ -683,6 +717,17 @@ const POSPage: React.FC = () => {
               />
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto">
+              {posState.selectedClient && (
+                <div
+                  onClick={() => {
+                    setIsClientModalOpen(false);
+                  }}
+                  className="p-2 bg-blue-50 border-2 border-blue-500 cursor-pointer rounded"
+                >
+                  <p className="font-medium text-blue-900">{posState.selectedClient.name}</p>
+                  <p className="text-sm text-blue-700">{posState.selectedClient.phone || 'Sin teléfono'}</p>
+                </div>
+              )}
               <div
                 onClick={() => {
                   setPosState(prev => ({ ...prev, selectedClient: null }));
@@ -693,7 +738,6 @@ const POSPage: React.FC = () => {
                 <p className="font-medium">CONSUMIDOR FINAL</p>
                 <p className="text-sm text-gray-600">Sin RTN</p>
               </div>
-              {/* Aquí irían los clientes filtrados */}
             </div>
             <div className="flex justify-end space-x-2 mt-4">
               <button
