@@ -49,7 +49,7 @@ export default function AuthorizationDecisionModal({
                 Procesar en Panel Administrador
               </h3>
               <p className="text-sm text-gray-600">
-                Continuar con el proceso de control de calidad interno sin necesidad de aprobación del cliente
+                Continuar con el proceso de control de calidad interno para imprimir en taller o proceder con la finalización
               </p>
               <div className="pt-2">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -75,7 +75,7 @@ export default function AuthorizationDecisionModal({
                 Enviar Autorización al Cliente
               </h3>
               <p className="text-sm text-gray-600">
-                Solicitar aprobación del cliente antes de proceder con el trabajo adicional o finalización
+                Enviar la orden de trabajo al cliente para su revisión y aprobación antes de proceder
               </p>
               <div className="pt-2">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
@@ -84,15 +84,6 @@ export default function AuthorizationDecisionModal({
               </div>
             </div>
           </button>
-        </div>
-
-        {/* Información adicional */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-900 mb-2">Recomendaciones:</h4>
-          <ul className="text-sm text-gray-600 space-y-1">
-            <li>• <strong>Procesar en panel:</strong> Usar cuando el trabajo está dentro del presupuesto original</li>
-            <li>• <strong>Enviar al cliente:</strong> Usar cuando hay trabajos adicionales, costos extras o cambios significativos</li>
-          </ul>
         </div>
 
         {/* Botón cancelar */}

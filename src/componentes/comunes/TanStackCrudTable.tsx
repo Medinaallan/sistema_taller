@@ -9,6 +9,8 @@ interface TanStackCrudTableProps<T extends { id: string }> {
   data: T[];
   onEdit?: (item: T) => void;
   onDelete?: (item: T) => void;
+  editLabel?: string; // texto para el botón editar
+  showDelete?: boolean; // mostrar botón eliminar
 }
 
 function exportToCSV<T>(data: T[], columns: ColumnDef<T, any>[], filename = 'export.csv') {
@@ -36,7 +38,7 @@ function exportToCSV<T>(data: T[], columns: ColumnDef<T, any>[], filename = 'exp
   URL.revokeObjectURL(url);
 }
 
-export function TanStackCrudTable<T extends { id: string }>({ columns, data, onEdit, onDelete }: TanStackCrudTableProps<T>) {
+export function TanStackCrudTable<T extends { id: string }>({ columns, data, onEdit, onDelete, editLabel, showDelete = true }: TanStackCrudTableProps<T>) {
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -92,7 +94,7 @@ export function TanStackCrudTable<T extends { id: string }>({ columns, data, onE
                     {header.column.getIsSorted() === 'desc' && ' ▼'}
                   </th>
                 ))}
-                {(onEdit || onDelete) && <th className="px-6 py-3">Acciones</th>}
+                {(onEdit || (onDelete && showDelete)) && <th className="px-6 py-3">Acciones</th>}
               </tr>
             ))}
           </thead>
@@ -104,10 +106,10 @@ export function TanStackCrudTable<T extends { id: string }>({ columns, data, onE
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
-                {(onEdit || onDelete) && (
+                {(onEdit || (onDelete && showDelete)) && (
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 space-x-2">
-                    {onEdit && <Button size="sm" variant="outline" onClick={() => onEdit(row.original)}>Editar</Button>}
-                    {onDelete && <Button size="sm" variant="danger" onClick={() => onDelete(row.original)}>Eliminar</Button>}
+                    {onEdit && <Button size="sm" variant="outline" onClick={() => onEdit(row.original)}>{editLabel || 'Editar'}</Button>}
+                    {onDelete && showDelete && <Button size="sm" variant="danger" onClick={() => onDelete(row.original)}>Eliminar</Button>}
                   </td>
                 )}
               </tr>

@@ -3,12 +3,15 @@
     "1": "Completada",
     "12": "Completada",
     "14": "Completada",
-    "23": "En espera de aprobación",
+    "23": "Control de calidad",
     "24": "Completada",
     "26": "Completada",
     "27": "Completada",
     "28": "Completada",
     "29": "En proceso",
-    "30": "Completada"
+    "30": "Completada",
+    "41": "Completada",
+    "42": "En proceso",
+    "43": "Completada"
   }
 }

@@ -3,66 +3,34 @@ const path = require('path');
 
 class ServiceHistoryService {
     constructor() {
-        this.clientsPath = path.join(__dirname, '..', 'data', 'clients', 'clients.csv');
-        this.vehiclesPath = path.join(__dirname, '..', 'data', 'vehicles', 'vehicles.csv');
-        this.servicesPath = path.join(__dirname, '..', 'data', 'services', 'services.csv');
-        this.workOrdersPath = path.join(__dirname, '..', 'data', 'workorders', 'workorders.csv');
+        this.clientsPath = path.join(__dirname, '..', 'data', 'clients', 'clients.json');
+        this.vehiclesPath = path.join(__dirname, '..', 'data', 'vehicles', 'vehicles.json');
+        this.servicesPath = path.join(__dirname, '..', 'data', 'services', 'services.json');
+        this.workOrdersPath = path.join(__dirname, '..', 'data', 'workorders', 'workorders.json');
     }
 
     /**
-     * Leer datos desde un archivo CSV
+     * Leer datos desde un archivo JSON de forma segura.
+     * Si el archivo no existe o no es JSON válido, devuelve array vacío.
      */
-    async readCSV(filePath) {
+    async readJSON(filePath) {
         try {
-            const csvContent = await fs.readFile(filePath, 'utf8');
-            const lines = csvContent.trim().split('\n');
-            
-            if (lines.length <= 1) return [];
-            
-            const headers = lines[0].split(',').map(header => header.trim());
-            const records = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const values = this.parseCSVLine(lines[i]);
-                if (values.length === headers.length) {
-                    const record = {};
-                    headers.forEach((header, index) => {
-                        record[header] = values[index];
-                    });
-                    records.push(record);
-                }
-            }
-            
-            return records;
+            const content = await fs.readFile(filePath, 'utf8');
+            const json = JSON.parse(content);
+            if (Array.isArray(json)) return json;
+            // Si el JSON es un objeto con llave `data`, devolver ese valor
+            if (json && Array.isArray(json.data)) return json.data;
+            return [];
         } catch (error) {
-            console.error(`Error leyendo CSV ${filePath}:`, error);
+            // Archivo no existe o no es JSON válido
+            // Mostrar mensaje claro en logs y devolver array vacío
+            if (error && error.code === 'ENOENT') {
+                console.warn(`Archivo no encontrado, devolviendo array vacío: ${filePath}`);
+            } else {
+                console.error(`Error leyendo JSON ${filePath}:`, error);
+            }
             return [];
         }
-    }
-
-    /**
-     * Parsear una línea CSV considerando campos con comas
-     */
-    parseCSVLine(line) {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                result.push(current.trim());
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        
-        result.push(current.trim());
-        return result;
     }
 
     /**
@@ -72,10 +40,10 @@ class ServiceHistoryService {
         try {
             // Cargar todos los datos necesarios
             const [clients, vehicles, services, workOrders] = await Promise.all([
-                this.readCSV(this.clientsPath),
-                this.readCSV(this.vehiclesPath),
-                this.readCSV(this.servicesPath),
-                this.readCSV(this.workOrdersPath)
+                this.readJSON(this.clientsPath),
+                this.readJSON(this.vehiclesPath),
+                this.readJSON(this.servicesPath),
+                this.readJSON(this.workOrdersPath)
             ]);
 
             // Leer historial adicional del archivo JSON

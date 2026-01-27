@@ -37,65 +37,79 @@ class PDFInvoiceGenerator {
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let yPos = 15;
+    let yPos = 12;
 
     // Obtener información de la empresa desde la configuración
     const EMPRESA_INFO = this.getEmpresaInfo();
 
-    // ========== ENCABEZADO EMPRESA ==========
-    doc.setFontSize(16);
+    // ======= MÁRGENES Y ESTILO GLOBAL =======
+    const marginLeft = 15;
+    const marginRight = 15;
+    const contentWidth = pageWidth - marginLeft - marginRight;
+
+    // ========== ENCABEZADO EMPRESA (con número de factura a la derecha) ==========
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text(EMPRESA_INFO.nombre, pageWidth / 2, yPos, { align: 'center' });
-    
-    yPos += 6;
+    const nombreLineas = doc.splitTextToSize(EMPRESA_INFO.nombre, contentWidth - 60);
+    doc.text(nombreLineas, marginLeft, yPos);
+
+    // Caja de Número de Factura a la derecha
+    const invBoxW = 70;
+    const invBoxH = 22;
+    const invBoxX = pageWidth - marginRight - invBoxW;
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.6);
+    doc.rect(invBoxX, yPos - 6, invBoxW, invBoxH);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FACTURA', invBoxX + invBoxW / 2, yPos + 2, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${invoice.numero}`, invBoxX + invBoxW / 2, yPos + 10, { align: 'center' });
+    doc.setFontSize(8);
+    doc.text(`${invoice.estado ? invoice.estado.toUpperCase() : ''}`, invBoxX + invBoxW / 2, yPos + 15, { align: 'center' });
+
+    yPos += nombreLineas.length * 6 + 2;
+
+    // Información secundaria (dirección / contacto / RTN)
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(EMPRESA_INFO.direccion, pageWidth / 2, yPos, { align: 'center' });
-    
-    yPos += 4;
-    doc.text(`Tel: ${EMPRESA_INFO.telefono} | Email: ${EMPRESA_INFO.correo}`, pageWidth / 2, yPos, { align: 'center' });
-    
-    yPos += 4;
+    const direccionLines = doc.splitTextToSize(EMPRESA_INFO.direccion, contentWidth - invBoxW - 10);
+    doc.text(direccionLines, marginLeft, yPos);
+    doc.text(`Tel: ${EMPRESA_INFO.telefono} | Email: ${EMPRESA_INFO.correo}`, marginLeft, yPos + direccionLines.length * 4 + 2);
     doc.setFont('helvetica', 'bold');
-    doc.text(`RTN: ${EMPRESA_INFO.rtn}`, pageWidth / 2, yPos, { align: 'center' });
-    
-    yPos += 8;
-    
-    // ========== TÍTULO FACTURA ==========
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FACTURA', pageWidth / 2, yPos, { align: 'center' });
-    
-    yPos += 8;
+    doc.text(`RTN: ${EMPRESA_INFO.rtn}`, marginLeft, yPos + direccionLines.length * 4 + 8);
 
-    // ========== INFORMACIÓN SAR (Recuadro) ==========
-    const sarBoxX = 15;
-    const sarBoxWidth = pageWidth - 30;
+    yPos += Math.max(direccionLines.length * 4 + 12, 22);
+
+    // ========== INFORMACIÓN SAR (Recuadro destacado con fondo claro) ==========
+    const sarBoxX = marginLeft;
+    const sarBoxWidth = contentWidth;
+    const sarBoxHeight = 34;
+    doc.setDrawColor(0);
+    doc.setFillColor(245, 245, 245);
+    doc.rect(sarBoxX, yPos, sarBoxWidth, sarBoxHeight, 'FD');
     doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Información SAR', sarBoxX + 4, yPos + 6);
     doc.setFont('helvetica', 'normal');
-    doc.rect(sarBoxX, yPos, sarBoxWidth, 20);
-    
-    const sarTextY = yPos + 4;
-    doc.text(`CAI: ${EMPRESA_INFO.cai}`, sarBoxX + 3, sarTextY);
-    doc.text(`Rango Autorizado: ${EMPRESA_INFO.rangoInicial} - ${EMPRESA_INFO.rangoFinal}`, sarBoxX + 3, sarTextY + 4);
-    doc.text(`Fecha Límite de Emisión: ${EMPRESA_INFO.fechaLimiteEmision}`, sarBoxX + 3, sarTextY + 8);
-    doc.text('Original: Cliente | Copia: Emisor', sarBoxX + 3, sarTextY + 12);
-    
-    yPos += 24;
+    doc.text(`CAI: ${EMPRESA_INFO.cai}`, sarBoxX + 4, yPos + 12);
+    doc.text(`Rango Autorizado: ${EMPRESA_INFO.rangoInicial} - ${EMPRESA_INFO.rangoFinal}`, sarBoxX + 4, yPos + 17);
+    doc.text(`Fecha Límite de Emisión: ${EMPRESA_INFO.fechaLimiteEmision}`, sarBoxX + 4, yPos + 22);
+    doc.text('Original: Cliente | Copia: Emisor', sarBoxX + 4, yPos + 27);
+    yPos += sarBoxHeight + 6;
 
-    // ========== DATOS DE FACTURA Y CLIENTE (Dos columnas) ==========
-    const col1X = 15;
+    // ========== DATOS DE FACTURA Y CLIENTE (Dos columnas claras) ==========
+    const col1X = marginLeft;
     const col2X = pageWidth / 2 + 5;
-    
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('DATOS DE FACTURA', col1X, yPos);
     doc.text('DATOS DEL CLIENTE', col2X, yPos);
-    
     yPos += 6;
-    doc.setFont('helvetica', 'normal');
+
     doc.setFontSize(9);
-    
+    doc.setFont('helvetica', 'normal');
     // Columna 1: Datos de Factura
     doc.text(`Número: ${invoice.numero}`, col1X, yPos);
     doc.text(`Fecha: ${new Date(invoice.fecha).toLocaleString('es-HN', {
@@ -105,121 +119,104 @@ class PDFInvoiceGenerator {
       hour: '2-digit',
       minute: '2-digit'
     })}`, col1X, yPos + 5);
-    doc.text(`Estado: ${invoice.estado.toUpperCase()}`, col1X, yPos + 10);
-    doc.text(`Método de Pago: ${invoice.metodoPago || 'Efectivo'}`, col1X, yPos + 15);
-    
+    doc.text(`Método de Pago: ${invoice.metodoPago || 'Efectivo'}`, col1X, yPos + 10);
+
     // Columna 2: Datos del Cliente
     doc.text(`Nombre: ${invoice.clientName}`, col2X, yPos);
     if (invoice.clientId) {
-      doc.text(`ID Cliente: ${invoice.clientId.substring(0, 15)}`, col2X, yPos + 5);
+      doc.text(`ID Cliente: ${invoice.clientId}`, col2X, yPos + 5);
     } else {
       doc.text('RTN/Identidad: Consumidor Final', col2X, yPos + 5);
     }
-    
-    yPos += 25;
+
+    yPos += 22;
 
     // ========== LÍNEA SEPARADORA ==========
     doc.setDrawColor(0);
-    doc.setLineWidth(0.5);
-    doc.line(15, yPos, pageWidth - 15, yPos);
-    yPos += 5;
+    doc.setLineWidth(0.4);
+    doc.line(marginLeft, yPos, pageWidth - marginRight, yPos);
+    yPos += 6;
 
-    // ========== TABLA DE ITEMS ==========
-    const tableData = invoice.items.map((item, index) => [
-      (index + 1).toString(),
-      item.name,
-      item.quantity.toString(),
-      `L ${item.price.toFixed(2)}`,
-      item.type === 'service' ? 'Servicio' : 'Producto',
-      `L ${item.total.toFixed(2)}`
-    ]);
+    // ========== TABLA DE ITEMS (ajustada para carta) ==========
+    const tableData = invoice.items.map((item, index) => ({
+      no: (index + 1).toString(),
+      desc: item.name,
+      qty: item.quantity.toString(),
+      price: item.price.toFixed(2),
+      type: item.type === 'service' ? 'Servicio' : 'Producto',
+      total: item.total.toFixed(2)
+    }));
 
     autoTable(doc, {
       startY: yPos,
       head: [['#', 'Descripción', 'Cant.', 'Precio Unit.', 'Tipo', 'Total']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center'
-      },
-      bodyStyles: {
-        fontSize: 9
-      },
+      body: tableData.map(r => [r.no, r.desc, r.qty, `L ${r.price}`, r.type, `L ${r.total}`]),
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41,128,185], textColor: 255, fontStyle: 'bold' },
       columnStyles: {
         0: { halign: 'center', cellWidth: 10 },
-        1: { halign: 'left', cellWidth: 70 },
-        2: { halign: 'center', cellWidth: 20 },
+        1: { halign: 'left', cellWidth: contentWidth * 0.45 },
+        2: { halign: 'center', cellWidth: 18 },
         3: { halign: 'right', cellWidth: 30 },
         4: { halign: 'center', cellWidth: 25 },
         5: { halign: 'right', cellWidth: 30 }
       },
-      margin: { left: 15, right: 15 }
+      margin: { left: marginLeft, right: marginRight }
     });
 
     // Obtener posición Y después de la tabla
-    const finalY = (doc as any).lastAutoTable.finalY || yPos + 40;
-    yPos = finalY + 10;
+    const finalY = (doc as any).lastAutoTable?.finalY || yPos + 40;
+    yPos = finalY + 8;
 
-    // ========== TOTALES (Alineados a la derecha) ==========
-    const totalBoxX = pageWidth - 75;
-    const totalBoxWidth = 60;
-    
+    // ========== TOTALES (Alineados a la derecha con caja visible) ==========
+    const totalsX = pageWidth - marginRight - 80;
+    const totalsValX = pageWidth - marginRight;
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    
-    doc.text('Subtotal:', totalBoxX, yPos, { align: 'right' });
-    doc.text(`L ${invoice.subtotal.toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
-    
-    if (invoice.discount > 0) {
-      yPos += 5;
-      doc.text('Descuento:', totalBoxX, yPos, { align: 'right' });
-      doc.text(`- L ${invoice.discount.toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
-    }
-    
-    yPos += 5;
-    doc.text('ISV (15%):', totalBoxX, yPos, { align: 'right' });
-    doc.text(`L ${invoice.tax.toFixed(2)}`, totalBoxX + totalBoxWidth, yPos, { align: 'right' });
-    
-    yPos += 7;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setDrawColor(0);
-    doc.line(totalBoxX - 5, yPos - 2, totalBoxX + totalBoxWidth, yPos - 2);
-    doc.text('TOTAL:', totalBoxX, yPos + 2, { align: 'right' });
-    doc.text(`L ${invoice.total.toFixed(2)}`, totalBoxX + totalBoxWidth, yPos + 2, { align: 'right' });
-    
-    yPos += 10;
+    doc.text('Subtotal:', totalsX, yPos, { align: 'right' });
+    doc.text(`L ${invoice.subtotal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
 
-    // ========== CONVERSIÓN A LETRAS ==========
+    if (invoice.discount && invoice.discount > 0) {
+      yPos += 6;
+      doc.text('Descuento:', totalsX, yPos, { align: 'right' });
+      doc.text(`- L ${invoice.discount.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+    }
+
+    yPos += 6;
+    doc.text('ISV (15%):', totalsX, yPos, { align: 'right' });
+    doc.text(`L ${invoice.tax.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+
+    yPos += 8;
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.6);
+    doc.line(totalsX - 5, yPos, totalsValX, yPos);
+    yPos += 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('TOTAL:', totalsX, yPos, { align: 'right' });
+    doc.text(`L ${invoice.total.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+
+    yPos += 14;
+
+    // ========== CONVERSIÓN A LETRAS ========
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     const totalEnLetras = this.numeroALetras(invoice.total);
-    doc.text(`Son: ${totalEnLetras} lempiras`, 15, yPos);
-    
-    yPos += 10;
+    const letras = `Son: ${totalEnLetras} lempiras`;
+    const letrasLines = doc.splitTextToSize(letras, contentWidth * 0.7);
+    doc.text(letrasLines, marginLeft, yPos);
 
-    // ========== FIRMA Y SELLO ==========
-    if (yPos + 30 < pageHeight - 20) {
-      yPos = Math.max(yPos, pageHeight - 50);
-      
-      doc.setDrawColor(0);
-      doc.line(40, yPos, 90, yPos);
-      doc.line(pageWidth - 90, yPos, pageWidth - 40, yPos);
-      
-      yPos += 5;
-      doc.setFontSize(8);
-      doc.text('Firma del Cliente', 65, yPos, { align: 'center' });
-      doc.text('Firma y Sello', pageWidth - 65, yPos, { align: 'center' });
-    }
+    yPos += letrasLines.length * 5 + 8;
 
-    // ========== PIE DE PÁGINA ==========
+
+    // ========== PIE DE PÁGINA ========
     doc.setFontSize(7);
     doc.setFont('helvetica', 'italic');
-    doc.text('¡Gracias por su preferencia!', pageWidth / 2, pageHeight - 10, { align: 'center' });
-    doc.text(`Documento generado el ${new Date().toLocaleString('es-HN')}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
+    doc.text('¡Gracias por su preferencia!', pageWidth / 2, pageHeight - 12, { align: 'center' });
+    doc.text(`Documento generado el ${new Date().toLocaleString('es-HN')}`, pageWidth / 2, pageHeight - 7, { align: 'center' });
 
     return doc;
   }
@@ -232,13 +229,13 @@ class PDFInvoiceGenerator {
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: [ticketWidth, 297] // Ancho 80mm, alto variable
+      format: [ticketWidth, 297]
     });
 
     const pageWidth = doc.internal.pageSize.getWidth();
-    let yPos = 5;
-    const margin = 3;
-    const contentWidth = pageWidth - (margin * 2);
+    let yPos = 6;
+    const margin = 4;
+    const contentWidth = pageWidth - margin * 2;
 
     // Obtener información de la empresa desde la configuración
     const EMPRESA_INFO = this.getEmpresaInfo();
@@ -252,142 +249,132 @@ class PDFInvoiceGenerator {
 
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(EMPRESA_INFO.direccion, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 4;
-    
+    const direccionLines = doc.splitTextToSize(EMPRESA_INFO.direccion, contentWidth);
+    doc.text(direccionLines, pageWidth / 2, yPos, { align: 'center' });
+    yPos += direccionLines.length * 4 + 1;
+
     doc.text(`Tel: ${EMPRESA_INFO.telefono}`, pageWidth / 2, yPos, { align: 'center' });
     yPos += 4;
-    
+
     doc.setFont('helvetica', 'bold');
     doc.text(`RTN: ${EMPRESA_INFO.rtn}`, pageWidth / 2, yPos, { align: 'center' });
     yPos += 6;
 
-    // ========== LÍNEA SEPARADORA ==========
+    // ========== SEPARADOR ==========
     doc.setLineWidth(0.3);
     doc.line(margin, yPos, pageWidth - margin, yPos);
     yPos += 4;
 
-    // ========== TÍTULO ==========
+    // ========== TITULO FACTURA ==========
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('FACTURA', pageWidth / 2, yPos, { align: 'center' });
     yPos += 6;
 
-    // ========== INFORMACIÓN SAR ==========
-    doc.setFontSize(6);
+    // ========== INFORMACIÓN SAR (compacta) ==========
+    doc.setFontSize(6.5);
     doc.setFont('helvetica', 'normal');
-    const caiLineas = doc.splitTextToSize(`CAI: ${EMPRESA_INFO.cai}`, contentWidth);
-    doc.text(caiLineas, margin, yPos);
-    yPos += caiLineas.length * 3;
-    
-    doc.text(`Rango: ${EMPRESA_INFO.rangoInicial} - ${EMPRESA_INFO.rangoFinal}`, margin, yPos);
-    yPos += 3;
-    
-    doc.text(`Fecha Límite: ${EMPRESA_INFO.fechaLimiteEmision}`, margin, yPos);
-    yPos += 5;
+    doc.text(`CAI: ${EMPRESA_INFO.cai}`, margin, yPos);
+    doc.text(`Rango: ${EMPRESA_INFO.rangoInicial} - ${EMPRESA_INFO.rangoFinal}`, margin, yPos + 3.5);
+    doc.text(`Fecha Límite: ${EMPRESA_INFO.fechaLimiteEmision}`, margin, yPos + 7);
+    yPos += 11;
 
-    // ========== DATOS DE FACTURA ==========
+    // ========== DATOS (Factura / Cliente) ==========
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.text(`No. Factura: ${invoice.numero}`, margin, yPos);
     yPos += 4;
-    
+
     doc.setFont('helvetica', 'normal');
-    doc.text(`Fecha: ${new Date(invoice.fecha).toLocaleString('es-HN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`, margin, yPos);
+    doc.setFontSize(7.5);
+    doc.text(`Fecha: ${new Date(invoice.fecha).toLocaleString('es-HN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`, margin, yPos);
     yPos += 4;
-    
-    doc.text(`Cliente: ${invoice.clientName}`, margin, yPos);
+    doc.text(`Cliente: ${invoice.clientName || 'CONSUMIDOR FINAL'}`, margin, yPos);
     yPos += 4;
-    
-    if (!invoice.clientId) {
-      doc.text('RTN: Consumidor Final', margin, yPos);
+    if (invoice.clientId) {
+      doc.text(`RTN: ${invoice.clientId}`, margin, yPos);
       yPos += 4;
     }
-    
     doc.text(`Pago: ${invoice.metodoPago || 'Efectivo'}`, margin, yPos);
     yPos += 6;
 
-    // ========== LÍNEA SEPARADORA ==========
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 4;
-
-    // ========== ITEMS (Tabla simple sin autoTable para mejor control) ==========
-    doc.setFontSize(7);
+    // ========== ENCABEZADO TABLA ==========
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('Descripción', margin, yPos);
-    doc.text('Cant', pageWidth - 35, yPos);
-    doc.text('P.Unit', pageWidth - 25, yPos);
-    doc.text('Total', pageWidth - margin, yPos, { align: 'right' });
-    yPos += 4;
+    const colDescX = margin;
+    const colCantX = pageWidth - 48;
+    const colPUnitX = pageWidth - 32;
+    const colTotalX = pageWidth - margin;
 
+    doc.text('Descripción', colDescX, yPos);
+    doc.text('Cant', colCantX, yPos);
+    doc.text('P.Unit', colPUnitX, yPos);
+    doc.text('Total', colTotalX, yPos, { align: 'right' });
+    yPos += 4;
+    doc.setLineWidth(0.3);
     doc.line(margin, yPos, pageWidth - margin, yPos);
     yPos += 3;
 
+    // ========== ITEMS ==========
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
     invoice.items.forEach((item) => {
-      // Descripción (puede ocupar múltiples líneas)
-      const descLineas = doc.splitTextToSize(item.name, 40);
-      doc.text(descLineas, margin, yPos);
-      
-      // Cantidad, Precio, Total en la misma línea que la primera línea de descripción
-      doc.text(item.quantity.toString(), pageWidth - 35, yPos);
-      doc.text(item.price.toFixed(2), pageWidth - 25, yPos);
-      doc.text(item.total.toFixed(2), pageWidth - margin, yPos, { align: 'right' });
-      
-      yPos += Math.max(descLineas.length * 3, 4) + 1;
+      const descLines = doc.splitTextToSize(item.name, colCantX - colDescX - 2);
+      doc.text(descLines, colDescX, yPos);
+      // First line aligns quantities/prices
+      doc.text(item.quantity.toString(), colCantX, yPos);
+      doc.text(item.price.toFixed(2), colPUnitX, yPos);
+      doc.text(item.total.toFixed(2), colTotalX, yPos, { align: 'right' });
+      yPos += descLines.length * 3.8;
+      if (descLines.length === 0) yPos += 4;
     });
 
+    // ========== SEPARADOR ANTES DE TOTALES ==========
     yPos += 2;
     doc.line(margin, yPos, pageWidth - margin, yPos);
     yPos += 4;
 
     // ========== TOTALES ==========
-    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    
-    doc.text('Subtotal:', pageWidth - 30, yPos);
-    doc.text(`L ${invoice.subtotal.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    const valX = pageWidth - margin;
+    const labelX = pageWidth - 36;
+
+    doc.text('Subtotal:', labelX, yPos);
+    doc.text(`L ${invoice.subtotal.toFixed(2)}`, valX, yPos, { align: 'right' });
     yPos += 4;
-    
-    if (invoice.discount > 0) {
-      doc.text('Descuento:', pageWidth - 30, yPos);
-      doc.text(`-L ${invoice.discount.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
+
+    if (invoice.discount && invoice.discount > 0) {
+      doc.text('Descuento:', labelX, yPos);
+      doc.text(`-L ${invoice.discount.toFixed(2)}`, valX, yPos, { align: 'right' });
       yPos += 4;
     }
-    
-    doc.text('ISV (15%):', pageWidth - 30, yPos);
-    doc.text(`L ${invoice.tax.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
-    yPos += 5;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('TOTAL:', pageWidth - 30, yPos);
-    doc.text(`L ${invoice.total.toFixed(2)}`, pageWidth - margin, yPos, { align: 'right' });
+
+    doc.text('ISV (15%):', labelX, yPos);
+    doc.text(`L ${invoice.tax.toFixed(2)}`, valX, yPos, { align: 'right' });
     yPos += 6;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('TOTAL: ', labelX, yPos);
+    doc.text(`L ${invoice.total.toFixed(2)}`, valX, yPos, { align: 'right' });
+    yPos += 8;
 
     // ========== TOTAL EN LETRAS ==========
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
-    const totalLetras = this.numeroALetras(invoice.total);
-    const letrasLineas = doc.splitTextToSize(`Son: ${totalLetras} lempiras`, contentWidth);
-    doc.text(letrasLineas, margin, yPos);
-    yPos += letrasLineas.length * 3 + 4;
+    const totalEnLetras = this.numeroALetras(invoice.total);
+    const letrasLines = doc.splitTextToSize(`Son: ${totalEnLetras} lempiras`, contentWidth);
+    doc.text(letrasLines, margin, yPos);
+    yPos += letrasLines.length * 3.8 + 6;
 
-    // ========== PIE DE PÁGINA ==========
+    // ========== PIE ==========
     doc.line(margin, yPos, pageWidth - margin, yPos);
     yPos += 4;
-    
     doc.setFontSize(7);
     doc.setFont('helvetica', 'italic');
     doc.text('¡Gracias por su preferencia!', pageWidth / 2, yPos, { align: 'center' });
     yPos += 4;
-    
     doc.setFontSize(6);
     doc.text(`Generado: ${new Date().toLocaleString('es-HN')}`, pageWidth / 2, yPos, { align: 'center' });
 

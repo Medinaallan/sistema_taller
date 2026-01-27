@@ -129,7 +129,7 @@ export function Layout({ children }: LayoutProps) {
           {!state.isNavCollapsed && (
             <div className="flex items-center">
               <WrenchScrewdriverIcon className="h-14 w-14" style={{ color: colors.primaryLight }} />
-              <span className="ml-2 text-xl font-bold" style={{ color: colors.text.primary }}>AutoFlow</span>
+              <span className="ml-2 text-xl font-bold" style={{ color: colors.text.primary }}>TALLER</span>
             </div>
           )}
           <button 

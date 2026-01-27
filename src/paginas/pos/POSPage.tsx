@@ -274,7 +274,7 @@ const POSPage: React.FC = () => {
       }
       
       // Crear la factura y guardarla
-      const newInvoice = invoicesService.createInvoice({
+      const newInvoice = await invoicesService.createInvoice({
         fecha: new Date().toISOString(),
         clientId: finalClientId,
         clientName: finalClientName,
@@ -293,6 +293,10 @@ const POSPage: React.FC = () => {
         metodoPago: 'Efectivo',
         createdBy: state.user?.name || 'Usuario'
       });
+
+      if (!newInvoice) {
+        throw new Error('No se pudo crear la factura en el servidor');
+      }
 
       // Procesar servicios facturados
       for (const serviceItem of serviceItems) {

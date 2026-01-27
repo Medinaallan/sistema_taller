@@ -315,6 +315,19 @@ try {
   console.warn('⚠️ El servidor continuará sin las rutas de pagos de facturas');
 }
 
+// IMPORTAR Y CONFIGURAR RUTAS DE FACTURAS (JSON)
+try {
+  console.log('🧾 Cargando rutas de facturas (JSON)...');
+  const invoicesRouter = require('./routes/invoices');
+  app.use('/api/invoices', invoicesRouter);
+  console.log('✅ Rutas de facturas cargadas exitosamente');
+  console.log('📍 /api/invoices/* endpoints disponibles');
+} catch (error) {
+  console.error('❌ Error cargando rutas de facturas:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de facturas');
+}
+
 // 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
 // (ya importado arriba)
 

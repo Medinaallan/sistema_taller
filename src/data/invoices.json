@@ -1,0 +1,60 @@
+[
+  {
+    "id": "inv-1769473495165-ab01a5",
+    "numero": "001-001-01-00000001",
+    "fecha": "2026-01-27T00:24:55.169Z",
+    "clientId": "20",
+    "clientName": "Usuario Test",
+    "items": [
+      {
+        "id": "invoice-41",
+        "name": "Servicio Automotriz - Test20 Model20 | OT #41",
+        "quantity": 1,
+        "price": 0,
+        "total": 0,
+        "type": "service"
+      }
+    ],
+    "subtotal": 0,
+    "tax": 0,
+    "discount": 0,
+    "total": 0,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-27T00:24:55.166Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769478602698-119eef",
+    "numero": "001-001-01-00000002",
+    "fecha": "2026-01-27T01:50:02.694Z",
+    "clientId": "9",
+    "clientName": "ALLAN MEDINA",
+    "items": [
+      {
+        "id": "invoice-43",
+        "name": "Servicio Automotriz - CHEVROLET SILVERADO | OT #43",
+        "quantity": 1,
+        "price": 1000,
+        "total": 1000,
+        "type": "service"
+      },
+      {
+        "id": "11",
+        "name": "LÍQUIDO DE FRENOS DOT 4",
+        "quantity": 1,
+        "price": 18.75,
+        "total": 18.75,
+        "type": "product"
+      }
+    ],
+    "subtotal": 885.8695652173914,
+    "tax": 132.8804347826087,
+    "discount": 0,
+    "total": 1018.75,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-27T01:50:02.698Z",
+    "createdBy": "Allan Admin"
+  }
+]

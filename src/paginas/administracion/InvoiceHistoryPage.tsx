@@ -20,14 +20,14 @@ export function InvoiceHistoryPage() {
     filterInvoices();
   }, [searchTerm, filterStatus, invoices]);
 
-  const loadInvoices = () => {
-    const allInvoices = invoicesService.getAllInvoices();
-    setInvoices(allInvoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  const loadInvoices = async () => {
+    const allInvoices = await invoicesService.getAllInvoices();
+    setInvoices((allInvoices || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   };
 
-  const loadStats = () => {
-    const statistics = invoicesService.getStatistics();
-    setStats(statistics);
+  const loadStats = async () => {
+    const statistics = await invoicesService.getStatistics();
+    setStats(statistics as any);
   };
 
   const filterInvoices = () => {
@@ -158,7 +158,7 @@ export function InvoiceHistoryPage() {
     });
 
     if (result.isConfirmed) {
-      const success = invoicesService.anularInvoice(invoice.id);
+      const success = await invoicesService.anularInvoice(invoice.id);
       if (success) {
         await Swal.fire({
           icon: 'success',
@@ -166,8 +166,8 @@ export function InvoiceHistoryPage() {
           text: `La factura ${invoice.numero} ha sido anulada exitosamente`,
           confirmButtonColor: '#3b82f6'
         });
-        loadInvoices();
-        loadStats();
+        await loadInvoices();
+        await loadStats();
       }
     }
   };

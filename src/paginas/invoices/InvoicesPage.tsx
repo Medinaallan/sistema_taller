@@ -22,9 +22,9 @@ interface GeneratedInvoice extends Invoice {
 
 const columns: ColumnDef<GeneratedInvoice>[] = [
   { 
-    accessorKey: 'id', 
+    accessorKey: 'invoiceNumber',
     header: 'Factura #',
-    cell: ({ getValue }) => `FAC-${(getValue() as string).slice(-8)}`
+    cell: ({ getValue }) => (getValue() as string) || ''
   },
   { 
     accessorKey: 'workOrderId', 
@@ -84,9 +84,16 @@ const columns: ColumnDef<GeneratedInvoice>[] = [
 
 const InvoicesPage = () => {
   const [data, setData] = useState<GeneratedInvoice[]>([]);
+  const [persistedData, setPersistedData] = useState<GeneratedInvoice[]>([]);
+  const [filteredData, setFilteredData] = useState<GeneratedInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientes, setClientes] = useState<any[]>([]);
   const [vehiculos, setVehiculos] = useState<any[]>([]);
+  // Filtros
+  const [filterNumber, setFilterNumber] = useState('');
+  const [filterClient, setFilterClient] = useState('');
+  const [filterFrom, setFilterFrom] = useState('');
+  const [filterTo, setFilterTo] = useState('');
 
   // Funciones de mapeo
   const getClienteName = (clienteId: string) => {
@@ -188,6 +195,7 @@ const InvoicesPage = () => {
 
       console.log(' Facturas generadas:', invoices.length);
       setData(invoices);
+      return invoices;
       
     } catch (error) {
       console.error(' Error cargando órdenes completadas:', error);
@@ -201,20 +209,95 @@ const InvoicesPage = () => {
     const loadAllData = async () => {
       await loadClientes();
       await loadVehiculos();
-      await loadCompletedWorkOrdersAsInvoices();
+      const generated = await loadCompletedWorkOrdersAsInvoices();
+
+      // Cargar facturas persistidas desde invoicesService (localStorage)
+      try {
+        const persisted = await invoicesService.getAllInvoices();
+        const mapped: GeneratedInvoice[] = persisted.map(inv => ({
+          id: inv.id,
+          workOrderId: '',
+          clientId: inv.clientId || null,
+          clientName: inv.clientName || (inv.clientId ? getClienteName(inv.clientId) : 'CONSUMIDOR FINAL'),
+          vehicleName: '',
+          laborCost: 0,
+          partsCost: 0,
+          date: new Date(inv.fecha),
+          total: inv.total,
+          status: inv.estado === 'pagada' ? 'paid' : inv.estado === 'pendiente' ? 'pending' : 'cancelled',
+          // Invoice fields required by existing UI
+          invoiceNumber: inv.numero,
+          subtotal: inv.subtotal,
+          tax: inv.tax,
+          createdAt: new Date(inv.createdAt || new Date()).toISOString(),
+          updatedAt: new Date().toISOString(),
+          items: (inv.items || []).map(it => ({
+            id: it.id,
+            description: it.name || (it as any).description || '',
+            quantity: it.quantity || 1,
+            unitPrice: it.price || 0,
+            total: it.total || 0
+          }))
+        }));
+
+        // Unir generadas + persistidas evitando duplicados por `id`
+        const combinedMap = new Map<string, GeneratedInvoice>();
+        (generated || []).forEach(i => combinedMap.set(i.id, i));
+        mapped.forEach(i => combinedMap.set(i.id, i));
+        const combined = Array.from(combinedMap.values());
+
+        setPersistedData(combined);
+        setFilteredData(combined);
+        setData(combined);
+      } catch (err) {
+        console.error('Error cargando facturas persistidas:', err);
+      }
     };
     
     loadAllData();
   }, []);
 
+  // Aplicar filtros cuando cambian
+  useEffect(() => {
+    const apply = () => {
+      let list = persistedData.slice();
+
+      if (filterNumber.trim()) {
+        const q = filterNumber.trim().toLowerCase();
+        list = list.filter(inv => (inv.invoiceNumber || inv.id || '').toLowerCase().includes(q));
+      }
+
+      if (filterClient) {
+        const q = filterClient.toLowerCase();
+        list = list.filter(inv => (inv.clientName || '').toLowerCase().includes(q) || (inv.clientId || '').toLowerCase() === q);
+      }
+
+      if (filterFrom) {
+        const from = new Date(filterFrom);
+        list = list.filter(inv => new Date(inv.date) >= from);
+      }
+
+      if (filterTo) {
+        // include whole day
+        const to = new Date(filterTo);
+        to.setHours(23,59,59,999);
+        list = list.filter(inv => new Date(inv.date) <= to);
+      }
+
+      setFilteredData(list);
+    };
+
+    apply();
+  }, [filterNumber, filterClient, filterFrom, filterTo, persistedData]);
+
   const handleEdit = async (item: GeneratedInvoice) => {
-    const { value: action } = await Swal.fire({
-      title: `Factura ${item.invoiceNumber}`,
+    const result = await Swal.fire({
+      title: `Factura ${item.invoiceNumber || item.id}`,
       html: `
         <div style="text-align: left; padding: 10px;">
           <p><strong>Cliente:</strong> ${item.clientName}</p>
           <p><strong>Vehículo:</strong> ${item.vehicleName}</p>
-          <p><strong>Orden de Trabajo:</strong> #${item.workOrderId?.slice(-12)}</p>
+          <p><strong>Orden de Trabajo:</strong> #${item.workOrderId?.slice(-12) || ''}</p>
           <p><strong>Total:</strong> ${formatCurrency(item.total)}</p>
           <hr style="margin: 15px 0;">
           <p style="font-size: 14px; color: #666;">Seleccione una acción:</p>
@@ -222,20 +305,43 @@ const InvoicesPage = () => {
       `,
       showCancelButton: true,
       showDenyButton: true,
-      confirmButtonText: '🖨️ Formato Carta',
-      denyButtonText: '🧾 Formato Ticket',
+      confirmButtonText: 'Formato Carta',
+      denyButtonText: 'Formato Ticket',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#3b82f6',
       denyButtonColor: '#10b981',
       width: 500
     });
 
-    if (action === true) {
-      // Imprimir formato carta
-      invoicesService.printInvoiceCarta(item);
-    } else if (action === false) {
-      // Imprimir formato ticket
-      invoicesService.printInvoiceTicket(item);
+    // Mapear GeneratedInvoice -> Invoice que espera invoicesService
+    const invoiceForPrint = {
+      id: item.id,
+      numero: (item as any).invoiceNumber || (item as any).numero || item.id,
+      fecha: (item.date instanceof Date) ? item.date.toISOString() : new Date(item.date).toISOString(),
+      clientId: (item as any).clientId || null,
+      clientName: item.clientName || 'CONSUMIDOR FINAL',
+      items: (item.items || []).map(it => ({
+        id: it.id || `it-${Math.random().toString(36).slice(2,9)}`,
+        name: (it as any).description || (it as any).name || '',
+        quantity: (it as any).quantity || 1,
+        price: (it as any).unitPrice || (it as any).price || 0,
+        total: (it as any).total || ((it as any).quantity || 1) * ((it as any).unitPrice || (it as any).price || 0),
+        type: 'service'
+      })),
+      subtotal: (item.subtotal as number) || (item.total as number) || 0,
+      tax: (item.tax as number) || 0,
+      discount: 0,
+      total: (item.total as number) || 0,
+      metodoPago: (item as any).metodoPago || 'Efectivo',
+      estado: item.status === 'paid' ? 'pagada' : item.status === 'pending' ? 'pendiente' : 'anulada',
+      createdAt: (item.createdAt && typeof item.createdAt === 'string') ? item.createdAt : new Date().toISOString(),
+      createdBy: ''
+    };
+
+    if (result.isConfirmed) {
+      invoicesService.printInvoiceCarta(invoiceForPrint as any);
+    } else if (result.isDenied) {
+      invoicesService.printInvoiceTicket(invoiceForPrint as any);
     }
   };
   
@@ -302,6 +408,36 @@ const InvoicesPage = () => {
           </div>
         </Card>
       </div>
+      {/* Filtros de búsqueda */}
+      <Card>
+        <div className="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-3 md:space-y-0">
+          <div className="flex-1">
+            <label className="block text-sm text-gray-600">Número de Factura</label>
+            <input value={filterNumber} onChange={e => setFilterNumber(e.target.value)} placeholder="Ej: FAC-00000001 o 001-001-01-00000001" className="w-full border rounded px-2 py-1" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600">Cliente</label>
+            <select value={filterClient} onChange={e => setFilterClient(e.target.value)} className="border rounded px-2 py-1">
+              <option value="">-- Todos --</option>
+              {clientes.map(c => (
+                <option key={c.id} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600">Desde</label>
+            <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} className="border rounded px-2 py-1" />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600">Hasta</label>
+            <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} className="border rounded px-2 py-1" />
+          </div>
+          <div className="flex space-x-2">
+            <Button onClick={() => { /* los filtros se aplican automaticamente */ }} variant="primary">Buscar</Button>
+            <Button onClick={() => { setFilterNumber(''); setFilterClient(''); setFilterFrom(''); setFilterTo(''); setFilteredData(persistedData); }} variant="secondary">Limpiar</Button>
+          </div>
+        </div>
+      </Card>
 
       {/* Tabla de Facturas */}
       <Card title="Facturas Generadas">
@@ -309,19 +445,18 @@ const InvoicesPage = () => {
           <div className="text-center py-8">
             <p className="text-gray-500">Cargando facturas desde órdenes completadas...</p>
           </div>
-        ) : data.length === 0 ? (
+        ) : filteredData.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">No se encontraron órdenes de trabajo completadas.</p>
-            <p className="text-sm text-gray-400 mt-2">
-              Las facturas se generan automáticamente cuando se completan las órdenes de trabajo.
-            </p>
+            <p className="text-gray-500">No se encontraron facturas con los criterios indicados.</p>
+            <p className="text-sm text-gray-400 mt-2">Ajusta los filtros para ampliar la búsqueda.</p>
           </div>
         ) : (
           <TanStackCrudTable 
             columns={columns} 
-            data={data} 
+            data={filteredData} 
             onEdit={handleEdit} 
-            onDelete={handleDelete} 
+              showDelete={false} 
+              editLabel="Imprimir" 
           />
         )}
       </Card>

@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export interface InvoiceItem {
   id: string;
@@ -29,113 +29,108 @@ export interface Invoice {
 const STORAGE_KEY = 'taller_invoices';
 
 class InvoicesService {
-  // Obtener todas las facturas
-  getAllInvoices(): Invoice[] {
+  // Obtener todas las facturas desde backend
+  async getAllInvoices(): Promise<Invoice[]> {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const res = await fetch(`${API_BASE_URL}/invoices`);
+      const json = await res.json();
+      return json.data || [];
     } catch (error) {
-      console.error('Error obteniendo facturas:', error);
+      console.error('Error obteniendo facturas (API):', error);
       return [];
     }
   }
 
-  // Obtener factura por ID
-  getInvoiceById(id: string): Invoice | null {
-    const invoices = this.getAllInvoices();
-    return invoices.find(inv => inv.id === id) || null;
-  }
-
-  // Generar número de factura correlativo
-  private generateInvoiceNumber(): string {
-    const invoices = this.getAllInvoices();
-    const lastNumber = invoices.length > 0 
-      ? Math.max(...invoices.map(inv => parseInt(inv.numero.split('-')[1]) || 0))
-      : 0;
-    const nextNumber = lastNumber + 1;
-    return `FAC-${String(nextNumber).padStart(8, '0')}`;
-  }
-
-  // Crear nueva factura
-  createInvoice(data: Omit<Invoice, 'id' | 'numero' | 'createdAt' | 'estado'>): Invoice {
-    const invoices = this.getAllInvoices();
-    
-    const newInvoice: Invoice = {
-      ...data,
-      id: `invoice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      numero: this.generateInvoiceNumber(),
-      createdAt: new Date().toISOString(),
-      estado: 'pagada'
-    };
-
-    invoices.push(newInvoice);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-
-    return newInvoice;
-  }
-
-  // Actualizar factura
-  updateInvoice(id: string, updates: Partial<Invoice>): Invoice | null {
-    const invoices = this.getAllInvoices();
-    const index = invoices.findIndex(inv => inv.id === id);
-    
-    if (index === -1) return null;
-
-    invoices[index] = { ...invoices[index], ...updates };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-
-    return invoices[index];
-  }
-
-  // Anular factura
-  anularInvoice(id: string): boolean {
+  async getInvoiceById(id: string): Promise<Invoice | null> {
     try {
-      const invoices = this.getAllInvoices();
-      const invoiceIndex = invoices.findIndex(inv => inv.id === id);
-      
-      if (invoiceIndex === -1) {
-        return false;
-      }
-
-      invoices[invoiceIndex].estado = 'anulada';
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
-      return true;
+      const res = await fetch(`${API_BASE_URL}/invoices/${encodeURIComponent(id)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data || null;
     } catch (error) {
-      console.error('Error al anular factura:', error);
+      console.error('Error obteniendo factura por id:', error);
+      return null;
+    }
+  }
+
+  // Crear nueva factura (POST a backend)
+  async createInvoice(data: Omit<Invoice, 'id' | 'numero' | 'createdAt' | 'estado'>): Promise<Invoice | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/invoices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        console.error('Error creando factura (status):', res.status);
+        return null;
+      }
+      const json = await res.json();
+      return json.data || null;
+    } catch (error) {
+      console.error('Error creando factura (API):', error);
+      return null;
+    }
+  }
+
+  async updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/invoices/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json.data || null;
+    } catch (error) {
+      console.error('Error actualizando factura (API):', error);
+      return null;
+    }
+  }
+
+  async anularInvoice(id: string): Promise<boolean> {
+    try {
+      const updated = await this.updateInvoice(id, { estado: 'anulada' } as any);
+      return !!updated;
+    } catch (error) {
+      console.error('Error anulando factura:', error);
       return false;
     }
   }
 
-  // Obtener facturas por cliente (por ID o nombre)
-  getInvoicesByClient(clientIdOrName: string): Invoice[] {
-    const invoices = this.getAllInvoices();
-    return invoices.filter(inv => 
-      inv.clientId === clientIdOrName || 
-      inv.clientName.toLowerCase().includes(clientIdOrName.toLowerCase())
-    );
+  async getInvoicesByClient(clientIdOrName: string): Promise<Invoice[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/invoices?client=${encodeURIComponent(clientIdOrName)}`);
+      const json = await res.json();
+      return json.data || [];
+    } catch (error) {
+      console.error('Error buscando facturas por cliente:', error);
+      return [];
+    }
   }
 
-  // Obtener facturas por fecha
-  getInvoicesByDate(startDate: string, endDate: string): Invoice[] {
-    const invoices = this.getAllInvoices();
-    return invoices.filter(inv => {
-      const invoiceDate = new Date(inv.fecha);
-      return invoiceDate >= new Date(startDate) && invoiceDate <= new Date(endDate);
-    });
+  async getInvoicesByDate(startDate: string, endDate: string): Promise<Invoice[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/invoices?from=${encodeURIComponent(startDate)}&to=${encodeURIComponent(endDate)}`);
+      const json = await res.json();
+      return json.data || [];
+    } catch (error) {
+      console.error('Error buscando facturas por fecha:', error);
+      return [];
+    }
   }
 
-  // Obtener estadísticas
-  getStatistics() {
-    const invoices = this.getAllInvoices();
+  async getStatistics() {
+    const invoices = await this.getAllInvoices();
     const today = new Date().toISOString().split('T')[0];
-    
     return {
       total: invoices.length,
       hoy: invoices.filter(inv => inv.fecha.split('T')[0] === today).length,
-      montoTotal: invoices.reduce((sum, inv) => sum + inv.total, 0),
+      montoTotal: invoices.reduce((sum, inv) => sum + (inv.total || 0), 0),
       montoHoy: invoices
         .filter(inv => inv.fecha.split('T')[0] === today)
-        .reduce((sum, inv) => sum + inv.total, 0)
+        .reduce((sum, inv) => sum + (inv.total || 0), 0)
     };
   }
 

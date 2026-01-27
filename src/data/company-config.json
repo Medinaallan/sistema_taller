@@ -1,9 +1,9 @@
 {
   "companyInfo": {
-    "businessName": "Taller Mecánico XDA",
+    "businessName": "Taller La Esperanza",
     "tradeName": "La Esperanza",
-    "rtn": "1001200300100",
-    "address": "Col. Las Flores, Calle Principal #123",
+    "rtn": "1001200300188",
+    "address": "Barrio El Calvario",
     "city": "LA ESPERANZA",
     "state": "INTIBUCA",
     "postalCode": "14101",
@@ -30,11 +30,11 @@
     "cais": [
       {
         "id": "cai-001",
-        "cai": "CAI-000000-000000-000000-000000-000000-00",
+        "cai": "000000-000000-000000-000000-000000-00",
         "fechaLimiteEmision": "2026-12-31",
-        "rangoInicial": "FAC-00000001",
-        "rangoFinal": "FAC-99999999",
-        "numeroActual": "FAC-00000001",
+        "rangoInicial": "00000001",
+        "rangoFinal": "99999999",
+        "numeroActual": "00000001",
         "tipoDocumento": "factura",
         "establecimiento": "001",
         "puntoEmision": "001",

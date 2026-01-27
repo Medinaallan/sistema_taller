@@ -35,5 +35,22 @@
     "createdAt": "2026-01-22T21:15:27.545Z",
     "triggerDate": "2026-01-22",
     "createdBy": null
+  },
+  {
+    "id": "1769479461901",
+    "vehicleId": "31",
+    "clientId": "9",
+    "type": "date",
+    "title": "hoola",
+    "description": "asdasda",
+    "triggerValue": "2026-01-27",
+    "currentValue": null,
+    "isActive": true,
+    "isCompleted": false,
+    "services": [],
+    "notificationSent": false,
+    "createdAt": "2026-01-27T02:04:21.901Z",
+    "triggerDate": "2026-01-27",
+    "createdBy": null
   }
 ]
