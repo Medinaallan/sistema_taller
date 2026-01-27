@@ -12,9 +12,9 @@ export function TestClientRegisterPage() {
       setLoading(true);
       const clientesData = await obtenerClientes();
       setClientes(clientesData);
-      console.log('📋 Clientes cargados:', clientesData);
+      console.log('Clientes cargados:', clientesData);
     } catch (error) {
-      console.error('❌ Error cargando clientes:', error);
+      console.error('Error cargando clientes:', error);
     } finally {
       setLoading(false);
     }

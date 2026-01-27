@@ -61,9 +61,9 @@ app.get('/api/health', (req, res) => {
 // 👥 IMPORTAR Y CONFIGURAR RUTAS DE API CSV - DESHABILITADO
 // csvService ha sido eliminado - Sistema ahora usa SQL Server
 try {
-  console.log('⚠️  API CSV deshabilitada - Usar SQL Server');
+  console.log('API CSV deshabilitada - Usar SQL Server');
 } catch (error) {
-  console.error('❌ Error cargando rutas:', error.message);
+  console.error('Error cargando rutas:', error.message);
 }
 
 //  IMPORTAR Y CONFIGURAR RUTAS DE SERVICIOS
@@ -152,28 +152,28 @@ try {
 
 //IMPORTAR Y CONFIGURAR RUTAS DE HISTORIAL DE SERVICIOS
 try {
-  console.log('🔄 Cargando rutas de historial de servicios...');
+  console.log('Cargando rutas de historial de servicios...');
   const serviceHistoryRouter = require('./routes/serviceHistory');
   app.use('/api/service-history', serviceHistoryRouter);
-  console.log('✅ Rutas de historial de servicios cargadas exitosamente');
-  console.log('📋 /api/service-history/* endpoints disponibles');
+  console.log('Rutas de historial de servicios cargadas exitosamente');
+  console.log('/api/service-history/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de historial de servicios:', error.message);
+  console.error('Error cargando rutas de historial de servicios:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️  El servidor continuará sin las rutas de historial de servicios');
+  console.warn('El servidor continuará sin las rutas de historial de servicios');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE NOTIFICACIONES
 try {
-  console.log('🔔 Cargando rutas de notificaciones...');
+  console.log('Cargando rutas de notificaciones...');
   const notificationsRouter = require('./routes/notifications');
   app.use('/api/notifications', notificationsRouter);
-  console.log('✅ Rutas de notificaciones cargadas exitosamente');
-  console.log('📬 /api/notifications/* endpoints disponibles');
+  console.log('Rutas de notificaciones cargadas exitosamente');
+  console.log('/api/notifications/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de notificaciones:', error.message);
+  console.error('Error cargando rutas de notificaciones:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️  El servidor continuará sin las rutas de notificaciones');
+  console.warn('El servidor continuará sin las rutas de notificaciones');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE CITAS
@@ -191,141 +191,141 @@ try {
 
 //IMPORTAR Y CONFIGURAR RUTAS DE CONFIGURACIÓN DE EMPRESA (JSON)
 try {
-  console.log('🏢 Cargando rutas de configuración de empresa...');
+  console.log('Cargando rutas de configuración de empresa...');
   const companyConfigRouter = require('./routes/companyConfig');
   app.use('/api/company-config', companyConfigRouter);
-  console.log('✅ Rutas de configuración de empresa cargadas exitosamente');
-  console.log('📍 /api/company-config/* endpoints disponibles');
+  console.log('Rutas de configuración de empresa cargadas exitosamente');
+  console.log('/api/company-config/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de configuración de empresa:', error.message);
+  console.error('Error cargando rutas de configuración de empresa:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de configuración de empresa');
+  console.warn('El servidor continuará sin las rutas de configuración de empresa');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE USUARIOS
 try {
-  console.log('👥 Cargando rutas de usuarios...');
+  console.log('Cargando rutas de usuarios...');
   const usersRouter = require('./routes/users');
   app.use('/api/users', usersRouter);
-  console.log('✅ Rutas de usuarios cargadas exitosamente');
-  console.log('   📍 /api/users/* endpoints disponibles');
+  console.log('Rutas de usuarios cargadas exitosamente');
+  console.log('/api/users/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de usuarios:', error.message);
-  console.error('   Stack:', error.stack);
-  console.warn('⚠️  El servidor continuará sin las rutas de usuarios');
+  console.error('Error cargando rutas de usuarios:', error.message);
+  console.error(' Stack:', error.stack);
+  console.warn('El servidor continuará sin las rutas de usuarios');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE COTIZACIONES
 try {
-  console.log('💰 Cargando rutas de cotizaciones...');
+  console.log('Cargando rutas de cotizaciones...');
   const quotationsRouter = require('./routes/quotations');
   app.use('/api/quotations', quotationsRouter);
-  console.log('✅ Rutas de cotizaciones cargadas exitosamente');
+  console.log('Rutas de cotizaciones cargadas exitosamente');
   console.log('/api/quotations/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de cotizaciones:', error.message);
+  console.error('Error cargando rutas de cotizaciones:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de cotizaciones');
+  console.warn('El servidor continuará sin las rutas de cotizaciones');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE ÓRDENES DE TRABAJO
 try {
-  console.log('🔧 Cargando rutas de órdenes de trabajo...');
+  console.log('Cargando rutas de órdenes de trabajo...');
   const workOrdersRouter = require('./routes/workOrders');
   app.use('/api/workorders', workOrdersRouter);
-  console.log('✅ Rutas de órdenes de trabajo cargadas exitosamente');
-  console.log('📍 /api/workorders/* endpoints disponibles');
+  console.log('Rutas de órdenes de trabajo cargadas exitosamente');
+  console.log('/api/workorders/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de órdenes de trabajo:', error.message);
+  console.error('Error cargando rutas de órdenes de trabajo:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de órdenes de trabajo');
+  console.warn('El servidor continuará sin las rutas de órdenes de trabajo');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE ESTADOS DE OT
 try {
-  console.log('📊 Cargando rutas de estados de órdenes de trabajo...');
+  console.log('Cargando rutas de estados de órdenes de trabajo...');
   const workOrderStatesRouter = require('./routes/workOrderStates');
   app.use('/api/workorder-states', workOrderStatesRouter);
-  console.log('✅ Rutas de estados de OT cargadas exitosamente');
+  console.log('Rutas de estados de OT cargadas exitosamente');
 } catch (error) {
-  console.error('❌ Error cargando rutas de estados de OT:', error.message);
-  console.warn('⚠️ El servidor continuará sin las rutas de estados de OT');
+  console.error('Error cargando rutas de estados de OT:', error.message);
+  console.warn('El servidor continuará sin las rutas de estados de OT');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE SOLICITUDES DE FIRMA
 try {
-  console.log('✍️ Cargando rutas de solicitudes de firma...');
+  console.log('Cargando rutas de solicitudes de firma...');
   const signatureRequestsRouter = require('./routes/signatureRequests');
   app.use('/api/signature-requests', signatureRequestsRouter);
-  console.log('✅ Rutas de solicitudes de firma cargadas exitosamente');
+  console.log('Rutas de solicitudes de firma cargadas exitosamente');
 } catch (error) {
-  console.error('❌ Error cargando rutas de solicitudes de firma:', error.message);
-  console.warn('⚠️ El servidor continuará sin las rutas de solicitudes de firma');
+  console.error('Error cargando rutas de solicitudes de firma:', error.message);
+  console.warn('El servidor continuará sin las rutas de solicitudes de firma');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE LOGS
 try {
-  console.log('📋 Cargando rutas de logs del sistema...');
+  console.log('Cargando rutas de logs del sistema...');
   const logsRouter = require('./routes/logs');
   app.use('/api/logs', logsRouter);
-  console.log('✅ Rutas de logs cargadas exitosamente');
-  console.log('📍 /api/logs/* endpoints disponibles');
+  console.log('Rutas de logs cargadas exitosamente');
+  console.log('/api/logs/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de logs:', error.message);
+  console.error('Error cargando rutas de logs:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de logs');
+  console.warn('El servidor continuará sin las rutas de logs');
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE RECORDATORIOS
 try {
-  console.log('🔔 Cargando rutas de recordatorios...');
+  console.log('Cargando rutas de recordatorios...');
   const remindersRouter = require('./routes/reminders');
   app.use('/api/reminders', remindersRouter);
-  console.log('✅ Rutas de recordatorios cargadas exitosamente');
-  console.log('📍 /api/reminders/* endpoints disponibles');
+  console.log('Rutas de recordatorios cargadas exitosamente');
+  console.log('/api/reminders/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de recordatorios:', error.message);
+  console.error('Error cargando rutas de recordatorios:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de recordatorios');
+  console.warn('El servidor continuará sin las rutas de recordatorios');
 }
 
 // IMPORTAR Y CONFIGURAR RUTAS DE TIPOS DE SERVICIO (SP)
 try {
-  console.log('🔄 Cargando rutas de tipos de servicio (SP)...');
+  console.log('Cargando rutas de tipos de servicio (SP)...');
   const serviceTypesRouter = require('./routes/serviceTypes');
   app.use('/api/service-types', serviceTypesRouter);
-  console.log('✅ Rutas de tipos de servicio (SP) cargadas exitosamente');
-  console.log('📍 /api/service-types/* endpoints disponibles');
+  console.log('Rutas de tipos de servicio (SP) cargadas exitosamente');
+  console.log('/api/service-types/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de tipos de servicio (SP):', error.message);
+  console.error('Error cargando rutas de tipos de servicio (SP):', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de tipos de servicio (SP)');
+  console.warn('El servidor continuará sin las rutas de tipos de servicio (SP)');
 }
 
 // � IMPORTAR Y CONFIGURAR RUTAS DE PAGOS DE FACTURAS (JSON)
 try {
-  console.log('💰 Cargando rutas de pagos de facturas...');
+  console.log('Cargando rutas de pagos de facturas...');
   const invoicePaymentsRouter = require('./routes/invoicePayments');
   app.use('/api/invoice-payments', invoicePaymentsRouter);
-  console.log('✅ Rutas de pagos de facturas cargadas exitosamente');
-  console.log('📍 /api/invoice-payments/* endpoints disponibles');
+  console.log('Rutas de pagos de facturas cargadas exitosamente');
+  console.log('/api/invoice-payments/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de pagos de facturas:', error.message);
+  console.error('Error cargando rutas de pagos de facturas:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de pagos de facturas');
+  console.warn('El servidor continuará sin las rutas de pagos de facturas');
 }
 
 // IMPORTAR Y CONFIGURAR RUTAS DE FACTURAS (JSON)
 try {
-  console.log('🧾 Cargando rutas de facturas (JSON)...');
+  console.log('Cargando rutas de facturas (JSON)...');
   const invoicesRouter = require('./routes/invoices');
   app.use('/api/invoices', invoicesRouter);
-  console.log('✅ Rutas de facturas cargadas exitosamente');
-  console.log('📍 /api/invoices/* endpoints disponibles');
+  console.log('Rutas de facturas cargadas exitosamente');
+  console.log('/api/invoices/* endpoints disponibles');
 } catch (error) {
-  console.error('❌ Error cargando rutas de facturas:', error.message);
+  console.error('Error cargando rutas de facturas:', error.message);
   console.error('Stack:', error.stack);
-  console.warn('⚠️ El servidor continuará sin las rutas de facturas');
+  console.warn('El servidor continuará sin las rutas de facturas');
 }
 
 // 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
@@ -384,19 +384,19 @@ app.delete('/api/delete-image/:key(*)', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Key de imagen requerida' });
     }
 
-    console.log('🗑️ Eliminando imagen de Spaces:', key);
+    console.log('Eliminando imagen de Spaces:', key);
     
     const result = await spacesService.deleteImage(key);
     
     if (result.success) {
-      console.log('✅ Imagen eliminada exitosamente de Spaces');
+      console.log('Imagen eliminada exitosamente de Spaces');
       res.json({ success: true, message: 'Imagen eliminada exitosamente' });
     } else {
-      console.error('❌ Error eliminando de Spaces:', result.error);
+      console.error('Error eliminando de Spaces:', result.error);
       res.status(500).json({ success: false, error: result.error });
     }
   } catch (error) {
-    console.error('❌ Error eliminando imagen:', error);
+    console.error('Error eliminando imagen:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 });
@@ -456,7 +456,7 @@ app.post('/api/users/validate-email', async (req, res) => {
 
 // Registrar usuario (Paso 2) 
 app.post('/api/auth/register-user-info', async (req, res) => {
-  console.log('👤 Registrar usuario:', req.body);
+  console.log('Registrar usuario:', req.body);
   try {
     const { nombre_completo, correo, telefono } = req.body;
     if (!nombre_completo || !correo || !telefono) {
@@ -481,7 +481,7 @@ app.post('/api/auth/register-user-info', async (req, res) => {
 
 // Verificar código (Paso 3) 
 app.post('/api/auth/verify-security-code', async (req, res) => {
-  console.log('🔑 Verificar código:', req.body);
+  console.log('Verificar código:', req.body);
   try {
     const { correo, codigo_seguridad } = req.body;
     if (!correo || !codigo_seguridad) {
@@ -505,7 +505,7 @@ app.post('/api/auth/verify-security-code', async (req, res) => {
 
 // Registrar password (Paso 4) - USANDO SP REAL
 app.post('/api/auth/register-password', async (req, res) => {
-  console.log('🔒 Registrar password para correo:', req.body.correo);
+  console.log('Registrar password para correo:', req.body.correo);
   try {
     const { correo, password } = req.body;
     if (!correo || !password) {
@@ -529,7 +529,7 @@ app.post('/api/auth/register-password', async (req, res) => {
 
 // Obtener roles - USANDO SP REAL
 app.get('/api/users/roles', async (req, res) => {
-  console.log('📋 Obteniendo roles...');
+  console.log('Obteniendo roles...');
   try {
     const pool = await getConnection();
     const result = await pool.request()
@@ -551,7 +551,7 @@ app.get('/api/users/roles', async (req, res) => {
 
 // Registrar usuario desde panel admin - USANDO SP REAL
 app.post('/api/users/panel', async (req, res) => {
-  console.log('👥 Registrar usuario panel admin:', req.body);
+  console.log('Registrar usuario panel admin:', req.body);
   try {
     const { nombre_completo, correo, telefono, rol, registradoPor } = req.body;
     
@@ -590,7 +590,7 @@ app.post('/api/users/panel', async (req, res) => {
 
 // ENDPOINT ADICIONAL para register-client (compatibilidad frontend)
 app.post('/api/auth/register-client', async (req, res) => {
-  console.log('👤 Registrar cliente (frontend endpoint):', req.body);
+  console.log('Registrar cliente (frontend endpoint):', req.body);
   try {
     const { fullName, email, phone } = req.body;
     
@@ -629,7 +629,7 @@ app.post('/api/auth/register-client', async (req, res) => {
 
 // Login - USANDO SP REAL CON FORMATO CORRECTO
 app.post('/api/auth/login', async (req, res) => {
-  console.log('🔐 Login attempt for:', req.body.correo);
+  console.log('Login attempt for:', req.body.correo);
   
   try {
     const { correo, password } = req.body;
@@ -677,11 +677,11 @@ const dataResetService = require('./services/dataResetService');
 // Obtener estadísticas de datos
 app.get('/api/admin/data-stats', async (req, res) => {
   try {
-    console.log('📊 Solicitando estadísticas de datos...');
+    console.log('Solicitando estadísticas de datos...');
     const stats = await dataResetService.getDataStats();
     res.json(stats);
   } catch (error) {
-    console.error('❌ Error obteniendo estadísticas:', error);
+    console.error('Error obteniendo estadísticas:', error);
     res.status(500).json({
       success: false,
       message: 'Error obteniendo estadísticas de datos',
@@ -693,12 +693,12 @@ app.get('/api/admin/data-stats', async (req, res) => {
 // Restablecer todos los datos
 app.post('/api/admin/reset-data', async (req, res) => {
   try {
-    console.log('🔄 Iniciando restablecimiento de datos desde API...');
+    console.log('Iniciando restablecimiento de datos desde API...');
     const result = await dataResetService.resetAllData();
-    console.log('✅ Restablecimiento completado desde API');
+    console.log('Restablecimiento completado desde API');
     res.json(result);
   } catch (error) {
-    console.error('❌ Error restableciendo datos:', error);
+    console.error('Error restableciendo datos:', error);
     res.status(500).json({
       success: false,
       message: 'Error restableciendo datos',
@@ -896,7 +896,7 @@ try {
   app.use('/api/service-history', serviceHistoryFromInvoiceRouter);
   console.log(' Endpoint /api/service-history/from-invoice habilitado');
 } catch (error) {
-  console.error(' Error cargando endpoint de historial desde factura pagada:', error.message);
+  console.error('Error cargando endpoint de historial desde factura pagada:', error.message);
 }
 
 // ==================== ESTADOS DE OT (JSON LOCAL) ====================
@@ -905,12 +905,12 @@ const STATES_FILE = path.join(__dirname, '../src/data/workOrders.json');
 // GET - Obtener todos los estados
 app.get('/api/workorder-states', async (req, res) => {
   try {
-    console.log('📂 Leyendo estados desde:', STATES_FILE);
+    console.log('Leyendo estados desde:', STATES_FILE);
     const data = await fs.promises.readFile(STATES_FILE, 'utf8');
     const statesData = JSON.parse(data);
     res.json({ success: true, data: statesData.workOrderStates || {} });
   } catch (error) {
-    console.error('❌ Error leyendo estados:', error);
+    console.error('Error leyendo estados:', error);
     res.status(500).json({ success: false, message: 'Error al leer estados', error: error.message });
   }
 });
@@ -925,7 +925,7 @@ app.put('/api/workorder-states/:otId', async (req, res) => {
       return res.status(400).json({ success: false, message: 'El campo "estado" es requerido' });
     }
     
-    console.log(`💾 Actualizando estado de OT ${otId} a: ${estado}`);
+    console.log(`Actualizando estado de OT ${otId} a: ${estado}`);
     
     const data = await fs.promises.readFile(STATES_FILE, 'utf8');
     const statesData = JSON.parse(data);
@@ -937,10 +937,10 @@ app.put('/api/workorder-states/:otId', async (req, res) => {
     
     await fs.promises.writeFile(STATES_FILE, JSON.stringify(statesData, null, 2), 'utf8');
     
-    console.log(`✅ Estado de OT ${otId} actualizado a: ${estado}`);
+    console.log(` Estado de OT ${otId} actualizado a: ${estado}`);
     res.json({ success: true, message: 'Estado actualizado', data: { otId, estado } });
   } catch (error) {
-    console.error('❌ Error actualizando estado:', error);
+    console.error('Error actualizando estado:', error);
     res.status(500).json({ success: false, message: 'Error al actualizar estado', error: error.message });
   }
 });
@@ -954,12 +954,12 @@ app.get('/api/workorder-states/:otId', async (req, res) => {
     const estado = statesData.workOrderStates?.[otId] || null;
     res.json({ success: true, data: { otId, estado } });
   } catch (error) {
-    console.error('❌ Error leyendo estado:', error);
+    console.error('Error leyendo estado:', error);
     res.status(500).json({ success: false, message: 'Error al leer estado', error: error.message });
   }
 });
 
-console.log('✅ Rutas de estados de OT cargadas: /api/workorder-states');
+console.log('Rutas de estados de OT cargadas: /api/workorder-states');
 
 // 404 - Debe estar AL FINAL, después de todas las rutas
 app.use('*', (req, res) => {

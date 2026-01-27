@@ -37,14 +37,14 @@ class UsuariosService {
           count: data.count
         };
       } else {
-        console.log('❌ Error del servidor:', data.message);
+        console.log('Error del servidor:', data.message);
         return {
           success: false,
           message: data.message || 'Error al obtener usuarios'
         };
       }
     } catch (error) {
-      console.error('❌ Error de conexión:', error);
+      console.error('Error de conexión:', error);
       return {
         success: false,
         message: 'Error de conexión con el servidor'
@@ -78,6 +78,9 @@ class UsuariosService {
       } else {
         console.log('Usuario no encontrado:', data.message);
         return {
+
+
+            
           success: false,
           message: data.message || 'Usuario no encontrado'
         };

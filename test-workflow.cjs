@@ -30,7 +30,7 @@ function makeRequest(options, data = null) {
 }
 
 async function testWorkOrderCreation() {
-  console.log('🔧 Probando creación de orden de trabajo...');
+  console.log('Probando creación de orden de trabajo...');
   
   // Primero obtener cotizaciones existentes
   console.log('1. Obteniendo cotizaciones...');
@@ -45,14 +45,14 @@ async function testWorkOrderCreation() {
       }
     });
     
-    console.log('✅ Cotizaciones obtenidas:', quotationsResponse.statusCode);
+    console.log('Cotizaciones obtenidas:', quotationsResponse.statusCode);
     console.log('Cotizaciones:', JSON.stringify(quotationsResponse.data, null, 2));
     
     // Encontrar una cotización en estado "sent"
     const sentQuotations = quotationsResponse.data.data?.filter(q => q.estado === 'sent') || [];
     
     if (sentQuotations.length === 0) {
-      console.log('❌ No hay cotizaciones en estado "sent" para aprobar');
+      console.log('No hay cotizaciones en estado "sent" para aprobar');
       return;
     }
     
@@ -71,7 +71,7 @@ async function testWorkOrderCreation() {
       }
     }, { estado: 'approved' });
     
-    console.log('✅ Cotización aprobada:', approvalResponse.statusCode);
+    console.log('Cotización aprobada:', approvalResponse.statusCode);
     console.log('Respuesta:', JSON.stringify(approvalResponse.data, null, 2));
     
     // Crear orden de trabajo desde la cotización
@@ -86,7 +86,7 @@ async function testWorkOrderCreation() {
       }
     }, { quotation: quotationToApprove });
     
-    console.log('✅ Orden de trabajo creada:', workOrderResponse.statusCode);
+    console.log('Orden de trabajo creada:', workOrderResponse.statusCode);
     console.log('Nueva orden:', JSON.stringify(workOrderResponse.data, null, 2));
     
     // Verificar que se creó la orden de trabajo
@@ -101,7 +101,7 @@ async function testWorkOrderCreation() {
       }
     });
     
-    console.log('✅ Órdenes de trabajo actuales:', workOrdersResponse.statusCode);
+    console.log('Órdenes de trabajo actuales:', workOrdersResponse.statusCode);
     console.log('Órdenes:', JSON.stringify(workOrdersResponse.data, null, 2));
     
   } catch (error) {

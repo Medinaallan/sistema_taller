@@ -56,5 +56,55 @@
     "estado": "pagada",
     "createdAt": "2026-01-27T01:50:02.698Z",
     "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769547839880-6ffe9f",
+    "numero": "001-001-01-00000003",
+    "fecha": "2026-01-27T21:03:59.870Z",
+    "clientId": "10",
+    "clientName": "xiomara garcia",
+    "items": [
+      {
+        "id": "invoice-38",
+        "name": "Servicio Automotriz - Test10 Model10 | OT #38",
+        "quantity": 1,
+        "price": 2800,
+        "total": 2800,
+        "type": "service"
+      }
+    ],
+    "subtotal": 2434.7826086956525,
+    "tax": 365.21739130434787,
+    "discount": 0,
+    "total": 2800,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-27T21:03:59.880Z",
+    "createdBy": "ADMIN ALLAN"
+  },
+  {
+    "id": "inv-1769547892141-f319d3",
+    "numero": "001-001-01-00000004",
+    "fecha": "2026-01-27T21:04:52.132Z",
+    "clientId": "10",
+    "clientName": "xiomara garcia",
+    "items": [
+      {
+        "id": "invoice-39",
+        "name": "Servicio Automotriz - Test10 Model10 | OT #39",
+        "quantity": 1,
+        "price": 0,
+        "total": 0,
+        "type": "service"
+      }
+    ],
+    "subtotal": 0,
+    "tax": 0,
+    "discount": 0,
+    "total": 0,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-27T21:04:52.141Z",
+    "createdBy": "ADMIN ALLAN"
   }
 ]

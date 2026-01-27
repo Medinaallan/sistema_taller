@@ -227,7 +227,7 @@ function auditMiddleware(req, res, next) {
       
       // Log para debug (solo en desarrollo)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`📋 LOG: ${userInfo.userName} - ${description}`);
+        console.log(`LOG: ${userInfo.userName} - ${description}`);
       }
       
     } catch (error) {

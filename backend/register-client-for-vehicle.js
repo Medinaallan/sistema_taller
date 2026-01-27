@@ -4,7 +4,7 @@ async function registerClientAndGetId() {
   try {
     const pool = await getConnection();
     
-    console.log('🎯 Registrando cliente y obteniendo información...\n');
+    console.log('Registrando cliente y obteniendo información...\n');
     
     // Registrar cliente
     const clientData = {
@@ -13,7 +13,7 @@ async function registerClientAndGetId() {
       correo: 'vehiculo@test.com'
     };
     
-    console.log('👤 Registrando cliente:', clientData);
+    console.log('Registrando cliente:', clientData);
     const registerResult = await pool.request()
       .input('nombre_completo', clientData.nombre_completo)
       .input('telefono', clientData.telefono)
@@ -24,7 +24,7 @@ async function registerClientAndGetId() {
     
     // Ahora vamos a buscar manualmente qué ID se le asignó
     // Probemos con los IDs más altos (los últimos registrados)
-    console.log('\n🔍 Probando IDs para encontrar el cliente recién creado...');
+    console.log('\n Probando IDs para encontrar el cliente recién creado...');
     
     for (let testId = 1; testId <= 20; testId++) {
       try {
@@ -58,7 +58,7 @@ async function registerClientAndGetId() {
           // Este ID no existe, continuar
           continue;
         } else {
-          console.log(`❌ Error con ID ${testId}:`, error.message);
+          console.log(`Error con ID ${testId}:`, error.message);
         }
       }
     }
@@ -66,7 +66,7 @@ async function registerClientAndGetId() {
 
     
   } catch (error) {
-    console.log('❌ Error:', error.message);
+    console.log('Error:', error.message);
   }
 }
 

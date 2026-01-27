@@ -182,10 +182,10 @@ router.put('/:id/status', async (req, res) => {
           } else {
             await notificationsService.notifyAppointmentStatusChange(cita.cliente_id, cita, nuevo_estado);
           }
-          console.log('✅ Notificación de cambio de estado de cita enviada');
+          console.log('Notificación de cambio de estado de cita enviada');
         }
       } catch (notifError) {
-        console.error('⚠️ Error al enviar notificación de cita:', notifError);
+        console.error('Error al enviar notificación de cita:', notifError);
         // No fallar la operación si la notificación falla
       }
     }

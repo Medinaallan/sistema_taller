@@ -35,7 +35,7 @@ const ServicesPage = () => {
     try {
       setLoading(true);
       const response = await servicesService.getAll();
-      console.log('📋 Respuesta de servicios:', response);
+      console.log('Respuesta de servicios:', response);
       
       // Verificar si response.data contiene los servicios o si están en response.recordset
       const servicesArray = response.data || response.recordset || [];
@@ -43,7 +43,7 @@ const ServicesPage = () => {
       if (Array.isArray(servicesArray) && servicesArray.length > 0) {
         // Mapear los datos del backend al formato esperado por la interfaz Service
         const mappedServices = servicesArray.map((service: any) => {
-          console.log('🔍 Mapeando servicio:', service);
+          console.log('Mapeando servicio:', service);
           return {
             id: service.tipo_servicio_id || service.id || Math.random().toString(),
             name: service.nombre || service.name || 'Sin nombre',
@@ -54,7 +54,7 @@ const ServicesPage = () => {
             updatedAt: service.updatedAt || new Date(),
           };
         });
-        console.log('✅ Servicios mapeados:', mappedServices);
+        console.log('Servicios mapeados:', mappedServices);
         setData(mappedServices);
       }
     } catch (error) {
@@ -95,7 +95,7 @@ const ServicesPage = () => {
     try {
       setLoading(true);
       
-      console.log('🚀 Enviando datos del servicio:', formData);
+      console.log('Enviando datos del servicio:', formData);
       
       // Obtener usuario_id del localStorage
       const usuarioId = localStorage.getItem('usuario_id') || '1';
@@ -109,17 +109,17 @@ const ServicesPage = () => {
         registrado_por: parseInt(usuarioId),
       };
 
-      console.log('📤 Datos procesados para enviar:', serviceData);
+      console.log('Datos procesados para enviar:', serviceData);
 
       const response = await servicesService.create(serviceData);
       
-      console.log('📥 Respuesta del servidor:', response);
+      console.log('Respuesta del servidor:', response);
       
       // Verificar si el SP realmente permitió la inserción (allow = 1)
       const spSucceeded = response.data?.allow === 1 || response.allow === 1;
       
       if (spSucceeded) {
-        console.log('✅ Servicio creado exitosamente');
+        console.log('Servicio creado exitosamente');
         setIsModalOpen(false);
         
         // Mostrar mensaje de éxito

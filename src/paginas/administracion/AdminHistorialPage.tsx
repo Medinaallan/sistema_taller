@@ -495,13 +495,8 @@ export function AdminHistorialPage() {
                             <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {formatCurrency(record.servicePrice)}
+                                {record.invoiceTotal ? formatCurrency(record.invoiceTotal) : "L 00.0"}
                               </div>
-                              {record.invoiceTotal && record.invoiceTotal !== record.servicePrice && (
-                                <div className="text-xs text-blue-600">
-                                  Total factura: {formatCurrency(record.invoiceTotal)}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </td>
@@ -588,7 +583,6 @@ export function AdminHistorialPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div><strong>Nombre:</strong> {selectedRecord.serviceName}</div>
                       <div><strong>Categoría:</strong> {selectedRecord.serviceCategory}</div>
-                      <div><strong>Precio:</strong> {formatCurrency(selectedRecord.servicePrice)}</div>
                       <div><strong>Duración:</strong> {selectedRecord.serviceDuration}</div>
                       <div><strong>Fecha:</strong> {formatDate(selectedRecord.date || selectedRecord.createdAt)}</div>
                       <div><strong>Estado:</strong> 

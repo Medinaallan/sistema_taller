@@ -2,7 +2,7 @@ const spacesService = require('../services/spacesService');
 
 async function mostrarImagenesRecientes() {
     try {
-        console.log('🔍 Buscando imágenes recientes...\n');
+        console.log('Buscando imágenes recientes...\n');
         
         const files = await spacesService.listImages('chat-images', 10);
         

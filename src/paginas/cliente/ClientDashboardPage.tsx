@@ -155,7 +155,7 @@ export function ClientDashboardPage() {
       
       setVehiclesLoading(true);
       try {
-        console.log('📥 Cargando vehículos para cliente:', state.user.id);
+        console.log('Cargando vehículos para cliente:', state.user.id);
         
         // Llamar al endpoint con el parámetro cliente_id para usar SP_OBTENER_VEHICULOS
         const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
@@ -165,7 +165,7 @@ export function ClientDashboardPage() {
         }
         
         const result = await response.json();
-        console.log('✅ Respuesta de vehículos:', result);
+        console.log('Respuesta de vehículos:', result);
         
         if (result.success && result.data) {
           const userVehicles = result.data.map((vehicle: any) => ({
@@ -178,14 +178,14 @@ export function ClientDashboardPage() {
             vin: vehicle.vin || '',
             mileage: parseInt(vehicle.kilometraje || vehicle.mileage) || 0
           }));
-          console.log('✅ Vehículos mapeados:', userVehicles);
+          console.log('Vehículos mapeados:', userVehicles);
           setClientVehicles(userVehicles);
         } else {
-          console.error('❌ Error en respuesta:', result.message);
+          console.error('Error en respuesta:', result.message);
           setClientVehicles([]);
         }
       } catch (error) {
-        console.error('❌ Error cargando vehículos:', error);
+        console.error('Error cargando vehículos:', error);
         setClientVehicles([]);
       } finally {
         setVehiclesLoading(false);
@@ -211,20 +211,20 @@ export function ClientDashboardPage() {
   useEffect(() => {
     const loadClientWorkOrders = async () => {
       if (!state?.user?.id) {
-        console.log('⚠️ No hay usuario autenticado, omitiendo carga de órdenes de trabajo');
+        console.log('No hay usuario autenticado, omitiendo carga de órdenes de trabajo');
         return;
       }
       
       try {
         setWorkOrdersLoading(true);
-        console.log('📥 Cargando órdenes de trabajo para cliente:', state.user.id);
+        console.log('Cargando órdenes de trabajo para cliente:', state.user.id);
         
         const orders = await workOrdersService.getWorkOrdersByClient(state.user.id.toString());
-        console.log('✅ Órdenes de trabajo cargadas:', orders);
+        console.log('Órdenes de trabajo cargadas:', orders);
         
         setClientWorkOrders(orders || []);
       } catch (error) {
-        console.error('❌ Error cargando órdenes de trabajo:', error);
+        console.error('Error cargando órdenes de trabajo:', error);
         // No romper la UI si falla la carga de órdenes
         setClientWorkOrders([]);
       } finally {
@@ -301,12 +301,12 @@ export function ClientDashboardPage() {
     // Recargar órdenes de trabajo para actualizar el estado
     if (state?.user?.id) {
       try {
-        console.log('🔄 Recargando órdenes de trabajo después de firma...');
+        console.log('Recargando órdenes de trabajo después de firma...');
         const orders = await workOrdersService.getWorkOrdersByClient(state.user.id.toString());
         setClientWorkOrders(orders);
-        console.log('✅ Órdenes de trabajo actualizadas:', orders);
+        console.log('Órdenes de trabajo actualizadas:', orders);
       } catch (error) {
-        console.error('❌ Error recargando órdenes de trabajo:', error);
+        console.error('Error recargando órdenes de trabajo:', error);
       }
     }
   };

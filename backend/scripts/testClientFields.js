@@ -1,7 +1,7 @@
 const ExcelImportService = require('../services/excelImportService');
 
 async function testClientProcessing() {
-    console.log('🧪 Probando procesamiento de clientes con campos completos...\n');
+    console.log('Probando procesamiento de clientes con campos completos...\n');
 
     const service = new ExcelImportService();
 
@@ -38,26 +38,26 @@ async function testClientProcessing() {
     ];
 
     try {
-        console.log('📋 Datos de entrada:');
+        console.log('Datos de entrada:');
         testClientsData.forEach((client, index) => {
             console.log(`   ${index + 1}. ${client.name || '[VACÍO]'} - ${client.email} - ${client.password || '[SIN PASSWORD]'}`);
         });
 
-        console.log('\n🔄 Procesando clientes...');
+        console.log('\n  Procesando clientes...');
         const processedClients = await service.processClientsData(testClientsData);
 
-        console.log(`\n✅ Procesamiento completado:`);
-        console.log(`   📊 Clientes procesados: ${processedClients.length} de ${testClientsData.length}`);
+        console.log(`\n  Procesamiento completado:`);
+        console.log(`   Clientes procesados: ${processedClients.length} de ${testClientsData.length}`);
         
-        console.log('\n📋 Clientes válidos procesados:');
+        console.log('\n  Clientes válidos procesados:');
         processedClients.forEach((client, index) => {
             console.log(`   ${index + 1}. Nombre: ${client.name}`);
-            console.log(`      📧 Email: ${client.email}`);
-            console.log(`      📞 Teléfono: ${client.phone}`);
-            console.log(`      🏠 Dirección: ${client.address || '[VACÍA]'}`);
-            console.log(`      🔐 Password: ${client.password_hash}`);
-            console.log(`      🆔 ID: ${client.id}`);
-            console.log(`      📅 Fecha registro: ${client.registration_date}`);
+            console.log(`       Email: ${client.email}`);
+            console.log(`       Teléfono: ${client.phone}`);
+            console.log(`       Dirección: ${client.address || '[VACÍA]'}`);
+            console.log(`       Password: ${client.password_hash}`);
+            console.log(`       ID: ${client.id}`);
+            console.log(`       Fecha registro: ${client.registration_date}`);
             console.log('');
         });
 
@@ -66,16 +66,16 @@ async function testClientProcessing() {
             client.name && client.email && client.phone && client.password_hash
         );
 
-        console.log(`🔍 Validación de campos obligatorios: ${camposCompletos ? '✅ PASÓ' : '❌ FALLÓ'}`);
+        console.log(`Validación de campos obligatorios: ${camposCompletos ? '✅ PASÓ' : '❌ FALLÓ'}`);
 
         // Verificar que la dirección puede ser opcional
         const direccionOpcional = processedClients.some(client => client.address === '');
-        console.log(`🔍 Dirección como campo opcional: ${direccionOpcional ? '✅ PASÓ' : '❌ NO SE PROBÓ'}`);
+        console.log(`Dirección como campo opcional: ${direccionOpcional ? '✅ PASÓ' : '❌ NO SE PROBÓ'}`);
 
-        console.log('\n🎉 Prueba completada exitosamente!');
+        console.log('\n  Prueba completada exitosamente!');
 
     } catch (error) {
-        console.error('❌ Error durante la prueba:', error.message);
+        console.error('Error durante la prueba:', error.message);
         console.error(error.stack);
     }
 }

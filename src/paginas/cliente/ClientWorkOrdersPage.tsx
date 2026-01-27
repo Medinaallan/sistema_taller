@@ -261,7 +261,7 @@ export function ClientWorkOrdersPage() {
       setShowQuotationModal(false);
       setSelectedQuotation(null);
       
-      console.log(`✅ Cotización ${quotationId} ${approved ? 'aprobada' : 'rechazada'} por ${currentUser}`);
+      console.log(`Cotización ${quotationId} ${approved ? 'aprobada' : 'rechazada'} por ${currentUser}`);
     } catch (error) {
       console.error('Error procesando respuesta de cotización:', error);
       showError('Error procesando la respuesta: ' + (error instanceof Error ? error.message : 'Error desconocido'));

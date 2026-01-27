@@ -182,7 +182,7 @@ class QuotationsService {
     msg: string;
   }> {
     try {
-      console.log('🔄 Iniciando flujo de aprobación y generación de OT');
+      console.log('Iniciando flujo de aprobación y generación de OT');
       
       // Verificar estado actual de la cotización
       const quotation = await this.getQuotationById(quotationId);
@@ -190,17 +190,17 @@ class QuotationsService {
       
       // Paso 1: Aprobar cotización solo si no está aprobada
       if (!alreadyApproved) {
-        console.log(`📋 Paso 1: Aprobando cotización ${quotationId}...`);
+        console.log(`Paso 1: Aprobando cotización ${quotationId}...`);
         await this.approveQuotation(quotationId);
-        console.log('✅ Cotización aprobada exitosamente');
+        console.log('Cotización aprobada exitosamente');
       } else {
-        console.log('ℹ️ Cotización ya estaba aprobada, saltando paso de aprobación');
+        console.log('ℹCotización ya estaba aprobada, saltando paso de aprobación');
       }
       
       // Paso 2: Generar orden de trabajo (ejecuta SP_GENERAR_OT_DESDE_COTIZACION)
-      console.log(`📋 Paso 2: Generando orden de trabajo desde cotización...`);
+      console.log(`Paso 2: Generando orden de trabajo desde cotización...`);
       const workOrderResult = await this.generateWorkOrderFromQuotation(quotationId, otData);
-      console.log('✅ Orden de trabajo generada exitosamente:', workOrderResult);
+      console.log('Orden de trabajo generada exitosamente:', workOrderResult);
       
       return {
         quotationApproved: true,
@@ -210,7 +210,7 @@ class QuotationsService {
         msg: `${alreadyApproved ? 'Cotización previamente aprobada' : 'Cotización aprobada exitosamente'}. Orden de trabajo #${workOrderResult.numero_ot} generada.`
       };
     } catch (error) {
-      console.error('❌ Error en flujo de aprobación y generación:', error);
+      console.error('Error en flujo de aprobación y generación:', error);
       throw error;
     }
   }

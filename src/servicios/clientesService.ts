@@ -24,7 +24,7 @@ class ClientesService {
    */
   async obtenerClientes(): Promise<ClienteResponse> {
     try {
-      console.log('👥 Obteniendo lista de clientes desde SP_OBTENER_USUARIOS...');
+      console.log('Obteniendo lista de clientes desde SP_OBTENER_USUARIOS...');
       
       const response = await fetch(`${API_BASE}/users/list`, {
         method: 'GET',
@@ -34,14 +34,14 @@ class ClientesService {
       });
 
       const data = await response.json();
-      console.log('📝 Respuesta completa del servidor:', data);
+      console.log('Respuesta completa del servidor:', data);
 
       if (data.success && data.data) {
         // Filtrar solo usuarios con rol "Cliente"
         const todosUsuarios = Array.isArray(data.data) ? data.data : [data.data];
         const clientes = todosUsuarios.filter((usuario: any) => usuario.rol === 'Cliente');
         
-        console.log(`✅ ${clientes.length} clientes obtenidos de ${todosUsuarios.length} usuarios totales`);
+        console.log(`${clientes.length} clientes obtenidos de ${todosUsuarios.length} usuarios totales`);
         
         return {
           success: true,
@@ -49,7 +49,7 @@ class ClientesService {
           count: clientes.length
         };
       } else {
-        console.log('❌ Error del servidor:', data.message);
+        console.log('Error del servidor:', data.message);
         return {
           success: false,
           message: data.message || 'Error al obtener clientes'
@@ -69,7 +69,7 @@ class ClientesService {
    */
   async obtenerCliente(clienteId: number): Promise<ClienteResponse> {
     try {
-      console.log('👤 Obteniendo cliente ID:', clienteId);
+      console.log('Obteniendo cliente ID:', clienteId);
       
       const response = await fetch(`${API_BASE}/users/${clienteId}`, {
         method: 'GET',
@@ -79,25 +79,25 @@ class ClientesService {
       });
 
       const data = await response.json();
-      console.log('📝 Respuesta del servidor:', data);
+      console.log('Respuesta del servidor:', data);
 
       if (data.success && data.data) {
         // Verificar que sea un cliente
         if (data.data.rol === 'Cliente') {
-          console.log('✅ Cliente obtenido:', data.data.nombre_completo);
+          console.log('Cliente obtenido:', data.data.nombre_completo);
           return {
             success: true,
             data: data.data
           };
         } else {
-          console.log('❌ El usuario no es un cliente, rol:', data.data.rol);
+          console.log('El usuario no es un cliente, rol:', data.data.rol);
           return {
             success: false,
             message: 'El usuario especificado no es un cliente'
           };
         }
       } else {
-        console.log('❌ Cliente no encontrado:', data.message);
+        console.log('Cliente no encontrado:', data.message);
         return {
           success: false,
           message: data.message || 'Cliente no encontrado'

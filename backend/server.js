@@ -126,7 +126,7 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📊 Base de datos: ${process.env.DB_DATABASE}`);
-  console.log(`🌍 Entorno: ${process.env.NODE_ENV}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`Base de datos: ${process.env.DB_DATABASE}`);
+  console.log(`Entorno: ${process.env.NODE_ENV}`);
 });

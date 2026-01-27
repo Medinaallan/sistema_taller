@@ -281,6 +281,40 @@
       "isRead": false,
       "createdAt": "2026-01-27T01:48:26.623Z",
       "sentAt": "2026-01-27T01:48:26.623Z"
+    },
+    {
+      "id": "notif-1769547824710-olc6xlrmw",
+      "clientId": "10",
+      "type": "ot_status_change",
+      "title": "OT OT-00000038: Completada",
+      "message": "¡Su vehículo está listo! La orden de trabajo ha sido completada.",
+      "metadata": {
+        "otId": 38,
+        "numeroOt": "OT-00000038",
+        "newStatus": "Completada",
+        "vehicleId": 20,
+        "placa": "TST010"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-27T21:03:44.710Z",
+      "sentAt": "2026-01-27T21:03:44.710Z"
+    },
+    {
+      "id": "notif-1769547878863-wky89b676",
+      "clientId": "10",
+      "type": "ot_status_change",
+      "title": "OT OT-00000039: Completada",
+      "message": "¡Su vehículo está listo! La orden de trabajo ha sido completada.",
+      "metadata": {
+        "otId": 39,
+        "numeroOt": "OT-00000039",
+        "newStatus": "Completada",
+        "vehicleId": 20,
+        "placa": "TST010"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-27T21:04:38.863Z",
+      "sentAt": "2026-01-27T21:04:38.863Z"
     }
   ]
 }

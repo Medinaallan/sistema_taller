@@ -248,14 +248,14 @@ export function ClientVehiclesPage() {
       // Subir imagen a S3 si hay una seleccionada
       let fotoUrl = null;
       if (selectedImage) {
-        console.log('📷 Subiendo imagen a S3...');
+        console.log('Subiendo imagen a S3...');
         fotoUrl = await uploadImageToS3();
         if (!fotoUrl) {
           showError('Error al subir la imagen. ¿Deseas continuar sin foto?');
           setLoading(false);
           return;
         }
-        console.log('✅ Imagen subida exitosamente:', fotoUrl);
+        console.log('Imagen subida exitosamente:', fotoUrl);
       }
 
       // Preparar datos para la API usando los nombres de campos del SP
@@ -355,11 +355,11 @@ export function ClientVehiclesPage() {
       // Subir nueva imagen si hay una seleccionada
       let fotoUrl = selectedVehicle.fotoUrl || editForm.fotoUrl;
       if (selectedImage) {
-        console.log('📷 Subiendo nueva imagen a S3...');
+        console.log('Subiendo nueva imagen a S3...');
         const newImageUrl = await uploadImageToS3();
         if (newImageUrl) {
           fotoUrl = newImageUrl;
-          console.log('✅ Nueva imagen subida:', fotoUrl);
+          console.log('Nueva imagen subida:', fotoUrl);
         }
       }
 

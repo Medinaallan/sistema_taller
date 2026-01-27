@@ -20,7 +20,7 @@ class InvoicePaymentManager {
         const data: InvoicePaymentData = await response.json();
         this.paidInvoices = new Set(data.paidInvoices || []);
         this.pendingInvoices = new Set(data.pendingInvoices || []);
-        console.log('✅ Estado de pagos de facturas cargado:', {
+        console.log('Estado de pagos de facturas cargado:', {
           pagadas: this.paidInvoices.size,
           pendientes: this.pendingInvoices.size
         });
@@ -36,7 +36,7 @@ class InvoicePaymentManager {
   async markAsPaid(workOrderId: string): Promise<void> {
     await this.initialize();
     
-    console.log(`💰 Marcando factura de OT ${workOrderId} como pagada...`);
+    console.log(`Marcando factura de OT ${workOrderId} como pagada...`);
     
     try {
       const response = await fetch(`${API_BASE_URL}/invoice-payments/mark-paid/${workOrderId}`, {
@@ -55,12 +55,12 @@ class InvoicePaymentManager {
       if (result.success) {
         this.paidInvoices.add(workOrderId);
         this.pendingInvoices.delete(workOrderId);
-        console.log('✅ Factura marcada como pagada correctamente');
+        console.log('Factura marcada como pagada correctamente');
       } else {
         throw new Error(result.message || 'Error al marcar como pagada');
       }
     } catch (error) {
-      console.error('❌ Error marcando factura como pagada:', error);
+      console.error('Error marcando factura como pagada:', error);
       throw error;
     }
   }
