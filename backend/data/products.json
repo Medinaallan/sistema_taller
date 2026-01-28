@@ -76,5 +76,24 @@
     "stock": 12,
     "stockMin": 3,
     "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "a6e75b66-2c2c-4016-8f90-e2552d698cb1",
+    "image": "",
+    "name": "PRODUCTO DE PRUEBA",
+    "code": "1001",
+    "brand": "GENERAL",
+    "model": "general",
+    "description": "ASDADASDAasda",
+    "price": 100,
+    "cost": 80,
+    "isTaxed": true,
+    "exento": false,
+    "exonerado": false,
+    "category": "GENERAL",
+    "type": "unidad",
+    "stock": 7,
+    "stockMin": 3,
+    "createdAt": "2026-01-28T19:59:56.867Z"
   }
 ]

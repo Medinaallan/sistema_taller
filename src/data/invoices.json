@@ -62,7 +62,6 @@
     "createdBy": "Allan Admin"
   },
   {
-<<<<<<< HEAD
     "id": "inv-1769547839880-6ffe9f",
     "numero": "001-001-01-00000003",
     "fecha": "2026-01-27T21:03:59.870Z",
@@ -111,7 +110,8 @@
     "estado": "pagada",
     "createdAt": "2026-01-27T21:04:52.141Z",
     "createdBy": "ADMIN ALLAN"
-=======
+  },
+  {
     "id": "inv-1769543254271-0c47df",
     "numero": "001-001-01-00000003",
     "fecha": "2026-01-27T19:47:34.257Z",
@@ -643,6 +643,91 @@
     "estado": "pagada",
     "createdAt": "2026-01-28T00:49:57.630Z",
     "createdBy": "Allan Admin"
->>>>>>> 1d59685683cef06e4d82459b7d6be565c0d9ece5
+  },
+  {
+    "id": "inv-1769631143739-9906ea",
+    "numero": "001-001-01-00000014",
+    "fecha": "2026-01-28T20:12:23.735Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "a6e75b66-2c2c-4016-8f90-e2552d698cb1",
+        "name": "PRODUCTO DE PRUEBA",
+        "quantity": 1,
+        "price": 100,
+        "total": 100,
+        "type": "unidad"
+      }
+    ],
+    "subtotal": 86.95652173913044,
+    "exento": 0,
+    "exonerado": 0,
+    "tax": 13.043478260869563,
+    "discount": 0,
+    "total": 100,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T20:12:23.739Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769631294368-f79a51",
+    "numero": "001-001-01-00000015",
+    "fecha": "2026-01-28T20:14:54.360Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 3,
+        "price": 12.5,
+        "total": 37.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 3,
+        "price": 15.3,
+        "total": 45.900000000000006,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 3,
+        "price": 899.99,
+        "total": 2699.9700000000003,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 2,
+        "price": 22.6,
+        "total": 45.2,
+        "type": "product"
+      },
+      {
+        "id": "a6e75b66-2c2c-4016-8f90-e2552d698cb1",
+        "name": "PRODUCTO DE PRUEBA",
+        "quantity": 2,
+        "price": 100,
+        "total": 200,
+        "type": "unidad"
+      }
+    ],
+    "subtotal": 2561.017391304348,
+    "exento": 37.5,
+    "exonerado": 45.900000000000006,
+    "tax": 384.1526086956519,
+    "discount": 0,
+    "total": 3028.57,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T20:14:54.369Z",
+    "createdBy": "Allan Admin"
   }
 ]
