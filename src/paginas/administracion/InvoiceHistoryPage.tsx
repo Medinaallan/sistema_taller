@@ -48,6 +48,14 @@ export function InvoiceHistoryPage() {
   };
 
   const handlePrintInvoice = async (invoice: Invoice) => {
+    // Load the freshest invoice from backend to ensure persisted fields (discount, exento, exonerado)
+    let freshInvoice = invoice;
+    try {
+      const got = await invoicesService.getInvoiceById(invoice.id);
+      if (got) freshInvoice = got;
+    } catch (err) {
+      // fallback to passed invoice
+    }
     const { value: format } = await Swal.fire({
       title: 'Seleccionar Formato de Impresión',
       html: `
@@ -79,7 +87,7 @@ export function InvoiceHistoryPage() {
           btnCarta.onclick = () => {
             Swal.clickConfirm();
             Swal.close();
-            invoicesService.printInvoiceCarta(invoice);
+            invoicesService.printInvoiceCarta(freshInvoice);
           };
         }
         
@@ -87,7 +95,7 @@ export function InvoiceHistoryPage() {
           btnTicket.onclick = () => {
             Swal.clickConfirm();
             Swal.close();
-            invoicesService.printInvoiceTicket(invoice);
+            invoicesService.printInvoiceTicket(freshInvoice);
           };
         }
       }

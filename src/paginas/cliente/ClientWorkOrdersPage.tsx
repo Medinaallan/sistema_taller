@@ -814,7 +814,7 @@ export function ClientWorkOrdersPage() {
                       selectedQuotation.estado === 'aprobada' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
                       <p className="font-medium">
-                        {selectedQuotation.estado === 'aprobada' ? '✅ Cotización Aprobada' : '❌ Cotización Rechazada'}
+                        {selectedQuotation.estado === 'aprobada' ? ' Cotización Aprobada' : ' Cotización Rechazada'}
                       </p>
                       {selectedQuotation.fechaRespuesta && (
                         <p className="text-sm mt-1">

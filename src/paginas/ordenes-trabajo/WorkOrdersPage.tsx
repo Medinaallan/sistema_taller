@@ -451,7 +451,7 @@ const WorkOrdersPage = () => {
                             className="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-semibold"
                             title="Completar orden"
                           >
-                            ✅ Completar
+                             Completar
                           </button>
                         )}
                         <button
@@ -459,14 +459,14 @@ const WorkOrdersPage = () => {
                           className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-xs"
                           title="Editar"
                         >
-                          ✏️ Editar
+                           Editar
                         </button>
                         <button
                           onClick={() => handleDeleteWorkOrder(order.id!)}
                           className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
                           title="Eliminar"
                         >
-                          🗑️ Eliminar
+                           Eliminar
                         </button>
                       </div>
                     </td>

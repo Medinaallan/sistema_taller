@@ -397,7 +397,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-md">
                 <div className="flex items-center">
                   <div className="text-green-800">
-                    <strong>✅ Código de seguridad (SIMULACIÓN):</strong>
+                    <strong>Código de seguridad (SIMULACIÓN):</strong>
                     <div className="text-lg font-mono bg-green-100 px-2 py-1 rounded mt-1">
                       {securityCode}
                     </div>

@@ -150,7 +150,7 @@ const ClientQuotationsPage = () => {
                               className="bg-green-600 hover:bg-green-700 text-white"
                               onClick={() => handleApprove(quotation)}
                             >
-                              ✅ Aprobar
+                               Aprobar
                             </Button>
                             <Button 
                               size="sm" 
@@ -165,7 +165,7 @@ const ClientQuotationsPage = () => {
                         {/* Estados terminales - Solo indicadores */}
                         {quotation.estado_cotizacion === 'Aprobada' && (
                           <span className="text-green-600 text-sm font-medium px-3 py-1 bg-green-50 rounded">
-                            ✅ Aprobada{quotation.numero_ot ? ` - OT: ${quotation.numero_ot}` : ''}
+                             Aprobada{quotation.numero_ot ? ` - OT: ${quotation.numero_ot}` : ''}
                           </span>
                         )}
                         

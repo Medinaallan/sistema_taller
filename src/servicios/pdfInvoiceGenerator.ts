@@ -91,7 +91,6 @@ class PDFInvoiceGenerator {
     doc.rect(sarBoxX, yPos, sarBoxWidth, sarBoxHeight, 'FD');
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('Información SAR', sarBoxX + 4, yPos + 6);
     doc.setFont('helvetica', 'normal');
     doc.text(`CAI: ${EMPRESA_INFO.cai}`, sarBoxX + 4, yPos + 12);
     doc.text(`Rango Autorizado: ${EMPRESA_INFO.rangoInicial} - ${EMPRESA_INFO.rangoFinal}`, sarBoxX + 4, yPos + 17);
@@ -138,14 +137,18 @@ class PDFInvoiceGenerator {
     yPos += 6;
 
     // ========== TABLA DE ITEMS (ajustada para carta) ==========
-    const tableData = invoice.items.map((item, index) => ({
-      no: (index + 1).toString(),
-      desc: item.name,
-      qty: item.quantity.toString(),
-      price: item.price.toFixed(2),
-      type: item.type === 'service' ? 'Servicio' : 'Producto',
-      total: item.total.toFixed(2)
-    }));
+    const tableData = invoice.items.map((item, index) => {
+      const t = (item.type || '').toString().toLowerCase();
+      const typeLabel = (t === 'service' || t === 'servicio' || t.includes('serv')) ? 'Servicio' : 'Producto';
+      return {
+        no: (index + 1).toString(),
+        desc: item.name,
+        qty: item.quantity.toString(),
+        price: item.price.toFixed(2),
+        type: typeLabel,
+        total: item.total.toFixed(2)
+      };
+    });
 
     autoTable(doc, {
       startY: yPos,
@@ -175,18 +178,31 @@ class PDFInvoiceGenerator {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Subtotal:', totalsX, yPos, { align: 'right' });
-    doc.text(`L ${invoice.subtotal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
-
-    if (invoice.discount && invoice.discount > 0) {
-      yPos += 6;
-      doc.text('Descuento:', totalsX, yPos, { align: 'right' });
-      doc.text(`- L ${invoice.discount.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
-    }
-
+    // Mostrar importes desglosados en el orden solicitado:
+    // 1) Descuento/ Rebajas, 2) Importe Exento, 3) Importe Exonerado, 4) Importe Gravado 15%, 5) ISV (15%)
+    const discountVal = Number(invoice.discount || 0);
+    doc.text('Descuentos y Rebajas:', totalsX, yPos, { align: 'right' });
+    doc.text(`${discountVal > 0 ? '- L ' + discountVal.toFixed(2) : 'L ' + discountVal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
     yPos += 6;
+
+    const exentoVal = Number((invoice as any).exento || 0);
+    const exoneradoVal = Number((invoice as any).exonerado || 0);
+    const gravadoVal = Number(invoice.subtotal || 0);
+
+    doc.text('Importe Exento:', totalsX, yPos, { align: 'right' });
+    doc.text(`L ${exentoVal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+    yPos += 6;
+
+    doc.text('Importe Exonerado:', totalsX, yPos, { align: 'right' });
+    doc.text(`L ${exoneradoVal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+    yPos += 6;
+
+    doc.text('Importe Gravado 15%:', totalsX, yPos, { align: 'right' });
+    doc.text(`L ${gravadoVal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+    yPos += 6;
+
     doc.text('ISV (15%):', totalsX, yPos, { align: 'right' });
-    doc.text(`L ${invoice.tax.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+    doc.text(`L ${Number(invoice.tax || 0).toFixed(2)}`, totalsValX, yPos, { align: 'right' });
 
     yPos += 8;
     doc.setDrawColor(0);
@@ -338,20 +354,32 @@ class PDFInvoiceGenerator {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     const valX = pageWidth - margin;
-    const labelX = pageWidth - 36;
+    const labelX = margin;
 
-    doc.text('Subtotal:', labelX, yPos);
-    doc.text(`L ${invoice.subtotal.toFixed(2)}`, valX, yPos, { align: 'right' });
+    // Mostrar totales en el orden solicitado
+    const discountVal = Number(invoice.discount || 0);
+    doc.text('Descuentos y Rebajas:', labelX, yPos);
+    doc.text(`${discountVal > 0 ? '-L ' + discountVal.toFixed(2) : 'L ' + discountVal.toFixed(2)}`, valX, yPos, { align: 'right' });
     yPos += 4;
 
-    if (invoice.discount && invoice.discount > 0) {
-      doc.text('Descuento:', labelX, yPos);
-      doc.text(`-L ${invoice.discount.toFixed(2)}`, valX, yPos, { align: 'right' });
-      yPos += 4;
-    }
+    const exentoVal = Number((invoice as any).exento || 0);
+    const exoneradoVal = Number((invoice as any).exonerado || 0);
+    const gravadoVal = Number(invoice.subtotal || 0);
+
+    doc.text('Importe Exento:', labelX, yPos);
+    doc.text(`L ${exentoVal.toFixed(2)}`, valX, yPos, { align: 'right' });
+    yPos += 4;
+
+    doc.text('Importe Exonerado:', labelX, yPos);
+    doc.text(`L ${exoneradoVal.toFixed(2)}`, valX, yPos, { align: 'right' });
+    yPos += 4;
+
+    doc.text('Importe Gravado 15%:', labelX, yPos);
+    doc.text(`L ${gravadoVal.toFixed(2)}`, valX, yPos, { align: 'right' });
+    yPos += 4;
 
     doc.text('ISV (15%):', labelX, yPos);
-    doc.text(`L ${invoice.tax.toFixed(2)}`, valX, yPos, { align: 'right' });
+    doc.text(`L ${Number(invoice.tax || 0).toFixed(2)}`, valX, yPos, { align: 'right' });
     yPos += 6;
 
     doc.setFont('helvetica', 'bold');

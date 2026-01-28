@@ -262,7 +262,7 @@ const QuotationsPage = () => {
                             className="bg-green-600 hover:bg-green-700 text-white"
                             onClick={() => handleApprove(quotation)}
                           >
-                            ✅ Aprobar
+                             Aprobar
                           </Button>
                           <Button 
                             size="sm" 
@@ -278,7 +278,7 @@ const QuotationsPage = () => {
                       {quotation.estado_cotizacion === 'Aprobada' && (
                         <>
                           <span className="text-green-600 text-sm font-medium px-2 py-1 bg-green-50 rounded">
-                            ✅ Aprobada
+                             Aprobada
                           </span>
                           {/* Mostrar botón para generar OT si no existe */}
                           {!quotation.numero_ot && (

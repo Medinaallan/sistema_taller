@@ -196,7 +196,7 @@ export function DataManagementPanel() {
               <div className={`w-6 h-6 mr-3 mt-0.5 ${
                 resetResult.success ? 'text-green-600' : 'text-red-600'
               }`}>
-                {resetResult.success ? '✅' : '❌'}
+                {resetResult.success ? '' : ''}
               </div>
               <div className="flex-1">
                 <h4 className={`text-sm font-medium mb-2 ${
