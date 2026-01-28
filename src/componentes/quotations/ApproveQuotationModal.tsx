@@ -96,7 +96,7 @@ export default function ApproveQuotationModal({
     setLoading(true);
 
     try {
-      console.log('🚀 Iniciando aprobación de cotización:', quotation.cotizacion_id);
+      console.log('Iniciando aprobación de cotización:', quotation.cotizacion_id);
       
       // Convertir hora_estimada al formato HH:mm:ss
       const horaEstimada = formData.hora_estimada.includes(':') 
@@ -117,13 +117,13 @@ export default function ApproveQuotationModal({
         }
       );
 
-      console.log('✅ Resultado de aprobación:', result);
+      console.log('Resultado de aprobación:', result);
 
       // Cambiar estado de la cita a "aprobada" después de aprobar la cotización
       if (quotation.cita_id) {
         try {
           const cita_id = quotation.cita_id;
-          console.log(`📋 Información para cambiar estado:`, {
+          console.log(`Información para cambiar estado:`, {
             cita_id,
             nuevo_estado: 'aprobada',
             comentario: 'Cotización aprobada',
@@ -136,18 +136,18 @@ export default function ApproveQuotationModal({
             registrado_por: usuario_id ? parseInt(usuario_id) : 0
           });
           
-          console.log('✅ Respuesta del cambio de estado:', statusResponse);
-          console.log('✅ Estado de cita actualizado a "aprobada"');
+          console.log('Respuesta del cambio de estado:', statusResponse);
+          console.log('Estado de cita actualizado a "aprobada"');
         } catch (error) {
-          console.error('⚠️ Error al cambiar estado de cita:', error);
-          console.error('⚠️ Detalles del error:', {
+          console.error('Error al cambiar estado de cita:', error);
+          console.error('Detalles del error:', {
             message: error instanceof Error ? error.message : error,
             stack: error instanceof Error ? error.stack : 'No stack available'
           });
           // No detener el flujo si falla el cambio de estado
         }
       } else {
-        console.warn('⚠️ No hay cita_id en la cotización:', quotation);
+        console.warn('No hay cita_id en la cotización:', quotation);
       }
       
       showSuccess(`${result.msg}`);
@@ -159,7 +159,7 @@ export default function ApproveQuotationModal({
       
       onClose();
     } catch (err) {
-      console.error('❌ Error durante aprobación:', err);
+      console.error('Error durante aprobación:', err);
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al aprobar cotización: ${errorMsg}`);
       showError(`Error: ${errorMsg}`);
@@ -181,7 +181,7 @@ export default function ApproveQuotationModal({
           {isAlreadyApproved && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>ℹ️ Información:</strong> Esta cotización ya fue aprobada previamente. Este formulario generará la orden de trabajo asociada.
+                <strong>Información:</strong> Esta cotización ya fue aprobada previamente. Este formulario generará la orden de trabajo asociada.
               </p>
             </div>
           )}
@@ -270,7 +270,7 @@ export default function ApproveQuotationModal({
           {/* Información importante */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-800">
-              <strong>ℹ️ Nota:</strong> {isAlreadyApproved 
+              <strong>Nota:</strong> {isAlreadyApproved 
                 ? 'Se generará una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.'
                 : 'Al aprobar esta cotización, se generará automáticamente una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.'}
             </p>
@@ -292,8 +292,8 @@ export default function ApproveQuotationModal({
               disabled={loading}
             >
               {loading 
-                ? (isAlreadyApproved ? '⏳ Generando OT...' : '⏳ Aprobando y generando OT...') 
-                : (isAlreadyApproved ? '📋 Generar OT' : '✅ Aprobar y Generar OT')}
+                ? (isAlreadyApproved ? 'Generando OT...' : 'Aprobando y generando OT...') 
+                : (isAlreadyApproved ? 'Generar OT' : ' Aprobar y Generar OT')}
             </Button>
           </div>
         </form>

@@ -230,13 +230,19 @@ const InvoicesPage = () => {
           subtotal: inv.subtotal,
           tax: inv.tax,
           createdAt: new Date(inv.createdAt || new Date()).toISOString(),
+          // Preserve discount/exento/exonerado for printing
+          discount: inv.discount || 0,
+          exento: inv.exento || 0,
+          exonerado: inv.exonerado || 0,
           updatedAt: new Date().toISOString(),
           items: (inv.items || []).map(it => ({
             id: it.id,
             description: it.name || (it as any).description || '',
             quantity: it.quantity || 1,
             unitPrice: it.price || 0,
-            total: it.total || 0
+            total: it.total || 0,
+            // preserve original type if present
+            type: (it as any).type || 'product'
           }))
         }));
 
@@ -326,11 +332,15 @@ const InvoicesPage = () => {
         quantity: (it as any).quantity || 1,
         price: (it as any).unitPrice || (it as any).price || 0,
         total: (it as any).total || ((it as any).quantity || 1) * ((it as any).unitPrice || (it as any).price || 0),
-        type: 'service'
+        // infer type from mapped item if available, default to 'product'
+        type: (it as any).type ? (String((it as any).type).toLowerCase().includes('serv') ? 'service' : 'product') : 'product'
       })),
       subtotal: (item.subtotal as number) || (item.total as number) || 0,
       tax: (item.tax as number) || 0,
-      discount: 0,
+      // Preserve persisted discount/exento/exonerado when available
+      discount: (item as any).discount || 0,
+      exento: (item as any).exento || 0,
+      exonerado: (item as any).exonerado || 0,
       total: (item.total as number) || 0,
       metodoPago: (item as any).metodoPago || 'Efectivo',
       estado: item.status === 'paid' ? 'pagada' : item.status === 'pending' ? 'pendiente' : 'anulada',

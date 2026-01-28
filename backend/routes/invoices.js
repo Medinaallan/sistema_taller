@@ -94,6 +94,8 @@ router.post('/', async (req, res) => {
       clientName: payload.clientName || 'CONSUMIDOR FINAL',
       items: payload.items || [],
       subtotal: payload.subtotal || 0,
+      exento: payload.exento || 0,
+      exonerado: payload.exonerado || 0,
       tax: payload.tax || 0,
       discount: payload.discount || 0,
       total: payload.total || 0,

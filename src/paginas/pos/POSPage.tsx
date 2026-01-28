@@ -15,6 +15,9 @@ interface POSItem {
   image?: string;
   category: string;
   type: 'product' | 'service';
+  isTaxed?: boolean;
+  exento?: boolean;
+  exonerado?: boolean;
 }
 
 interface CartItem extends POSItem {
@@ -28,29 +31,14 @@ interface POSState {
   total: number;
   subtotal: number;
   tax: number;
+  exentoAmount: number;
+  exoneradoAmount: number;
   discount: number;
   selectedCategory: string;
   activeTab: 'products' | 'pending-invoices';
 }
 
-// Productos de muestra
-const sampleProducts: POSItem[] = [
-  { id: '1', name: 'ACEITE DE MOTOR 10W-30', price: 12.50, quantity: 1, category: 'LUBRICANTES', type: 'product' },
-  { id: '2', name: 'ACEITE SINTÉTICO 5W-40', price: 15.30, quantity: 1, category: 'LUBRICANTES', type: 'product' },
-  { id: '3', name: 'BATERÍA ACDELCO 12V', price: 899.99, quantity: 1, category: 'ELECTRÓNICA AUTOMOTRIZ', type: 'product' },
-  { id: '4', name: 'ADITIVO PARA MOTOR ANTIFRICCIÓN', price: 45.60, quantity: 1, category: 'ADITIVOS', type: 'product' },
-  { id: '5', name: 'ALICATE UNIVERSAL MECÁNICO', price: 28.75, quantity: 1, category: 'HERRAMIENTAS', type: 'product' },
-  { id: '6', name: 'ESCÁNER AUTOMOTRIZ BÁSICO OBD2', price: 599.99, quantity: 1, category: 'ELECTRÓNICA AUTOMOTRIZ', type: 'product' },
-  { id: '7', name: 'ESCÁNER PROFESIONAL MULTIMARCA', price: 1299.99, quantity: 1, category: 'EQUIPO DIAGNÓSTICO', type: 'product' },
-  { id: '8', name: 'PASTILLAS DE FRENO DELANTERAS', price: 8.90, quantity: 1, category: 'FRENOS', type: 'product' },
-  { id: '9', name: 'ATORNILLADOR ELÉCTRICO PARA MECÁNICA', price: 65.45, quantity: 1, category: 'HERRAMIENTAS', type: 'product' },
-  { id: '10', name: 'LLAVE CRUZ PARA LLANTAS', price: 24.30, quantity: 1, category: 'HERRAMIENTAS', type: 'product' },
-  { id: '11', name: 'LÍQUIDO DE FRENOS DOT 4', price: 18.75, quantity: 1, category: 'FLUIDOS', type: 'product' },
-  { id: '12', name: 'LÍQUIDO REFRIGERANTE ROJO', price: 22.60, quantity: 1, category: 'FLUIDOS', type: 'product' },
-  { id: '13', name: 'LIMPIADOR DE CARBURADOR', price: 3.25, quantity: 1, category: 'LIMPIEZA AUTOMOTRIZ', type: 'product' },
-  { id: '14', name: 'LIMPIADOR DE INYECTORES', price: 12.45, quantity: 1, category: 'ADITIVOS', type: 'product' },
-  { id: '15', name: 'SELLADOR DE JUNTAS PARA MOTOR', price: 16.80, quantity: 1, category: 'MANTENIMIENTO', type: 'product' }
-];
+
 
 const categories = [
   'LUBRICANTES',
@@ -70,6 +58,8 @@ const POSPage: React.FC = () => {
     total: 0,
     subtotal: 0,
     tax: 0,
+    exentoAmount: 0,
+    exoneradoAmount: 0,
     discount: 0,
     selectedCategory: '',
     activeTab: 'products'
@@ -83,26 +73,72 @@ const POSPage: React.FC = () => {
   // Hook para manejar facturas pendientes
   const { pendingInvoices, loading: pendingLoading, markAsInvoiced, refreshPendingInvoices } = usePendingInvoices();
 
-  // Calcular totales (ISV incluido en el precio)
+  // Productos cargados desde backend /api/products
+  const [products, setProducts] = useState<POSItem[]>([] as POSItem[]);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+  // Cargar productos al montar (evitar doble /api) y cuando se actualizan
   useEffect(() => {
-    // El total del carrito ya incluye el ISV (precio con impuesto)
+    const loadProducts = async () => {
+      try {
+        const base = API_BASE.replace(/\/$/, '');
+        const url = base.endsWith('/api') ? `${base}/products` : `${base}/api/products`;
+        const res = await fetch(url);
+        const json = await res.json();
+        const list: POSItem[] = (json.data || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+          quantity: 1,
+          image: p.image || '',
+          category: p.category || 'GENERAL',
+          type: p.type || 'product',
+          isTaxed: !!p.isTaxed,
+          exento: !!p.exento,
+          exonerado: !!p.exonerado
+        }));
+        setProducts(list);
+      } catch (err) {
+        console.error('Error cargando productos desde API', err);
+      }
+    };
+
+    loadProducts();
+
+    const onUpdated = () => { loadProducts(); };
+    window.addEventListener('products:updated', onUpdated as EventListener);
+    return () => { window.removeEventListener('products:updated', onUpdated as EventListener); };
+  }, []);
+
+  // Calcular totales (considerando items exentos/exonerados)
+  useEffect(() => {
     const totalConISV = posState.cart.reduce((sum, item) => sum + item.total, 0);
     const discountAmount = (totalConISV * discountPercentage) / 100;
-    const totalConISVAfterDiscount = totalConISV - discountAmount;
-    
-    // Desglosar el ISV que ya está incluido en el precio
-    // Si Total = Base + ISV y ISV = Base * 0.15, entonces Total = Base * 1.15
-    // Por lo tanto: Base = Total / 1.15
-    const subtotal = totalConISVAfterDiscount / 1.15; // Base gravable (importe gravado)
-    const tax = subtotal * taxRate; // ISV = 15% de la base
-    const total = totalConISVAfterDiscount; // El total ya incluye el ISV
+    const totalAfterDiscount = totalConISV - discountAmount;
+
+    const taxedTotal = posState.cart.filter(i => !!i.isTaxed).reduce((s, i) => s + i.total, 0);
+    const exentoTotal = posState.cart.filter(i => !!i.exento).reduce((s, i) => s + i.total, 0);
+    const exoneradoTotal = posState.cart.filter(i => !!i.exonerado).reduce((s, i) => s + i.total, 0);
+
+    const taxedShareAfterDiscount = totalConISV > 0 ? taxedTotal - discountAmount * (taxedTotal / totalConISV) : 0;
+    const exentoShareAfterDiscount = totalConISV > 0 ? exentoTotal - discountAmount * (exentoTotal / totalConISV) : 0;
+    const exoneradoShareAfterDiscount = totalConISV > 0 ? exoneradoTotal - discountAmount * (exoneradoTotal / totalConISV) : 0;
+
+    // Para ítems gravados: precio final incluye ISV, por tanto base = total/1.15
+    const taxedBase = taxedShareAfterDiscount / (1 + taxRate || 1);
+    const tax = taxedShareAfterDiscount - taxedBase;
+
+    const subtotal = taxedBase; // Importe gravado (base)
+    const total = totalAfterDiscount;
 
     setPosState(prev => ({
       ...prev,
       subtotal,
       tax,
       total,
-      discount: discountAmount
+      discount: discountAmount,
+      exentoAmount: exentoShareAfterDiscount,
+      exoneradoAmount: exoneradoShareAfterDiscount
     }));
   }, [posState.cart, taxRate, discountPercentage]);
 
@@ -201,7 +237,7 @@ const POSPage: React.FC = () => {
     }));
   };
 
-  const filteredProducts = sampleProducts.filter(product => {
+  const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(posState.searchQuery.toLowerCase());
     const matchesCategory = !posState.selectedCategory || product.category === posState.selectedCategory;
     return matchesSearch && matchesCategory;
@@ -287,6 +323,8 @@ const POSPage: React.FC = () => {
           type: item.type
         })),
         subtotal: posState.subtotal,
+        exento: posState.exentoAmount,
+        exonerado: posState.exoneradoAmount,
         tax: posState.tax,
         discount: posState.discount,
         total: posState.total,
@@ -646,7 +684,7 @@ const POSPage: React.FC = () => {
             </div>
             <div className="flex justify-between">
               <span>Exonerado:</span>
-              <span>L.0.00</span>
+              <span>L.{posState.exoneradoAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span>Subtotal ISV (15.00%):</span>
@@ -658,7 +696,7 @@ const POSPage: React.FC = () => {
             </div>
             <div className="flex justify-between">
               <span>Exento:</span>
-              <span>L.0.00</span>
+              <span>L.{posState.exentoAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Descuento Global:</span>

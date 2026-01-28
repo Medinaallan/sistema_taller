@@ -328,8 +328,90 @@ try {
   console.warn('El servidor continuará sin las rutas de facturas');
 }
 
-// 🔄 IMPORTAR CONFIGURACIÓN DE BASE DE DATOS REAL
-// (ya importado arriba)
+// =====================
+// RUTAS SIMPLES DE PRODUCTS (JSON)
+// =====================
+const productsFile = path.join(__dirname, 'data', 'products.json');
+
+app.get('/api/products', (req, res) => {
+  try {
+    if (!fs.existsSync(productsFile)) {
+      fs.writeFileSync(productsFile, '[]', 'utf8');
+    }
+    const raw = fs.readFileSync(productsFile, 'utf8');
+    const products = JSON.parse(raw || '[]');
+    res.json({ success: true, data: products });
+  } catch (err) {
+    console.error('Error leyendo products.json', err);
+    res.status(500).json({ success: false, message: 'Error leyendo productos' });
+  }
+});
+
+app.post('/api/products', (req, res) => {
+  try {
+    const payload = req.body;
+    if (!payload || !payload.name) {
+      return res.status(400).json({ success: false, message: 'Nombre requerido' });
+    }
+    const raw = fs.existsSync(productsFile) ? fs.readFileSync(productsFile, 'utf8') : '[]';
+    const products = JSON.parse(raw || '[]');
+    const newProduct = {
+      id: uuidv4(),
+      image: payload.image || '',
+      name: payload.name,
+      code: payload.code || payload.id || '',
+      brand: payload.brand || '',
+      model: payload.model || '',
+      description: payload.description || '',
+      price: Number(payload.price) || 0,
+      cost: Number(payload.cost) || 0,
+      isTaxed: !!payload.isTaxed,
+      exento: !!payload.exento,
+      exonerado: !!payload.exonerado,
+      category: payload.category || 'GENERAL',
+      type: payload.type || 'product',
+      stock: Number(payload.stock) || 0,
+      stockMin: Number(payload.stockMin) || 0,
+      createdAt: new Date().toISOString()
+    };
+    products.push(newProduct);
+    fs.writeFileSync(productsFile, JSON.stringify(products, null, 2), 'utf8');
+    res.json({ success: true, data: newProduct });
+  } catch (err) {
+    console.error('Error guardando producto', err);
+    res.status(500).json({ success: false, message: 'Error guardando producto' });
+  }
+});
+
+// PUT - Editar producto por id
+app.put('/api/products/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    const payload = req.body;
+    if (!fs.existsSync(productsFile)) {
+      return res.status(404).json({ success: false, message: 'products.json no encontrado' });
+    }
+    const raw = fs.readFileSync(productsFile, 'utf8');
+    const products = JSON.parse(raw || '[]');
+    const idx = products.findIndex(p => String(p.id) === String(id));
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Producto no encontrado' });
+
+    // Actualizar solo campos permitidos
+    const allowed = ['name','price','image','isTaxed','exento','exonerado','category','type','stock','brand','model','code','cost','description','stockMin'];
+    allowed.forEach(k => {
+      if (Object.prototype.hasOwnProperty.call(payload, k)) {
+        products[idx][k] = payload[k];
+      }
+    });
+
+    products[idx].updatedAt = new Date().toISOString();
+    fs.writeFileSync(productsFile, JSON.stringify(products, null, 2), 'utf8');
+    res.json({ success: true, data: products[idx] });
+  } catch (err) {
+    console.error('Error actualizando producto', err);
+    res.status(500).json({ success: false, message: 'Error actualizando producto' });
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

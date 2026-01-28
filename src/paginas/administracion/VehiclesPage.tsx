@@ -123,17 +123,17 @@ function VehicleForm({ vehicle, clients, loadingClients = false, onSubmit, onCan
         />
         {loadingClients && (
           <p className="mt-1 text-sm text-blue-600">
-            ⏳ Cargando clientes desde la base de datos...
+            Cargando clientes desde la base de datos...
           </p>
         )}
         {!loadingClients && numericClients.length === 0 && (
           <p className="mt-1 text-sm text-amber-600">
-            ⚠️ No hay clientes cargados. Recargue la página o registre clientes primero.
+            No hay clientes cargados. Recargue la página o registre clientes primero.
           </p>
         )}
         {!loadingClients && numericClients.length > 0 && (
           <p className="mt-1 text-sm text-gray-500">
-            ✅ {numericClients.length} clientes disponibles
+            {numericClients.length} clientes disponibles
           </p>
         )}
       </div>

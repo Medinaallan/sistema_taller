@@ -16,6 +16,8 @@
       }
     ],
     "subtotal": 0,
+    "exento": 0,
+    "exonerado": 0,
     "tax": 0,
     "discount": 0,
     "total": 0,
@@ -49,6 +51,8 @@
       }
     ],
     "subtotal": 885.8695652173914,
+    "exento": 0,
+    "exonerado": 0,
     "tax": 132.8804347826087,
     "discount": 0,
     "total": 1018.75,
@@ -58,6 +62,7 @@
     "createdBy": "Allan Admin"
   },
   {
+<<<<<<< HEAD
     "id": "inv-1769547839880-6ffe9f",
     "numero": "001-001-01-00000003",
     "fecha": "2026-01-27T21:03:59.870Z",
@@ -106,5 +111,538 @@
     "estado": "pagada",
     "createdAt": "2026-01-27T21:04:52.141Z",
     "createdBy": "ADMIN ALLAN"
+=======
+    "id": "inv-1769543254271-0c47df",
+    "numero": "001-001-01-00000003",
+    "fecha": "2026-01-27T19:47:34.257Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      }
+    ],
+    "subtotal": 782.6,
+    "exento": 0,
+    "exonerado": 0,
+    "tax": 117.39,
+    "discount": 0,
+    "total": 899.99,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-27T19:47:34.271Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769559600375-a748ba",
+    "numero": "001-001-01-00000004",
+    "fecha": "2026-01-28T00:20:00.369Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 762.1395652173914,
+    "tax": 114.32093478260867,
+    "discount": 47.5195,
+    "total": 902.8705,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:20:00.375Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769559760869-684eb5",
+    "numero": "001-001-01-00000005",
+    "fecha": "2026-01-28T00:22:40.866Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 762.1395652173914,
+    "tax": 114.32093478260867,
+    "discount": 47.5195,
+    "total": 902.8705,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:22:40.869Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769559811641-74f231",
+    "numero": "001-001-01-00000006",
+    "fecha": "2026-01-28T00:23:31.631Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 4,
+        "price": 12.5,
+        "total": 50,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 4,
+        "price": 15.3,
+        "total": 61.2,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 4,
+        "price": 899.99,
+        "total": 3599.96,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 4,
+        "price": 22.6,
+        "total": 90.4,
+        "type": "product"
+      }
+    ],
+    "subtotal": 3048.5582608695654,
+    "exento": 47.5,
+    "exonerado": 58.14,
+    "tax": 457.2837391304347,
+    "discount": 190.078,
+    "total": 3611.482,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:23:31.642Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769560237833-b836ba",
+    "numero": "001-001-01-00000007",
+    "fecha": "2026-01-28T00:30:37.822Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 4,
+        "price": 12.5,
+        "total": 50,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 7,
+        "price": 15.3,
+        "total": 107.10000000000001,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 8,
+        "price": 899.99,
+        "total": 7199.92,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 4,
+        "price": 22.6,
+        "total": 90.4,
+        "type": "product"
+      }
+    ],
+    "subtotal": 6022.438260869566,
+    "exento": 47.5,
+    "exonerado": 101.745,
+    "tax": 903.3657391304341,
+    "discount": 372.371,
+    "total": 7075.049,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:30:37.833Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769560470815-da8b67",
+    "numero": "001-001-01-00000008",
+    "fecha": "2026-01-28T00:34:30.817Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 2,
+        "price": 12.5,
+        "total": 25,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 3,
+        "price": 15.3,
+        "total": 45.900000000000006,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 3,
+        "price": 899.99,
+        "total": 2699.9700000000003,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 2,
+        "price": 22.6,
+        "total": 45.2,
+        "type": "product"
+      }
+    ],
+    "subtotal": 2267.7491304347827,
+    "exento": 23.75,
+    "exonerado": 43.605000000000004,
+    "tax": 340.16236956521743,
+    "discount": 140.8035,
+    "total": 2675.2665,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:34:30.816Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769560585016-ce440e",
+    "numero": "001-001-01-00000009",
+    "fecha": "2026-01-28T00:36:25.016Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 4,
+        "price": 12.5,
+        "total": 50,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 5,
+        "price": 15.3,
+        "total": 76.5,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 3,
+        "price": 899.99,
+        "total": 2699.9700000000003,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 2249.079565217392,
+    "exento": 47.5,
+    "exonerado": 72.675,
+    "tax": 337.3619347826084,
+    "discount": 142.4535,
+    "total": 2706.6165,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:36:25.016Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769560613057-f02cde",
+    "numero": "001-001-01-00000010",
+    "fecha": "2026-01-28T00:36:53.065Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 802.2521739130435,
+    "exento": 12.5,
+    "exonerado": 15.3,
+    "tax": 120.33782608695651,
+    "discount": 0,
+    "total": 950.39,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:36:53.057Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769560707300-a7bb3a",
+    "numero": "001-001-01-00000011",
+    "fecha": "2026-01-28T00:38:27.296Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 762.1395652173914,
+    "exento": 11.875,
+    "exonerado": 14.535,
+    "tax": 114.32093478260867,
+    "discount": 47.5195,
+    "total": 902.8705,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:38:27.300Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769561061714-f2472b",
+    "numero": "001-001-01-00000012",
+    "fecha": "2026-01-28T00:44:21.705Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 722.0269565217392,
+    "exento": 11.25,
+    "exonerado": 13.77,
+    "tax": 108.30404347826084,
+    "discount": 95.039,
+    "total": 855.351,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:44:21.715Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769561397629-a57713",
+    "numero": "001-001-01-00000013",
+    "fecha": "2026-01-28T00:49:57.633Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 2,
+        "price": 22.6,
+        "total": 45.2,
+        "type": "product"
+      }
+    ],
+    "subtotal": 739.7139130434783,
+    "exento": 11.25,
+    "exonerado": 13.770000000000001,
+    "tax": 110.95708695652172,
+    "discount": 97.29899999999999,
+    "total": 875.691,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T00:49:57.630Z",
+    "createdBy": "Allan Admin"
+>>>>>>> 1d59685683cef06e4d82459b7d6be565c0d9ece5
   }
 ]

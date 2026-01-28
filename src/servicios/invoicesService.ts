@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export interface InvoiceItem {
   id: string;
@@ -17,6 +17,8 @@ export interface Invoice {
   clientName: string;
   items: InvoiceItem[];
   subtotal: number;
+  exento?: number;
+  exonerado?: number;
   tax: number;
   discount: number;
   total: number;
@@ -32,7 +34,9 @@ class InvoicesService {
   // Obtener todas las facturas desde backend
   async getAllInvoices(): Promise<Invoice[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/invoices`);
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices` : `${base}/api/invoices`;
+      const res = await fetch(url);
       const json = await res.json();
       return json.data || [];
     } catch (error) {
@@ -43,7 +47,9 @@ class InvoicesService {
 
   async getInvoiceById(id: string): Promise<Invoice | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/invoices/${encodeURIComponent(id)}`);
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices/${encodeURIComponent(id)}` : `${base}/api/invoices/${encodeURIComponent(id)}`;
+      const res = await fetch(url);
       if (!res.ok) return null;
       const json = await res.json();
       return json.data || null;
@@ -56,7 +62,9 @@ class InvoicesService {
   // Crear nueva factura (POST a backend)
   async createInvoice(data: Omit<Invoice, 'id' | 'numero' | 'createdAt' | 'estado'>): Promise<Invoice | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/invoices`, {
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices` : `${base}/api/invoices`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -75,7 +83,9 @@ class InvoicesService {
 
   async updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/invoices/${encodeURIComponent(id)}`, {
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices/${encodeURIComponent(id)}` : `${base}/api/invoices/${encodeURIComponent(id)}`;
+      const res = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -101,7 +111,9 @@ class InvoicesService {
 
   async getInvoicesByClient(clientIdOrName: string): Promise<Invoice[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/invoices?client=${encodeURIComponent(clientIdOrName)}`);
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices?client=${encodeURIComponent(clientIdOrName)}` : `${base}/api/invoices?client=${encodeURIComponent(clientIdOrName)}`;
+      const res = await fetch(url);
       const json = await res.json();
       return json.data || [];
     } catch (error) {
@@ -112,7 +124,9 @@ class InvoicesService {
 
   async getInvoicesByDate(startDate: string, endDate: string): Promise<Invoice[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/invoices?from=${encodeURIComponent(startDate)}&to=${encodeURIComponent(endDate)}`);
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices?from=${encodeURIComponent(startDate)}&to=${encodeURIComponent(endDate)}` : `${base}/api/invoices?from=${encodeURIComponent(startDate)}&to=${encodeURIComponent(endDate)}`;
+      const res = await fetch(url);
       const json = await res.json();
       return json.data || [];
     } catch (error) {
@@ -232,8 +246,10 @@ class InvoicesService {
         </table>
 
         <div class="totals">
-          <div><strong>Subtotal:</strong> L ${invoice.subtotal.toFixed(2)}</div>
           ${invoice.discount > 0 ? `<div><strong>Descuento:</strong> - L ${invoice.discount.toFixed(2)}</div>` : ''}
+          <div><strong>Importe Exento:</strong> L ${((invoice as any).exento || 0).toFixed(2)}</div>
+          <div><strong>Importe Exonerado:</strong> L ${((invoice as any).exonerado || 0).toFixed(2)}</div>
+          <div><strong>Importe Gravado 15%:</strong> L ${invoice.subtotal.toFixed(2)}</div>
           <div><strong>ISV (15%):</strong> L ${invoice.tax.toFixed(2)}</div>
           <div style="font-size: 1.2em; margin-top: 10px; padding-top: 10px; border-top: 2px solid #333;">
             <strong>TOTAL:</strong> L ${invoice.total.toFixed(2)}
@@ -269,36 +285,146 @@ class InvoicesService {
    */
   printInvoiceCarta(invoice: Invoice): void {
     // Lazy import para evitar cargar jsPDF si no se usa
-    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-      pdfInvoiceGenerator.printInvoice(invoice, 'carta');
-    });
+    (async () => {
+      // Si la factura no trae exento/exonerado, intentar recomponer desde los productos API
+      try {
+        const exentoVal = (invoice as any).exento || 0;
+        const exoneradoVal = (invoice as any).exonerado || 0;
+        if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
+          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
+          try {
+            const res = await fetch(url);
+            const json = await res.json();
+            const products = json.data || [];
+            let ex = 0, exo = 0;
+            for (const item of invoice.items || []) {
+              const prod = products.find((p: any) => String(p.id) === String(item.id));
+              if (!prod) continue;
+              const amount = Number(item.total || 0);
+              if (prod.exento) ex += amount;
+              else if (prod.exonerado) exo += amount;
+            }
+            if (ex > 0) (invoice as any).exento = ex;
+            if (exo > 0) (invoice as any).exonerado = exo;
+            // ajustar subtotal (gravado) si es necesario
+            const gravado = Number(invoice.subtotal || 0);
+            const recomputedGravado = Math.max(0, gravado);
+            (invoice as any).subtotal = recomputedGravado;
+          } catch (e) {
+            // ignore fetch errors, fall back to invoice fields
+          }
+        }
+      } catch (err) {}
+
+      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+        pdfInvoiceGenerator.printInvoice(invoice, 'carta');
+      });
+    })();
   }
 
   /**
    * Imprime factura en formato ticket 80mm (usa pdfInvoiceGenerator)
    */
   printInvoiceTicket(invoice: Invoice): void {
-    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-      pdfInvoiceGenerator.printInvoice(invoice, 'ticket');
-    });
+    (async () => {
+      try {
+        const exentoVal = (invoice as any).exento || 0;
+        const exoneradoVal = (invoice as any).exonerado || 0;
+        if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
+          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
+          try {
+            const res = await fetch(url);
+            const json = await res.json();
+            const products = json.data || [];
+            let ex = 0, exo = 0;
+            for (const item of invoice.items || []) {
+              const prod = products.find((p: any) => String(p.id) === String(item.id));
+              if (!prod) continue;
+              const amount = Number(item.total || 0);
+              if (prod.exento) ex += amount;
+              else if (prod.exonerado) exo += amount;
+            }
+            if (ex > 0) (invoice as any).exento = ex;
+            if (exo > 0) (invoice as any).exonerado = exo;
+          } catch (e) {
+          }
+        }
+      } catch (err) {}
+
+      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+        pdfInvoiceGenerator.printInvoice(invoice, 'ticket');
+      });
+    })();
   }
 
   /**
    * Descarga factura en formato carta SAR
    */
   downloadInvoiceCarta(invoice: Invoice): void {
-    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-      pdfInvoiceGenerator.downloadInvoice(invoice, 'carta');
-    });
+    (async () => {
+      try {
+        const exentoVal = (invoice as any).exento || 0;
+        const exoneradoVal = (invoice as any).exonerado || 0;
+        if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
+          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
+          try {
+            const res = await fetch(url);
+            const json = await res.json();
+            const products = json.data || [];
+            let ex = 0, exo = 0;
+            for (const item of invoice.items || []) {
+              const prod = products.find((p: any) => String(p.id) === String(item.id));
+              if (!prod) continue;
+              const amount = Number(item.total || 0);
+              if (prod.exento) ex += amount;
+              else if (prod.exonerado) exo += amount;
+            }
+            if (ex > 0) (invoice as any).exento = ex;
+            if (exo > 0) (invoice as any).exonerado = exo;
+          } catch (e) {}
+        }
+      } catch (err) {}
+      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+        pdfInvoiceGenerator.downloadInvoice(invoice, 'carta');
+      });
+    })();
   }
 
   /**
    * Descarga factura en formato ticket 80mm
    */
   downloadInvoiceTicket(invoice: Invoice): void {
-    import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-      pdfInvoiceGenerator.downloadInvoice(invoice, 'ticket');
-    });
+    (async () => {
+      try {
+        const exentoVal = (invoice as any).exento || 0;
+        const exoneradoVal = (invoice as any).exonerado || 0;
+        if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
+          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
+          try {
+            const res = await fetch(url);
+            const json = await res.json();
+            const products = json.data || [];
+            let ex = 0, exo = 0;
+            for (const item of invoice.items || []) {
+              const prod = products.find((p: any) => String(p.id) === String(item.id));
+              if (!prod) continue;
+              const amount = Number(item.total || 0);
+              if (prod.exento) ex += amount;
+              else if (prod.exonerado) exo += amount;
+            }
+            if (ex > 0) (invoice as any).exento = ex;
+            if (exo > 0) (invoice as any).exonerado = exo;
+          } catch (e) {}
+        }
+      } catch (err) {}
+      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
+        pdfInvoiceGenerator.downloadInvoice(invoice, 'ticket');
+      });
+    })();
   }
 }
 

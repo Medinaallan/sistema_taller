@@ -199,6 +199,8 @@ export interface Invoice {
   date: Date;
   items: InvoiceItem[];
   subtotal: number;
+  exento?: number;
+  exonerado?: number;
   tax: number;
   total: number;
   status: 'pending' | 'paid' | 'cancelled';

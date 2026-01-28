@@ -54,9 +54,9 @@ const TestLogsPage: React.FC = () => {
           });
           break;
       }
-      setMessage(`✅ Log de sistema (${type}) creado exitosamente`);
+      setMessage(`Log de sistema (${type}) creado exitosamente`);
     } catch (error) {
-      setMessage(`❌ Error creando log: ${error}`);
+      setMessage(`Error creando log: ${error}`);
     } finally {
       setLoading(false);
     }
