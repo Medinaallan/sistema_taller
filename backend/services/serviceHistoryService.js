@@ -25,7 +25,10 @@ class ServiceHistoryService {
             // Archivo no existe o no es JSON válido
             // Mostrar mensaje claro en logs y devolver array vacío
             if (error && error.code === 'ENOENT') {
-                console.warn(`Archivo no encontrado, devolviendo array vacío: ${filePath}`);
+                // Sólo loguear archivo faltante cuando DEBUG_JSON=true
+                if (process.env.DEBUG_JSON === 'true') {
+                  console.warn(`Archivo no encontrado, devolviendo array vacío: ${filePath}`);
+                }
             } else {
                 console.error(`Error leyendo JSON ${filePath}:`, error);
             }

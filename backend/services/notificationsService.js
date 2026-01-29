@@ -1,308 +1,265 @@
-// Servicio para gestión de notificaciones automáticas a clientes
-const fs = require('fs').promises;
-const path = require('path');
-
-const NOTIFICATIONS_FILE = path.join(__dirname, '../data/notifications.json');
+// Servicio de notificaciones usando SQL Server y SPs
+const { getConnection, sql } = require('../config/database');
 
 class NotificationsService {
-  constructor() {
-    this.initializeFile();
-  }
+  constructor() {}
 
-  async initializeFile() {
+  // Crear notificación (SP_CREAR_NOTIFICACION)
+  async createNotification(usuario_id, titulo, cuerpo) {
     try {
-      await fs.access(NOTIFICATIONS_FILE);
-    } catch {
-      // Si el archivo no existe, crear uno nuevo
-      await fs.writeFile(NOTIFICATIONS_FILE, JSON.stringify({ notifications: [] }, null, 2));
-      console.log('✅ Archivo de notificaciones creado');
-    }
-  }
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('usuario_id', sql.Int, usuario_id)
+        .input('titulo', sql.NVarChar(100), titulo)
+        .input('cuerpo', sql.NVarChar(400), cuerpo)
+        .execute('SP_CREAR_NOTIFICACION');
 
-  async readNotifications() {
-    try {
-      const data = await fs.readFile(NOTIFICATIONS_FILE, 'utf8');
-      return JSON.parse(data);
+      // El SP puede devolver recordset con response/msg/allow/notificacion_id
+      return result.recordset && result.recordset[0] ? result.recordset[0] : { response: '200 OK', msg: 'Creado', allow: 1 };
     } catch (error) {
-      console.error('Error leyendo notificaciones:', error);
-      return { notifications: [] };
-    }
-  }
-
-  async writeNotifications(data) {
-    try {
-      await fs.writeFile(NOTIFICATIONS_FILE, JSON.stringify(data, null, 2));
-      return true;
-    } catch (error) {
-      console.error('Error escribiendo notificaciones:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Crear una notificación
-   * @param {Object} notificationData - Datos de la notificación
-   * @param {string} notificationData.clientId - ID del cliente
-   * @param {string} notificationData.type - Tipo de notificación (ot_created, ot_status_change, task_status_change, appointment_approved)
-   * @param {string} notificationData.title - Título de la notificación
-   * @param {string} notificationData.message - Mensaje de la notificación
-   * @param {Object} notificationData.metadata - Metadata adicional (otId, taskId, appointmentId, etc.)
-   */
-  async createNotification(notificationData) {
-    try {
-      const data = await this.readNotifications();
-      
-      const newNotification = {
-        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        clientId: notificationData.clientId,
-        type: notificationData.type,
-        title: notificationData.title,
-        message: notificationData.message,
-        metadata: notificationData.metadata || {},
-        isRead: false,
-        createdAt: new Date().toISOString(),
-        sentAt: new Date().toISOString()
-      };
-
-      data.notifications.push(newNotification);
-      await this.writeNotifications(data);
-      
-      console.log(`✅ Notificación creada para cliente ${notificationData.clientId}: ${notificationData.title}`);
-      return newNotification;
-    } catch (error) {
-      console.error('Error creando notificación:', error);
+      console.error('Error ejecutando SP_CREAR_NOTIFICACION:', error);
       throw error;
     }
   }
 
-  /**
-   * Obtener notificaciones de un cliente
-   */
-  async getClientNotifications(clientId) {
+  // Obtener notificaciones de usuario (SP_OBTENER_NOTIFICACIONES_USUARIO)
+  async getClientNotifications(usuario_id, solo_no_leidas = 0) {
     try {
-      const data = await this.readNotifications();
-      const clientNotifications = data.notifications.filter(n => n.clientId === clientId);
-      
-      // Ordenar por fecha descendente (más recientes primero)
-      clientNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      
-      return clientNotifications;
+      const pool = await getConnection();
+      const request = pool.request()
+        .input('usuario_id', sql.Int, usuario_id)
+        .input('solo_no_leidas', sql.Bit, solo_no_leidas ? 1 : 0);
+
+      const result = await request.execute('SP_OBTENER_NOTIFICACIONES_USUARIO');
+      const rows = result.recordset || [];
+      // Normalizar campos para frontend
+      const normalized = rows.map(r => {
+        const createdRaw = r.fecha_creacion || r.created_at || r.createdAt || r.sent_at || r.enviado_en || r.fecha || null;
+        let createdAt = null;
+        if (createdRaw) {
+          try {
+            const d = new Date(createdRaw);
+            if (!isNaN(d.getTime())) createdAt = d.toISOString();
+          } catch (e) {
+            createdAt = null;
+          }
+        }
+        // Por seguridad, si no viene fecha desde el SP, usar ahora para evitar 'Invalid Date' en frontend
+        if (!createdAt) createdAt = new Date().toISOString();
+
+        return {
+          id: r.notificacion_id || r.id || r.notification_id || null,
+          clientId: r.usuario_id || r.client_id || r.usuarioId || null,
+          type: r.tipo || r.type || null,
+          title: r.titulo || r.title || r.subject || '',
+          message: r.cuerpo || r.message || r.body || '',
+          metadata: {
+            otId: r.ot_id || r.orden_trabajo_id || null,
+            numeroOt: r.numero_ot || r.numeroOT || null,
+            taskId: r.tarea_id || r.ot_tarea_id || null,
+            appointmentId: r.cita_id || r.appointment_id || null,
+            numeroCita: r.numero_cita || null,
+            newStatus: r.estado || r.new_status || null,
+            vehicleId: r.vehiculo_id || r.vehicle_id || null,
+            placa: r.placa || null,
+            serviceName: r.servicio_nombre || r.tipo_servicio_nombre || null,
+            raw: r
+          },
+          isRead: !!(r.leida === 1 || r.isRead === true || r.read === 1 || r.leido === 1),
+          createdAt: createdAt,
+          sentAt: createdAt,
+          readAt: r.fecha_leida || r.read_at || r.leida_en || null
+        };
+      });
+
+      return normalized;
     } catch (error) {
-      console.error('Error obteniendo notificaciones del cliente:', error);
-      return [];
+      console.error('Error ejecutando SP_OBTENER_NOTIFICACIONES_USUARIO:', error);
+      throw error;
     }
   }
 
-  /**
-   * Obtener todas las notificaciones
-   */
+  // Obtener todas las notificaciones (admin) - llama al SP_OBTENER_NOTIFICACIONES_USUARIO con usuario_id = 0
   async getAllNotifications() {
     try {
-      const data = await this.readNotifications();
-      return data.notifications || [];
-    } catch (error) {
-      console.error('Error obteniendo todas las notificaciones:', error);
-      return [];
-    }
-  }
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('usuario_id', sql.Int, 0)
+        .input('solo_no_leidas', sql.Bit, 0)
+        .execute('SP_OBTENER_NOTIFICACIONES_USUARIO');
 
-  /**
-   * Marcar notificación como leída
-   */
-  async markAsRead(notificationId) {
-    try {
-      const data = await this.readNotifications();
-      const notification = data.notifications.find(n => n.id === notificationId);
-      
-      if (!notification) {
-        throw new Error('Notificación no encontrada');
-      }
-      
-      notification.isRead = true;
-      notification.readAt = new Date().toISOString();
-      
-      await this.writeNotifications(data);
-      return notification;
-    } catch (error) {
-      console.error('Error marcando notificación como leída:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Marcar todas las notificaciones de un cliente como leídas
-   */
-  async markAllAsRead(clientId) {
-    try {
-      const data = await this.readNotifications();
-      let count = 0;
-      
-      data.notifications.forEach(n => {
-        if (n.clientId === clientId && !n.isRead) {
-          n.isRead = true;
-          n.readAt = new Date().toISOString();
-          count++;
+      const rows = result.recordset || [];
+      const normalized = rows.map(r => {
+        const createdRaw = r.fecha_creacion || r.created_at || r.createdAt || r.sent_at || r.enviado_en || r.fecha || null;
+        let createdAt = null;
+        if (createdRaw) {
+          try {
+            const d = new Date(createdRaw);
+            if (!isNaN(d.getTime())) createdAt = d.toISOString();
+          } catch (e) {
+            createdAt = null;
+          }
         }
+        if (!createdAt) createdAt = new Date().toISOString();
+
+        return {
+          id: r.notificacion_id || r.id || r.notification_id || null,
+          clientId: r.usuario_id || r.client_id || r.usuarioId || null,
+          type: r.tipo || r.type || null,
+          title: r.titulo || r.title || r.subject || '',
+          message: r.cuerpo || r.message || r.body || '',
+          metadata: { raw: r },
+          isRead: !!(r.leida === 1 || r.isRead === true || r.read === 1 || r.leido === 1),
+          createdAt: createdAt,
+          sentAt: createdAt,
+          readAt: r.fecha_leida || r.read_at || r.leida_en || null
+        };
       });
-      
-      await this.writeNotifications(data);
-      return count;
+
+      return normalized;
     } catch (error) {
-      console.error('Error marcando todas las notificaciones como leídas:', error);
+      console.error('Error obteniendo todas las notificaciones via SP_OBTENER_NOTIFICACIONES_USUARIO:', error);
       throw error;
     }
   }
 
-  /**
-   * Eliminar una notificación
-   */
-  async deleteNotification(notificationId) {
+  // Marcar notificación leída (SP_MARCAR_NOTIFICACION_LEIDA)
+  async markAsRead(notificacion_id) {
     try {
-      const data = await this.readNotifications();
-      const index = data.notifications.findIndex(n => n.id === notificationId);
-      
-      if (index === -1) {
-        throw new Error('Notificación no encontrada');
-      }
-      
-      data.notifications.splice(index, 1);
-      await this.writeNotifications(data);
-      return true;
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('notificacion_id', sql.Int, notificacion_id)
+        .execute('SP_MARCAR_NOTIFICACION_LEIDA');
+      return result.recordset && result.recordset[0] ? result.recordset[0] : { response: '200 OK', msg: 'Marcado', allow: 1 };
     } catch (error) {
-      console.error('Error eliminando notificación:', error);
+      console.error('Error ejecutando SP_MARCAR_NOTIFICACION_LEIDA:', error);
       throw error;
     }
   }
 
-  // ============= MÉTODOS DE NOTIFICACIÓN AUTOMÁTICA =============
+  // Marcar todas como leídas (SP_MARCAR_TODAS_NOTIFICACIONES_LEIDAS)
+  async markAllAsRead(usuario_id) {
+    try {
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('usuario_id', sql.Int, usuario_id)
+        .execute('SP_MARCAR_TODAS_NOTIFICACIONES_LEIDAS');
+      return result.recordset && result.recordset[0] ? result.recordset[0] : { response: '200 OK', msg: 'Marcadas', allow: 1 };
+    } catch (error) {
+      console.error('Error ejecutando SP_MARCAR_TODAS_NOTIFICACIONES_LEIDAS:', error);
+      throw error;
+    }
+  }
 
-  /**
-   * Notificar cuando se crea una OT
-   */
+  // Eliminar notificación (SP_ELIMINAR_NOTIFICACION)
+  async deleteNotification(notificacion_id) {
+    try {
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('notificacion_id', sql.Int, notificacion_id)
+        .execute('SP_ELIMINAR_NOTIFICACION');
+      return result.recordset && result.recordset[0] ? result.recordset[0] : { response: '200 OK', msg: 'Eliminado', allow: 1 };
+    } catch (error) {
+      console.error('Error ejecutando SP_ELIMINAR_NOTIFICACION:', error);
+      throw error;
+    }
+  }
+
+  // Obtener conteo de no leídas para compatibilidad
+  async getUnreadCount(usuario_id) {
+    try {
+      const list = await this.getClientNotifications(parseInt(usuario_id, 10));
+      return Array.isArray(list) ? list.filter(n => !n.isRead && !n.leida && !n.read && !n.leido).length : 0;
+    } catch (error) {
+      console.error('Error obteniendo conteo de notificaciones no leídas:', error);
+      throw error;
+    }
+  }
+
+  // Helpers para compatibilidad con llamadas existentes en routes
   async notifyOTCreated(clientId, otData) {
-    return this.createNotification({
-      clientId: clientId.toString(),
-      type: 'ot_created',
-      title: 'Nueva Orden de Trabajo Creada',
-      message: `Se ha creado la orden de trabajo #${otData.numero_ot || otData.ot_id} para su vehículo${otData.placa ? ' ' + otData.placa : ''}.`,
-      metadata: {
-        otId: otData.ot_id,
-        numeroOt: otData.numero_ot,
-        vehicleId: otData.vehiculo_id,
-        placa: otData.placa
-      }
-    });
+    const titulo = 'Nueva Orden de Trabajo creada';
+    const numero = otData.numero_ot || otData.ot_id || otData.id || 'N/A';
+    const placa = otData.placa || otData.vehiculo_placa || '';
+    const cuerpo = `Se creó la Orden de Trabajo #${numero}${placa ? ` (vehículo ${placa})` : ''}. Revise el estado y los detalles.`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
   }
 
-  /**
-   * Notificar cuando cambia el estado de una OT
-   */
   async notifyOTStatusChange(clientId, otData, newStatus) {
-    const statusMessages = {
-      'Pendiente': 'Su orden de trabajo está pendiente de revisión.',
-      'En Proceso': 'Su vehículo está siendo atendido en este momento.',
-      'En Espera': 'Su orden de trabajo está en espera.',
-      'Completada': '¡Su vehículo está listo! La orden de trabajo ha sido completada.',
-      'Cancelada': 'La orden de trabajo ha sido cancelada.',
-      'Facturada': 'La orden de trabajo ha sido facturada.',
-      'Entregada': 'Su vehículo ha sido entregado.'
+    const numero = otData.numero_ot || otData.ot_id || otData.id || 'N/A';
+    const titulo = `Orden #${numero}: estado ${newStatus}`;
+    const mensajes = {
+      'Pendiente': 'La orden quedó marcada como Pendiente.',
+      'En Proceso': 'La orden está En Proceso. Nuestro equipo trabaja en su vehículo.',
+      'En Espera': 'La orden se encuentra En Espera.',
+      'Completada': 'La orden se ha completado. Revise detalles y próximos pasos.',
+      'Cancelada': 'La orden ha sido cancelada.',
+      'Facturada': 'La orden fue facturada.',
+      'Entregada': 'La orden fue entregada al cliente.'
     };
-
-    return this.createNotification({
-      clientId: clientId.toString(),
-      type: 'ot_status_change',
-      title: `OT ${otData.numero_ot || otData.ot_id}: ${newStatus}`,
-      message: statusMessages[newStatus] || `El estado de su orden de trabajo ha cambiado a: ${newStatus}`,
-      metadata: {
-        otId: otData.ot_id,
-        numeroOt: otData.numero_ot,
-        newStatus: newStatus,
-        vehicleId: otData.vehiculo_id,
-        placa: otData.placa
-      }
-    });
+    const cuerpo = mensajes[newStatus] || `El estado de la orden ha cambiado a: ${newStatus}`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
   }
 
-  /**
-   * Notificar cuando cambia el estado de una tarea
-   */
   async notifyTaskStatusChange(clientId, taskData, newStatus) {
-    const statusMessages = {
-      'pendiente': 'Una tarea de su orden de trabajo está pendiente.',
-      'en_proceso': 'Se está trabajando en una tarea de su orden de trabajo.',
-      'completada': '¡Una tarea de su orden de trabajo ha sido completada!'
+    const tareaNombre = taskData && (taskData.nombre || taskData.descripcion || taskData.title) ? (taskData.nombre || taskData.descripcion || taskData.title) : '';
+    const otNumero = taskData && (taskData.numero_ot || taskData.ot_id) ? (taskData.numero_ot || taskData.ot_id) : '';
+    const titulo = `Tarea ${tareaNombre ? `(${tareaNombre}) ` : ''} - ${String(newStatus).replace('_', ' ')}`;
+    const mensajes = {
+      'pendiente': `La tarea ${tareaNombre || ''} está pendiente.${otNumero ? ` (OT #${otNumero})` : ''}`,
+      'en_proceso': `Se inició la tarea ${tareaNombre || ''}.${otNumero ? ` (OT #${otNumero})` : ''}`,
+      'completada': `Se completó la tarea ${tareaNombre || ''}.${otNumero ? ` (OT #${otNumero})` : ''}`
     };
-
-    return this.createNotification({
-      clientId: clientId.toString(),
-      type: 'task_status_change',
-      title: `Tarea: ${newStatus.replace('_', ' ').toUpperCase()}`,
-      message: statusMessages[newStatus] || `El estado de una tarea ha cambiado a: ${newStatus}`,
-      metadata: {
-        taskId: taskData.tarea_id || taskData.id,
-        newStatus: newStatus,
-        otId: taskData.ot_id,
-        serviceName: taskData.servicio || taskData.nombre_servicio
-      }
-    });
+    const cuerpo = mensajes[newStatus] || `El estado de la tarea ha cambiado a: ${newStatus}${otNumero ? ` (OT #${otNumero})` : ''}`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
   }
 
-  /**
-   * Notificar cuando una cita es aprobada
-   */
   async notifyAppointmentApproved(clientId, appointmentData) {
-    return this.createNotification({
-      clientId: clientId.toString(),
-      type: 'appointment_approved',
-      title: 'Cita Aprobada',
-      message: `Su cita #${appointmentData.numero_cita} ha sido aprobada para el ${new Date(appointmentData.fecha_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}.`,
-      metadata: {
-        appointmentId: appointmentData.cita_id,
-        numeroCita: appointmentData.numero_cita,
-        fechaInicio: appointmentData.fecha_inicio,
-        tipoServicio: appointmentData.tipo_servicio
-      }
-    });
+    const titulo = 'Cita aprobada';
+    const num = appointmentData.numero_cita || appointmentData.id || appointmentData.cita_id || 'N/A';
+    const fecha = appointmentData.fecha_inicio ? new Date(appointmentData.fecha_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const cuerpo = `La cita #${num} fue aprobada${fecha ? ` para el ${fecha}` : ''}. Revise detalles en su panel.`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
   }
 
-  /**
-   * Notificar cuando una cita cambia de estado
-   */
   async notifyAppointmentStatusChange(clientId, appointmentData, newStatus) {
-    const statusMessages = {
-      'Pendiente': 'Su cita está pendiente de confirmación.',
-      'Confirmada': 'Su cita ha sido confirmada.',
-      'En Proceso': 'Su cita está en proceso.',
-      'Completada': 'Su cita ha sido completada.',
-      'Cancelada': 'Su cita ha sido cancelada.',
-      'No Asistió': 'Hemos notado que no asistió a su cita.'
+    const num = appointmentData.numero_cita || appointmentData.id || appointmentData.cita_id || 'N/A';
+    const titulo = `Cita #${num}: ${newStatus}`;
+    const mensajes = {
+      'Pendiente': 'La cita está pendiente.',
+      'Confirmada': 'La cita ha sido confirmada.',
+      'En Proceso': 'La cita está en proceso.',
+      'Completada': 'La cita fue completada.',
+      'Cancelada': 'La cita fue cancelada.',
+      'No Asistió': 'No asistió a la cita programada.'
     };
-
-    return this.createNotification({
-      clientId: clientId.toString(),
-      type: 'appointment_status_change',
-      title: `Cita ${appointmentData.numero_cita}: ${newStatus}`,
-      message: statusMessages[newStatus] || `El estado de su cita ha cambiado a: ${newStatus}`,
-      metadata: {
-        appointmentId: appointmentData.cita_id,
-        numeroCita: appointmentData.numero_cita,
-        newStatus: newStatus,
-        fechaInicio: appointmentData.fecha_inicio
-      }
-    });
+    const cuerpo = mensajes[newStatus] || `El estado de la cita ha cambiado a: ${newStatus}`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
   }
 
-  /**
-   * Obtener conteo de notificaciones no leídas
-   */
-  async getUnreadCount(clientId) {
-    try {
-      const notifications = await this.getClientNotifications(clientId);
-      return notifications.filter(n => !n.isRead).length;
-    } catch (error) {
-      console.error('Error obteniendo conteo de no leídas:', error);
-      return 0;
-    }
+  // Notificaciones para cotizaciones
+  async notifyQuotationStatusChange(clientId, quotationData, newStatus) {
+    const numero = quotationData && (quotationData.numero || quotationData.id || quotationData.cotizacion_id) ? (quotationData.numero || quotationData.id || quotationData.cotizacion_id) : 'N/A';
+    const titulo = `Cotización #${numero}: ${newStatus}`;
+    const cuerpo = `La cotización #${numero} cambió su estado a: ${newStatus}. Revise el detalle en su panel.`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
+  }
+
+  // Notificaciones para facturas
+  async notifyInvoiceStatusChange(clientId, invoiceData, newStatus) {
+    const numero = invoiceData && (invoiceData.numero || invoiceData.id || invoiceData.invoice_id) ? (invoiceData.numero || invoiceData.id || invoiceData.invoice_id) : 'N/A';
+    const titulo = `Factura #${numero}: ${newStatus}`;
+    const cuerpo = `La factura #${numero} cambió su estado a: ${newStatus}. Revise el comprobante y el historial.`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
+  }
+
+  // Notificación para vehículo agregado
+  async notifyVehicleAdded(clientId, vehicleData) {
+    const placa = vehicleData && (vehicleData.placa || vehicleData.vin || vehicleData.plate) ? (vehicleData.placa || vehicleData.vin || vehicleData.plate) : '';
+    const modelo = vehicleData && (vehicleData.modelo || vehicleData.marca || vehicleData.model) ? (vehicleData.modelo || vehicleData.marca || vehicleData.model) : '';
+    const titulo = 'Vehículo agregado';
+    const cuerpo = `Se registró un nuevo vehículo${placa ? ` (placa ${placa})` : ''}${modelo ? ` - ${modelo}` : ''}. Ahora puede agendar servicios para este vehículo.`;
+    return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
   }
 }
 

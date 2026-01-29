@@ -729,5 +729,99 @@
     "estado": "pagada",
     "createdAt": "2026-01-28T20:14:54.369Z",
     "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769635068698-2512e0",
+    "numero": "001-001-01-00000016",
+    "fecha": "2026-01-28T21:17:48.696Z",
+    "clientId": "11",
+    "clientName": "aldo garcia",
+    "items": [
+      {
+        "id": "invoice-40",
+        "name": "Servicio Automotriz - HYUNDAY ELANTRA | OT #40",
+        "quantity": 1,
+        "price": 2800,
+        "total": 2800,
+        "type": "service"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 754.1170434782609,
+    "exento": 11.75,
+    "exonerado": 14.382000000000001,
+    "tax": 113.11755652173906,
+    "discount": 225.0234,
+    "total": 3525.3666,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-28T21:17:48.698Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769647327210-c435a8",
+    "numero": "001-001-01-00000017",
+    "fecha": "2026-01-29T00:42:07.206Z",
+    "clientId": "9",
+    "clientName": "ALLAN MEDINA",
+    "items": [
+      {
+        "id": "invoice-45",
+        "name": "Servicio Automotriz - CHEVROLET SILVERADO | OT #45",
+        "quantity": 1,
+        "price": 700,
+        "total": 700,
+        "type": "service"
+      },
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      }
+    ],
+    "subtotal": 0,
+    "exento": 12.5,
+    "exonerado": 0,
+    "tax": 0,
+    "discount": 0,
+    "total": 712.5,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-29T00:42:07.210Z",
+    "createdBy": "Allan Admin"
   }
 ]

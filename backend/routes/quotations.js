@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { sql, getConnection } = require('../config/database');
+const notificationsService = require('../services/notificationsService');
 
 // POST /quotations - Registrar nueva cotización
 router.post('/', async (req, res) => {
@@ -16,6 +17,27 @@ router.post('/', async (req, res) => {
 			.execute('SP_REGISTRAR_COTIZACION');
 
 		const output = result.recordset?.[0] || {};
+
+		// Intentar notificar al cliente que la cotización fue creada
+		try {
+			if (output.cotizacion_id) {
+				const cotRes = await pool.request()
+					.input('cotizacion_id', sql.Int, parseInt(output.cotizacion_id))
+					.input('cita_id', sql.Int, null)
+					.input('ot_id', sql.Int, null)
+					.input('estado', sql.VarChar(50), null)
+					.input('numero_cotizacion', sql.VarChar(20), null)
+					.execute('SP_OBTENER_COTIZACIONES');
+
+				const cot = cotRes.recordset && cotRes.recordset[0] ? cotRes.recordset[0] : null;
+				if (cot && cot.cliente_id) {
+					await notificationsService.notifyQuotationStatusChange(cot.cliente_id, cot, 'Creada');
+				}
+			}
+		} catch (notifErr) {
+			console.error('Error enviando notificación de cotización creada:', notifErr);
+		}
+
 		res.status(200).json({
 			success: true,
 			msg: output.msg || 'Cotización registrada',
@@ -352,7 +374,27 @@ router.put('/:cotizacionId', async (req, res) => {
 
 		console.log('SP ejecutado exitosamente. Recordset:', result.recordset);
 		const output = result.recordset?.[0] || {};
-		
+
+		// Si el SP indica que la acción fue permitida, notificar al cliente
+		if (output.allow) {
+			try {
+				const cotRes = await pool.request()
+					.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
+					.input('cita_id', sql.Int, null)
+					.input('ot_id', sql.Int, null)
+					.input('estado', sql.VarChar(50), null)
+					.input('numero_cotizacion', sql.VarChar(20), null)
+					.execute('SP_OBTENER_COTIZACIONES');
+
+				const cot = cotRes.recordset && cotRes.recordset[0] ? cotRes.recordset[0] : null;
+				if (cot && cot.cliente_id) {
+					await notificationsService.notifyQuotationStatusChange(cot.cliente_id, cot, decision);
+				}
+			} catch (notifErr) {
+				console.error('Error enviando notificación de cambio de estado de cotización:', notifErr);
+			}
+		}
+
 		res.json({
 			success: true,
 			msg: output.msg || 'Estado actualizado',

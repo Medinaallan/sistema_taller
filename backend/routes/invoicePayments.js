@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
+const { getConnection, sql } = require('../config/database');
+const notificationsService = require('../services/notificationsService');
 
 // Ruta al archivo JSON de pagos de facturas
 const PAYMENTS_FILE = path.join(__dirname, '../../src/data/invoicePayments.json');
@@ -57,6 +59,24 @@ router.post('/mark-paid/:workOrderId', async (req, res) => {
     await fs.writeFile(PAYMENTS_FILE, JSON.stringify(paymentsData, null, 2), 'utf8');
     
     console.log(`✅ Factura de OT ${workOrderId} marcada como pagada`);
+    // Intentar notificar al cliente asociado a la OT
+    try {
+      const pool = await getConnection();
+      const otRes = await pool.request()
+        .input('ot_id', sql.Int, parseInt(workOrderId))
+        .input('cliente_id', sql.Int, null)
+        .input('placa', sql.VarChar(50), null)
+        .input('estado', sql.VarChar(50), null)
+        .input('numero_ot', sql.VarChar(20), null)
+        .execute('SP_OBTENER_ORDENES_TRABAJO');
+
+      if (otRes.recordset && otRes.recordset[0]) {
+        const ot = otRes.recordset[0];
+        await notificationsService.notifyInvoiceStatusChange(ot.cliente_id || null, { numero: ot.numero_ot || workOrderId }, 'Pagada');
+      }
+    } catch (notifErr) {
+      console.error('Error enviando notificación de factura pagada:', notifErr);
+    }
     
     res.json({
       success: true,

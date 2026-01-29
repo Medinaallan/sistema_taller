@@ -73,12 +73,10 @@ const { getConnection, sql } = require('./config/database');
 // GET - Obtener todos los tipos de servicio (SP)
 app.get('/api/services', async (req, res) => {
   try {
-    console.log('Intentando conectar a la base de datos...');
+    // Conexión y ejecución de SP para obtener tipos de servicio
     const pool = await getConnection();
-    console.log('Conexión exitosa. Ejecutando SP_OBTENER_TIPOS_SERVICIO...');
     const result = await pool.request()
       .execute('SP_OBTENER_TIPOS_SERVICIO');
-    console.log('Resultado del SP:', result);
     res.json({ success: true, data: result.recordset });
   } catch (error) {
     console.error('Error en /api/services:', error);
@@ -103,6 +101,28 @@ app.post('/api/services', async (req, res) => {
     res.json(result.recordset[0] || { response: '200 OK', msg: 'Registrado', allow: 1 });
   } catch (error) {
     console.error('Error en POST /api/services:', error);
+    res.status(500).json({ response: '500 ERROR', msg: error.message, error });
+  }
+});
+
+// PUT - Editar tipo de servicio (SP_EDITAR_TIPO_SERVICIO)
+app.put('/api/services/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, descripcion, precio, duracion, editado_por } = req.body;
+  try {
+    const pool = await getConnection();
+    const request = pool.request()
+      .input('tipo_servicio_id', sql.Int, id)
+      .input('nombre', sql.VarChar(100), nombre)
+      .input('descripcion', sql.VarChar(200), descripcion)
+      .input('horas_estimadas', sql.VarChar(50), duracion || null)
+      .input('precio_base', sql.Decimal(10, 2), precio || null)
+      .input('editado_por', sql.Int, editado_por || 1);
+
+    const result = await request.execute('SP_EDITAR_TIPO_SERVICIO');
+    res.json(result.recordset[0] || { response: '200 OK', msg: 'Editado', allow: 1 });
+  } catch (error) {
+    console.error('Error en PUT /api/services/:id', error);
     res.status(500).json({ response: '500 ERROR', msg: error.message, error });
   }
 });
@@ -1045,7 +1065,7 @@ console.log('Rutas de estados de OT cargadas: /api/workorder-states');
 
 // 404 - Debe estar AL FINAL, después de todas las rutas
 app.use('*', (req, res) => {
-  console.log('Ruta no encontrada:', req.originalUrl);
+  // Ruta no encontrada: respuesta 404 enviada (log suprimido)
   res.status(404).json({ msg: 'Ruta no encontrada' });
 });
 

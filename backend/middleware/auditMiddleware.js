@@ -225,8 +225,8 @@ function auditMiddleware(req, res, next) {
       // Escribir al archivo de logs de forma asíncrona
       await writeLog(logEntry);
       
-      // Log para debug (solo en desarrollo)
-      if (process.env.NODE_ENV === 'development') {
+      // Log para debug: solo si se habilita explícitamente DEBUG_AUDIT=true
+      if (process.env.DEBUG_AUDIT === 'true') {
         console.log(`LOG: ${userInfo.userName} - ${description}`);
       }
       

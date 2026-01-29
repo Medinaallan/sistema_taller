@@ -9,13 +9,15 @@ const notificationsService = require('../services/notificationsService');
 router.get('/client/:clientId', async (req, res) => {
   try {
     const { clientId } = req.params;
-    const notifications = await notificationsService.getClientNotifications(clientId);
-    
+    const notifications = await notificationsService.getClientNotifications(parseInt(clientId, 10));
+
+    const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !(n.isRead === true || n.leida === 1)).length : 0;
+
     res.json({
       success: true,
       data: notifications,
-      count: notifications.length,
-      unreadCount: notifications.filter(n => !n.isRead).length
+      count: Array.isArray(notifications) ? notifications.length : 0,
+      unreadCount
     });
   } catch (error) {
     console.error('Error obteniendo notificaciones del cliente:', error);
@@ -34,11 +36,11 @@ router.get('/client/:clientId', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const notifications = await notificationsService.getAllNotifications();
-    
+
     res.json({
       success: true,
       data: notifications,
-      count: notifications.length
+      count: Array.isArray(notifications) ? notifications.length : 0
     });
   } catch (error) {
     console.error('Error obteniendo todas las notificaciones:', error);
@@ -58,7 +60,7 @@ router.get('/client/:clientId/unread-count', async (req, res) => {
   try {
     const { clientId } = req.params;
     const count = await notificationsService.getUnreadCount(clientId);
-    
+
     res.json({
       success: true,
       count: count
@@ -80,7 +82,7 @@ router.get('/client/:clientId/unread-count', async (req, res) => {
 router.patch('/:id/read', async (req, res) => {
   try {
     const { id } = req.params;
-    const notification = await notificationsService.markAsRead(id);
+    const notification = await notificationsService.markAsRead(parseInt(id, 10));
     
     res.json({
       success: true,
@@ -104,12 +106,15 @@ router.patch('/:id/read', async (req, res) => {
 router.patch('/client/:clientId/read-all', async (req, res) => {
   try {
     const { clientId } = req.params;
-    const count = await notificationsService.markAllAsRead(clientId);
-    
+    const result = await notificationsService.markAllAsRead(parseInt(clientId, 10));
+
+    // result may be object with allow/msg or count; handle both
+    const count = typeof result === 'object' && result.count !== undefined ? result.count : (result && result.allow ? -1 : 0);
+
     res.json({
       success: true,
-      count: count,
-      message: `${count} notificaciones marcadas como leídas`
+      result,
+      message: typeof result === 'object' && result.msg ? result.msg : `${count} notificaciones marcadas como leídas`
     });
   } catch (error) {
     console.error('Error marcando todas como leídas:', error);
@@ -128,7 +133,7 @@ router.patch('/client/:clientId/read-all', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await notificationsService.deleteNotification(id);
+    await notificationsService.deleteNotification(parseInt(id, 10));
     
     res.json({
       success: true,
@@ -159,18 +164,12 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const notification = await notificationsService.createNotification({
-      clientId,
-      type,
-      title,
-      message,
-      metadata
-    });
-    
+    const result = await notificationsService.createNotification(parseInt(clientId, 10), title, message);
+
     res.status(201).json({
       success: true,
-      data: notification,
-      message: 'Notificación creada'
+      data: result,
+      message: result && result.msg ? result.msg : 'Notificación creada'
     });
   } catch (error) {
     console.error('Error creando notificación:', error);

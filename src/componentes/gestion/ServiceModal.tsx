@@ -6,9 +6,11 @@ interface ServiceModalProps {
   onClose: () => void;
   onSubmit: (data: { nombre: string; descripcion: string; precio: string; duracion: string; categoria: string }) => void;
   loading?: boolean;
+  initialValues?: Partial<{ nombre: string; descripcion: string; precio: string; duracion: string; categoria: string }>;
+  title?: string;
 }
 
-export function ServiceModal({ isOpen, onClose, onSubmit, loading = false }: ServiceModalProps) {
+export function ServiceModal({ isOpen, onClose, onSubmit, loading = false, initialValues, title }: ServiceModalProps) {
   const handleSubmit = (data: { nombre: string; descripcion: string; precio: string; duracion: string; categoria: string }) => {
     onSubmit(data);
   };
@@ -17,13 +19,14 @@ export function ServiceModal({ isOpen, onClose, onSubmit, loading = false }: Ser
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Agregar Nuevo Servicio"
+      title={title || 'Agregar Nuevo Servicio'}
       size="lg"
     >
       <ServiceForm
         onSubmit={handleSubmit}
         onCancel={onClose}
         loading={loading}
+        initialValues={initialValues}
       />
     </Modal>
   );

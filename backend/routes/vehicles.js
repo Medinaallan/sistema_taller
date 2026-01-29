@@ -1,5 +1,6 @@
 const express = require('express');
 const { getConnection, sql } = require('../config/database');
+const notificationsService = require('../services/notificationsService');
 const router = express.Router();
 
 /**
@@ -11,7 +12,7 @@ const router = express.Router();
 
 // GET /api/vehicles - Obtener vehículos con filtros opcionales
 router.get('/', async (req, res) => {
-  console.log('🚗 Obteniendo vehículos:', req.query);
+  // Log suprimido: obtener vehículos
   try {
     const { cliente_id, vehiculo_id, placa, obtener_activos = 1 } = req.query;
     
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
       .input('obtener_activos', sql.Bit, obtener_activos === 'null' ? null : parseInt(obtener_activos))
       .execute('SP_OBTENER_VEHICULOS');
     
-    console.log('Vehículos obtenidos:', result.recordset.length);
+    // Log suprimido: número de vehículos obtenidos
     res.json({
       success: true,
       data: result.recordset,
@@ -41,7 +42,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/vehicles/validate-plate - Validar placa de vehículo
 router.post('/validate-plate', async (req, res) => {
-  console.log('Validando placa:', req.body);
+  // Log suprimido: validación de placa
   try {
     const { placa, vehiculo_id } = req.body;
     
@@ -59,7 +60,7 @@ router.post('/validate-plate', async (req, res) => {
       .execute('SP_VALIDAR_PLACA_VEHICULO');
     
     const response = result.recordset[0];
-    console.log('Resultado validación placa:', response);
+    // Log suprimido: resultado validación placa
     
     res.json({
       success: response.allow === 1,
@@ -79,7 +80,7 @@ router.post('/validate-plate', async (req, res) => {
 
 // POST /api/vehicles - Registrar nuevo vehículo
 router.post('/', async (req, res) => {
-  console.log('🚗 Registrando vehículo:', req.body);
+  // Log suprimido: registrando vehículo
   try {
     const { 
       cliente_id, clienteId,
@@ -122,12 +123,11 @@ router.post('/', async (req, res) => {
       });
     }
     
-    console.log('📊 Cliente ID numérico validado:', clienteIdFinal);
-    console.log('📸 foto_url a guardar:', foto_url);
+    // Log suprimido: clienteId y foto_url
     
     const pool = await getConnection();
     
-    console.log('🚀 Ejecutando SP_REGISTRAR_VEHICULO con cliente_id:', clienteIdFinal);
+    // Log suprimido: ejecutando SP_REGISTRAR_VEHICULO
     
     const result = await pool.request()
       .input('cliente_id', sql.Int, clienteIdFinal)
@@ -143,10 +143,21 @@ router.post('/', async (req, res) => {
       .execute('SP_REGISTRAR_VEHICULO');
     
     const response = result.recordset[0];
-    console.log('✅ Resultado registro vehículo:', response);
+    // Log suprimido: resultado registro vehículo
     
     // Verificar éxito por response '200 OK' o msg específico
     if (response && (response.response === '200 OK' || response.msg === '200 OK')) {
+      // Enviar notificación al cliente sobre vehículo agregado
+      try {
+        await notificationsService.notifyVehicleAdded(finalClienteId, {
+          placa,
+          marca,
+          modelo,
+          anio: finalAnio
+        });
+      } catch (notifErr) {
+        console.error('Error enviando notificación de vehículo añadido:', notifErr);
+      }
       res.status(201).json({
         success: true,
         data: {
@@ -183,7 +194,7 @@ router.post('/', async (req, res) => {
 
 // PUT /api/vehicles/:id - Actualizar vehículo existente
 router.put('/:id', async (req, res) => {
-  console.log('🚗 Actualizando vehículo:', req.params.id, req.body);
+  // Log suprimido: actualizando vehículo
   try {
     const vehiculo_id = parseInt(req.params.id);
     const { 
@@ -237,7 +248,7 @@ router.put('/:id', async (req, res) => {
       .execute('SP_EDITAR_VEHICULO');
     
     const response = result.recordset[0];
-    console.log('Resultado actualización vehículo:', response);
+    // Log suprimido: resultado actualización vehículo
     
     // Verificar éxito según specs: response='200 OK' o allow=1
     if (response && (response.response === '200 OK' || response.allow === 1)) {
@@ -277,7 +288,7 @@ router.put('/:id', async (req, res) => {
 
 // GET /api/vehicles/client/:clientId - Obtener vehículos de un cliente específico
 router.get('/client/:clientId', async (req, res) => {
-  console.log('Obteniendo vehículos del cliente:', req.params.clientId);
+  // Log suprimido: obtener vehículos del cliente
   try {
     const cliente_id = parseInt(req.params.clientId);
     
@@ -296,11 +307,7 @@ router.get('/client/:clientId', async (req, res) => {
       .input('obtener_activos', sql.Bit, 1)
       .execute('SP_OBTENER_VEHICULOS');
     
-    console.log(`Vehículos del cliente ${cliente_id}:`, result.recordset.length);
-    if (result.recordset.length > 0) {
-      console.log('Campos del primer vehículo:', Object.keys(result.recordset[0]));
-      console.log('Primer vehículo completo:', result.recordset[0]);
-    }
+    // Log suprimido: detalles de vehículos del cliente
     res.json({
       success: true,
       data: result.recordset,

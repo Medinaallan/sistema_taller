@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const notificationsService = require('../services/notificationsService');
 
 const INVOICES_FILE = path.join(__dirname, '../../src/data/invoices.json');
 
@@ -108,6 +109,15 @@ router.post('/', async (req, res) => {
     invoices.push(newInv);
     await writeInvoices(invoices);
 
+    // Enviar notificación al cliente si existe clientId
+    try {
+      if (newInv.clientId) {
+        await notificationsService.notifyInvoiceStatusChange(newInv.clientId, newInv, 'Creada');
+      }
+    } catch (notifErr) {
+      console.error('Error enviando notificación de factura creada:', notifErr);
+    }
+
     res.status(201).json({ success: true, data: newInv });
   } catch (error) {
     console.error('Error creando factura:', error);
@@ -122,8 +132,20 @@ router.put('/:id', async (req, res) => {
     const idx = invoices.findIndex(i => i.id === req.params.id || i.numero === req.params.id);
     if (idx === -1) return res.status(404).json({ success: false, message: 'Factura no encontrada' });
 
+    const old = invoices[idx];
     invoices[idx] = { ...invoices[idx], ...req.body, updatedAt: new Date().toISOString() };
     await writeInvoices(invoices);
+
+    // Si el estado cambió, notificar al cliente
+    try {
+      const newEstado = invoices[idx].estado;
+      if (old && old.estado !== newEstado && invoices[idx].clientId) {
+        await notificationsService.notifyInvoiceStatusChange(invoices[idx].clientId, invoices[idx], newEstado || 'Actualizada');
+      }
+    } catch (notifErr) {
+      console.error('Error enviando notificación de cambio de estado de factura:', notifErr);
+    }
+
     res.json({ success: true, data: invoices[idx] });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error actualizando factura', error: error.message });

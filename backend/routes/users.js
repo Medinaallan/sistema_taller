@@ -9,13 +9,12 @@ const CACHE_DURATION = 30000; // 30 segundos
 
 // Obtener lista de usuarios usando SP_OBTENER_USUARIOS (ULTRA OPTIMIZADO)
 router.get('/list', async (req, res) => {
-  console.log('👥 [ROUTER] Obteniendo lista de usuarios...');
+  // Log eliminado: lista de usuarios (reducción de ruido en consola)
   
   try {
     // Verificar cache
     const now = Date.now();
     if (usuariosCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
-      console.log(' [ROUTER] Devolviendo usuarios desde cache');
       return res.json({
         success: true,
         data: usuariosCache,
@@ -31,7 +30,7 @@ router.get('/list', async (req, res) => {
     // Solo buscar los primeros 20 IDs conocidos más comunes
     const idsRapidos = [2, 7, 8, 9, 10, 11, 12, 13, 15, 17, 19, 20];
     
-    console.log(`🔍 [ROUTER] Búsqueda rápida en ${idsRapidos.length} IDs principales...`);
+    // Búsqueda rápida realizada (log suprimido)
     
     // Usar Promise.all para consultas paralelas en lugar de secuenciales
     const promesas = idsRapidos.map(async (id) => {
@@ -41,7 +40,6 @@ router.get('/list', async (req, res) => {
           .execute('SP_OBTENER_USUARIOS');
         
         if (result.recordset.length > 0) {
-          console.log(`✅ [ROUTER] Usuario ID ${id}: ${result.recordset[0].nombre_completo}`);
           return result.recordset[0];
         }
       } catch (error) {
@@ -57,7 +55,7 @@ router.get('/list', async (req, res) => {
     usuariosCache = usuariosEncontrados;
     cacheTimestamp = now;
     
-    console.log(`✅ [ROUTER] Total usuarios encontrados: ${usuariosEncontrados.length} (cached for 30s)`);
+    // Total usuarios encontrados (log suprimido)
     
     res.json({
       success: true,
@@ -102,7 +100,7 @@ router.get('/roles', async (req, res) => {
 
 // Obtener usuario específico por ID
 router.get('/:id', async (req, res) => {
-  console.log('👤 [ROUTER] Obteniendo usuario por ID:', req.params.id);
+  // Obteniendo usuario por ID (log suprimido)
   
   try {
     const userId = parseInt(req.params.id);
@@ -124,13 +122,12 @@ router.get('/:id', async (req, res) => {
     const user = result.recordset[0];
     
     if (user) {
-      console.log('✅ [ROUTER] Usuario encontrado:', user.nombre_completo);
       res.json({
         success: true,
         data: user
       });
     } else {
-      console.log('❌ [ROUTER] Usuario no encontrado');
+      // Usuario no encontrado (log suprimido)
       res.status(404).json({ 
         success: false, 
         message: 'Usuario no encontrado' 

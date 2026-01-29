@@ -123,10 +123,8 @@ router.get('/', async (req, res) => {
   const { ot_id, cliente_id, placa, estado, numero_ot } = req.query;
 
   try {
-    console.log(' Llamada a GET /workorders con parámetros:', { ot_id, cliente_id, placa, estado, numero_ot });
-    
+    // Log suprimido: llamada GET /workorders con parámetros
     const pool = await getConnection();
-    console.log(' Pool de conexión obtenido');
     
     const result = await pool.request()
       .input('ot_id', sql.Int, ot_id ? parseInt(ot_id) : null)
@@ -136,9 +134,7 @@ router.get('/', async (req, res) => {
       .input('numero_ot', sql.VarChar(20), numero_ot || null)
       .execute('SP_OBTENER_ORDENES_TRABAJO');
 
-    console.log('SP_OBTENER_ORDENES_TRABAJO ejecutado exitosamente');
-    console.log('Registros retornados:', result.recordset.length);
-    console.log('Datos:', result.recordset);
+    // Logs del SP suprimidos: resultados obtenidos
 
     res.json({
       success: true,
@@ -242,9 +238,21 @@ router.post('/manual', async (req, res) => {
     // Enviar notificación al cliente si la OT fue creada exitosamente
     if (output.allow && output.ot_id) {
       try {
+        // Intentar obtener datos completos de la OT (numero_ot y placa) para enviar en la notificación
+        const otResult = await pool.request()
+          .input('ot_id', sql.Int, output.ot_id)
+          .input('cliente_id', sql.Int, null)
+          .input('placa', sql.VarChar(50), null)
+          .input('estado', sql.VarChar(50), null)
+          .input('numero_ot', sql.VarChar(20), null)
+          .execute('SP_OBTENER_ORDENES_TRABAJO');
+
+        const otData = (otResult.recordset && otResult.recordset[0]) ? otResult.recordset[0] : { ot_id: output.ot_id, numero_ot: output.numero_ot };
+
         await notificationsService.notifyOTCreated(cliente_id, {
-          ot_id: output.ot_id,
-          numero_ot: output.numero_ot,
+          ot_id: otData.ot_id || output.ot_id,
+          numero_ot: otData.numero_ot || output.numero_ot,
+          placa: otData.placa || null,
           vehiculo_id: vehiculo_id
         });
         console.log('✅ Notificación de OT creada enviada al cliente');
@@ -525,7 +533,7 @@ router.get('/:id/tareas', async (req, res) => {
   const { id } = req.params;
 
   try {
-    console.log(`📋 Obteniendo tareas de OT ${id}`);
+    // Log suprimido: obteniendo tareas de OT
     
     const pool = await getConnection();
     
@@ -533,8 +541,7 @@ router.get('/:id/tareas', async (req, res) => {
       .input('ot_id', sql.Int, parseInt(id))
       .execute('SP_OBTENER_TAREAS_OT');
 
-    console.log('✅ SP_OBTENER_TAREAS_OT ejecutado exitosamente');
-    console.log('📊 Tareas encontradas:', result.recordset.length);
+    // Log suprimido: SP_OBTENER_TAREAS_OT ejecutado
 
     res.json({
       success: true,
@@ -564,8 +571,7 @@ router.post('/:id/tareas', async (req, res) => {
   } = req.body;
 
   try {
-    console.log(`➕ Agregando tarea a OT ${id}`);
-    console.log('Datos de tarea:', { tipo_servicio_id, descripcion, horas_estimadas, prioridad });
+    // Log suprimido: agregando tarea a OT
 
     // Validar parámetros requeridos
     if (!tipo_servicio_id) {
@@ -587,8 +593,7 @@ router.post('/:id/tareas', async (req, res) => {
       .input('registrado_por', sql.Int, registrado_por ? parseInt(registrado_por) : null)
       .execute('SP_AGREGAR_TAREA_OT');
 
-    console.log('✅ SP_AGREGAR_TAREA_OT ejecutado exitosamente');
-    console.log('Resultado:', result.recordset);
+    // Log suprimido: SP_AGREGAR_TAREA_OT ejecutado
 
     const output = result.recordset?.[0] || {};
     
@@ -615,7 +620,7 @@ router.delete('/tareas/:tareaId', async (req, res) => {
   const { eliminado_por = null } = req.body;
 
   try {
-    console.log(`🗑️ Eliminando tarea ${tareaId}`);
+    // Log suprimido: eliminando tarea
 
     const pool = await getConnection();
     
@@ -624,8 +629,7 @@ router.delete('/tareas/:tareaId', async (req, res) => {
       .input('eliminado_por', sql.Int, eliminado_por ? parseInt(eliminado_por) : null)
       .execute('SP_ELIMINAR_TAREA_OT');
 
-    console.log('✅ SP_ELIMINAR_TAREA_OT ejecutado exitosamente');
-    console.log('Resultado:', result.recordset);
+    // Log suprimido: SP_ELIMINAR_TAREA_OT ejecutado
 
     const output = result.recordset?.[0] || {};
     
@@ -654,7 +658,7 @@ router.put('/tareas/:tareaId/estado', async (req, res) => {
   } = req.body;
 
   try {
-    console.log(`🔄 Gestionando estado de tarea ${tareaId} a ${nuevo_estado}`);
+    // Log suprimido: gestionando estado de tarea
 
     // Validar parámetros requeridos
     if (!nuevo_estado) {
@@ -673,8 +677,7 @@ router.put('/tareas/:tareaId/estado', async (req, res) => {
       .input('registrado_por', sql.Int, registrado_por ? parseInt(registrado_por) : null)
       .execute('SP_GESTIONAR_ESTADO_TAREA');
 
-    console.log('✅ SP_GESTIONAR_ESTADO_TAREA ejecutado exitosamente');
-    console.log('Resultado:', result.recordset);
+    // Log suprimido: SP_GESTIONAR_ESTADO_TAREA ejecutado
 
     const output = result.recordset?.[0] || {};
     
@@ -689,20 +692,52 @@ router.put('/tareas/:tareaId/estado', async (req, res) => {
           .input('estado', sql.VarChar(50), null)
           .input('numero_ot', sql.VarChar(20), null)
           .execute('SP_OBTENER_ORDENES_TRABAJO');
-        
-        // Buscar la OT relacionada con esta tarea
-        const tareaInfo = await pool.request()
-          .query(`SELECT ot_id, tipo_servicio_id FROM OT_Tareas WHERE ot_tarea_id = ${parseInt(tareaId)}`);
-        
+
+        // Obtener la tarea usando el SP disponible (no acceder a tablas directamente)
+        // SP_OBTENER_TAREAS_OT suele devolver todas las tareas o acepta filtros; aquí solicitamos por ot_tarea_id cuando sea posible
+        let tareaInfo;
+        try {
+          const tareasRes = await pool.request()
+            .input('ot_id', sql.Int, null)
+            .input('ot_tarea_id', sql.Int, parseInt(tareaId))
+            .execute('SP_OBTENER_TAREAS_OT');
+
+          // Filtrar por el id exacto por si el SP devuelve múltiples filas
+          const rows = tareasRes.recordset || [];
+          const filtered = rows.filter(r => (r.ot_tarea_id ? String(r.ot_tarea_id) === String(tareaId) : false));
+          tareaInfo = { recordset: filtered.length ? filtered : rows };
+        } catch (qerr) {
+          console.error('⚠️ Error al ejecutar SP_OBTENER_TAREAS_OT para notificación:', qerr.message || qerr);
+          tareaInfo = { recordset: [] };
+        }
+
         if (tareaInfo.recordset.length > 0 && otInfo.recordset.length > 0) {
-          const ot = otInfo.recordset.find(o => o.ot_id === tareaInfo.recordset[0].ot_id);
+          const tareaRow = tareaInfo.recordset[0];
+          const ot = otInfo.recordset.find(o => o.ot_id === tareaRow.ot_id);
           if (ot) {
+            // Intentar resolver nombre legible de la tarea
+            let tareaNombre = tareaRow.descripcion || tareaRow.nombre || '';
+            if (!tareaNombre && tareaRow.tipo_servicio_id) {
+              try {
+                const tipoRes = await pool.request()
+                  .input('tipo_servicio_id', sql.Int, tareaRow.tipo_servicio_id)
+                  .execute('SP_OBTENER_TIPOS_SERVICIO');
+                const tipo = tipoRes.recordset && tipoRes.recordset[0] ? tipoRes.recordset[0] : null;
+                tareaNombre = tareaNombre || (tipo && (tipo.nombre || tipo.NOMBRE) ? (tipo.nombre || tipo.NOMBRE) : '');
+              } catch (e) {
+                console.error('⚠️ Error al obtener nombre de tipo de servicio para notificación:', e);
+              }
+            }
+
             await notificationsService.notifyTaskStatusChange(ot.cliente_id, {
               tarea_id: tareaId,
               ot_id: ot.ot_id,
-              servicio: 'Servicio'
+              nombre: tareaNombre,
+              descripcion: tareaRow.descripcion,
+              numero_ot: ot.numero_ot,
+              placa: ot.placa
             }, nuevo_estado);
-            console.log('✅ Notificación de cambio de estado de tarea enviada');
+            // Notificación enviada (log suprimido)
           }
         }
       } catch (notifError) {

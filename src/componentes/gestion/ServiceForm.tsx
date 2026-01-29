@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input, Button, Select } from '../comunes/UI';
 
 interface ServiceFormData {
@@ -13,6 +13,7 @@ interface ServiceFormProps {
   onSubmit: (data: ServiceFormData) => void;
   onCancel: () => void;
   loading?: boolean;
+  initialValues?: Partial<ServiceFormData>;
 }
 
 const categorias = [
@@ -25,14 +26,26 @@ const categorias = [
   { value: 'otros', label: 'Otros' },
 ];
 
-export function ServiceForm({ onSubmit, onCancel, loading = false }: ServiceFormProps) {
+export function ServiceForm({ onSubmit, onCancel, loading = false, initialValues }: ServiceFormProps) {
   const [formData, setFormData] = useState<ServiceFormData>({
-    nombre: '',
-    descripcion: '',
-    precio: '',
-    duracion: '',
-    categoria: '',
+    nombre: initialValues?.nombre || '',
+    descripcion: initialValues?.descripcion || '',
+    precio: initialValues?.precio || '',
+    duracion: initialValues?.duracion || '',
+    categoria: initialValues?.categoria || '',
   });
+
+  // Actualizar cuando cambien las initialValues (p. ej. al editar)
+  useEffect(() => {
+    if (!initialValues) return;
+    setFormData(prev => ({
+      nombre: initialValues.nombre ?? prev.nombre,
+      descripcion: initialValues.descripcion ?? prev.descripcion,
+      precio: initialValues.precio ?? prev.precio,
+      duracion: initialValues.duracion ?? prev.duracion,
+      categoria: initialValues.categoria ?? prev.categoria,
+    }));
+  }, [initialValues]);
 
   const [errors, setErrors] = useState<Partial<ServiceFormData>>({});
 

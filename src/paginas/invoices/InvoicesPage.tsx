@@ -252,9 +252,39 @@ const InvoicesPage = () => {
         mapped.forEach(i => combinedMap.set(i.id, i));
         const combined = Array.from(combinedMap.values());
 
-        setPersistedData(combined);
-        setFilteredData(combined);
-        setData(combined);
+        // Normalizar items y calcular Mano de Obra / Repuestos a partir de los items
+        const normalizeInvoice = (inv: GeneratedInvoice) => {
+          const items = (inv.items || []).map(it => ({
+            ...it,
+            type: (it as any).type ? String((it as any).type).toLowerCase() : (String((it as any).description || '').toLowerCase().includes('mano') ? 'service' : 'product')
+          }));
+
+          let labor = 0;
+          let parts = 0;
+
+          items.forEach(it => {
+            const t = String((it as any).type || '').toLowerCase();
+            const lineTotal = (it as any).total ?? ((it as any).quantity || 1) * ((it as any).unitPrice || (it as any).price || 0);
+            if (t.includes('serv')) {
+              labor += Number(lineTotal) || 0;
+            } else {
+              parts += Number(lineTotal) || 0;
+            }
+          });
+
+          inv.items = items as any;
+          inv.laborCost = labor;
+          inv.partsCost = parts;
+          inv.subtotal = Number(inv.subtotal || labor + parts) || 0;
+          inv.total = Number(inv.total || inv.subtotal) || 0;
+          return inv;
+        };
+
+        const computed = combined.map(normalizeInvoice);
+
+        setPersistedData(computed);
+        setFilteredData(computed);
+        setData(computed);
       } catch (err) {
         console.error('Error cargando facturas persistidas:', err);
       }

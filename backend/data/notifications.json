@@ -315,6 +315,123 @@
       "isRead": false,
       "createdAt": "2026-01-27T21:04:38.863Z",
       "sentAt": "2026-01-27T21:04:38.863Z"
+    },
+    {
+      "id": "notif-1769634884606-d870gbh8r",
+      "clientId": "11",
+      "type": "ot_status_change",
+      "title": "OT OT-00000040: Completada",
+      "message": "¡Su vehículo está listo! La orden de trabajo ha sido completada.",
+      "metadata": {
+        "otId": 40,
+        "numeroOt": "OT-00000040",
+        "newStatus": "Completada",
+        "vehicleId": 36,
+        "placa": "HTN-3657"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-28T21:14:44.606Z",
+      "sentAt": "2026-01-28T21:14:44.606Z"
+    },
+    {
+      "id": "notif-1769634930092-n7kuejzyx",
+      "clientId": "9",
+      "type": "ot_status_change",
+      "title": "OT OT-00000022: En proceso",
+      "message": "El estado de su orden de trabajo ha cambiado a: En proceso",
+      "metadata": {
+        "otId": 22,
+        "numeroOt": "OT-00000022",
+        "newStatus": "En proceso",
+        "vehicleId": 19,
+        "placa": "TST009"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-28T21:15:30.092Z",
+      "sentAt": "2026-01-28T21:15:30.092Z"
+    },
+    {
+      "id": "notif-1769634993200-fwa40z4da",
+      "clientId": "20",
+      "type": "ot_status_change",
+      "title": "OT OT-00000029: Control de calidad",
+      "message": "El estado de su orden de trabajo ha cambiado a: Control de calidad",
+      "metadata": {
+        "otId": 29,
+        "numeroOt": "OT-00000029",
+        "newStatus": "Control de calidad",
+        "vehicleId": 30,
+        "placa": "TST020"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-28T21:16:33.200Z",
+      "sentAt": "2026-01-28T21:16:33.200Z"
+    },
+    {
+      "id": "notif-1769635020414-l6gurudgf",
+      "clientId": "20",
+      "type": "ot_status_change",
+      "title": "OT OT-00000029: Completada",
+      "message": "¡Su vehículo está listo! La orden de trabajo ha sido completada.",
+      "metadata": {
+        "otId": 29,
+        "numeroOt": "OT-00000029",
+        "newStatus": "Completada",
+        "vehicleId": 30,
+        "placa": "TST020"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-28T21:17:00.414Z",
+      "sentAt": "2026-01-28T21:17:00.414Z"
+    },
+    {
+      "id": "notif-1769642698537-eksj7nnse",
+      "clientId": "11",
+      "type": "appointment_status_change",
+      "title": "Cita CITA-00000027: aprobada",
+      "message": "El estado de su cita ha cambiado a: aprobada",
+      "metadata": {
+        "appointmentId": 27,
+        "numeroCita": "CITA-00000027",
+        "newStatus": "aprobada",
+        "fechaInicio": "2026-01-26T00:00:00.000Z"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-28T23:24:58.537Z",
+      "sentAt": "2026-01-28T23:24:58.537Z"
+    },
+    {
+      "id": "notif-1769642731281-0bbq2itl5",
+      "clientId": "11",
+      "type": "appointment_status_change",
+      "title": "Cita CITA-00000027: aprobada",
+      "message": "El estado de su cita ha cambiado a: aprobada",
+      "metadata": {
+        "appointmentId": 27,
+        "numeroCita": "CITA-00000027",
+        "newStatus": "aprobada",
+        "fechaInicio": "2026-01-26T00:00:00.000Z"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-28T23:25:31.281Z",
+      "sentAt": "2026-01-28T23:25:31.281Z"
+    },
+    {
+      "id": "notif-1769642819276-ma3b1c8sd",
+      "clientId": "11",
+      "type": "ot_status_change",
+      "title": "OT OT-00000044: En proceso",
+      "message": "El estado de su orden de trabajo ha cambiado a: En proceso",
+      "metadata": {
+        "otId": 44,
+        "numeroOt": "OT-00000044",
+        "newStatus": "En proceso",
+        "vehicleId": 34,
+        "placa": "HTN-1234"
+      },
+      "isRead": false,
+      "createdAt": "2026-01-28T23:26:59.276Z",
+      "sentAt": "2026-01-28T23:26:59.276Z"
     }
   ]
 }

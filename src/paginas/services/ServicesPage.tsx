@@ -28,6 +28,7 @@ const columns: ColumnDef<Service>[] = [
 const ServicesPage = () => {
   const [data, setData] = useState<Service[]>(mockServices);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Cargar servicios desde el backend
@@ -70,7 +71,9 @@ const ServicesPage = () => {
   }, []);
 
   const handleEdit = (item: Service) => {
-    showAlert('Editar servicio: ' + item.id);
+    // Abrir modal en modo edición con valores precargados
+    setEditingService(item);
+    setIsModalOpen(true);
   };
   
   const handleDelete = (item: Service) => {
@@ -78,6 +81,7 @@ const ServicesPage = () => {
   };
 
   const handleNewService = () => {
+    setEditingService(null);
     setIsModalOpen(true);
   };
 
@@ -94,12 +98,9 @@ const ServicesPage = () => {
   }) => {
     try {
       setLoading(true);
-      
-      console.log('Enviando datos del servicio:', formData);
-      
       // Obtener usuario_id del localStorage
       const usuarioId = localStorage.getItem('usuario_id') || '1';
-      
+
       const serviceData = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
@@ -109,29 +110,26 @@ const ServicesPage = () => {
         registrado_por: parseInt(usuarioId),
       };
 
-      console.log('Datos procesados para enviar:', serviceData);
+      let response;
 
-      const response = await servicesService.create(serviceData);
-      
-      console.log('Respuesta del servidor:', response);
-      
-      // Verificar si el SP realmente permitió la inserción (allow = 1)
-      const spSucceeded = response.data?.allow === 1 || response.allow === 1;
-      
+      if (editingService) {
+        // Llamar al endpoint de actualización
+        response = await servicesService.update(String(editingService.id), serviceData);
+      } else {
+        response = await servicesService.create(serviceData);
+      }
+
+      // Respuesta del servidor
+      const spSucceeded = response.data?.allow === 1 || response.allow === 1 || response.success === true;
+
       if (spSucceeded) {
-        console.log('Servicio creado exitosamente');
         setIsModalOpen(false);
-        
-        // Mostrar mensaje de éxito
-        showSuccess('Servicio creado exitosamente');
-        
-        // Recargar la lista de servicios para mostrar el nuevo
+        setEditingService(null);
+        showSuccess(editingService ? 'Servicio actualizado exitosamente' : 'Servicio creado exitosamente');
         await loadServices();
       } else {
-        // El SP rechazó la inserción
         const errorMsg = response.data?.msg || response.message || 'Error desconocido';
-        console.error('❌ Error del servidor:', errorMsg);
-        showError('Error al crear el servicio: ' + errorMsg);
+        showError((editingService ? 'Error al actualizar el servicio: ' : 'Error al crear el servicio: ') + errorMsg);
       }
     } catch (error) {
       console.error('❌ Error completo:', error);
@@ -168,6 +166,14 @@ const ServicesPage = () => {
         onClose={handleCloseModal}
         onSubmit={handleSubmitService}
         loading={loading}
+        initialValues={editingService ? {
+          nombre: editingService.name,
+          descripcion: editingService.description,
+          precio: String(editingService.basePrice || 0),
+          duracion: editingService.estimatedTime,
+          categoria: ''
+        } : undefined}
+        title={editingService ? 'Editar Servicio' : 'Agregar Nuevo Servicio'}
       />
     </>
   );
