@@ -1,14 +1,15 @@
 # Módulo de Recordatorios - Sistema Taller
 
 ## 📋 Descripción
-Sistema completo de recordatorios de mantenimiento para vehículos con almacenamiento JSON.
+Sistema completo de recordatorios de mantenimiento para vehículos respaldado por procedimientos almacenados en la base de datos (SQL Server).
 
 ## 🚀 Características Implementadas
 
 ### Backend
 - ✅ API RESTful completa con Express
-- ✅ Almacenamiento en JSON (`backend/data/reminders.json`)
-- ✅ CRUD completo de recordatorios
+- ✅ Almacenamiento en base de datos mediante Stored Procedures (SP_OBTENER_RECORDATORIOS, SP_CREAR_RECORDATORIO)
+- ✅ Lectura con filtros (Próximos, Vencidos, Hoy)
+- ✅ Creación mediante `SP_CREAR_RECORDATORIO`
 - ✅ Filtrado por cliente
 - ✅ Recordatorios por fecha y kilometraje
 - ✅ Sistema de notificaciones
@@ -40,8 +41,7 @@ Sistema completo de recordatorios de mantenimiento para vehículos con almacenam
 ```
 backend/
   ├── data/
-  │   ├── reminders.json                    # Almacenamiento de recordatorios
-  │   └── reminders-example.json            # Datos de ejemplo
+  │   └── reminders-example.json            # Datos de ejemplo (ya no usado en producción)
   ├── services/
   │   └── remindersService.js               # Lógica de negocio
   ├── routes/
@@ -63,16 +63,16 @@ src/
 
 ## 🔌 API Endpoints
 
-### Recordatorios
-- `GET /api/reminders` - Obtener todos los recordatorios
-- `GET /api/reminders/client/:clientId` - Obtener recordatorios de un cliente
-- `GET /api/reminders/upcoming?days=7` - Recordatorios próximos
-- `GET /api/reminders/expired` - Recordatorios vencidos
-- `POST /api/reminders` - Crear recordatorio
-- `PUT /api/reminders/:id` - Actualizar recordatorio
-- `DELETE /api/reminders/:id` - Eliminar recordatorio
-- `PATCH /api/reminders/:id/complete` - Marcar como completado
-- `PATCH /api/reminders/:id/toggle` - Activar/desactivar
+### Recordatorios (API → Stored Procedures)
+- `GET /api/reminders` - Obtener todos los recordatorios (usa `SP_OBTENER_RECORDATORIOS`)
+- `GET /api/reminders/client/:clientId` - Obtener recordatorios de un cliente (usa `SP_OBTENER_RECORDATORIOS` con `@usuario_id`)
+- `GET /api/reminders/upcoming` - Recordatorios próximos (usa `SP_OBTENER_RECORDATORIOS` con `@filtro_fecha='Proximos'`)
+- `GET /api/reminders/expired` - Recordatorios vencidos (usa `SP_OBTENER_RECORDATORIOS` con `@filtro_fecha='Vencidos'`)
+- `POST /api/reminders` - Crear recordatorio (usa `SP_CREAR_RECORDATORIO`)
+- `PUT /api/reminders/:id` - Actualizar recordatorio (pendiente: implementar SP)
+- `DELETE /api/reminders/:id` - Eliminar recordatorio (pendiente: implementar SP)
+- `PATCH /api/reminders/:id/complete` - Marcar como completado (pendiente: implementar SP)
+- `PATCH /api/reminders/:id/toggle` - Activar/desactivar (pendiente: implementar SP)
 - `POST /api/reminders/:id/notify` - **Enviar notificación al cliente**
 
 ## 📊 Estructura de Datos
@@ -180,11 +180,11 @@ router.post('/:id/notify', authenticate, async (req, res) => {
 });
 ```
 
-## 📝 Notas Importantes
+- ## 📝 Notas Importantes
 
-- Los recordatorios se almacenan en `backend/data/reminders.json`
-- El sistema usa almacenamiento JSON, no SQL Server
-- Las notificaciones actualmente solo se marcan como enviadas
+- Los recordatorios se almacenan en la base de datos y se exponen mediante Stored Procedures (`SP_OBTENER_RECORDATORIOS`, `SP_CREAR_RECORDATORIO`).
+- Algunas operaciones mutantes (actualizar, eliminar, marcar completado) requieren SPs adicionales; actualmente lanzan un error indicando que hace falta el SP correspondiente.
+- Las notificaciones actualmente solo se marcan como enviadas (endpoint disponible en la API).
 - Para recordatorios de kilometraje, necesitas mantener actualizado el kilometraje del vehículo
 - El clientId debe corresponder a un cliente existente en el sistema
 

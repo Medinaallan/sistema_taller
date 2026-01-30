@@ -9,10 +9,10 @@ import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlert
 interface ReminderFormData {
   title: string;
   description: string;
-  type: 'date' | 'mileage';
   triggerValue: string;
   vehicleId: string;
   clientId: string;
+  priority?: number;
   services: string[];
 }
 
@@ -28,12 +28,18 @@ export default function RemindersPage() {
   const [formData, setFormData] = useState<ReminderFormData>({
     title: '',
     description: '',
-    type: 'date',
     triggerValue: '',
     vehicleId: '',
     clientId: '',
+    priority: 3,
     services: []
   });
+
+  const getUserId = () => {
+    const u = (state as any).user;
+    if (!u) return null;
+    return u.id ?? u.usuario_id ?? u.user_id ?? u.uid ?? u.id_usuario ?? null;
+  };
 
   // Cargar clientes desde la API
   const loadClients = async () => {
@@ -122,12 +128,12 @@ export default function RemindersPage() {
       const reminderData = {
         title: formData.title,
         description: formData.description,
-        type: formData.type,
-        triggerValue: formData.type === 'date' 
-          ? formData.triggerValue
-          : parseInt(formData.triggerValue),
+        // Only date reminders supported: send full datetime string
+        triggerValue: formData.triggerValue && formData.triggerValue.length === 10 ? `${formData.triggerValue}T00:00:00` : formData.triggerValue,
         vehicleId: formData.vehicleId || null,
         clientId: formData.clientId,
+        priority: formData.priority || 3,
+        createdBy: getUserId(),
         services: formData.services
       };
 
@@ -174,6 +180,7 @@ export default function RemindersPage() {
       triggerValue: '',
       vehicleId: '',
       clientId: '',
+      priority: 3,
       services: []
     });
   };
@@ -183,14 +190,12 @@ export default function RemindersPage() {
     setFormData({
       title: reminder.title,
       description: reminder.description,
-      type: reminder.type,
-      triggerValue: reminder.type === 'date' 
-        ? reminder.triggerValue instanceof Date 
-          ? reminder.triggerValue.toISOString().split('T')[0]
-          : new Date(reminder.triggerValue).toISOString().split('T')[0]
-        : reminder.triggerValue.toString(),
+      triggerValue: reminder.triggerValue instanceof Date
+        ? reminder.triggerValue.toISOString().split('T')[0]
+        : new Date(reminder.triggerValue).toISOString().split('T')[0],
       vehicleId: reminder.vehicleId,
       clientId: reminder.clientId,
+      priority: (reminder as any).prioridad || (reminder as any).priority || 3,
       services: reminder.services
     });
     setIsModalOpen(true);
@@ -531,27 +536,11 @@ export default function RemindersPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo *
-                    </label>
-                    <select
-                      id="type"
-                      value={formData.type}
-                      onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'date' | 'mileage' }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="date">Fecha</option>
-                      <option value="mileage">Kilometraje</option>
-                    </select>
-                  </div>
-
-                  <div>
                     <label htmlFor="triggerValue" className="block text-sm font-medium text-gray-700 mb-2">
-                      {formData.type === 'date' ? 'Fecha *' : 'Kilometraje *'}
+                      Fecha *
                     </label>
                     <input
-                      type={formData.type === 'date' ? 'date' : 'number'}
+                      type="date"
                       id="triggerValue"
                       value={formData.triggerValue}
                       onChange={(e) => setFormData(prev => ({ ...prev, triggerValue: e.target.value }))}
@@ -598,6 +587,22 @@ export default function RemindersPage() {
                           {vehicle.brand} {vehicle.model} - {vehicle.licensePlate}
                         </option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
+                      Prioridad
+                    </label>
+                    <select
+                      id="priority"
+                      value={formData.priority}
+                      onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value={3}>Alta</option>
+                      <option value={2}>Media</option>
+                      <option value={1}>Baja</option>
                     </select>
                   </div>
                 </div>

@@ -165,12 +165,24 @@ class RemindersService {
         body: JSON.stringify(reminderData),
       });
 
-      const data = await response.json();
-      
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (err) {
+        const text = await response.text().catch(() => '');
+        console.error('No JSON in response creating reminder. status=', response.status, 'body=', text);
+        return { success: false, message: `HTTP ${response.status}`, error: text };
+      }
+
+      if (!response.ok) {
+        console.error('Error al crear recordatorio, status=', response.status, data);
+        return { success: false, message: data?.message || data?.msg || `HTTP ${response.status}`, error: data };
+      }
+
       if (data.success) {
         console.log('Recordatorio creado exitosamente:', data.data);
       } else {
-        console.error('Error al crear recordatorio:', data.message);
+        console.error('Respuesta sin success al crear recordatorio:', data);
       }
 
       return data;

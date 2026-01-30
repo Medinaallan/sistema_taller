@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const remindersService = require('../services/remindersService');
 
+console.log('Reminders routes loaded from routes/reminders.js');
+
 // Middleware simple de autenticación (opcional - ajusta según tu sistema)
 const authenticate = (req, res, next) => {
   // Por ahora permitimos todas las peticiones
@@ -59,19 +61,13 @@ router.get('/expired', authenticate, async (req, res) => {
 router.post('/', authenticate, async (req, res) => {
   try {
     const reminderData = req.body;
+    console.log('POST /api/reminders - body:', reminderData);
     
-    // Validaciones básicas
-    if (!reminderData.clientId || !reminderData.type || !reminderData.title || !reminderData.triggerValue) {
+    // Validaciones básicas (solo recordatorios por fecha desde admin)
+    if (!reminderData.clientId || !reminderData.title || !reminderData.triggerValue) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Faltan campos requeridos: clientId, type, title, triggerValue' 
-      });
-    }
-    
-    if (!['date', 'mileage'].includes(reminderData.type)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'El tipo debe ser "date" o "mileage"' 
+        message: 'Faltan campos requeridos: clientId, title, triggerValue' 
       });
     }
     

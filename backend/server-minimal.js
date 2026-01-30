@@ -309,6 +309,17 @@ try {
   console.warn('El servidor continuará sin las rutas de recordatorios');
 }
 
+// Endpoint temporal de debug para verificar conectividad desde el frontend
+app.post('/api/reminders-debug', (req, res) => {
+  try {
+    console.log('DEBUG POST /api/reminders-debug - body:', req.body);
+    res.json({ success: true, received: req.body });
+  } catch (err) {
+    console.error('Error en /api/reminders-debug:', err);
+    res.status(500).json({ success: false, message: 'Debug endpoint error', error: err.message });
+  }
+});
+
 // IMPORTAR Y CONFIGURAR RUTAS DE TIPOS DE SERVICIO (SP)
 try {
   console.log('Cargando rutas de tipos de servicio (SP)...');

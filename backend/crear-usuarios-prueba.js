@@ -6,25 +6,6 @@ async function crearUsuariosDePrueba() {
         const pool = await getConnection();
         console.log('Conectado a SQL Server');
         
-        // Usuarios de prueba
-        const usuariosPrueba = [
-            {
-                nombre: 'Fatima García',
-                correo: 'fatima@taller.com',
-                telefono: '555-0001'
-            },
-            {
-                nombre: 'Juan Pérez',
-                correo: 'juan@taller.com',
-                telefono: '555-0002'
-            },
-            {
-                nombre: 'María López',
-                correo: 'maria@taller.com',
-                telefono: '555-0003'
-            }
-        ];
-        
         for (let i = 0; i < usuariosPrueba.length; i++) {
             const usuario = usuariosPrueba[i];
             console.log(`\n Registrando usuario ${i + 1}: ${usuario.nombre}...`);

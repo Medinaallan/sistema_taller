@@ -23,14 +23,6 @@ async function checkClientsData() {
     // 2. Registrar clientes usando el parámetro correcto: @nombre_completo
     console.log('\n  Registrando clientes con @nombre_completo...');
     
-    const clientes = [
-      { nombre_completo: 'Juan Pérez', telefono: '555-0123', email: 'juan.perez@email.com' },
-      { nombre_completo: 'María García', telefono: '555-0124', email: 'maria.garcia@email.com' },
-      { nombre_completo: 'Carlos López', telefono: '555-0125', email: 'carlos.lopez@email.com' },
-      { nombre_completo: 'Ana Martínez', telefono: '555-0126', email: 'ana.martinez@email.com' },
-      { nombre_completo: 'Roberto Silva', telefono: '555-0127', email: 'roberto.silva@email.com' }
-    ];
-    
     for (const cliente of clientes) {
       try {
         const result = await pool.request()

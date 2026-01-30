@@ -1,22 +1,49 @@
-const fs = require('fs').promises;
-const path = require('path');
+const { getConnection, sql } = require('../config/database.js');
 
-const REMINDERS_FILE = path.join(__dirname, '../data/reminders.json');
-
-// Asegurar que el archivo existe
-async function ensureFile() {
-  try {
-    await fs.access(REMINDERS_FILE);
-  } catch {
-    await fs.writeFile(REMINDERS_FILE, JSON.stringify([], null, 2));
-  }
+// Helper: normalizar fila del SP a la estructura usada por el frontend
+function mapRecord(r) {
+  return {
+    id: r.recordatorio_id ? r.recordatorio_id.toString() : undefined,
+    usuario_id: r.usuario_id,
+    clientId: r.usuario_id ? r.usuario_id.toString() : null,
+    nombre_cliente: r.nombre_cliente,
+    vehicleId: r.vehiculo_id ? r.vehiculo_id.toString() : null,
+    info_vehiculo: r.info_vehiculo,
+    title: r.titulo,
+    description: r.descripcion,
+    triggerValue: r.fecha_recordatorio,
+    estado: r.estado,
+    prioridad: r.prioridad,
+    dias_restantes: r.dias_restantes,
+    type: r.fecha_recordatorio ? 'date' : 'mileage',
+    isActive: r.estado ? String(r.estado).toLowerCase() !== 'inactivo' : true,
+    isCompleted: r.estado ? String(r.estado).toLowerCase() === 'completado' : false,
+    createdAt: r.fecha_creacion || new Date().toISOString(),
+    services: []
+  };
 }
 
 // Leer todos los recordatorios
 async function getAllReminders() {
-  await ensureFile();
-  const data = await fs.readFile(REMINDERS_FILE, 'utf8');
-  return JSON.parse(data);
+  try {
+    const pool = await getConnection();
+    const request = pool.request();
+    // No filters -> obtener todos
+    request.input('recordatorio_id', sql.Int, null);
+    request.input('usuario_id', sql.Int, null);
+    request.input('vehiculo_id', sql.Int, null);
+    request.input('estado', sql.VarChar(50), null);
+    request.input('filtro_fecha', sql.VarChar(20), null);
+
+    const result = await request.execute('SP_OBTENER_RECORDATORIOS');
+    if (result && result.recordset) {
+      return result.recordset.map(mapRecord);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error en getAllReminders (SP):', error.message);
+    throw error;
+  }
 }
 
 // Guardar recordatorios
@@ -25,132 +52,164 @@ async function saveReminders(reminders) {
 }
 
 // Obtener recordatorios por cliente
+// Obtener recordatorios por cliente usando SP_OBTENER_RECORDATORIOS
 async function getRemindersByClient(clientId) {
-  const reminders = await getAllReminders();
-  return reminders.filter(r => r.clientId === clientId);
+  try {
+    const pool = await getConnection();
+    console.log('\n  Obteniendo recordatorios para cliente:', clientId);
+
+    const request = pool.request();
+    // SP params: @recordatorio_id, @usuario_id, @vehiculo_id, @estado, @filtro_fecha
+    request.input('recordatorio_id', sql.Int, null);
+    request.input('usuario_id', sql.Int, clientId ? parseInt(clientId) : null);
+    request.input('vehiculo_id', sql.Int, null);
+    request.input('estado', sql.VarChar(50), null);
+    request.input('filtro_fecha', sql.VarChar(20), null);
+
+    const result = await request.execute('SP_OBTENER_RECORDATORIOS');
+
+    if (result && result.recordset) {
+      return result.recordset.map(mapRecord);
+    }
+
+    return [];
+  } catch (error) {
+    console.log('Error obteniendo recordatorios por cliente:', error.message);
+    throw error;
+  }
 }
 
-// Crear recordatorio
+// Crear recordatorio con SP_CREAR_RECORDATORIO
+// Crear recordatorio. Si es por fecha -> usar SP_CREAR_RECORDATORIO. Si es por kilometraje -> guardar en JSON.
 async function createReminder(reminderData) {
-  const reminders = await getAllReminders();
-  
-  const newReminder = {
-    id: Date.now().toString(),
-    vehicleId: reminderData.vehicleId || null,
-    clientId: reminderData.clientId,
-    type: reminderData.type,
-    title: reminderData.title,
-    description: reminderData.description || '',
-    triggerValue: reminderData.triggerValue,
-    currentValue: reminderData.currentValue || null,
-    isActive: true,
-    isCompleted: false,
-    services: reminderData.services || [],
-    notificationSent: false,
-    createdAt: new Date().toISOString(),
-    triggerDate: reminderData.type === 'date' ? reminderData.triggerValue : null,
-    createdBy: reminderData.createdBy || null
-  };
-  
-  reminders.push(newReminder);
-  await saveReminders(reminders);
-  
-  return newReminder;
+  // reminderData expected keys: type ('date'|'mileage'), clientId, vehicleId, title, description, triggerValue, priority, createdBy
+  try {
+    if (reminderData.type === 'date') {
+      const pool = await getConnection();
+
+      const usuario_id = reminderData.clientId ? parseInt(reminderData.clientId) : null;
+      const vehiculo_id = reminderData.vehicleId ? parseInt(reminderData.vehicleId) : null;
+      const titulo = reminderData.title || reminderData.titulo || '';
+      const descripcion = reminderData.description || reminderData.descripcion || '';
+      const fecha_recordatorio = reminderData.triggerValue ? new Date(reminderData.triggerValue) : null;
+      const prioridad = reminderData.priority ? parseInt(reminderData.priority) : 3;
+      const creado_por = reminderData.createdBy || reminderData.creado_por || 0;
+
+      const request = pool.request();
+      request.input('usuario_id', sql.Int, usuario_id);
+      request.input('vehiculo_id', sql.Int, vehiculo_id);
+      request.input('titulo', sql.NVarChar(100), titulo);
+      request.input('descripcion', sql.NVarChar(400), descripcion);
+      request.input('fecha_recordatorio', sql.DateTime, fecha_recordatorio);
+      request.input('prioridad', sql.TinyInt, prioridad);
+      request.input('creado_por', sql.Int, creado_por);
+
+      const result = await request.execute('SP_CREAR_RECORDATORIO');
+
+      if (result && result.recordset && result.recordset[0]) {
+        return result.recordset[0];
+      }
+
+      return { response: '200 OK', msg: 'Creado', allow: 1 };
+    }
+
+    // Siempre usar SP_CREAR_RECORDATORIO (no fallback a JSON)
+    const pool2 = await getConnection();
+    const req2 = pool2.request();
+    const usuario_id = reminderData.clientId ? parseInt(reminderData.clientId) : null;
+    const vehiculo_id = reminderData.vehicleId ? parseInt(reminderData.vehicleId) : null;
+    const titulo = reminderData.title || '';
+    const descripcion = reminderData.description || '';
+    const fecha_recordatorio = reminderData.triggerValue ? new Date(reminderData.triggerValue) : null;
+    const prioridad2 = reminderData.priority ? parseInt(reminderData.priority) : 3;
+    const creado_por2 = reminderData.createdBy || reminderData.creado_por || 0;
+
+    req2.input('usuario_id', sql.Int, usuario_id);
+    req2.input('vehiculo_id', sql.Int, vehiculo_id);
+    req2.input('titulo', sql.NVarChar(100), titulo);
+    req2.input('descripcion', sql.NVarChar(400), descripcion);
+    req2.input('fecha_recordatorio', sql.DateTime, fecha_recordatorio);
+    req2.input('prioridad', sql.TinyInt, prioridad2);
+    req2.input('creado_por', sql.Int, creado_por2);
+
+    const resSP = await req2.execute('SP_CREAR_RECORDATORIO');
+    if (resSP && resSP.recordset && resSP.recordset[0]) {
+      return resSP.recordset[0];
+    }
+    return { response: '200 OK', msg: 'Creado', allow: 1 };
+  } catch (error) {
+    console.error('Error en createReminder:', error);
+    throw error;
+  }
 }
 
-// Actualizar recordatorio
+// Actualizar recordatorio - pendiente: implementar SP correspondiente
 async function updateReminder(id, updateData) {
-  const reminders = await getAllReminders();
-  const index = reminders.findIndex(r => r.id === id);
-  
-  if (index === -1) {
-    throw new Error('Recordatorio no encontrado');
-  }
-  
-  reminders[index] = {
-    ...reminders[index],
-    ...updateData,
-    updatedAt: new Date().toISOString()
-  };
-  
-  await saveReminders(reminders);
-  return reminders[index];
+  throw new Error('Not implemented: updateReminder requires a stored procedure (SP_ACTUALIZAR_RECORDATORIO)');
 }
 
-// Eliminar recordatorio
+// Eliminar recordatorio - pendiente: implementar SP correspondiente
 async function deleteReminder(id) {
-  const reminders = await getAllReminders();
-  const filteredReminders = reminders.filter(r => r.id !== id);
-  
-  if (reminders.length === filteredReminders.length) {
-    throw new Error('Recordatorio no encontrado');
-  }
-  
-  await saveReminders(filteredReminders);
-  return { message: 'Recordatorio eliminado correctamente' };
+  throw new Error('Not implemented: deleteReminder requires a stored procedure (SP_ELIMINAR_RECORDATORIO)');
 }
 
-// Marcar como completado
+// Marcar como completado - pendiente: implementar SP correspondiente
 async function completeReminder(id) {
-  return await updateReminder(id, { 
-    isCompleted: true, 
-    completedAt: new Date().toISOString() 
-  });
+  throw new Error('Not implemented: completeReminder requires a stored procedure (SP_MARCAR_COMPLETADO)');
 }
 
-// Alternar estado activo
+// Alternar estado activo - pendiente: implementar SP correspondiente
 async function toggleReminderActive(id) {
-  const reminders = await getAllReminders();
-  const reminder = reminders.find(r => r.id === id);
-  
-  if (!reminder) {
-    throw new Error('Recordatorio no encontrado');
-  }
-  
-  return await updateReminder(id, { isActive: !reminder.isActive });
+  throw new Error('Not implemented: toggleReminderActive requires a stored procedure (SP_TOGGLE_RECORDATORIO)');
 }
 
-// Marcar notificación como enviada
+// Marcar notificación como enviada - pendiente: implementar SP correspondiente
 async function markNotificationSent(id) {
-  return await updateReminder(id, { 
-    notificationSent: true,
-    lastNotificationSent: new Date().toISOString()
-  });
+  throw new Error('Not implemented: markNotificationSent requires a stored procedure (SP_MARK_NOTIFICATION_SENT)');
 }
 
-// Obtener recordatorios próximos a vencer
-async function getUpcomingReminders(daysAhead = 7) {
-  const reminders = await getAllReminders();
-  const now = new Date();
-  const futureDate = new Date(now.getTime() + (daysAhead * 24 * 60 * 60 * 1000));
-  
-  return reminders.filter(r => {
-    if (!r.isActive || r.isCompleted) return false;
-    
-    if (r.type === 'date') {
-      const triggerDate = new Date(r.triggerValue);
-      return triggerDate >= now && triggerDate <= futureDate;
+// Obtener recordatorios próximos a vencer usando SP_OBTENER_RECORDATORIOS
+async function getUpcomingReminders() {
+  try {
+    const pool = await getConnection();
+    const request = pool.request();
+    request.input('recordatorio_id', sql.Int, null);
+    request.input('usuario_id', sql.Int, null);
+    request.input('vehiculo_id', sql.Int, null);
+    request.input('estado', sql.VarChar(50), null);
+    request.input('filtro_fecha', sql.VarChar(20), 'Proximos');
+
+    const result = await request.execute('SP_OBTENER_RECORDATORIOS');
+    if (result && result.recordset) {
+      return result.recordset.map(mapRecord);
     }
-    
-    return false; // Para recordatorios de kilometraje necesitaríamos comparar con datos de vehículos
-  });
+    return [];
+  } catch (error) {
+    console.error('Error en getUpcomingReminders:', error.message);
+    throw error;
+  }
 }
 
-// Obtener recordatorios vencidos
+// Obtener recordatorios vencidos usando SP_OBTENER_RECORDATORIOS
 async function getExpiredReminders() {
-  const reminders = await getAllReminders();
-  const now = new Date();
-  
-  return reminders.filter(r => {
-    if (!r.isActive || r.isCompleted) return false;
-    
-    if (r.type === 'date') {
-      const triggerDate = new Date(r.triggerValue);
-      return triggerDate < now;
+  try {
+    const pool = await getConnection();
+    const request = pool.request();
+    request.input('recordatorio_id', sql.Int, null);
+    request.input('usuario_id', sql.Int, null);
+    request.input('vehiculo_id', sql.Int, null);
+    request.input('estado', sql.VarChar(50), null);
+    request.input('filtro_fecha', sql.VarChar(20), 'Vencidos');
+
+    const result = await request.execute('SP_OBTENER_RECORDATORIOS');
+    if (result && result.recordset) {
+      return result.recordset.map(mapRecord);
     }
-    
-    return false;
-  });
+    return [];
+  } catch (error) {
+    console.error('Error en getExpiredReminders:', error.message);
+    throw error;
+  }
 }
 
 module.exports = {
