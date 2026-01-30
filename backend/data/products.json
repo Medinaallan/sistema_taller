@@ -14,10 +14,10 @@
     "exonerado": false,
     "category": "LUBRICANTES",
     "type": "Unidad",
-    "stock": 10,
+    "stock": 9,
     "stockMin": 2,
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-01-28T00:09:53.194Z"
+    "updatedAt": "2026-01-29T20:40:04.520Z"
   },
   {
     "id": "2",

@@ -65,10 +65,10 @@ export function DashboardPage() {
         if (response && Array.isArray(response)) {
           setWorkOrders(response);
           setTotalWorkOrders(response.length);
-          
+
           // Contar órdenes completadas
-          const completed = response.filter(order => order.estado === 'completed').length;
-          setCompletedWorkOrders(completed);
+          const completad = response.filter(order => order.estado === 'Completada').length;
+          setCompletedWorkOrders(completad);
         }
       } catch (error) {
         console.error('Error cargando órdenes de trabajo:', error);
