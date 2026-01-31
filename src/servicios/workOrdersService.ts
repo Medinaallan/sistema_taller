@@ -158,6 +158,40 @@ class WorkOrdersService {
     }
   }
 
+  // Obtener una página de órdenes de trabajo (server-side pagination)
+  async getWorkOrdersPage(page = 1, limit = 20, includeCosts = false): Promise<{ data: WorkOrderData[]; count: number; page: number; limit: number}> {
+    try {
+      const url = new URL(`${API_BASE_URL}/workorders`);
+      url.searchParams.set('page', String(page));
+      url.searchParams.set('limit', String(limit));
+      if (includeCosts) url.searchParams.set('includeCosts', 'true');
+
+      const response = await fetch(url.toString());
+      const result: any = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al obtener órdenes de trabajo');
+      }
+
+      const rawOrders = Array.isArray(result.data) ? result.data : [];
+      const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
+
+      // mapSpDataToWorkOrder returns WorkOrderData; preserve calculated cost if present
+      orders.forEach((o, idx) => {
+        const raw = rawOrders[idx];
+        if (raw && raw._calculatedCost !== undefined) {
+          // @ts-ignore attach to the object for display
+          (o as any)._calculatedCost = raw._calculatedCost;
+        }
+      });
+
+      return { data: orders, count: result.count || 0, page: result.page || page, limit: result.limit || limit };
+    } catch (error) {
+      console.error('Error fetching paged work orders:', error);
+      throw error;
+    }
+  }
+
   // Obtener órdenes de trabajo por cliente
   async getWorkOrdersByClient(clienteId: string): Promise<WorkOrderData[]> {
     try {

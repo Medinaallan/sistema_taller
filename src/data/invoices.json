@@ -971,5 +971,59 @@
     "estado": "pagada",
     "createdAt": "2026-01-30T21:57:36.606Z",
     "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769898630763-0ee7fb",
+    "numero": "001-001-01-00000022",
+    "fecha": "2026-01-31T22:30:30.747Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      }
+    ],
+    "subtotal": 0,
+    "exento": 0,
+    "exonerado": 15.3,
+    "tax": 0,
+    "discount": 0,
+    "total": 15.3,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-31T22:30:30.764Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769899994806-178ba5",
+    "numero": "001-001-01-00000023",
+    "fecha": "2026-01-31T22:53:14.801Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "a6e75b66-2c2c-4016-8f90-e2552d698cb1",
+        "name": "PRODUCTO DE PRUEBA",
+        "quantity": 100,
+        "price": 100,
+        "total": 10000,
+        "type": "unidad"
+      }
+    ],
+    "subtotal": 8695.652173913044,
+    "exento": 0,
+    "exonerado": 0,
+    "tax": 1304.347826086956,
+    "discount": 0,
+    "total": 10000,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-31T22:53:14.806Z",
+    "createdBy": "Allan Admin"
   }
 ]

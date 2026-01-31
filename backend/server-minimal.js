@@ -320,6 +320,7 @@ app.post('/api/reminders-debug', (req, res) => {
   }
 });
 
+
 // IMPORTAR Y CONFIGURAR RUTAS DE TIPOS DE SERVICIO (SP)
 try {
   console.log('Cargando rutas de tipos de servicio (SP)...');
@@ -909,6 +910,17 @@ try {
   console.log(' Rutas de clientes cargadas correctamente');
 } catch (error) {
   console.error(' Error cargando rutas de clientes:', error.message);
+}
+
+// IMPORTAR Y CONFIGURAR RUTAS DE SESIONES DE CAJA (JSON)
+try {
+  console.log('Cargando rutas de sesiones de caja...');
+  const cashRouter = require('./routes/cashSessions');
+  app.use('/api/cash-sessions', cashRouter);
+  console.log('Rutas de sesiones de caja cargadas exitosamente');
+} catch (error) {
+  console.error('Error cargando rutas de sesiones de caja:', error.message);
+  console.warn('El servidor continuará sin rutas de sesiones de caja');
 }
 
 const PORT = process.env.PORT || 8080;

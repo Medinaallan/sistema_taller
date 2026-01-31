@@ -78,7 +78,15 @@ const navigationItems: NavigationItem[] = [
   { name: 'Historial de Servicios', href: '/client-service-history', icon: DocumentTextIcon, roles: ['client'] },
   { name: 'Historial Global', href: '/admin-historial', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },
   { name: 'Chat con Taller', href: '/client-chat', icon: BellIcon, roles: ['client'] },
-  { name: 'Reportes', href: '/reports', icon: ChartBarIcon, roles: ['admin'] },
+  { 
+    name: 'Reportes', 
+    icon: ChartBarIcon, 
+    roles: ['admin'],
+    children: [
+      { name: 'Resumen', href: '/reports', icon: ChartBarIcon, roles: ['admin'] },
+      { name: 'Arqueos', href: '/reports/arqueos', icon: ChartBarIcon, roles: ['admin'] }
+    ]
+  },
   { name: 'Chat con Cliente', href: '/admin-chat', icon: BellIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Administración', href: '/admin', icon: Cog6ToothIcon, roles: ['admin'] },
   { name: 'Ayuda', href: '/help', icon: QuestionMarkCircleIcon, roles: ['admin', 'mechanic', 'receptionist', 'client'] },

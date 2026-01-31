@@ -17,6 +17,9 @@ import { servicesService } from '../../servicios/apiService';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [limit, setLimit] = useState(20);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -51,20 +54,18 @@ const WorkOrdersPage = () => {
   const [showAuthorizationModal, setShowAuthorizationModal] = useState(false);
   const [selectedOrderForAuth, setSelectedOrderForAuth] = useState<WorkOrderData | null>(null);
   
-  const loadWorkOrders = async () => {
+  const loadWorkOrders = async (p = page) => {
     try {
-      console.log(' Iniciando carga de órdenes de trabajo...');
+      console.log(' Iniciando carga paginada de órdenes de trabajo...');
       setLoading(true);
-      const orders = await workOrdersService.getAllWorkOrders();
-      console.log(' Órdenes de trabajo cargadas:', orders);
-      console.log(' Número de órdenes:', orders.length);
-      setWorkOrders(orders);
-      
-      // Cargar nombres descriptivos para cada orden
-      await loadDisplayNamesForOrders(orders);
-      
-      // Cargar costos totales de cada orden
-      await loadOrderCosts(orders);
+      const res = await workOrdersService.getWorkOrdersPage(p, limit, true);
+      console.log(' Órdenes paginadas cargadas:', res.data);
+      setWorkOrders(res.data);
+      setTotalCount(res.count || 0);
+      setPage(res.page || p);
+
+      // Cargar nombres descriptivos para cada orden (lazy per page)
+      await loadDisplayNamesForOrders(res.data);
     } catch (err) {
       console.error(' Error cargando órdenes de trabajo:', err);
       showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
@@ -73,44 +74,14 @@ const WorkOrdersPage = () => {
     }
   };
   
-  // Cargar y calcular costos totales para cada orden
-  const loadOrderCosts = async (orders: WorkOrderData[]) => {
-    try {
-      const costsMap = new Map<string, number>();
-      
-      // Cargar servicios para obtener precios
-      const serviciosResponse = await servicesService.getAll();
-      const servicios = serviciosResponse.success ? serviciosResponse.data : [];
-      
-      for (const order of orders) {
-        if (order.id) {
-          try {
-            const tareas = await workOrdersService.getTareasByOT(order.id);
-            // Calcular costo sumando los precios de los servicios de cada tarea
-            const totalCost = tareas.reduce((sum, tarea) => {
-              const servicio = servicios.find((s: any) => 
-                String(s.tipo_servicio_id || s.id) === String(tarea.tipo_servicio_id)
-              );
-              const precio = servicio ? parseFloat(servicio.precio_base || servicio.basePrice || 0) : 0;
-              return sum + precio;
-            }, 0);
-            costsMap.set(order.id, totalCost);
-          } catch (error) {
-            console.error(`Error calculando costo para orden ${order.id}:`, error);
-            costsMap.set(order.id, 0);
-          }
-        }
-      }
-      
-      setOrderCostsMap(costsMap);
-    } catch (error) {
-      console.error('Error cargando costos de órdenes:', error);
-    }
-  };
+  // Nota: el cálculo de costos ahora se realiza server-side por página.
   
   // Helper para obtener el costo total calculado de una orden
   const getOrderTotalCost = (order: WorkOrderData): number => {
     if (!order.id) return 0;
+    // Preferir costo calculado adjuntado por el backend
+    // @ts-ignore
+    if ((order as any)._calculatedCost !== undefined) return (order as any)._calculatedCost;
     return orderCostsMap.get(order.id) || 0;
   };
 
@@ -651,6 +622,31 @@ const WorkOrdersPage = () => {
               )}
             </tbody>
           </table>
+
+          {/* Paginación */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-gray-600">Página {page} • {totalCount} órdenes</div>
+            <div className="flex space-x-2">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (page > 1) loadWorkOrders(page - 1);
+                }}
+                disabled={page <= 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                onClick={() => {
+                  const maxPage = Math.ceil((totalCount || 0) / limit) || 1;
+                  if (page < maxPage) loadWorkOrders(page + 1);
+                }}
+                disabled={page >= Math.ceil((totalCount || 0) / limit)}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
 
           {filteredWorkOrders.length === 0 && !loading && (
             <div className="text-center py-8">

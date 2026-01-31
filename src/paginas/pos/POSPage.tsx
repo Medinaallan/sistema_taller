@@ -4,6 +4,7 @@ import type { Client } from '../../tipos';
 import usePendingInvoices from '../../hooks/usePendingInvoices';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 import Swal from 'sweetalert2';
+import { cashService } from '../../servicios/cashService';
 import invoicesService from '../../servicios/invoicesService';
 import { useApp } from '../../contexto/useApp';
 
@@ -67,8 +68,21 @@ const POSPage: React.FC = () => {
 
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [currentSession, setCurrentSession] = useState<any>(null);
+  const [showOpenModal, setShowOpenModal] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [openingAmount, setOpeningAmount] = useState<number>(0);
+  const [openingNotes, setOpeningNotes] = useState<string>('');
+  const [cashierName, setCashierName] = useState<string>(state.user?.name || '');
+  const [openingTime, setOpeningTime] = useState<string>(new Date().toLocaleString());
+  const [closingCountedCash, setClosingCountedCash] = useState<number>(0);
+  const [closingShortages, setClosingShortages] = useState<number>(0);
+  const [closingOverages, setClosingOverages] = useState<number>(0);
+  const [closingNotes, setClosingNotes] = useState<string>('');
   const [discountPercentage, setDiscountPercentage] = useState(0);
   const taxRate = 0.15; // 15% ISV constante
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportData, setReportData] = useState<any[]>([]);
   
   // Hook para manejar facturas pendientes
   const { pendingInvoices, loading: pendingLoading, markAsInvoiced, refreshPendingInvoices } = usePendingInvoices();
@@ -108,6 +122,38 @@ const POSPage: React.FC = () => {
     const onUpdated = () => { loadProducts(); };
     window.addEventListener('products:updated', onUpdated as EventListener);
     return () => { window.removeEventListener('products:updated', onUpdated as EventListener); };
+  }, []);
+
+  // Cargar sesión de caja abierta al montar
+  useEffect(() => {
+    const loadOpen = async () => {
+      try {
+        const resp = await cashService.getOpen();
+        if (resp && resp.success) setCurrentSession(resp.data);
+      } catch (err) {
+        console.error('Error fetching open cash session', err);
+      }
+    };
+    loadOpen();
+  }, []);
+
+  const loadReport = async () => {
+    try {
+      const resp = await cashService.getReport();
+      if (resp && resp.success) setReportData(resp.data || []);
+      else setReportData([]);
+    } catch (err) {
+      console.error('Error loading cash report', err);
+      setReportData([]);
+    }
+  };
+
+  // actualizar hora de apertura en tiempo real para mostrar en modal
+  useEffect(() => {
+    const t = setInterval(() => {
+      setOpeningTime(new Date().toLocaleString());
+    }, 1000);
+    return () => clearInterval(t);
   }, []);
 
   // Calcular totales (considerando items exentos/exonerados)
@@ -254,6 +300,17 @@ const POSPage: React.FC = () => {
   });
 
   const handleCheckout = async () => {
+    // Requerir sesión de caja abierta antes de poder facturar
+    if (!currentSession) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Caja no aperturada',
+        text: 'Debe aperturar la caja antes de realizar una factura.',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
     if (posState.cart.length === 0) {
       await Swal.fire({
         icon: 'warning',
@@ -344,6 +401,21 @@ const POSPage: React.FC = () => {
 
       if (!newInvoice) {
         throw new Error('No se pudo crear la factura en el servidor');
+      }
+
+      // Registrar movimiento de entrada en la sesión de caja (venta en efectivo)
+      try {
+        if (currentSession) {
+          await cashService.addMovement({
+            sessionId: currentSession.id,
+            type: 'in',
+            amount: posState.total,
+            reason: `Venta - ${newInvoice.numero || newInvoice.id}`,
+            createdBy: state.user?.name || 'Usuario'
+          });
+        }
+      } catch (movementErr) {
+        console.error('Error registrando movimiento de caja:', movementErr);
       }
 
       // Procesar servicios facturados
@@ -454,8 +526,9 @@ const POSPage: React.FC = () => {
               Punto de Venta
             </h1>
             <div className="flex items-center space-x-2">
-              <span className="text-lg font-semibold text-blue-600">ADMIN</span>
-              <span className="text-sm text-gray-500">TALLER-POS</span>
+                <span className="text-lg font-semibold text-blue-600">ADMIN</span>
+                <span className="text-sm text-gray-500">TALLER-POS</span>
+                <button onClick={async () => { setShowReportModal(true); await loadReport(); }} className="ml-3 px-3 py-1 bg-white border rounded text-sm hover:bg-gray-50">Arqueos</button>
             </div>
           </div>
 
@@ -752,14 +825,22 @@ const POSPage: React.FC = () => {
           {/* Botones de acción */}
           <div className="flex space-x-2 mt-4">
             <button
-              onClick={clearCart}
+              onClick={() => setShowOpenModal(true)}
               className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
             >
               Aperturar Caja
             </button>
             <button
+              onClick={() => setShowCloseModal(true)}
+              className={`flex-1 ${currentSession ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-300 cursor-not-allowed'} text-white py-2 rounded`}
+              disabled={!currentSession}
+            >
+              Cerrar Caja
+            </button>
+            <button
               onClick={handleCheckout}
-              className="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600"
+              disabled={!currentSession}
+              className={`flex-1 ${currentSession ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-300 cursor-not-allowed'} text-white py-2 rounded`}
             >
               Cobrar (F2)
             </button>
@@ -772,6 +853,162 @@ const POSPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Apertura de Caja */}
+      {showOpenModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-96 p-6">
+            <h3 className="text-lg font-bold mb-4">Apertura de Caja</h3>
+            <div className="mb-3">
+              <label className="block text-sm mb-1">Cajero</label>
+              <input type="text" value={cashierName} onChange={(e) => setCashierName(e.target.value)} className="w-full px-2 py-1 border rounded" />
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm mb-1">Hora de Apertura (automático)</label>
+              <input type="text" value={openingTime} readOnly className="w-full px-2 py-1 border rounded bg-gray-50" />
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm mb-1">Monto Inicial</label>
+              <input type="number" value={openingAmount} onChange={(e) => setOpeningAmount(Number(e.target.value))} className="w-full px-2 py-1 border rounded" />
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm mb-1">Notas (opcional)</label>
+              <textarea value={openingNotes} onChange={(e) => setOpeningNotes(e.target.value)} className="w-full px-2 py-1 border rounded" />
+            </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <button onClick={() => setShowOpenModal(false)} className="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
+              <button
+                onClick={async () => {
+                  try {
+                    const resp = await cashService.openSession({ openedBy: cashierName || state.user?.name || 'Usuario', openingAmount, notes: openingNotes });
+                    if (resp && resp.success) {
+                      setCurrentSession(resp.data);
+                      setShowOpenModal(false);
+                      Swal.fire({ icon: 'success', title: 'Caja aperturada', text: `Monto inicial: L.${Number(openingAmount).toFixed(2)}` });
+                    } else {
+                      Swal.fire({ icon: 'error', title: 'Error', text: resp?.message || 'No se pudo aperturar la caja' });
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Error conectando al servidor' });
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >Registrar Apertura</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cierre de Caja */}
+      {showCloseModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-96 p-6">
+            <h3 className="text-lg font-bold mb-4">Cierre de Caja</h3>
+            <div className="mb-3">
+              <label className="block text-sm mb-1">Efectivo Contado</label>
+              <input type="number" value={closingCountedCash} onChange={(e) => setClosingCountedCash(Number(e.target.value))} className="w-full px-2 py-1 border rounded" />
+            </div>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm mb-1">Faltantes</label>
+                <input type="number" value={closingShortages} onChange={(e) => setClosingShortages(Number(e.target.value))} className="w-full px-2 py-1 border rounded" />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Sobrantes</label>
+                <input type="number" value={closingOverages} onChange={(e) => setClosingOverages(Number(e.target.value))} className="w-full px-2 py-1 border rounded" />
+              </div>
+            </div>
+            <div className="mb-3">
+              <label className="block text-sm mb-1">Notas (opcional)</label>
+              <textarea value={closingNotes} onChange={(e) => setClosingNotes(e.target.value)} className="w-full px-2 py-1 border rounded" />
+            </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <button onClick={() => setShowCloseModal(false)} className="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
+              <button
+                onClick={async () => {
+                  if (!currentSession) return Swal.fire({ icon: 'warning', title: 'No hay sesión abierta' });
+                  try {
+                    const resp = await cashService.closeSession({ sessionId: currentSession.id, closingBy: state.user?.name || 'Usuario', countedCash: closingCountedCash, shortages: closingShortages, overages: closingOverages, closingNotes });
+                    if (resp && resp.success) {
+                      setCurrentSession(null);
+                      setShowCloseModal(false);
+                      Swal.fire({ icon: 'success', title: 'Caja cerrada', text: `Diferencia: L.${(Number(closingOverages) - Number(closingShortages)).toFixed(2)}` });
+                    } else {
+                      Swal.fire({ icon: 'error', title: 'Error', text: resp?.message || 'No se pudo cerrar la caja' });
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Error conectando al servidor' });
+                  }
+                }}
+                className="px-4 py-2 bg-yellow-600 text-white rounded"
+              >Registrar Cierre</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reportes / Arqueos */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-auto py-10">
+          <div className="bg-white rounded-lg w-[95%] max-w-6xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Arqueos de Caja</h3>
+              <div className="space-x-2">
+                <button onClick={() => { setShowReportModal(false); }} className="px-3 py-1 bg-gray-300 rounded">Cerrar</button>
+              </div>
+            </div>
+
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <button onClick={loadReport} className="px-3 py-1 bg-blue-600 text-white rounded">Actualizar</button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto border-collapse">
+                <thead>
+                  <tr className="text-left text-sm text-gray-600 border-b">
+                    <th className="py-2 px-3">#</th>
+                    <th className="py-2 px-3">Caja</th>
+                    <th className="py-2 px-3">Responsable</th>
+                    <th className="py-2 px-3">Hora Apertura</th>
+                    <th className="py-2 px-3">Hora Cierre</th>
+                    <th className="py-2 px-3">Monto Inicial</th>
+                    <th className="py-2 px-3">Ventas</th>
+                    <th className="py-2 px-3">Ingresos</th>
+                    <th className="py-2 px-3">Efectivo</th>
+                    <th className="py-2 px-3">Diferencia</th>
+                    <th className="py-2 px-3">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.map((r, idx) => (
+                    <tr key={r.id} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-3 align-top">{idx + 1}</td>
+                      <td className="py-2 px-3 align-top">{r.caja}</td>
+                      <td className="py-2 px-3 align-top">{r.cashier}</td>
+                      <td className="py-2 px-3 align-top">{r.openingTime ? new Date(r.openingTime).toLocaleString() : '-'}</td>
+                      <td className="py-2 px-3 align-top">{r.closingTime ? new Date(r.closingTime).toLocaleString() : '********'}</td>
+                      <td className="py-2 px-3 align-top">L.{(r.openingAmount || 0).toFixed(2)}</td>
+                      <td className="py-2 px-3 align-top">L.{(r.salesTotal || 0).toFixed(2)}</td>
+                      <td className="py-2 px-3 align-top">L.{(r.incomes || 0).toFixed(2)}</td>
+                      <td className="py-2 px-3 align-top">L.{(r.expectedCash || 0).toFixed(2)}</td>
+                      <td className="py-2 px-3 align-top">{r.difference != null ? `L.${r.difference.toFixed(2)}` : '-'}</td>
+                      <td className="py-2 px-3 align-top">
+                        <div className="flex items-center space-x-2">
+                          <button onClick={() => { Swal.fire({ title: 'Detalle de Sesión', html: `<pre style="text-align:left">${JSON.stringify(r, null, 2)}</pre>`, width: 800 }); }} className="px-2 py-1 bg-green-500 text-white rounded text-sm">Ver</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de selección de cliente */}
       {isClientModalOpen && (
