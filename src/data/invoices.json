@@ -823,5 +823,153 @@
     "estado": "pagada",
     "createdAt": "2026-01-29T00:42:07.210Z",
     "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769803270000-da3959",
+    "numero": "001-001-01-00000018",
+    "fecha": "2026-01-30T20:01:09.983Z",
+    "clientId": "20",
+    "clientName": "Usuario Test",
+    "items": [
+      {
+        "id": "invoice-29",
+        "name": "Servicio Automotriz - Test20 Model20 | OT #29",
+        "quantity": 61,
+        "price": 3800,
+        "total": 231800,
+        "type": "service"
+      }
+    ],
+    "subtotal": 0,
+    "exento": 0,
+    "exonerado": 0,
+    "tax": 0,
+    "discount": 0,
+    "total": 231800,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-30T20:01:10.001Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769805491347-cdd4f3",
+    "numero": "001-001-01-00000019",
+    "fecha": "2026-01-30T20:38:11.342Z",
+    "clientId": "10",
+    "clientName": "xiomara garcia",
+    "items": [
+      {
+        "id": "invoice-33",
+        "name": "Servicio Automotriz - Test10 Model10 | OT #33",
+        "quantity": 1,
+        "price": 1000,
+        "total": 1000,
+        "type": "service"
+      }
+    ],
+    "subtotal": 826.0869565217392,
+    "exento": 0,
+    "exonerado": 0,
+    "tax": 123.91304347826076,
+    "discount": 50,
+    "total": 950,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-30T20:38:11.347Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769805731637-711e09",
+    "numero": "001-001-01-00000020",
+    "fecha": "2026-01-30T20:42:11.637Z",
+    "clientId": "11",
+    "clientName": "aldo garcia",
+    "items": [
+      {
+        "id": "invoice-37",
+        "name": "Servicio Automotriz - honda civic | OT #37",
+        "quantity": 1,
+        "price": 0,
+        "total": 0,
+        "type": "service"
+      }
+    ],
+    "subtotal": 0,
+    "exento": 0,
+    "exonerado": 0,
+    "tax": 0,
+    "discount": 0,
+    "total": 0,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-30T20:42:11.637Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1769810256606-8fcbb6",
+    "numero": "001-001-01-00000021",
+    "fecha": "2026-01-30T21:57:36.603Z",
+    "clientId": "10",
+    "clientName": "xiomara garcia",
+    "items": [
+      {
+        "id": "invoice-31",
+        "name": "Servicio Automotriz - Test10 Model10 | OT #31",
+        "quantity": 1,
+        "price": 2800,
+        "total": 2800,
+        "type": "service"
+      },
+      {
+        "id": "a6e75b66-2c2c-4016-8f90-e2552d698cb1",
+        "name": "PRODUCTO DE PRUEBA",
+        "quantity": 1,
+        "price": 100,
+        "total": 100,
+        "type": "unidad"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      },
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      }
+    ],
+    "subtotal": 3323.9913043478264,
+    "exento": 12.5,
+    "exonerado": 15.3,
+    "tax": 498.5986956521738,
+    "discount": 0,
+    "total": 3850.3900000000003,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-01-30T21:57:36.606Z",
+    "createdBy": "Allan Admin"
   }
 ]

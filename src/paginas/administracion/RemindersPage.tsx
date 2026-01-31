@@ -12,6 +12,7 @@ interface ReminderFormData {
   triggerValue: string;
   vehicleId: string;
   clientId: string;
+  type?: 'date' | 'mileage';
   priority?: number;
   services: string[];
 }
@@ -28,6 +29,7 @@ export default function RemindersPage() {
   const [formData, setFormData] = useState<ReminderFormData>({
     title: '',
     description: '',
+    type: 'date',
     triggerValue: '',
     vehicleId: '',
     clientId: '',
@@ -140,25 +142,30 @@ export default function RemindersPage() {
       if (selectedReminder) {
         // Actualizar recordatorio existente
         const response = await remindersService.actualizarRecordatorio(
-          selectedReminder.id, 
-          { ...reminderData, isActive: selectedReminder.isActive, isCompleted: selectedReminder.isCompleted }
+          selectedReminder.id,
+          { ...reminderData, isActive: selectedReminder.isActive, isCompleted: selectedReminder.isCompleted, editado_por: Number(getUserId()) }
         );
-        
-        if (response.success) {
+
+        if (!response || !response.success) {
+          console.debug('Actualizar recordatorio - respuesta del servidor:', response);
+        }
+
+        if (response && response.success) {
+          showSuccess('Recordatorio actualizado correctamente');
           await loadReminders();
           handleCloseModal();
         } else {
-          showError('Error al actualizar recordatorio: ' + response.message);
+          showError('Error al actualizar recordatorio: ' + (response?.message || 'Error desconocido'));
         }
       } else {
         // Crear nuevo recordatorio
         const response = await remindersService.crearRecordatorio(reminderData);
-        
-        if (response.success) {
+        if (response && response.success) {
+          showSuccess('Recordatorio creado correctamente');
           await loadReminders();
           handleCloseModal();
         } else {
-          showError('Error al crear recordatorio: ' + response.message);
+          showError('Error al crear recordatorio: ' + (response?.message || response?.msg || 'Error desconocido'));
         }
       }
     } catch (error) {
@@ -201,10 +208,11 @@ export default function RemindersPage() {
     setIsModalOpen(true);
   };
 
-  const toggleReminder = async (id: string) => {
+  const toggleReminder = async (reminder: Reminder) => {
     setLoading(true);
     try {
-      const response = await remindersService.alternarEstadoRecordatorio(id);
+      const nuevo_estado = reminder.isActive ? 'Cancelado' : 'Pendiente';
+      const response = await remindersService.alternarEstadoRecordatorioWithPayload(reminder.id, nuevo_estado, Number(getUserId()));
       if (response.success) {
         await loadReminders();
       } else {
@@ -242,7 +250,7 @@ export default function RemindersPage() {
   const handleComplete = async (id: string) => {
     setLoading(true);
     try {
-      const response = await remindersService.completarRecordatorio(id);
+      const response = await remindersService.completarRecordatorio(id, getUserId());
       if (response.success) {
         await loadReminders();
       } else {
@@ -404,12 +412,12 @@ export default function RemindersPage() {
                       </span>
                       {reminder.clientId && (
                         <span>
-                          Cliente: {data.getClientById(reminder.clientId)?.name || 'No encontrado'}
+                          Cliente: {data.getClientById(reminder.clientId)?.name || (reminder as any).nombre_cliente || 'No encontrado'}
                         </span>
                       )}
                       {reminder.vehicleId && (
                         <span>
-                          Vehículo: {data.getVehicleById(reminder.vehicleId)?.licensePlate || 'No encontrado'}
+                          Vehículo: {data.getVehicleById(reminder.vehicleId)?.licensePlate || (reminder as any).info_vehiculo || 'No encontrado'}
                         </span>
                       )}
                     </div>
@@ -444,7 +452,7 @@ export default function RemindersPage() {
                     )}
 
                     <button
-                      onClick={() => toggleReminder(reminder.id)}
+                      onClick={() => toggleReminder(reminder)}
                       className={`${
                         reminder.isActive ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800'
                       }`}
@@ -563,7 +571,7 @@ export default function RemindersPage() {
                     >
                       <option value="">Seleccionar cliente</option>
                       {clients.map(client => (
-                        <option key={client.usuario_id} value={client.usuario_id}>
+                        <option key={String(client.usuario_id)} value={String(client.usuario_id)}>
                           {client.nombre_completo} - {client.correo}
                         </option>
                       ))}

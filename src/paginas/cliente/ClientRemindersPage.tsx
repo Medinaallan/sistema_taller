@@ -275,10 +275,12 @@ export default function ClientRemindersPage() {
                                 <span className="break-words">
                                   Programado: {formatTriggerValue(reminder)}
                                 </span>
-                                {vehicle && (
+                                {vehicle ? (
                                   <span className="break-words">
                                     {vehicle.brand} {vehicle.model} - {vehicle.licensePlate}
                                   </span>
+                                ) : (
+                                  <span className="break-words">{(reminder as any).info_vehiculo || 'Vehículo: No encontrado'}</span>
                                 )}
                               </div>
                             </div>

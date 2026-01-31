@@ -145,27 +145,130 @@ async function createReminder(reminderData) {
 
 // Actualizar recordatorio - pendiente: implementar SP correspondiente
 async function updateReminder(id, updateData) {
-  throw new Error('Not implemented: updateReminder requires a stored procedure (SP_ACTUALIZAR_RECORDATORIO)');
+  try {
+    const pool = await getConnection();
+    const request = pool.request();
+
+    const recordatorio_id = id ? parseInt(id) : null;
+    const titulo = updateData.title || updateData.titulo || null;
+    const descripcion = updateData.description || updateData.descripcion || null;
+    // Accept both frontend field names and SP-style names
+    const fecha_recordatorio = (updateData.fecha_recordatorio)
+      ? new Date(updateData.fecha_recordatorio)
+      : (updateData.triggerValue ? new Date(updateData.triggerValue) : null);
+    const prioridad = (updateData.prioridad !== undefined && updateData.prioridad !== null)
+      ? parseInt(updateData.prioridad)
+      : (updateData.priority !== undefined && updateData.priority !== null)
+        ? parseInt(updateData.priority)
+        : null;
+    const editado_por = updateData.editedBy || updateData.editado_por || updateData.editadoPor || null;
+
+    request.input('recordatorio_id', sql.Int, recordatorio_id);
+    request.input('titulo', sql.NVarChar(100), titulo);
+    request.input('descripcion', sql.NVarChar(400), descripcion);
+    request.input('fecha_recordatorio', sql.DateTime, fecha_recordatorio);
+    request.input('prioridad', sql.TinyInt, prioridad);
+    request.input('editado_por', sql.Int, editado_por);
+
+    const result = await request.execute('SP_ACTUALIZAR_RECORDATORIO');
+    if (result && result.recordset && result.recordset[0]) {
+      return result.recordset[0];
+    }
+    return { response: '200 OK', msg: 'Actualizado', allow: 1 };
+  } catch (error) {
+    throw error;
+  }
 }
 
 // Eliminar recordatorio - pendiente: implementar SP correspondiente
 async function deleteReminder(id) {
-  throw new Error('Not implemented: deleteReminder requires a stored procedure (SP_ELIMINAR_RECORDATORIO)');
+  try {
+    const pool = await getConnection();
+    const request = pool.request();
+
+    const recordatorio_id = id ? parseInt(id) : null;
+
+    request.input('recordatorio_id', sql.Int, recordatorio_id);
+    request.input('eliminado_por', sql.Int, null);
+
+    const result = await request.execute('SP_ELIMINAR_RECORDATORIO');
+    if (result && result.recordset && result.recordset[0]) {
+      return result.recordset[0];
+    }
+    return { response: '200 OK', msg: 'Eliminado', allow: 1 };
+  } catch (error) {
+    throw error;
+  }
 }
 
 // Marcar como completado - pendiente: implementar SP correspondiente
 async function completeReminder(id) {
-  throw new Error('Not implemented: completeReminder requires a stored procedure (SP_MARCAR_COMPLETADO)');
+  try {
+    const pool = await getConnection();
+    const request = pool.request();
+
+    const recordatorio_id = id ? parseInt(id) : null;
+    const nuevo_estado = 'Completado';
+
+    request.input('recordatorio_id', sql.Int, recordatorio_id);
+    request.input('nuevo_estado', sql.VarChar(50), nuevo_estado);
+    request.input('editado_por', sql.Int, null);
+
+    const result = await request.execute('SP_CAMBIAR_ESTADO_RECORDATORIO');
+    if (result && result.recordset && result.recordset[0]) {
+      return result.recordset[0];
+    }
+    return { response: '200 OK', msg: 'Actualizado', allow: 1 };
+  } catch (error) {
+    throw error;
+  }
 }
 
 // Alternar estado activo - pendiente: implementar SP correspondiente
-async function toggleReminderActive(id) {
-  throw new Error('Not implemented: toggleReminderActive requires a stored procedure (SP_TOGGLE_RECORDATORIO)');
-}
+async function toggleReminderActive(id, payload = {}) {
+  try {
+    const pool = await getConnection();
+    // If payload provides nuevo_estado or editado_por, use them; otherwise infer by reading current state
+    let nuevo_estado = payload && payload.nuevo_estado ? String(payload.nuevo_estado) : null;
+    const editado_por = payload && (payload.editado_por || payload.editadoPor) ? payload.editado_por || payload.editadoPor : null;
 
-// Marcar notificación como enviada - pendiente: implementar SP correspondiente
-async function markNotificationSent(id) {
-  throw new Error('Not implemented: markNotificationSent requires a stored procedure (SP_MARK_NOTIFICATION_SENT)');
+    if (!nuevo_estado) {
+      // Obtener estado actual del recordatorio para inferir alternancia
+      const lookupReq = pool.request();
+      lookupReq.input('recordatorio_id', sql.Int, id ? parseInt(id) : null);
+      lookupReq.input('usuario_id', sql.Int, null);
+      lookupReq.input('vehiculo_id', sql.Int, null);
+      lookupReq.input('estado', sql.VarChar(50), null);
+      lookupReq.input('filtro_fecha', sql.VarChar(20), null);
+      const lookupRes = await lookupReq.execute('SP_OBTENER_RECORDATORIOS');
+      const row = lookupRes && lookupRes.recordset && lookupRes.recordset[0];
+      const currentEstado = row ? row.estado : null;
+
+      // Definir nuevo estado por defecto
+      nuevo_estado = 'Cancelado';
+      if (currentEstado) {
+        const s = String(currentEstado).toLowerCase();
+        if (s === 'pendiente') {
+          nuevo_estado = 'Cancelado';
+        } else {
+          nuevo_estado = 'Pendiente';
+        }
+      }
+    }
+
+    const req = pool.request();
+    req.input('recordatorio_id', sql.Int, id ? parseInt(id) : null);
+    req.input('nuevo_estado', sql.VarChar(50), nuevo_estado);
+    req.input('editado_por', sql.Int, editado_por);
+
+    const result = await req.execute('SP_CAMBIAR_ESTADO_RECORDATORIO');
+    if (result && result.recordset && result.recordset[0]) {
+      return result.recordset[0];
+    }
+    return { response: '200 OK', msg: 'Actualizado', allow: 1 };
+  } catch (error) {
+    throw error;
+  }
 }
 
 // Obtener recordatorios próximos a vencer usando SP_OBTENER_RECORDATORIOS
@@ -220,7 +323,6 @@ module.exports = {
   deleteReminder,
   completeReminder,
   toggleReminderActive,
-  markNotificationSent,
   getUpcomingReminders,
   getExpiredReminders
 };
