@@ -176,7 +176,10 @@ const POSPage: React.FC = () => {
       quantity: 1,
       total: precio,
       category: 'SERVICIOS',
-      type: 'service'
+      type: 'service',
+      isTaxed: true,
+      exento: false,
+      exonerado: false
     };
     
     // Usar directamente los datos del pendingInvoice
@@ -208,19 +211,26 @@ const POSPage: React.FC = () => {
   };
 
   const updateCartItemQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(id);
-      return;
-    }
+    setPosState(prev => {
+      const item = prev.cart.find(i => i.id === id);
+      if (!item) return prev;
 
-    setPosState(prev => ({
-      ...prev,
-      cart: prev.cart.map(item =>
-        item.id === id
-          ? { ...item, quantity, total: quantity * item.price }
-          : item
-      )
-    }));
+      // No permitir cambiar cantidad para servicios (siempre 1)
+      if (item.type === 'service') {
+        return prev;
+      }
+
+      if (quantity <= 0) {
+        return { ...prev, cart: prev.cart.filter(i => i.id !== id) };
+      }
+
+      return {
+        ...prev,
+        cart: prev.cart.map(i =>
+          i.id === id ? { ...i, quantity, total: quantity * i.price } : i
+        )
+      };
+    });
   };
 
   const removeFromCart = (id: string) => {
@@ -653,19 +663,39 @@ const POSPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                        className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300"
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center">{item.quantity}</span>
-                      <button
-                        onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                        className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300"
-                      >
-                        +
-                      </button>
+                      {item.type === 'service' ? (
+                        <>
+                          <button
+                            disabled
+                            className="w-6 h-6 bg-gray-200 rounded text-sm text-gray-400 cursor-not-allowed"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center">{item.quantity}</span>
+                          <button
+                            disabled
+                            className="w-6 h-6 bg-gray-200 rounded text-sm text-gray-400 cursor-not-allowed"
+                          >
+                            +
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                            className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center">{item.quantity}</span>
+                          <button
+                            onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                            className="w-6 h-6 bg-gray-200 rounded text-sm hover:bg-gray-300"
+                          >
+                            +
+                          </button>
+                        </>
+                      )}
                     </div>
                     <span className="font-bold">L.{item.total.toFixed(2)}</span>
                   </div>

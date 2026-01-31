@@ -201,32 +201,27 @@ class RemindersService {
    */
   async actualizarRecordatorio(id: string, updateData: Partial<Reminder>): Promise<ReminderResponse> {
     try {
-      console.log(`Actualizando recordatorio ${id}:`, updateData);
-      
+      const payload: any = {
+        recordatorio_id: id ? parseInt(id) : null,
+        titulo: updateData.title || updateData.titulo || '',
+        descripcion: updateData.description || updateData.descripcion || '',
+        fecha_recordatorio: typeof updateData.triggerValue === 'string' && updateData.triggerValue.length === 10
+          ? `${updateData.triggerValue}T00:00:00`
+          : updateData.triggerValue || null,
+        prioridad: (updateData as any).priority ?? (updateData as any).prioridad ?? 3,
+        editado_por: (updateData as any).editedBy || (updateData as any).editado_por || null
+      };
+
       const response = await fetch(`${API_BASE}/reminders/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
-      
-      if (data.success) {
-        console.log('Recordatorio actualizado exitosamente:', data.data);
-      } else {
-        console.error('Error al actualizar recordatorio:', data.message);
-      }
-
       return data;
     } catch (error) {
-      console.error('Error al actualizar recordatorio:', error);
-      return {
-        success: false,
-        message: 'Error al actualizar recordatorio',
-        error: error instanceof Error ? error.message : 'Error desconocido'
-      };
+      return { success: false, message: 'Error al actualizar recordatorio', error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
 
@@ -268,31 +263,22 @@ class RemindersService {
    */
   async completarRecordatorio(id: string): Promise<ReminderResponse> {
     try {
-      console.log(`Marcando recordatorio ${id} como completado...`);
-      
-      const response = await fetch(`${API_BASE}/reminders/${id}/complete`, {
+      const payload = {
+        recordatorio_id: id ? parseInt(id) : null,
+        nuevo_estado: 'Completado',
+        editado_por: null
+      };
+
+      const response = await fetch(`${API_BASE}/reminders/${id}/toggle`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
-      
-      if (data.success) {
-        console.log('Recordatorio marcado como completado');
-      } else {
-        console.error('Error al completar recordatorio:', data.message);
-      }
-
       return data;
     } catch (error) {
-      console.error('Error al completar recordatorio:', error);
-      return {
-        success: false,
-        message: 'Error al completar recordatorio',
-        error: error instanceof Error ? error.message : 'Error desconocido'
-      };
+      return { success: false, message: 'Error al completar recordatorio', error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
 
@@ -301,31 +287,35 @@ class RemindersService {
    */
   async alternarEstadoRecordatorio(id: string): Promise<ReminderResponse> {
     try {
-      console.log(`Alternando estado del recordatorio ${id}...`);
-      
       const response = await fetch(`${API_BASE}/reminders/${id}/toggle`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return { success: false, message: 'Error al cambiar estado del recordatorio', error: error instanceof Error ? error.message : 'Error desconocido' };
+    }
+  }
+
+  async alternarEstadoRecordatorioWithPayload(id: string, nuevoEstado?: string | null, editadoPor?: number | null): Promise<ReminderResponse> {
+    try {
+      const payload = {
+        recordatorio_id: id ? parseInt(id) : null,
+        nuevo_estado: nuevoEstado ?? null,
+        editado_por: editadoPor ?? null
+      };
+
+      const response = await fetch(`${API_BASE}/reminders/${id}/toggle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
-      
-      if (data.success) {
-        console.log('Estado del recordatorio actualizado');
-      } else {
-        console.error('Error al cambiar estado del recordatorio:', data.message);
-      }
-
       return data;
     } catch (error) {
-      console.error('Error al cambiar estado del recordatorio:', error);
-      return {
-        success: false,
-        message: 'Error al cambiar estado del recordatorio',
-        error: error instanceof Error ? error.message : 'Error desconocido'
-      };
+      return { success: false, message: 'Error al cambiar estado del recordatorio', error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
 

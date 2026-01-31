@@ -124,7 +124,8 @@ router.patch('/:id/complete', authenticate, async (req, res) => {
 router.patch('/:id/toggle', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedReminder = await remindersService.toggleReminderActive(id);
+    const payload = req.body || {};
+    const updatedReminder = await remindersService.toggleReminderActive(id, payload);
     res.json({ success: true, data: updatedReminder, message: 'Estado del recordatorio actualizado' });
   } catch (error) {
     console.error('Error al cambiar estado del recordatorio:', error);
@@ -135,40 +136,8 @@ router.patch('/:id/toggle', authenticate, async (req, res) => {
 
 // POST /api/reminders/:id/notify - Enviar notificación
 router.post('/:id/notify', authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Obtener el recordatorio para enviar notificación
-    const allReminders = await remindersService.getAllReminders();
-    const reminder = allReminders.find(r => r.id === id);
-    
-    if (!reminder) {
-      return res.status(404).json({ success: false, message: 'Recordatorio no encontrado' });
-    }
-    
-    // Aquí podrías integrar un servicio de email/SMS
-    // Por ahora solo marcamos como enviado
-    const updatedReminder = await remindersService.markNotificationSent(id);
-    
-    console.log(`📧 Notificación enviada para recordatorio: ${reminder.title}`);
-    console.log(`   Cliente ID: ${reminder.clientId}`);
-    console.log(`   Tipo: ${reminder.type === 'date' ? 'Por fecha' : 'Por kilometraje'}`);
-    
-    res.json({ 
-      success: true, 
-      data: updatedReminder, 
-      message: 'Notificación enviada correctamente',
-      notificationDetails: {
-        reminderId: reminder.id,
-        title: reminder.title,
-        clientId: reminder.clientId,
-        type: reminder.type
-      }
-    });
-  } catch (error) {
-    console.error('Error al enviar notificación:', error);
-    res.status(500).json({ success: false, message: 'Error al enviar notificación', error: error.message });
-  }
+  // Notificación por fuera del alcance del backend (no hay SP para marcar enviada)
+  res.status(501).json({ success: false, message: 'Not implemented: notification sending not available' });
 });
 
 module.exports = router;
