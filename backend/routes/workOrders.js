@@ -120,12 +120,11 @@ router.get('/client/:userId', async (req, res) => {
 
 // GET - Obtener todas las órdenes de trabajo con filtros
 router.get('/', async (req, res) => {
-  const { ot_id, cliente_id, placa, estado, numero_ot } = req.query;
+  const { ot_id, cliente_id, placa, estado, numero_ot, page = '1', limit = '20', includeCosts = 'false' } = req.query;
 
   try {
-    // Log suprimido: llamada GET /workorders con parámetros
     const pool = await getConnection();
-    
+
     const result = await pool.request()
       .input('ot_id', sql.Int, ot_id ? parseInt(ot_id) : null)
       .input('cliente_id', sql.Int, cliente_id ? parseInt(cliente_id) : null)
@@ -134,12 +133,54 @@ router.get('/', async (req, res) => {
       .input('numero_ot', sql.VarChar(20), numero_ot || null)
       .execute('SP_OBTENER_ORDENES_TRABAJO');
 
-    // Logs del SP suprimidos: resultados obtenidos
+    const allOrders = Array.isArray(result.recordset) ? result.recordset : [];
+    const totalCount = allOrders.length;
+
+    // Paginación simple en el servidor (si el SP no soporta limit/offset)
+    const p = Math.max(1, parseInt(String(page)) || 1);
+    const l = Math.max(1, parseInt(String(limit)) || 20);
+    const start = (p - 1) * l;
+    const pageOrders = allOrders.slice(start, start + l);
+
+    // Si se solicita, calcular costos sólo para la página actual
+    const includeCostsBool = String(includeCosts).toLowerCase() === 'true';
+    if (includeCostsBool && pageOrders.length > 0) {
+      // Obtener precios de tipos de servicio una vez
+      const serviceTypesResult = await pool.request().execute('SP_OBTENER_TIPOS_SERVICIO');
+      const serviceTypes = Array.isArray(serviceTypesResult.recordset) ? serviceTypesResult.recordset : [];
+      const priceByTipo = {};
+      serviceTypes.forEach(st => {
+        if (st.tipo_servicio_id !== undefined) {
+          priceByTipo[String(st.tipo_servicio_id)] = parseFloat(st.precio_base || 0);
+        }
+      });
+
+      // Calcular costos para cada OT de la página en paralelo
+      await Promise.all(pageOrders.map(async (order) => {
+        try {
+          const tareasResult = await pool.request()
+            .input('ot_id', sql.Int, order.ot_id)
+            .execute('SP_OBTENER_TAREAS_OT');
+
+          const totalCost = tareasResult.recordset.reduce((sum, tarea) => {
+            const precio = priceByTipo[String(tarea.tipo_servicio_id)] || 0;
+            return sum + precio;
+          }, 0);
+
+          order._calculatedCost = totalCost; // adjuntar costo calculado al registro
+        } catch (err) {
+          console.error(`Error calculando costo para OT ${order.ot_id}:`, err);
+          order._calculatedCost = 0;
+        }
+      }));
+    }
 
     res.json({
       success: true,
-      data: result.recordset,
-      count: result.recordset.length
+      data: pageOrders,
+      count: totalCount,
+      page: p,
+      limit: l
     });
   } catch (error) {
     console.error(' Error al obtener órdenes de trabajo:', error);

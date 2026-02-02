@@ -18,6 +18,7 @@ import ClientRemindersPage from './paginas/cliente/ClientRemindersPage';
 import { ClientServiceHistoryPage } from './paginas/cliente/ClientServiceHistoryPage';
 import { HelpPage } from './paginas/sistema/HelpPage';
 import { ReportsPage } from './paginas/administracion/ReportsPage';
+import ArqueosPage from './paginas/reports/ArqueosPage';
 import { WorkOrdersPage } from './paginas/administracion/WorkOrdersPage';
 import AppointmentsPage from './paginas/appointments/AppointmentsPage';
 import QuotationsPage from './paginas/quotations/QuotationsPage';
@@ -237,6 +238,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports/arqueos"
+        element={
+          <ProtectedRoute>
+            <ArqueosPage />
           </ProtectedRoute>
         }
       />
