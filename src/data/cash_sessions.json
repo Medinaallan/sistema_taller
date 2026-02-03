@@ -28,6 +28,62 @@
       "overages": 0,
       "closingTime": "2026-01-31T22:54:04.963Z",
       "closedBy": "Allan Admin"
+    },
+    {
+      "id": "e719622d-841b-4045-961e-346861f4148f",
+      "openedBy": "Allan Admin",
+      "cashier": "Allan Admin",
+      "openingAmount": 1000,
+      "openingNotes": "",
+      "openedAt": "2026-02-02T20:58:24.082Z",
+      "openingTime": "2026-02-02T20:58:24.082Z",
+      "status": "closed",
+      "movements": [
+        {
+          "id": "c87d6147-c698-4268-9e9f-2cd0e87172a5",
+          "sessionId": "e719622d-841b-4045-961e-346861f4148f",
+          "type": "in",
+          "amount": 27.8,
+          "reason": "Venta - 001-001-01-00000024",
+          "createdBy": "Allan Admin",
+          "createdAt": "2026-02-02T20:59:11.758Z"
+        }
+      ],
+      "closedAt": "2026-02-02T20:59:39.929Z",
+      "closingBy": "Allan Admin",
+      "closingAmount": 765,
+      "closingNotes": "",
+      "shortages": 0,
+      "overages": 0,
+      "closingTime": "2026-02-02T20:59:39.929Z",
+      "closedBy": "Allan Admin"
+    },
+    {
+      "id": "0210917e-fa49-4463-a440-fb69e69a85cb",
+      "openedBy": "Allan Admin",
+      "cashier": "Allan Admin",
+      "openingAmount": 0,
+      "openingNotes": "",
+      "openedAt": "2026-02-03T01:04:02.955Z",
+      "openingTime": "2026-02-03T01:04:02.955Z",
+      "status": "open",
+      "movements": [
+        {
+          "id": "34b97892-e4ef-4b95-806d-a27edc0f3b32",
+          "sessionId": "0210917e-fa49-4463-a440-fb69e69a85cb",
+          "type": "in",
+          "amount": 922.59,
+          "reason": "Venta - 001-001-01-00000025",
+          "createdBy": "Allan Admin",
+          "createdAt": "2026-02-03T01:04:10.386Z"
+        }
+      ],
+      "closedAt": null,
+      "closingBy": null,
+      "closingAmount": null,
+      "closingNotes": null,
+      "shortages": 0,
+      "overages": 0
     }
   ],
   "movements": [
@@ -39,6 +95,24 @@
       "reason": "Venta - 001-001-01-00000023",
       "createdBy": "Allan Admin",
       "createdAt": "2026-01-31T22:53:14.811Z"
+    },
+    {
+      "id": "c87d6147-c698-4268-9e9f-2cd0e87172a5",
+      "sessionId": "e719622d-841b-4045-961e-346861f4148f",
+      "type": "in",
+      "amount": 27.8,
+      "reason": "Venta - 001-001-01-00000024",
+      "createdBy": "Allan Admin",
+      "createdAt": "2026-02-02T20:59:11.758Z"
+    },
+    {
+      "id": "34b97892-e4ef-4b95-806d-a27edc0f3b32",
+      "sessionId": "0210917e-fa49-4463-a440-fb69e69a85cb",
+      "type": "in",
+      "amount": 922.59,
+      "reason": "Venta - 001-001-01-00000025",
+      "createdBy": "Allan Admin",
+      "createdAt": "2026-02-03T01:04:10.386Z"
     }
   ]
 }

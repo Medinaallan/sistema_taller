@@ -89,61 +89,7 @@ export const mockProducts: Product[] = [
 ];
 
 export const mockInventory: InventoryItem[] = [
-  {
-    id: 'inv-001',
-    productId: 'prod-001',
-    quantity: 25,
-    minStock: 10,
-    maxStock: 50,
-    location: 'Estante A-1',
-    lastEntryDate: new Date('2024-10-01'),
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-10-01'),
-  },
-  {
-    id: 'inv-002',
-    productId: 'prod-002',
-    quantity: 40,
-    minStock: 15,
-    maxStock: 60,
-    location: 'Estante A-2',
-    lastEntryDate: new Date('2024-09-15'),
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-09-15'),
-  },
-  {
-    id: 'inv-003',
-    productId: 'prod-003',
-    quantity: 15,
-    minStock: 8,
-    maxStock: 30,
-    location: 'Estante B-1',
-    lastEntryDate: new Date('2024-10-05'),
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-10-05'),
-  },
-  {
-    id: 'inv-004',
-    productId: 'prod-004',
-    quantity: 8,
-    minStock: 4,
-    maxStock: 20,
-    location: 'Bodega Principal',
-    lastEntryDate: new Date('2024-09-20'),
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-09-20'),
-  },
-  {
-    id: 'inv-005',
-    productId: 'prod-005',
-    quantity: 12,
-    minStock: 5,
-    maxStock: 25,
-    location: 'Estante C-1',
-    lastEntryDate: new Date('2024-10-10'),
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-10-10'),
-  }
+ 
 ];
 
 export const mockSuppliers: Supplier[] = [];
