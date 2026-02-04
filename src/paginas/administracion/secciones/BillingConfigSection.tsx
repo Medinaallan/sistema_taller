@@ -15,6 +15,8 @@ interface CAIFormData {
   tipoDocumento: string; // '01', '02', '03', '04', '05'
   puntoEmision: string;
   establecimiento: string;
+  ultimoNumeroUtilizado?: number;
+  activo?: boolean;
 }
 
 export function BillingConfigSection() {
@@ -32,6 +34,7 @@ export function BillingConfigSection() {
     establecimiento: '001'
   });
 
+  const [editingCAI, setEditingCAI] = useState<{ id: string; data: CAIFormData } | null>(null);
   const [showCAIForm, setShowCAIForm] = useState(false);
 
   // Cargar datos al montar el componente
@@ -42,12 +45,15 @@ export function BillingConfigSection() {
   const loadConfig = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Loading config...');
       await companyConfigService.initialize();
       const fullConfig = companyConfigService.getConfig();
+      console.log('📋 Full config received:', fullConfig);
+      console.log('📝 CAIs in config:', fullConfig.billingConfig.cais);
       setCompanyInfo(fullConfig.companyInfo);
       setConfig(fullConfig.billingConfig);
     } catch (error) {
-      console.error('Error cargando configuración:', error);
+      console.error('❌ Error cargando configuración:', error);
       showError('Error al cargar la configuración');
     } finally {
       setLoading(false);
@@ -155,6 +161,88 @@ export function BillingConfigSection() {
       console.error('Error eliminando CAI:', error);
       showError('Error al eliminar el CAI');
     }
+  };
+
+  const startEditCAI = (cai: any) => {
+    setEditingCAI({
+      id: cai.id,
+      data: {
+        cai: cai.cai,
+        fechaLimiteEmision: cai.fechaLimiteEmision.split('T')[0], // Formatear fecha
+        rangoInicial: cai.rangoInicial,
+        rangoFinal: cai.rangoFinal,
+        tipoDocumento: cai.tipoDocumento,
+        puntoEmision: cai.puntoEmision,
+        establecimiento: cai.establecimiento,
+        ultimoNumeroUtilizado: cai.ultimoNumeroUtilizado || 0,
+        activo: cai.activo
+      }
+    });
+    setShowCAIForm(false);
+  };
+
+  const handleEditCAIChange = (field: keyof CAIFormData, value: any) => {
+    if (!editingCAI) return;
+    setEditingCAI({
+      ...editingCAI,
+      data: {
+        ...editingCAI.data,
+        [field]: value
+      }
+    });
+  };
+
+  const saveEditCAI = async () => {
+    if (!editingCAI) return;
+
+    const { data } = editingCAI;
+
+    if (!data.cai || !data.fechaLimiteEmision || !data.rangoInicial || !data.rangoFinal) {
+      showError('Por favor complete todos los campos obligatorios del CAI');
+      return;
+    }
+
+    // Validaciones
+    if (data.rangoInicial.length > 8 || data.rangoFinal.length > 8) {
+      showError('Los rangos deben tener máximo 8 caracteres');
+      return;
+    }
+
+    if (data.puntoEmision.length !== 3 || data.establecimiento.length !== 3) {
+      showError('El punto de emisión y establecimiento deben tener 3 dígitos');
+      return;
+    }
+
+    try {
+      const caiData: CAIRegistroData & { ultimoNumeroUtilizado?: number; activo?: boolean } = {
+        cai: data.cai,
+        fechaLimiteEmision: data.fechaLimiteEmision,
+        rangoInicial: data.rangoInicial.padStart(8, '0'),
+        rangoFinal: data.rangoFinal.padStart(8, '0'),
+        tipoDocumento: data.tipoDocumento,
+        puntoEmision: data.puntoEmision,
+        establecimiento: data.establecimiento,
+        ultimoNumeroUtilizado: data.ultimoNumeroUtilizado,
+        activo: data.activo
+      };
+
+      const result = await companyConfigService.updateCAI(editingCAI.id, caiData);
+      
+      if (result.success) {
+        await loadConfig();
+        setEditingCAI(null);
+        showSuccess('CAI actualizado exitosamente');
+      } else {
+        showError(result.message || 'Error al actualizar el CAI');
+      }
+    } catch (error) {
+      console.error('Error actualizando CAI:', error);
+      showError('Error al actualizar el CAI');
+    }
+  };
+
+  const cancelEditCAI = () => {
+    setEditingCAI(null);
   };
 
   const validateRTN = (rtn: string): boolean => {
@@ -372,55 +460,94 @@ export function BillingConfigSection() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Códigos de Autorización de Impresión (CAI)</h3>
             <Button
-              onClick={() => setShowCAIForm(true)}
+              onClick={() => {
+                setEditingCAI(null);
+                setShowCAIForm(true);
+              }}
               className="bg-green-600 hover:bg-green-700"
+              disabled={editingCAI !== null}
             >
               + Agregar CAI
             </Button>
           </div>
 
           {/* Lista de CAIs existentes */}
-          {config.cais.length > 0 && (
+          {config.cais.length > 0 && !editingCAI && (
             <div className="space-y-4 mb-6">
+              <div className="text-xs text-gray-500 mb-2">
+                 {config.cais.length} CAI configurados
+              </div>
               {config.cais.map((cai) => (
                 <div key={cai.id} className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">CAI</p>
-                        <p className="text-sm text-gray-900 break-all">{cai.cai}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Tipo</p>
-                        <p className="text-sm text-gray-900">
-                          {cai.tipoDocumento} - {getDocumentTypeName(cai.tipoDocumento)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Correlativo</p>
-                        <p className="text-sm text-gray-900 font-mono">
-                          {cai.establecimiento}-{cai.puntoEmision}-{cai.tipoDocumento}-{cai.rangoInicial} al {cai.rangoFinal}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Vencimiento</p>
-                        <p className="text-sm text-gray-900">{cai.fechaLimiteEmision}</p>
-                      </div>
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        cai.estadoFiscal === 'Vigente' ? 'bg-green-100 text-green-800' :
+                        cai.estadoFiscal === 'Vencido' ? 'bg-red-100 text-red-800' :
+                        cai.estadoFiscal === 'Agotado' ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {cai.estadoFiscal || (cai.activo ? 'Activo' : 'Inactivo')}
+                      </span>
+                      <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-medium">
+                        {getDocumentTypeName(cai.tipoDocumento)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        cai.activo 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {cai.activo ? 'Activo' : 'Inactivo'}
-                      </span>
+                      <Button
+                        onClick={() => startEditCAI(cai)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm"
+                      >
+                        Editar
+                      </Button>
                       <Button
                         onClick={() => removeCAI(cai.id)}
-                        className="ml-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-sm"
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-sm"
                       >
                         Eliminar
                       </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-1">CAI</p>
+                      <p className="text-sm text-gray-900 font-mono break-all">{cai.cai}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-1">Formato de Numeración</p>
+                      <p className="text-sm text-gray-900 font-mono">
+                        {cai.establecimiento}-{cai.puntoEmision}-{cai.tipoDocumento}-XXXXXXXX
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-1">Rango Autorizado</p>
+                      <p className="text-sm text-gray-900 font-mono">
+                        {cai.rangoInicial} - {cai.rangoFinal}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 pt-3 border-t border-gray-200">
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-1">Fecha Límite de Emisión</p>
+                      <p className="text-sm text-gray-900">{new Date(cai.fechaLimiteEmision).toLocaleDateString('es-HN')}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-1">Último Número Utilizado</p>
+                      <p className="text-sm text-gray-900 font-mono">
+                        {cai.ultimoNumeroUtilizado || 0} / {parseInt(cai.rangoFinal)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 mb-1">Facturas Disponibles</p>
+                      <p className={`text-sm font-semibold ${
+                        (cai.facturasDisponibles || 0) < 100 ? 'text-red-600' :
+                        (cai.facturasDisponibles || 0) < 500 ? 'text-orange-600' :
+                        'text-green-600'
+                      }`}>
+                        {cai.facturasDisponibles || 0} restantes
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -428,8 +555,131 @@ export function BillingConfigSection() {
             </div>
           )}
 
+          {/* Formulario de edición de CAI */}
+          {editingCAI && (
+            <div className="border-2 border-blue-500 rounded-lg p-6 bg-blue-50 mb-6">
+              <h4 className="font-medium mb-4 text-blue-900">Editar CAI</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Input
+                    label="Código CAI (proporcionado por SAR)*"
+                    value={editingCAI.data.cai}
+                    onChange={(e) => handleEditCAIChange('cai', e.target.value.toUpperCase())}
+                    placeholder="Ej: A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6"
+                    maxLength={40}
+                  />
+                </div>
+                
+                <Select
+                  label="Tipo de Documento*"
+                  value={editingCAI.data.tipoDocumento}
+                  onChange={(e) => handleEditCAIChange('tipoDocumento', e.target.value)}
+                  options={[
+                    { value: '01', label: '01 - Factura' },
+                    { value: '02', label: '02 - Nota de Débito' },
+                    { value: '03', label: '03 - Nota de Crédito' },
+                    { value: '04', label: '04 - Nota de Remisión' },
+                    { value: '05', label: '05 - Comprobante de Retención' }
+                  ]}
+                />
+                <Input
+                  label="Fecha Límite de Emisión*"
+                  type="date"
+                  value={editingCAI.data.fechaLimiteEmision}
+                  onChange={(e) => handleEditCAIChange('fechaLimiteEmision', e.target.value)}
+                />
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    label="Establecimiento*"
+                    value={editingCAI.data.establecimiento}
+                    onChange={(e) => handleEditCAIChange('establecimiento', e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    placeholder="001"
+                    maxLength={3}
+                    helperText="3 dígitos"
+                  />
+                  <Input
+                    label="Punto de Emisión*"
+                    value={editingCAI.data.puntoEmision}
+                    onChange={(e) => handleEditCAIChange('puntoEmision', e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    placeholder="001"
+                    maxLength={3}
+                    helperText="3 dígitos"
+                  />
+                </div>
+                
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Formato de Correlativo:</p>
+                  <p className="text-lg font-mono text-blue-700">
+                    {editingCAI.data.establecimiento || '000'}-{editingCAI.data.puntoEmision || '000'}-{editingCAI.data.tipoDocumento}-XXXXXXXX
+                  </p>
+                </div>
+                
+                <Input
+                  label="Rango Inicial (8 dígitos)*"
+                  value={editingCAI.data.rangoInicial}
+                  onChange={(e) => handleEditCAIChange('rangoInicial', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="00000001"
+                  maxLength={8}
+                  helperText="Solo números, máximo 8 dígitos"
+                />
+                <Input
+                  label="Rango Final (8 dígitos)*"
+                  value={editingCAI.data.rangoFinal}
+                  onChange={(e) => handleEditCAIChange('rangoFinal', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="99999999"
+                  maxLength={8}
+                  helperText="Solo números, máximo 8 dígitos"
+                />
+                
+                <Input
+                  label="Último Número Utilizado"
+                  type="number"
+                  value={editingCAI.data.ultimoNumeroUtilizado?.toString() || '0'}
+                  onChange={(e) => handleEditCAIChange('ultimoNumeroUtilizado', parseInt(e.target.value) || 0)}
+                  helperText="Número del último correlativo utilizado"
+                />
+                
+                <div className="flex items-center pt-6">
+                  <input
+                    id="edit-activo"
+                    type="checkbox"
+                    checked={editingCAI.data.activo || false}
+                    onChange={(e) => handleEditCAIChange('activo', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 rounded"
+                  />
+                  <label htmlFor="edit-activo" className="ml-2 text-sm text-gray-700 font-medium">
+                    CAI Activo
+                  </label>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong></strong> Modificar estos datos puede afectar la numeración de facturas. 
+                  Asegúrese de que los cambios cumplan con la legislación fiscal hondureña.
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-4">
+                <Button
+                  onClick={cancelEditCAI}
+                  className="bg-gray-500 hover:bg-gray-600"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={saveEditCAI}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Guardar Cambios
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Formulario para nuevo CAI */}
-          {showCAIForm && (
+          {showCAIForm && !editingCAI && (
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-blue-50">
               <h4 className="font-medium mb-4">Nuevo CAI</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -531,10 +781,13 @@ export function BillingConfigSection() {
             </div>
           )}
 
-          {config.cais.length === 0 && !showCAIForm && (
+          {config.cais.length === 0 && !showCAIForm && !editingCAI && (
             <div className="text-center py-8 text-gray-500">
               <p className="mb-2">No hay CAI configurados</p>
               <p className="text-sm">Debe configurar al menos un CAI para poder emitir facturas</p>
+              <p className="text-xs mt-2 text-gray-400">
+                Debug: config.cais.length = {config.cais.length}
+              </p>
             </div>
           )}
         </div>

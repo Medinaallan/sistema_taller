@@ -24,7 +24,7 @@ export interface CompanyInfo {
   email?: string;
 }
 
-// Configuración de CAI según SP_REGISTRAR_RANGO_CAI
+// Configuración de CAI según SP_REGISTRAR_RANGO_CAI y SP_OBTENER_RANGOS_CAI
 export interface CAIConfig {
   id: string;
   cai: string;                    // VARCHAR(40)
@@ -36,6 +36,9 @@ export interface CAIConfig {
   fechaLimiteEmision: string;     // DATE
   activo: boolean;
   numeroActual?: string;          // Controlado por el SP
+  ultimoNumeroUtilizado?: number; // Último número utilizado
+  facturasDisponibles?: number;   // Facturas disponibles calculadas
+  estadoFiscal?: string;          // Estado fiscal: Vigente, Vencido, Agotado, Inactivo
 }
 
 // Configuración de facturación
@@ -196,10 +199,11 @@ class CompanyConfigService {
   }
 
   /**
-   * Obtiene la lista de CAIs desde el backend
+   * Obtiene la lista de CAIs desde el backend (usando SP_OBTENER_RANGOS_CAI)
    */
   async fetchCAIs(): Promise<CAIConfig[]> {
     try {
+      console.log('📥 Fetching CAIs from backend...');
       const response = await fetch(`${API_BASE_URL}/company-config/cais`);
       
       if (!response.ok) {
@@ -207,15 +211,33 @@ class CompanyConfigService {
       }
       
       const result = await response.json();
+      console.log('📦 Backend response:', result);
       
-      if (result.success && result.data) {
-        this.cachedCAIs = result.data;
-        return result.data;
+      if (result.success && result.cais) {
+        console.log(`✅ Found ${result.cais.length} CAIs in response`);
+        // Mapear los datos del SP al formato del frontend
+        this.cachedCAIs = result.cais.map((cai: any) => ({
+          id: cai.rango_id.toString(),
+          cai: cai.cai,
+          fechaLimiteEmision: cai.fecha_limite_emision,
+          rangoInicial: cai.rango_inicial,
+          rangoFinal: cai.rango_final,
+          tipoDocumento: cai.tipo_documento,
+          puntoEmision: cai.punto_emision,
+          establecimiento: cai.establecimiento,
+          activo: cai.activo,
+          ultimoNumeroUtilizado: cai.ultimo_numero_utilizado,
+          facturasDisponibles: cai.facturas_disponibles,
+          estadoFiscal: cai.estado_fiscal
+        }));
+        console.log('✅ Mapped CAIs:', this.cachedCAIs);
+        return this.cachedCAIs;
       }
       
+      console.warn('⚠️ No CAIs found in response or response not successful');
       return [];
     } catch (error) {
-      console.error('Error fetching CAIs:', error);
+      console.error('❌ Error fetching CAIs:', error);
       return [];
     }
   }
@@ -264,6 +286,31 @@ class CompanyConfigService {
       return result;
     } catch (error) {
       console.error('Error deleting CAI:', error);
+      return { success: false, message: 'Error de conexión con el servidor' };
+    }
+  }
+
+  /**
+   * Edita un CAI existente (SP_EDITAR_RANGO_CAI)
+   */
+  async updateCAI(caiId: string, caiData: CAIRegistroData & { ultimoNumeroUtilizado?: number; activo?: boolean }): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/company-config/cais/${caiId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(caiData)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Recargar la lista de CAIs
+        await this.fetchCAIs();
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error updating CAI:', error);
       return { success: false, message: 'Error de conexión con el servidor' };
     }
   }

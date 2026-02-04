@@ -195,54 +195,30 @@ router.get('/logo-base64', async (req, res) => {
 
 // ==================== RUTAS DE CAI ====================
 
-// GET - Obtener lista de CAIs
+// GET - Obtener lista de CAIs (usando SP_OBTENER_RANGOS_CAI)
 router.get('/cais', async (req, res) => {
   try {
+    const { rango_id, activo } = req.query;
+    
     const pool = await getConnection();
-    
-    // Verificar si la tabla existe primero
-    const tableCheck = await pool.request()
-      .query(`
-        SELECT COUNT(*) as table_count
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_NAME = 'rangos_cai'
-      `);
-    
-    if (tableCheck.recordset[0].table_count === 0) {
-      // La tabla aún no existe, devolver array vacío
-      return res.json({ success: true, data: [] });
-    }
-    
-    // Consulta directa a la tabla de rangos CAI
     const result = await pool.request()
-      .query(`
-        SELECT 
-          rango_id as id,
-          cai,
-          punto_emision as puntoEmision,
-          establecimiento,
-          tipo_documento as tipoDocumento,
-          rango_inicial as rangoInicial,
-          rango_final as rangoFinal,
-          numero_actual as numeroActual,
-          fecha_limite_emision as fechaLimiteEmision,
-          activo
-        FROM rangos_cai
-        WHERE activo = 1
-        ORDER BY fecha_creacion DESC
-      `);
-    
-    const cais = result.recordset.map(row => ({
-      ...row,
-      fechaLimiteEmision: row.fechaLimiteEmision ? new Date(row.fechaLimiteEmision).toISOString().split('T')[0] : null,
-      activo: row.activo === 1 || row.activo === true
-    }));
-    
-    res.json({ success: true, data: cais });
+      .input('rango_id', sql.Int, rango_id ? parseInt(rango_id) : null)
+      .input('activo', sql.Bit, activo !== undefined ? (activo === 'true' || activo === '1' ? 1 : 0) : null)
+      .execute('SP_OBTENER_RANGOS_CAI');
+
+    console.log('✅ CAIs obtenidos del SP:', result.recordset);
+
+    res.json({ 
+      success: true, 
+      cais: result.recordset || []
+    });
   } catch (error) {
-    console.error('Error obteniendo CAIs:', error);
-    // En caso de error, devolver array vacío en lugar de error 500
-    res.json({ success: true, data: [], message: 'Tabla de CAIs no disponible aún' });
+    console.error('❌ Error obteniendo rangos CAI:', error);
+    res.json({ 
+      success: true, 
+      cais: [], 
+      message: 'Error al obtener CAIs: ' + error.message 
+    });
   }
 });
 
@@ -303,6 +279,91 @@ router.post('/cais', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error al registrar el CAI', 
+      error: error.message 
+    });
+  }
+});
+
+// GET - Obtener todos los rangos CAI (usando SP_OBTENER_RANGOS_CAI)
+router.get('/cais', async (req, res) => {
+  try {
+    const { rango_id, activo } = req.query;
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('rango_id', sql.Int, rango_id ? parseInt(rango_id) : null)
+      .input('activo', sql.Bit, activo !== undefined ? (activo === 'true' || activo === '1' ? 1 : 0) : null)
+      .execute('SP_OBTENER_RANGOS_CAI');
+
+    res.json({ 
+      success: true, 
+      cais: result.recordset || []
+    });
+  } catch (error) {
+    console.error('Error obteniendo rangos CAI:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener rangos CAI', 
+      error: error.message 
+    });
+  }
+});
+
+// PUT - Editar rango CAI (usando SP_EDITAR_RANGO_CAI)
+router.put('/cais/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      cai,
+      puntoEmision,
+      establecimiento,
+      tipoDocumento,
+      rangoInicial,
+      rangoFinal,
+      fechaLimiteEmision,
+      ultimoNumeroUtilizado,
+      activo
+    } = req.body;
+
+    // Obtener el usuario que edita (por ahora hardcodeado, luego se obtendrá del token)
+    const editadoPor = req.user?.id || 1;
+
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('rango_id', sql.Int, id)
+      .input('cai', sql.VarChar(40), cai)
+      .input('punto_emision', sql.VarChar(3), puntoEmision)
+      .input('establecimiento', sql.VarChar(3), establecimiento)
+      .input('tipo_documento', sql.VarChar(2), tipoDocumento)
+      .input('rango_inicial', sql.VarChar(8), rangoInicial)
+      .input('rango_final', sql.VarChar(8), rangoFinal)
+      .input('fecha_limite_emision', sql.Date, fechaLimiteEmision)
+      .input('ultimo_numero_utilizado', sql.Int, ultimoNumeroUtilizado || 0)
+      .input('activo', sql.Bit, activo ? 1 : 0)
+      .input('editado_por', sql.Int, editadoPor)
+      .execute('SP_EDITAR_RANGO_CAI');
+
+    if (result.recordset && result.recordset.length > 0) {
+      const response = result.recordset[0];
+      if (response.status === '200 OK' || response.allow === 1) {
+        res.json({ 
+          success: true, 
+          message: response.msg || 'CAI editado correctamente' 
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: response.msg || 'Error al editar el CAI' 
+        });
+      }
+    } else {
+      res.json({ success: true, message: 'CAI editado correctamente' });
+    }
+  } catch (error) {
+    console.error('Error editando CAI:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al editar el CAI', 
       error: error.message 
     });
   }
