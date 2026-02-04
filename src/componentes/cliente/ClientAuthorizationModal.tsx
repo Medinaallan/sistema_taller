@@ -41,12 +41,22 @@ export default function ClientAuthorizationModal({
         comments.trim() || undefined
       );
 
-      // Si fue aprobada, cambiar el estado de la OT a "Control de calidad"
+      // Si fue aprobada, cambiar el estado de la OT a "Control de calidad" (valida que tareas estén completadas)
       if (action === 'approved') {
-        await workOrdersService.changeStatus(authorization.otId, 'Control de calidad');
+        const result = await workOrdersService.changeStatus(authorization.otId, 'Control de calidad');
+        
+        if (!result.success) {
+          showError(result.message || 'No se puede cambiar a Control de Calidad. Verifique que todas las tareas estén completadas.');
+          return;
+        }
       } else {
-        // Si fue rechazada, volver a "En espera de aprobación" o marcar como rechazada
-        await workOrdersService.changeStatus(authorization.otId, 'En espera de aprobación');
+        // Si fue rechazada, volver a "En espera de aprobación"
+        const result = await workOrdersService.changeStatus(authorization.otId, 'En espera de aprobación');
+        
+        if (!result.success) {
+          showError(result.message || 'Error al cambiar estado');
+          return;
+        }
       }
 
       showSuccess(action === 'approved' 

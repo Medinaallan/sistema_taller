@@ -271,7 +271,12 @@ const WorkOrdersPage = () => {
       });
 
       // Cambiar estado de la OT a "En espera de aprobación"
-      await workOrdersService.changeStatus(selectedOrderForDecision.id!, 'En espera de aprobación');
+      const statusResult = await workOrdersService.changeStatus(selectedOrderForDecision.id!, 'En espera de aprobación');
+
+      if (!statusResult.success) {
+        showError(statusResult.message || 'Error al cambiar estado');
+        return;
+      }
 
       showSuccess('Solicitud de firma enviada al cliente. El cliente podrá firmar la autorización desde su panel.');
       await loadWorkOrders();
@@ -285,8 +290,14 @@ const WorkOrdersPage = () => {
   const handleQualityControlComplete = async () => {
     if (selectedOrderForQC?.id) {
       try {
-        // Cambiar estado de la OT a "Control de calidad"
-        await workOrdersService.changeStatus(selectedOrderForQC.id, 'Control de calidad');
+        // Cambiar estado de la OT a "Control de calidad" (valida que tareas estén completadas)
+        const result = await workOrdersService.changeStatus(selectedOrderForQC.id, 'Control de calidad');
+        
+        if (!result.success) {
+          showError(result.message || 'No se puede cambiar a Control de Calidad');
+          return;
+        }
+        
         showSuccess('Vehículo movido a Control de Calidad exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (error) {
@@ -329,7 +340,13 @@ const WorkOrdersPage = () => {
   const handlePauseWorkOrder = async (orderId: string) => {
     if (await showConfirm('¿Estás seguro de que quieres pausar esta orden de trabajo?')) {
       try {
-        await workOrdersService.changeStatus(orderId, 'En espera de repuestos');
+        const result = await workOrdersService.changeStatus(orderId, 'En espera de repuestos');
+        
+        if (!result.success) {
+          showError(result.message || 'No se pudo pausar la orden');
+          return;
+        }
+        
         showSuccess('Orden de trabajo pausada exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (err) {
@@ -598,7 +615,15 @@ const WorkOrdersPage = () => {
                                Cancelada
                             </span>
                             <button
-                              onClick={() => workOrdersService.changeStatus(order.id!, 'Abierta').then(() => loadWorkOrders())}
+                              onClick={async () => {
+                                const result = await workOrdersService.changeStatus(order.id!, 'Abierta');
+                                if (result.success) {
+                                  showSuccess('Orden reactivada exitosamente');
+                                  await loadWorkOrders();
+                                } else {
+                                  showError(result.message || 'Error al reactivar orden');
+                                }
+                              }}
                               className="text-blue-600 hover:text-blue-900"
                               title="Reactivar orden"
                             >

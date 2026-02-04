@@ -314,39 +314,55 @@ class WorkOrdersService {
     }
   }
 
-  // Cambiar estado de orden de trabajo (AHORA GUARDA EN JSON LOCAL, NO EN SP)
-  async changeStatus(id: string, newStatus: WorkOrderData['estado']): Promise<WorkOrderData> {
-    console.log(`Cambiando estado de OT ${id} a ${newStatus} (solo JSON)`);
+  // Cambiar estado de orden de trabajo (usando SP_GESTIONAR_ESTADO_OT)
+  async changeStatus(id: string, newStatus: WorkOrderData['estado']): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
+    console.log(`🔄 Cambiando estado de OT ${id} a ${newStatus} (usando SP)`);
     
-    // Actualizar en el JSON local
-    await workOrderStatesManager.updateState(id, newStatus);
+    // Actualizar usando el SP que valida las tareas
+    const result = await workOrderStatesManager.updateState(id, newStatus);
     
-    // Obtener la orden actual para devolverla actualizada
+    if (!result.success) {
+      // El SP rechazó el cambio (ej: tareas pendientes)
+      console.warn('⚠️ Cambio de estado rechazado:', result.message);
+      return { 
+        success: false, 
+        message: result.message 
+      };
+    }
+    
+    // Obtener la orden actualizada
     const orders = await this.getAllWorkOrders();
     const updatedOrder = orders.find(o => o.id === id);
     
     if (!updatedOrder) {
-      throw new Error('Orden de trabajo no encontrada');
+      return { 
+        success: false, 
+        message: 'Orden de trabajo no encontrada' 
+      };
     }
     
-    return updatedOrder;
+    return { 
+      success: true, 
+      message: result.message,
+      order: updatedOrder 
+    };
   }
 
-  // Iniciar orden de trabajo (AHORA GUARDA EN JSON LOCAL)
-  async startWorkOrder(id: string): Promise<WorkOrderData> {
-    console.log(`🚀 Iniciando OT ${id} (solo cambia estado en JSON)`);
+  // Iniciar orden de trabajo
+  async startWorkOrder(id: string): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
+    console.log(`🚀 Iniciando OT ${id}`);
     return this.changeStatus(id, 'En proceso');
   }
 
-  // Completar orden de trabajo (AHORA GUARDA EN JSON LOCAL)
-  async completeWorkOrder(id: string): Promise<WorkOrderData> {
-    console.log(`✅ Completando OT ${id} (solo cambia estado en JSON)`);
+  // Completar orden de trabajo (usando SP - valida que tareas estén completadas)
+  async completeWorkOrder(id: string): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
+    console.log(`✅ Completando OT ${id} (usando SP con validación de tareas)`);
     return this.changeStatus(id, 'Completada');
   }
 
-  // Cancelar orden de trabajo (AHORA GUARDA EN JSON LOCAL)
-  async cancelWorkOrder(id: string): Promise<WorkOrderData> {
-    console.log(`❌ Cancelando OT ${id} (solo cambia estado en JSON)`);
+  // Cancelar orden de trabajo
+  async cancelWorkOrder(id: string): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
+    console.log(`❌ Cancelando OT ${id}`);
     return this.changeStatus(id, 'Cancelada');
   }
 

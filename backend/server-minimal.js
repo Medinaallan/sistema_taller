@@ -262,6 +262,8 @@ try {
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE ESTADOS DE OT
+// DESHABILITADO - Ahora se maneja directamente en server-minimal.js con SQL Server
+/*
 try {
   console.log('Cargando rutas de estados de órdenes de trabajo...');
   const workOrderStatesRouter = require('./routes/workOrderStates');
@@ -271,6 +273,8 @@ try {
   console.error('Error cargando rutas de estados de OT:', error.message);
   console.warn('El servidor continuará sin las rutas de estados de OT');
 }
+*/
+console.log('ℹ️ Rutas de estados de OT: Usando endpoints SQL Server directos (más abajo en el código)');
 
 //IMPORTAR Y CONFIGURAR RUTAS DE SOLICITUDES DE FIRMA
 try {
@@ -1024,67 +1028,121 @@ try {
   console.error('Error cargando endpoint de historial desde factura pagada:', error.message);
 }
 
-// ==================== ESTADOS DE OT (JSON LOCAL) ====================
-const STATES_FILE = path.join(__dirname, '../src/data/workOrders.json');
+// ==================== ESTADOS DE OT (SQL SERVER - SP) ====================
 
-// GET - Obtener todos los estados
+// GET - Obtener todos los estados (usando SP_OBTENER_ORDENES_TRABAJO)
 app.get('/api/workorder-states', async (req, res) => {
   try {
-    console.log('Leyendo estados desde:', STATES_FILE);
-    const data = await fs.promises.readFile(STATES_FILE, 'utf8');
-    const statesData = JSON.parse(data);
-    res.json({ success: true, data: statesData.workOrderStates || {} });
+    console.log('📥 Obteniendo todos los estados de órdenes de trabajo...');
+    const pool = await getConnection();
+    
+    // Obtener todas las órdenes de trabajo usando el SP
+    const result = await pool.request()
+      .execute('SP_OBTENER_ORDENES_TRABAJO');
+    
+    // Convertir a formato { "1": "Abierta", "2": "En proceso", ... }
+    const statesMap = {};
+    result.recordset.forEach(row => {
+      statesMap[row.ot_id] = row.estado_ot;
+    });
+    
+    console.log(`✅ ${result.recordset.length} estados obtenidos`);
+    res.json({ success: true, data: statesMap });
   } catch (error) {
-    console.error('Error leyendo estados:', error);
-    res.status(500).json({ success: false, message: 'Error al leer estados', error: error.message });
+    console.error('❌ Error obteniendo estados:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener estados', 
+      error: error.message 
+    });
   }
 });
 
-// PUT - Actualizar estado de una OT
+// PUT - Actualizar estado de una OT (usando SP_GESTIONAR_ESTADO_OT)
 app.put('/api/workorder-states/:otId', async (req, res) => {
   try {
     const { otId } = req.params;
     const { estado } = req.body;
     
     if (!estado) {
-      return res.status(400).json({ success: false, message: 'El campo "estado" es requerido' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'El campo "estado" es requerido' 
+      });
     }
     
-    console.log(`Actualizando estado de OT ${otId} a: ${estado}`);
+    console.log(`📝 Actualizando estado de OT ${otId} a: ${estado}`);
     
-    const data = await fs.promises.readFile(STATES_FILE, 'utf8');
-    const statesData = JSON.parse(data);
+    // Obtener usuario actual (hardcoded por ahora, después vendrá del token)
+    const registradoPor = req.user?.id || 1;
     
-    if (!statesData.workOrderStates) {
-      statesData.workOrderStates = {};
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('ot_id', sql.Int, parseInt(otId))
+      .input('nuevo_estado', sql.VarChar(50), estado)
+      .input('registrado_por', sql.Int, registradoPor)
+      .execute('SP_GESTIONAR_ESTADO_OT');
+    
+    const response = result.recordset[0];
+    
+    if (response.allow === 1) {
+      console.log(`✅ Estado de OT ${otId} actualizado exitosamente`);
+      res.json({ 
+        success: true, 
+        message: response.msg,
+        data: { otId, estado } 
+      });
+    } else {
+      console.warn(`⚠️ No se pudo actualizar estado: ${response.msg}`);
+      res.status(400).json({ 
+        success: false, 
+        message: response.msg 
+      });
     }
-    statesData.workOrderStates[otId] = estado;
-    
-    await fs.promises.writeFile(STATES_FILE, JSON.stringify(statesData, null, 2), 'utf8');
-    
-    console.log(` Estado de OT ${otId} actualizado a: ${estado}`);
-    res.json({ success: true, message: 'Estado actualizado', data: { otId, estado } });
   } catch (error) {
-    console.error('Error actualizando estado:', error);
-    res.status(500).json({ success: false, message: 'Error al actualizar estado', error: error.message });
+    console.error('❌ Error actualizando estado:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al actualizar estado', 
+      error: error.message 
+    });
   }
 });
 
-// GET - Obtener estado de una OT específica
+// GET - Obtener estado de una OT específica (usando SP_OBTENER_ORDENES_TRABAJO)
 app.get('/api/workorder-states/:otId', async (req, res) => {
   try {
     const { otId } = req.params;
-    const data = await fs.promises.readFile(STATES_FILE, 'utf8');
-    const statesData = JSON.parse(data);
-    const estado = statesData.workOrderStates?.[otId] || null;
-    res.json({ success: true, data: { otId, estado } });
+    console.log(`📋 Obteniendo estado de OT ${otId}...`);
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('ot_id', sql.Int, parseInt(otId))
+      .execute('SP_OBTENER_ORDENES_TRABAJO');
+    
+    const estado = result.recordset[0]?.estado_ot || null;
+    
+    if (estado) {
+      console.log(`✅ Estado de OT ${otId}: ${estado}`);
+    } else {
+      console.log(`⚠️ OT ${otId} no encontrada`);
+    }
+    
+    res.json({ 
+      success: true, 
+      data: { otId, estado } 
+    });
   } catch (error) {
-    console.error('Error leyendo estado:', error);
-    res.status(500).json({ success: false, message: 'Error al leer estado', error: error.message });
+    console.error('❌ Error leyendo estado:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al leer estado', 
+      error: error.message 
+    });
   }
 });
 
-console.log('Rutas de estados de OT cargadas: /api/workorder-states');
+console.log('✅ Rutas de estados de OT cargadas: /api/workorder-states (usando SQL Server)');
 
 // 404 - Debe estar AL FINAL, después de todas las rutas
 app.use('*', (req, res) => {

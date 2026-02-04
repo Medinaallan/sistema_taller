@@ -59,8 +59,8 @@ class WorkOrderStatesManager {
     return state || null;
   }
 
-  // Actualizar el estado de una OT en el backend
-  async updateState(otId: string, newState: WorkOrderStatus): Promise<void> {
+  // Actualizar el estado de una OT en el backend (usando SP_GESTIONAR_ESTADO_OT)
+  async updateState(otId: string, newState: WorkOrderStatus): Promise<{ success: boolean; message?: string }> {
     console.log(`💾 Actualizando estado de OT ${otId} a ${newState}...`);
     console.log(`🔗 URL: ${API_BASE_URL}/workorder-states/${otId}`);
     
@@ -75,24 +75,22 @@ class WorkOrderStatesManager {
 
       console.log(`📡 Respuesta HTTP: ${response.status} ${response.statusText}`);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ Error HTTP ${response.status}:`, errorText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
       const result = await response.json();
       console.log('📦 Resultado:', result);
       
       if (result.success) {
         this.states[otId] = newState;
         console.log('✅ Estado actualizado correctamente en backend');
+        return { success: true, message: result.message };
       } else {
-        throw new Error(result.message || 'Error al actualizar estado');
+        // El SP rechazó el cambio (ej: tareas pendientes)
+        console.warn('⚠️ El cambio de estado fue rechazado:', result.message);
+        return { success: false, message: result.message };
       }
     } catch (error) {
       console.error('❌ Error actualizando estado en backend:', error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      return { success: false, message: `Error de conexión: ${errorMessage}` };
     }
   }
 
