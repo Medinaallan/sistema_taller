@@ -7,12 +7,100 @@ import {
 } from '@heroicons/react/24/outline';
 import { companyConfigService, CompanyInfo } from '../../../servicios/companyConfigService';
 
+// Componentes de Input fuera del componente principal para evitar re-renders
+interface InputFieldProps {
+  label: string;
+  field: keyof CompanyInfo;
+  type?: string;
+  required?: boolean;
+  className?: string;
+  placeholder?: string;
+  isEditing: boolean;
+  editData: CompanyInfo | null;
+  companyData: CompanyInfo | null;
+  onInputChange: (field: keyof CompanyInfo, value: string | number) => void;
+}
+
+const InputField = ({ 
+  label, 
+  field, 
+  type = 'text', 
+  required = false,
+  className = '',
+  placeholder = '',
+  isEditing,
+  editData,
+  companyData,
+  onInputChange
+}: InputFieldProps) => (
+  <div className={className}>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {isEditing ? (
+      <input
+        type={type}
+        value={editData?.[field] ?? ''}
+        onChange={(e) => onInputChange(field, e.target.value)}
+        placeholder={placeholder}
+        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      />
+    ) : (
+      <p className="mt-1 text-sm text-gray-900">
+        {companyData?.[field] || 'No especificado'}
+      </p>
+    )}
+  </div>
+);
+
+interface TextAreaFieldProps {
+  label: string;
+  field: keyof CompanyInfo;
+  rows?: number;
+  className?: string;
+  isEditing: boolean;
+  editData: CompanyInfo | null;
+  companyData: CompanyInfo | null;
+  onInputChange: (field: keyof CompanyInfo, value: string | number) => void;
+}
+
+const TextAreaField = ({ 
+  label, 
+  field, 
+  rows = 3,
+  className = '',
+  isEditing,
+  editData,
+  companyData,
+  onInputChange
+}: TextAreaFieldProps) => (
+  <div className={className}>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      {label}
+    </label>
+    {isEditing ? (
+      <textarea
+        rows={rows}
+        value={editData?.[field] ?? ''}
+        onChange={(e) => onInputChange(field, e.target.value)}
+        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      />
+    ) : (
+      <p className="mt-1 text-sm text-gray-900">
+        {companyData?.[field] || 'No especificado'}
+      </p>
+    )}
+  </div>
+);
+
 export function CompanyDataSection() {
   const [companyData, setCompanyData] = useState<CompanyInfo | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<CompanyInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     loadCompanyData();
@@ -67,6 +155,54 @@ export function CompanyDataSection() {
   const handleCancel = () => {
     setEditData(companyData);
     setIsEditing(false);
+    setLogoPreview(null);
+  };
+
+  const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar tamaño (2MB máximo)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('El archivo es muy grande. Tamaño máximo: 2MB');
+      return;
+    }
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      alert('Solo se permiten archivos de imagen');
+      return;
+    }
+
+    // Mostrar preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLogoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Subir a Digital Ocean Spaces
+    setUploadingLogo(true);
+    try {
+      const result = await companyConfigService.uploadLogo(file);
+      if (result.success && result.url) {
+        // Actualizar la URL del logo en los datos editables
+        setEditData(prev => prev ? ({
+          ...prev,
+          logoUrl: result.url!
+        }) : null);
+        alert('Logo subido exitosamente');
+      } else {
+        alert('Error al subir el logo: ' + result.message);
+        setLogoPreview(null);
+      }
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      alert('Error al subir el logo');
+      setLogoPreview(null);
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   // Estado de carga
@@ -101,71 +237,6 @@ export function CompanyDataSection() {
       </div>
     );
   }
-
-  const InputField = ({ 
-    label, 
-    field, 
-    type = 'text', 
-    required = false,
-    className = '',
-    placeholder = ''
-  }: {
-    label: string;
-    field: keyof CompanyInfo;
-    type?: string;
-    required?: boolean;
-    className?: string;
-    placeholder?: string;
-  }) => (
-    <div className={className}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {isEditing ? (
-        <input
-          type={type}
-          value={editData[field] ?? ''}
-          onChange={(e) => handleInputChange(field, e.target.value)}
-          placeholder={placeholder}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-        />
-      ) : (
-        <p className="mt-1 text-sm text-gray-900">
-          {companyData[field] || 'No especificado'}
-        </p>
-      )}
-    </div>
-  );
-
-  const TextAreaField = ({ 
-    label, 
-    field, 
-    rows = 3,
-    className = ''
-  }: {
-    label: string;
-    field: keyof CompanyInfo;
-    rows?: number;
-    className?: string;
-  }) => (
-    <div className={className}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-      </label>
-      {isEditing ? (
-        <textarea
-          rows={rows}
-          value={editData[field] ?? ''}
-          onChange={(e) => handleInputChange(field, e.target.value)}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-        />
-      ) : (
-        <p className="mt-1 text-sm text-gray-900">
-          {companyData[field] || 'No especificado'}
-        </p>
-      )}
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -220,18 +291,30 @@ export function CompanyDataSection() {
             label="Nombre de la Empresa"
             field="nombreEmpresa"
             required
+            isEditing={isEditing}
+            editData={editData}
+            companyData={companyData}
+            onInputChange={handleInputChange}
           />
           <InputField
             label="RTN"
             field="rtn"
             placeholder="0801-1998-123456"
             required
+            isEditing={isEditing}
+            editData={editData}
+            companyData={companyData}
+            onInputChange={handleInputChange}
           />
           <InputField
             label="Dirección"
             field="direccion"
             className="md:col-span-2"
             required
+            isEditing={isEditing}
+            editData={editData}
+            companyData={companyData}
+            onInputChange={handleInputChange}
           />
         </div>
       </div>
@@ -250,11 +333,19 @@ export function CompanyDataSection() {
             field="telefono"
             type="tel"
             placeholder="2234-5678"
+            isEditing={isEditing}
+            editData={editData}
+            companyData={companyData}
+            onInputChange={handleInputChange}
           />
           <InputField
             label="Correo Electrónico"
             field="correo"
             type="email"
+            isEditing={isEditing}
+            editData={editData}
+            companyData={companyData}
+            onInputChange={handleInputChange}
           />
         </div>
       </div>
@@ -325,6 +416,10 @@ export function CompanyDataSection() {
             label="Mensaje Pie de Factura"
             field="mensajePieFactura"
             rows={3}
+            isEditing={isEditing}
+            editData={editData}
+            companyData={companyData}
+            onInputChange={handleInputChange}
           />
         </div>
       </div>
@@ -335,42 +430,92 @@ export function CompanyDataSection() {
           <h3 className="text-lg font-medium text-gray-900">Logo de la Empresa</h3>
         </div>
         <div className="px-6 py-4">
-          {isEditing ? (
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-              <div className="space-y-1 text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <div className="flex text-sm text-gray-600">
-                  <label
-                    htmlFor="logo-upload"
-                    className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                  >
-                    <span>Subir logo</span>
-                    <input id="logo-upload" name="logo-upload" type="file" className="sr-only" />
-                  </label>
-                  <p className="pl-1">o arrastrar y soltar</p>
-                </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF hasta 2MB</p>
+          {/* Vista del logo actual o preview */}
+          <div className="mb-4 text-center">
+            {(logoPreview || editData?.logoUrl || companyData?.logoUrl) ? (
+              <div className="mx-auto relative inline-block">
+                <img
+                  src={logoPreview || editData?.logoUrl || companyData?.logoUrl}
+                  alt="Logo de la empresa"
+                  className="h-32 w-auto max-w-xs object-contain rounded-lg border-2 border-gray-200"
+                />
+                {uploadingLogo && (
+                  <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                )}
               </div>
+            ) : (
+              <div className="mx-auto h-32 w-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                <BuildingOfficeIcon className="h-12 w-12 text-gray-400" />
+              </div>
+            )}
+          </div>
+
+          {isEditing ? (
+            <div>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
+                <div className="space-y-1 text-center">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    stroke="currentColor"
+                    fill="none"
+                    viewBox="0 0 48 48"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div className="flex text-sm text-gray-600">
+                    <label
+                      htmlFor="logo-upload"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                    >
+                      <span>{uploadingLogo ? 'Subiendo...' : 'Subir logo'}</span>
+                      <input 
+                        id="logo-upload" 
+                        name="logo-upload" 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        disabled={uploadingLogo}
+                        className="sr-only" 
+                      />
+                    </label>
+                    <p className="pl-1">o arrastrar y soltar</p>
+                  </div>
+                  <p className="text-xs text-gray-500">PNG, JPG, GIF hasta 2MB</p>
+                  <p className="text-xs text-blue-600 font-medium mt-2">Se subirá a Digital Ocean Spaces</p>
+                </div>
+              </div>
+              
+              {editData?.logoUrl && (
+                <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                  <p className="text-green-800 font-medium">✓ Logo configurado</p>
+                  <p className="text-green-600 text-xs mt-1 break-all">{editData.logoUrl}</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center">
-              <div className="mx-auto h-24 w-24 bg-gray-100 rounded-lg flex items-center justify-center">
-                <BuildingOfficeIcon className="h-8 w-8 text-gray-400" />
-              </div>
-              <p className="mt-2 text-sm text-gray-500">No hay logo cargado</p>
+              {companyData?.logoUrl ? (
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium">Logo cargado</p>
+                  <a 
+                    href={companyData.logoUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 break-all text-xs"
+                  >
+                  </a>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No hay logo cargado</p>
+              )}
             </div>
           )}
         </div>

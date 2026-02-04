@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -26,6 +26,7 @@ import { getRoleText } from '../../utilidades/globalMockDatabase';
 import { clsx } from 'clsx';
 import { ThemeDropdown } from '../ui/ThemeDropdown';
 import NotificationsDropdown from '../cliente/NotificationsDropdown';
+import companyConfigService from '../../servicios/companyConfigService';
 
 interface LayoutProps {
   children: ReactNode;
@@ -98,10 +99,33 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   
   // Obtener cliente ID si el usuario es cliente
   const clientId = state.user?.role === 'client' ? state.user.id : null;
   const { unreadCount, refreshCount } = useNotifications(clientId, state.user?.role === 'client');
+
+  // Cargar logo de la empresa
+  useEffect(() => {
+    const loadCompanyLogo = async () => {
+      try {
+        const companyInfo = companyConfigService.getCompanyInfo();
+        if (!companyInfo) {
+          await companyConfigService.fetchCompanyInfo();
+          const updatedInfo = companyConfigService.getCompanyInfo();
+          if (updatedInfo?.logoUrl) {
+            setCompanyLogo(updatedInfo.logoUrl);
+          }
+        } else if (companyInfo.logoUrl) {
+          setCompanyLogo(companyInfo.logoUrl);
+        }
+      } catch (error) {
+        console.error('Error cargando logo:', error);
+      }
+    };
+    
+    loadCompanyLogo();
+  }, []);
 
   const handleLogout = () => {
     dispatch({ type: 'LOGOUT' });
@@ -136,8 +160,25 @@ export function Layout({ children }: LayoutProps) {
         <div className="flex h-16 items-center justify-between border-b px-4" style={{ borderColor: colors.primaryDark }}>
           {!state.isNavCollapsed && (
             <div className="flex items-center">
-              <WrenchScrewdriverIcon className="h-14 w-14" style={{ color: colors.primaryLight }} />
-              <span className="ml-2 text-xl font-bold" style={{ color: colors.text.primary }}>TALLER</span>
+              {companyLogo ? (
+                <img 
+                  src={companyLogo} 
+                  alt="Logo de la empresa" 
+                  className="h-12 w-auto object-contain"
+                  style={{
+                    filter: 'brightness(0) invert(1)',
+                    opacity: 0.95
+                  }}
+                  onError={(e) => {
+                    // Si falla la carga, mostrar el icono por defecto
+                    e.currentTarget.style.display = 'none';
+                    const icon = e.currentTarget.nextElementSibling;
+                    if (icon) (icon as HTMLElement).style.display = 'block';
+                  }}
+                />
+              ) : (
+                <WrenchScrewdriverIcon className="h-14 w-14" style={{ color: colors.primaryLight }} />
+              )}
             </div>
           )}
           <button 

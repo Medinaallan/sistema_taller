@@ -1095,5 +1095,118 @@
     "estado": "pagada",
     "createdAt": "2026-02-03T01:04:10.381Z",
     "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1770160239130-86e68f",
+    "numero": "001-001-01-00000026",
+    "fecha": "2026-02-03T23:10:39.126Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      }
+    ],
+    "subtotal": 19.65217391304348,
+    "exento": 12.5,
+    "exonerado": 0,
+    "tax": 2.947826086956521,
+    "discount": 0,
+    "total": 35.1,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-02-03T23:10:39.130Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1770162282665-94ba6a",
+    "numero": "001-001-01-00000027",
+    "fecha": "2026-02-03T23:44:42.660Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "1",
+        "name": "ACEITE DE MOTOR 10W-30",
+        "quantity": 1,
+        "price": 12.5,
+        "total": 12.5,
+        "type": "Unidad"
+      },
+      {
+        "id": "2",
+        "name": "ACEITE SINTÉTICO 5W-40",
+        "quantity": 1,
+        "price": 15.3,
+        "total": 15.3,
+        "type": "product"
+      },
+      {
+        "id": "4",
+        "name": "LÍQUIDO REFRIGERANTE ROJO",
+        "quantity": 1,
+        "price": 22.6,
+        "total": 22.6,
+        "type": "product"
+      },
+      {
+        "id": "a6e75b66-2c2c-4016-8f90-e2552d698cb1",
+        "name": "PRODUCTO DE PRUEBA",
+        "quantity": 1,
+        "price": 100,
+        "total": 100,
+        "type": "unidad"
+      }
+    ],
+    "subtotal": 101.27826086956523,
+    "exento": 11.875,
+    "exonerado": 14.535,
+    "tax": 15.191739130434769,
+    "discount": 7.52,
+    "total": 142.88,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-02-03T23:44:42.665Z",
+    "createdBy": "Allan Admin"
+  },
+  {
+    "id": "inv-1770168773926-bcf5d9",
+    "numero": "001-001-01-00000028",
+    "fecha": "2026-02-04T01:32:53.922Z",
+    "clientId": null,
+    "clientName": "CONSUMIDOR FINAL",
+    "items": [
+      {
+        "id": "3",
+        "name": "BATERÍA ACDELCO 12V",
+        "quantity": 1,
+        "price": 899.99,
+        "total": 899.99,
+        "type": "product"
+      }
+    ],
+    "subtotal": 782.6,
+    "exento": 0,
+    "exonerado": 0,
+    "tax": 117.38999999999999,
+    "discount": 0,
+    "total": 899.99,
+    "metodoPago": "Efectivo",
+    "estado": "pagada",
+    "createdAt": "2026-02-04T01:32:53.926Z",
+    "createdBy": "Allan Admin"
   }
 ]

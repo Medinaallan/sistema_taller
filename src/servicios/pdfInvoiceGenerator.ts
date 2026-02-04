@@ -3,25 +3,77 @@ import autoTable from 'jspdf-autotable';
 import { Invoice } from './invoicesService';
 import companyConfigService from './companyConfigService';
 
+type InvoiceFormat = 'carta' | 'ticket';
+
 class PDFInvoiceGenerator {
   
+  /**
+   * Convierte una imagen URL a base64 para evitar problemas de CORS
+   * Usa el backend como proxy para evitar restricciones de CORS
+   */
+  private async imageUrlToBase64(url: string): Promise<string | null> {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const baseUrl = apiUrl.replace(/\/$/, '').endsWith('/api') 
+        ? apiUrl.replace(/\/api$/, '') 
+        : apiUrl.replace(/\/$/, '');
+      
+      const response = await fetch(`${baseUrl}/api/company-config/logo-base64?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      
+      if (data.success && data.data?.base64) {
+        return data.data.base64;
+      }
+      
+      console.error('Error en respuesta del servidor:', data);
+      return null;
+    } catch (error) {
+      console.error('Error convirtiendo imagen a base64:', error);
+      return null;
+    }
+  }
+
   /**
    * Obtiene la información de la empresa desde la configuración
    */
   private getEmpresaInfo() {
     const companyInfo = companyConfigService.getCompanyInfo();
-    const cai = companyConfigService.getActiveCAI();
+    const cai = companyConfigService.getActiveCAI('01'); // CAI para facturas
+    
+    if (!companyInfo) {
+      return {
+        nombre: 'EMPRESA NO CONFIGURADA',
+        rtn: '0000-0000-000000',
+        direccion: 'Dirección no configurada',
+        telefono: 'N/A',
+        correo: 'N/A',
+        cai: 'NO CONFIGURADO',
+        rangoInicial: '',
+        rangoFinal: '',
+        fechaLimiteEmision: '',
+        establecimiento: '001',
+        puntoEmision: '001',
+        tipoDocumento: '01',
+        logoUrl: null,
+        mensajePie: '¡Gracias por su preferencia!'
+      };
+    }
     
     return {
-      nombre: companyInfo.businessName,
-      rtn: companyInfo.rtn,
-      direccion: `${companyInfo.address}, ${companyInfo.city}, ${companyInfo.state}`,
-      telefono: companyInfo.phone,
-      correo: companyInfo.email,
+      nombre: companyInfo.businessName || companyInfo.nombreEmpresa || 'N/A',
+      rtn: companyInfo.rtn || '0000-0000-000000',
+      direccion: companyInfo.address || companyInfo.direccion || 'N/A',
+      telefono: companyInfo.phone || companyInfo.telefono || 'N/A',
+      correo: companyInfo.email || companyInfo.correo || 'N/A',
       cai: cai?.cai || 'NO CONFIGURADO',
       rangoInicial: cai?.rangoInicial || '',
       rangoFinal: cai?.rangoFinal || '',
-      fechaLimiteEmision: cai?.fechaLimiteEmision ? new Date(cai.fechaLimiteEmision).toLocaleDateString('es-HN') : ''
+      fechaLimiteEmision: cai?.fechaLimiteEmision ? new Date(cai.fechaLimiteEmision).toLocaleDateString('es-HN') : '',
+      establecimiento: cai?.establecimiento || '001',
+      puntoEmision: cai?.puntoEmision || '001',
+      tipoDocumento: cai?.tipoDocumento || '01',
+      logoUrl: companyInfo.logoUrl || null,
+      mensajePie: companyInfo.mensajePieFactura || '¡Gracias por su preferencia!'
     };
   }
 
@@ -240,7 +292,7 @@ class PDFInvoiceGenerator {
   /**
    * Genera factura en formato ticket (80mm de ancho) para impresoras POS
    */
-  generateTicketInvoice(invoice: Invoice): jsPDF {
+  async generateTicketInvoice(invoice: Invoice): Promise<jsPDF> {
     const ticketWidth = 80; // mm
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -255,6 +307,22 @@ class PDFInvoiceGenerator {
 
     // Obtener información de la empresa desde la configuración
     const EMPRESA_INFO = this.getEmpresaInfo();
+
+    // ========== LOGO (si existe) ==========
+    if (EMPRESA_INFO.logoUrl) {
+      try {
+        const logoBase64 = await this.imageUrlToBase64(EMPRESA_INFO.logoUrl);
+        if (logoBase64) {
+          const logoSize = 20; // mm
+          const logoX = (pageWidth - logoSize) / 2;
+          doc.addImage(logoBase64, 'PNG', logoX, yPos, logoSize, logoSize, undefined, 'FAST');
+          yPos += logoSize + 2;
+        }
+      } catch (error) {
+        console.error('Error agregando logo al ticket:', error);
+        // Si falla, continuar sin logo
+      }
+    }
 
     // ========== ENCABEZADO ==========
     doc.setFontSize(12);
@@ -401,8 +469,9 @@ class PDFInvoiceGenerator {
     yPos += 4;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'italic');
-    doc.text('¡Gracias por su preferencia!', pageWidth / 2, yPos, { align: 'center' });
-    yPos += 4;
+    const mensajePieLineas = doc.splitTextToSize(EMPRESA_INFO.mensajePie, contentWidth);
+    doc.text(mensajePieLineas, pageWidth / 2, yPos, { align: 'center' });
+    yPos += mensajePieLineas.length * 3.5 + 1;
     doc.setFontSize(6);
     doc.text(`Generado: ${new Date().toLocaleString('es-HN')}`, pageWidth / 2, yPos, { align: 'center' });
 
@@ -469,10 +538,10 @@ class PDFInvoiceGenerator {
   /**
    * Descarga la factura como PDF
    */
-  downloadInvoice(invoice: Invoice, format: 'carta' | 'ticket' = 'carta'): void {
+  async downloadInvoice(invoice: Invoice, format: 'carta' | 'ticket' = 'carta'): Promise<void> {
     const doc = format === 'carta' 
       ? this.generateCartaInvoice(invoice)
-      : this.generateTicketInvoice(invoice);
+      : await this.generateTicketInvoice(invoice);
     
     const fileName = `Factura_${invoice.numero}_${format}.pdf`;
     doc.save(fileName);
@@ -481,10 +550,10 @@ class PDFInvoiceGenerator {
   /**
    * Abre la factura en nueva pestaña para imprimir directamente
    */
-  printInvoice(invoice: Invoice, format: 'carta' | 'ticket' = 'carta'): void {
+  async printInvoice(invoice: Invoice, format: InvoiceFormat = 'carta'): Promise<void> {
     const doc = format === 'carta' 
       ? this.generateCartaInvoice(invoice)
-      : this.generateTicketInvoice(invoice);
+      : await this.generateTicketInvoice(invoice);
     
     // Abrir en nueva pestaña
     const pdfBlob = doc.output('blob');

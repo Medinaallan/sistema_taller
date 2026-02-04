@@ -4,7 +4,7 @@ import { showError, showSuccess, showWarning, showConfirm } from '../../../utili
 import companyConfigService, {
   type CompanyInfo,
   type BillingConfig as BillingConfigType,
-  type CAIConfig as CAIConfigType
+  type CAIRegistroData
 } from '../../../servicios/companyConfigService';
 
 interface CAIFormData {
@@ -12,8 +12,7 @@ interface CAIFormData {
   fechaLimiteEmision: string;
   rangoInicial: string;
   rangoFinal: string;
-  numeroActual: string;
-  tipoDocumento: 'factura' | 'nota-debito' | 'nota-credito' | 'nota-remision' | 'comprobante-retencion';
+  tipoDocumento: string; // '01', '02', '03', '04', '05'
   puntoEmision: string;
   establecimiento: string;
 }
@@ -28,8 +27,7 @@ export function BillingConfigSection() {
     fechaLimiteEmision: '',
     rangoInicial: '',
     rangoFinal: '',
-    numeroActual: '',
-    tipoDocumento: 'factura',
+    tipoDocumento: '01',
     puntoEmision: '001',
     establecimiento: '001'
   });
@@ -56,28 +54,16 @@ export function BillingConfigSection() {
     }
   };
 
-  // Función para obtener el código numérico del tipo de documento
-  const getDocumentCode = (tipoDocumento: CAIFormData['tipoDocumento']): string => {
-    const codes = {
-      'factura': '01',
-      'nota-debito': '02',
-      'nota-credito': '03',
-      'nota-remision': '04',
-      'comprobante-retencion': '05'
-    };
-    return codes[tipoDocumento] || '01';
-  };
-
   // Función para obtener el nombre legible del tipo de documento
-  const getDocumentTypeName = (tipoDocumento: CAIFormData['tipoDocumento']): string => {
-    const names = {
-      'factura': 'Factura',
-      'nota-debito': 'Nota de Débito',
-      'nota-credito': 'Nota de Crédito',
-      'nota-remision': 'Nota de Remisión',
-      'comprobante-retencion': 'Comprobante de Retención'
+  const getDocumentTypeName = (tipoDocumento: string): string => {
+    const names: Record<string, string> = {
+      '01': 'Factura',
+      '02': 'Nota de Débito',
+      '03': 'Nota de Crédito',
+      '04': 'Nota de Remisión',
+      '05': 'Comprobante de Retención'
     };
-    return names[tipoDocumento] || 'Factura';
+    return names[tipoDocumento] || 'Desconocido';
   };
 
   const handleConfigChange = (field: keyof BillingConfigType, value: any) => {
@@ -103,17 +89,27 @@ export function BillingConfigSection() {
       return;
     }
 
+    // Validar longitud de rangos (máximo 8 caracteres)
+    if (newCAI.rangoInicial.length > 8 || newCAI.rangoFinal.length > 8) {
+      showError('Los rangos deben tener máximo 8 caracteres');
+      return;
+    }
+
+    // Validar longitud de punto de emisión y establecimiento (3 caracteres)
+    if (newCAI.puntoEmision.length !== 3 || newCAI.establecimiento.length !== 3) {
+      showError('El punto de emisión y establecimiento deben tener 3 dígitos');
+      return;
+    }
+
     try {
-      const caiData: Omit<CAIConfigType, 'id'> = {
+      const caiData: CAIRegistroData = {
         cai: newCAI.cai,
         fechaLimiteEmision: newCAI.fechaLimiteEmision,
-        rangoInicial: newCAI.rangoInicial,
-        rangoFinal: newCAI.rangoFinal,
-        numeroActual: newCAI.numeroActual || newCAI.rangoInicial,
+        rangoInicial: newCAI.rangoInicial.padStart(8, '0'),
+        rangoFinal: newCAI.rangoFinal.padStart(8, '0'),
         tipoDocumento: newCAI.tipoDocumento,
         puntoEmision: newCAI.puntoEmision,
-        establecimiento: newCAI.establecimiento,
-        activo: true
+        establecimiento: newCAI.establecimiento
       };
 
       const result = await companyConfigService.addCAI(caiData);
@@ -127,8 +123,7 @@ export function BillingConfigSection() {
           fechaLimiteEmision: '',
           rangoInicial: '',
           rangoFinal: '',
-          numeroActual: '',
-          tipoDocumento: 'factura',
+          tipoDocumento: '01',
           puntoEmision: '001',
           establecimiento: '001'
         });
@@ -393,17 +388,19 @@ export function BillingConfigSection() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
                       <div>
                         <p className="text-sm font-medium text-gray-700">CAI</p>
-                        <p className="text-sm text-gray-900">{cai.cai}</p>
+                        <p className="text-sm text-gray-900 break-all">{cai.cai}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700">Tipo</p>
                         <p className="text-sm text-gray-900">
-                          {getDocumentCode(cai.tipoDocumento)} - {getDocumentTypeName(cai.tipoDocumento)}
+                          {cai.tipoDocumento} - {getDocumentTypeName(cai.tipoDocumento)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Rango</p>
-                        <p className="text-sm text-gray-900">{cai.rangoInicial} - {cai.rangoFinal}</p>
+                        <p className="text-sm font-medium text-gray-700">Correlativo</p>
+                        <p className="text-sm text-gray-900 font-mono">
+                          {cai.establecimiento}-{cai.puntoEmision}-{cai.tipoDocumento}-{cai.rangoInicial} al {cai.rangoFinal}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700">Vencimiento</p>
@@ -436,11 +433,27 @@ export function BillingConfigSection() {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-blue-50">
               <h4 className="font-medium mb-4">Nuevo CAI</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Código CAI*"
-                  value={newCAI.cai}
-                  onChange={(e) => handleCAIChange('cai', e.target.value)}
-                  placeholder="CAI proporcionado por SAR"
+                <div className="md:col-span-2">
+                  <Input
+                    label="Código CAI (proporcionado por SAR)*"
+                    value={newCAI.cai}
+                    onChange={(e) => handleCAIChange('cai', e.target.value.toUpperCase())}
+                    placeholder="Ej: A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6"
+                    maxLength={40}
+                  />
+                </div>
+                
+                <Select
+                  label="Tipo de Documento*"
+                  value={newCAI.tipoDocumento}
+                  onChange={(e) => handleCAIChange('tipoDocumento', e.target.value)}
+                  options={[
+                    { value: '01', label: '01 - Factura' },
+                    { value: '02', label: '02 - Nota de Débito' },
+                    { value: '03', label: '03 - Nota de Crédito' },
+                    { value: '04', label: '04 - Nota de Remisión' },
+                    { value: '05', label: '05 - Comprobante de Retención' }
+                  ]}
                 />
                 <Input
                   label="Fecha Límite de Emisión*"
@@ -448,67 +461,59 @@ export function BillingConfigSection() {
                   value={newCAI.fechaLimiteEmision}
                   onChange={(e) => handleCAIChange('fechaLimiteEmision', e.target.value)}
                 />
-
-                <div className="md:col-span-2">
-                  
-                </div>
-
-                <Select
-                  label="Tipo de Documento"
-                  value={newCAI.tipoDocumento}
-                  onChange={(e) => handleCAIChange('tipoDocumento', e.target.value)}
-                  options={[
-                    { value: 'factura', label: 'Factura' },
-                    { value: 'nota-debito', label: 'Nota de Débito' },
-                    { value: 'nota-credito', label: 'Nota de Crédito' },
-                    { value: 'nota-remision', label: 'Nota de Remisión' },
-                    { value: 'comprobante-retencion', label: 'Comprobante de Retención' }
-                  ]}
-                />
-                <Input
-                  label="Código de Documento"
-                  value={`${getDocumentCode(newCAI.tipoDocumento)} - ${getDocumentTypeName(newCAI.tipoDocumento)}`}
-                  readOnly
-                  className="bg-gray-100 cursor-not-allowed"
-                  helperText="Código automático según el tipo de documento seleccionado"
-                />
                 
                 <div className="grid grid-cols-2 gap-2">
                   <Input
-                    label="Establecimiento"
+                    label="Establecimiento*"
                     value={newCAI.establecimiento}
-                    onChange={(e) => handleCAIChange('establecimiento', e.target.value)}
+                    onChange={(e) => handleCAIChange('establecimiento', e.target.value.replace(/\D/g, '').slice(0, 3))}
                     placeholder="001"
                     maxLength={3}
+                    helperText="3 dígitos"
                   />
                   <Input
-                    label="Punto de Emisión"
+                    label="Punto de Emisión*"
                     value={newCAI.puntoEmision}
-                    onChange={(e) => handleCAIChange('puntoEmision', e.target.value)}
+                    onChange={(e) => handleCAIChange('puntoEmision', e.target.value.replace(/\D/g, '').slice(0, 3))}
                     placeholder="001"
                     maxLength={3}
+                    helperText="3 dígitos"
                   />
                 </div>
+                
+                <div className="p-3 bg-gray-100 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Formato de Correlativo:</p>
+                  <p className="text-lg font-mono text-blue-600">
+                    {newCAI.establecimiento || '000'}-{newCAI.puntoEmision || '000'}-{newCAI.tipoDocumento}-XXXXXXXX
+                  </p>
+                </div>
+                
                 <Input
-                  label="Desde (Número)*"
+                  label="Rango Inicial (8 dígitos)*"
                   value={newCAI.rangoInicial}
-                  onChange={(e) => handleCAIChange('rangoInicial', e.target.value)}
-                  placeholder="FAC-00000001"
+                  onChange={(e) => handleCAIChange('rangoInicial', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="00000001"
+                  maxLength={8}
+                  helperText="Solo números, máximo 8 dígitos"
                 />
                 <Input
-                  label="Hasta (Número)*"
+                  label="Rango Final (8 dígitos)*"
                   value={newCAI.rangoFinal}
-                  onChange={(e) => handleCAIChange('rangoFinal', e.target.value)}
-                  placeholder="FAC-99999999"
-                />
-                <Input
-                  label="Número Actual"
-                  value={newCAI.numeroActual}
-                  onChange={(e) => handleCAIChange('numeroActual', e.target.value)}
-                  placeholder="FAC-00000001"
-                  helperText="Se usará el rango inicial si se deja vacío"
+                  onChange={(e) => handleCAIChange('rangoFinal', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="99999999"
+                  maxLength={8}
+                  helperText="Solo números, máximo 8 dígitos"
                 />
               </div>
+              
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>Ejemplo de numeración:</strong> Si configura Establecimiento: 001, Punto de Emisión: 001, 
+                  Tipo: 01 (Factura), Rango: 00000001 a 00001000, las facturas se numerarán como: 
+                  <span className="font-mono ml-1">001-001-01-00000001</span>
+                </p>
+              </div>
+              
               <div className="flex justify-end space-x-3 mt-4">
                 <Button
                   onClick={() => setShowCAIForm(false)}

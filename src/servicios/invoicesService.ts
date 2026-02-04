@@ -317,8 +317,8 @@ class InvoicesService {
         }
       } catch (err) {}
 
-      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-        pdfInvoiceGenerator.printInvoice(invoice, 'carta');
+      import('./pdfInvoiceGenerator').then(async ({ pdfInvoiceGenerator }) => {
+        await pdfInvoiceGenerator.printInvoice(invoice, 'carta');
       });
     })();
   }
@@ -353,8 +353,8 @@ class InvoicesService {
         }
       } catch (err) {}
 
-      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-        pdfInvoiceGenerator.printInvoice(invoice, 'ticket');
+      import('./pdfInvoiceGenerator').then(async ({ pdfInvoiceGenerator }) => {
+        await pdfInvoiceGenerator.printInvoice(invoice, 'ticket');
       });
     })();
   }
@@ -387,8 +387,8 @@ class InvoicesService {
           } catch (e) {}
         }
       } catch (err) {}
-      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-        pdfInvoiceGenerator.downloadInvoice(invoice, 'carta');
+      import('./pdfInvoiceGenerator').then(async ({ pdfInvoiceGenerator }) => {
+        await pdfInvoiceGenerator.downloadInvoice(invoice, 'carta');
       });
     })();
   }
@@ -421,8 +421,8 @@ class InvoicesService {
           } catch (e) {}
         }
       } catch (err) {}
-      import('./pdfInvoiceGenerator').then(({ pdfInvoiceGenerator }) => {
-        pdfInvoiceGenerator.downloadInvoice(invoice, 'ticket');
+      import('./pdfInvoiceGenerator').then(async ({ pdfInvoiceGenerator }) => {
+        await pdfInvoiceGenerator.downloadInvoice(invoice, 'ticket');
       });
     })();
   }
