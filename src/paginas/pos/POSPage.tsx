@@ -124,6 +124,14 @@ const POSPage: React.FC = () => {
     return () => { window.removeEventListener('products:updated', onUpdated as EventListener); };
   }, []);
 
+  // Auto-refresh de facturas pendientes cuando se cambia a esa pestaña
+  useEffect(() => {
+    if (posState.activeTab === 'pending-invoices') {
+      console.log('🔄 Tab de facturas pendientes activado - Refrescando...');
+      refreshPendingInvoices();
+    }
+  }, [posState.activeTab]);
+
   // Cargar sesión de caja abierta al montar
   useEffect(() => {
     const loadOpen = async () => {
@@ -651,10 +659,31 @@ const POSPage: React.FC = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Facturas Pendientes de Cobro</h3>
                 <button
-                  onClick={refreshPendingInvoices}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  onClick={() => {
+                    console.log('🔄 Refrescando facturas pendientes manualmente...');
+                    refreshPendingInvoices();
+                  }}
+                  disabled={pendingLoading}
+                  className={`px-3 py-1 rounded flex items-center gap-2 ${
+                    pendingLoading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  }`}
                 >
-                  Actualizar
+                  <svg 
+                    className={`w-4 h-4 ${pendingLoading ? 'animate-spin' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                    />
+                  </svg>
+                  {pendingLoading ? 'Actualizando...' : 'Actualizar'}
                 </button>
               </div>
               
@@ -667,6 +696,12 @@ const POSPage: React.FC = () => {
                 <div className="text-center py-8">
                   <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                   <p className="text-gray-500">No hay facturas pendientes</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    💡 Tip: Las órdenes de trabajo deben estar en estado "Completada" para aparecer aquí
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Si acabas de completar una OT, presiona el botón "Actualizar"
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
