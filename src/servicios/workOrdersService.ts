@@ -1,7 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 import { workOrderStatesManager } from './workOrderStatesManager';
 
-// Estados de Órdenes de Trabajo (gestionados por JSON local)
+// Estados de Órdenes de Trabajo (gestionados por BD usando SP_GESTIONAR_ESTADO_OT)
 export type WorkOrderStatus = 
   | 'Abierta'
   | 'En proceso'
@@ -91,14 +91,9 @@ class WorkOrdersService {
   private async mapSpDataToWorkOrder(spData: any): Promise<WorkOrderData> {
     const otId = spData.ot_id?.toString() || '';
     
-    // Obtener el estado desde el JSON local (tiene prioridad)
-    const estadoFromJson = await workOrderStatesManager.getState(otId);
-    const estado = estadoFromJson || (spData.estado_ot as WorkOrderStatus) || 'Abierta';
-    
-    // Si no estaba en el JSON, inicializarlo ahora
-    if (!estadoFromJson && otId) {
-      await workOrderStatesManager.initializeState(otId, estado);
-    }
+    // ✅ USAR EL ESTADO QUE VIENE DIRECTAMENTE DE LA BASE DE DATOS
+    // El SP SP_OBTENER_ORDENES_TRABAJO ya devuelve el estado correcto
+    const estado = (spData.estado_ot as WorkOrderStatus) || 'Abierta';
     
     // Construir nombre del vehículo con marca, modelo y año
     const vehiculoNombre = spData.marca && spData.modelo 
@@ -131,21 +126,24 @@ class WorkOrdersService {
       notas: `Placa: ${spData.placa} | Odómetro: ${spData.odometro_ingreso}km | Asesor: ${spData.nombre_asesor || 'N/A'}`,
       recomendaciones: spData.nombre_mecanico ? `Mecánico asignado: ${spData.nombre_mecanico}` : '',
       estadoPago: 'pending',
-      estado: estado, // 🔥 Usa el estado del JSON (prioridad) o del SP
+      estado: estado, // ✅ Estado viene directo de la BD (SP_OBTENER_ORDENES_TRABAJO)
       fechaCreacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
       fechaActualizacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
     };
   }
 
-  // Obtener todas las órdenes de trabajo
+  // Obtener todas las órdenes de trabajo (SIN LÍMITE DE PAGINACIÓN)
   async getAllWorkOrders(): Promise<WorkOrderData[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/workorders`);
+      // 🔥 CRÍTICO: limit=999999 para obtener TODAS las órdenes
+      const response = await fetch(`${API_BASE_URL}/workorders?limit=999999`);
       const result: any = await response.json();
       
       if (!response.ok) {
         throw new Error(result.message || 'Error al obtener órdenes de trabajo');
       }
+      
+      console.log(`📦 getAllWorkOrders: Obtenidas ${result.data?.length || 0} órdenes de ${result.count || 0} totales`);
       
       // Mapear datos del SP al modelo WorkOrderData
       const rawOrders = Array.isArray(result.data) ? result.data : [];

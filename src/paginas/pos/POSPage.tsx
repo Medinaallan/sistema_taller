@@ -360,6 +360,7 @@ const POSPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       const serviceItems = posState.cart.filter(item => item.type === 'service');
+      const productItems = posState.cart.filter(item => item.type === 'product');
 
       // Determinar el cliente final (priorizar el de la OT si existe)
       let finalClientId = posState.selectedClient?.id || null;
@@ -376,31 +377,94 @@ const POSPage: React.FC = () => {
         }
       }
       
-      // Crear la factura y guardarla
-      const newInvoice = await invoicesService.createInvoice({
-        fecha: new Date().toISOString(),
-        clientId: finalClientId,
-        clientName: finalClientName,
-        items: posState.cart.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.total,
-          type: item.type
-        })),
-        subtotal: posState.subtotal,
-        exento: posState.exentoAmount,
-        exonerado: posState.exoneradoAmount,
-        tax: posState.tax,
-        discount: posState.discount,
-        total: posState.total,
-        metodoPago: 'Efectivo',
-        createdBy: state.user?.name || 'Usuario'
-      });
+      let newInvoice = null;
+      let generatedInvoiceNumber = '';
+      
+      // Si hay OTs en el carrito, generar factura desde BD usando el SP
+      if (serviceItems.length > 0 && serviceItems[0].id.startsWith('invoice-')) {
+        const workOrderId = serviceItems[0].id.replace('invoice-', '');
+        
+        try {
+          const result = await markAsInvoiced(workOrderId, state.user?.id || 1);
+          
+          if (!result.success) {
+            throw new Error(result.message || 'Error al generar factura');
+          }
+          
+          console.log(`✅ Factura generada desde BD: ${result.data?.numero_factura}`);
+          generatedInvoiceNumber = result.data?.numero_factura || '';
+          
+          // Crear objeto de factura completo para impresión (con items del carrito)
+          newInvoice = {
+            id: result.data?.factura_id?.toString() || `inv-${Date.now()}`,
+            numero: result.data?.numero_factura || '',
+            fecha: new Date().toISOString(),
+            clientId: finalClientId,
+            clientName: finalClientName,
+            items: posState.cart.map(item => ({
+              id: item.id,
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.total,
+              type: item.type
+            })),
+            subtotal: posState.subtotal,
+            exento: posState.exentoAmount,
+            exonerado: posState.exoneradoAmount,
+            tax: posState.tax,
+            discount: posState.discount,
+            total: posState.total,
+            metodoPago: 'Efectivo',
+            estado: 'pagada',
+            createdBy: state.user?.name || 'Usuario'
+          };
+          
+          // Agregar al historial
+          const originalInvoice = pendingInvoices.find(inv => inv.id === workOrderId);
+          if (originalInvoice) {
+            const historyRecord = {
+              workOrderId: workOrderId,
+              clientId: originalInvoice.clienteId,
+              clientName: originalInvoice.clientName || 'Cliente no especificado',
+              clientEmail: originalInvoice.clientEmail || '',
+              clientPhone: originalInvoice.clientPhone || '',
+              vehicleId: originalInvoice.vehiculoId,
+              vehicleName: originalInvoice.vehicleName || 'Vehículo no especificado',
+              vehiclePlate: originalInvoice.vehiclePlate || '',
+              vehicleColor: originalInvoice.vehicleColor || '',
+              serviceId: originalInvoice.servicioId || 'general',
+              serviceName: 'Servicio de Taller',
+              serviceDescription: originalInvoice.descripcion || 'Servicio completado y facturado',
+              serviceCategory: originalInvoice.tipoServicio || 'Mantenimiento',
+              servicePrice: originalInvoice.costoTotal,
+              serviceDuration: '1 hora',
+              status: 'completed',
+              paymentStatus: 'paid',
+              invoiceId: result.data?.factura_id?.toString() || '',
+              invoiceNumber: result.data?.numero_factura || '',
+              invoiceTotal: posState.total,
+              date: new Date().toISOString(),
+              notes: `Factura: ${result.data?.numero_factura} - Total: L.${posState.total.toFixed(2)}`
+            };
+
+            try {
+              await serviceHistoryService.addServiceHistory(historyRecord);
+            } catch (historyError) {
+              console.error('Error al agregar al historial:', historyError);
+            }
+          }
+        } catch (error) {
+          console.error(`Error al generar factura para orden ${workOrderId}:`, error);
+          throw error; // Lanzar error para que se maneje abajo
+        }
+      } else {
+        // Solo productos - Por ahora retornar error ya que productos deben facturarse diferente
+        throw new Error('La facturación de productos puros aún no está implementada. Solo se pueden facturar órdenes de trabajo completadas.');
+      }
 
       if (!newInvoice) {
-        throw new Error('No se pudo crear la factura en el servidor');
+        throw new Error('No se pudo crear la factura');
       }
 
       // Registrar movimiento de entrada en la sesión de caja (venta en efectivo)
@@ -410,58 +474,12 @@ const POSPage: React.FC = () => {
             sessionId: currentSession.id,
             type: 'in',
             amount: posState.total,
-            reason: `Venta - ${newInvoice.numero || newInvoice.id}`,
+            reason: `Venta - ${generatedInvoiceNumber || newInvoice.id}`,
             createdBy: state.user?.name || 'Usuario'
           });
         }
       } catch (movementErr) {
         console.error('Error registrando movimiento de caja:', movementErr);
-      }
-
-      // Procesar servicios facturados
-      for (const serviceItem of serviceItems) {
-        if (serviceItem.id.startsWith('invoice-')) {
-          const workOrderId = serviceItem.id.replace('invoice-', '');
-          
-          try {
-            await markAsInvoiced(workOrderId);
-            
-            const originalInvoice = pendingInvoices.find(inv => inv.id === workOrderId);
-            if (originalInvoice) {
-              const historyRecord = {
-                workOrderId: workOrderId,
-                clientId: originalInvoice.clienteId,
-                clientName: originalInvoice.clientName || 'Cliente no especificado',
-                clientEmail: originalInvoice.clientEmail || '',
-                clientPhone: originalInvoice.clientPhone || '',
-                vehicleId: originalInvoice.vehiculoId,
-                vehicleName: originalInvoice.vehicleName || 'Vehículo no especificado',
-                vehiclePlate: originalInvoice.vehiclePlate || '',
-                vehicleColor: originalInvoice.vehicleColor || '',
-                serviceId: originalInvoice.servicioId || 'general',
-                serviceName: 'Servicio de Taller',
-                serviceDescription: originalInvoice.descripcion || 'Servicio completado y facturado',
-                serviceCategory: originalInvoice.tipoServicio || 'Mantenimiento',
-                servicePrice: originalInvoice.costoTotal,
-                serviceDuration: '1 hora',
-                status: 'completed',
-                paymentStatus: 'paid',
-                invoiceId: newInvoice.id,
-                invoiceTotal: posState.total,
-                date: new Date().toISOString(),
-                notes: `Facturado - Total: L.${posState.total.toFixed(2)}`
-              };
-
-              try {
-                await serviceHistoryService.addServiceHistory(historyRecord);
-              } catch (historyError) {
-                console.error('Error al agregar al historial:', historyError);
-              }
-            }
-          } catch (error) {
-            console.error(`Error al marcar como facturada la orden ${workOrderId}:`, error);
-          }
-        }
       }
 
       // Limpiar carrito
@@ -481,7 +499,7 @@ const POSPage: React.FC = () => {
         title: '¡Factura Generada!',
         html: `
           <div style="text-align: left; margin: 20px 0;">
-            <p><strong>Número de Factura:</strong> ${newInvoice.numero}</p>
+            <p><strong>Número de Factura:</strong> ${generatedInvoiceNumber || newInvoice.numero}</p>
             <p><strong>Total:</strong> L ${newInvoice.total.toFixed(2)}</p>
             <p style="margin-top: 15px;">¿Desea imprimir la factura?</p>
           </div>

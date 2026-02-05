@@ -70,11 +70,30 @@ export const usePendingInvoices = () => {
         // Obtener órdenes de trabajo completadas
         const workOrders = await workOrdersService.getAllWorkOrders();
         
+        console.log('🔍 DEBUG - Total órdenes:', workOrders.length);
+        console.log('🔍 DEBUG - Estados encontrados:', workOrders.map(wo => ({
+          id: wo.id,
+          estado: wo.estado,
+          estadoRaw: `"${wo.estado}"`,
+          tipo: typeof wo.estado
+        })));
+        
         // Filtrar órdenes completadas que NO están en la lista de pagadas
-        const completed = workOrders.filter((order: WorkOrderData) => 
-          order.estado === 'Completada' && !paidInvoiceIds.includes(order.id || '')
-        );
+        // Normalizar el estado para evitar problemas con espacios o mayúsculas
+        const completed = workOrders.filter((order: WorkOrderData) => {
+          const estadoNormalizado = order.estado?.trim().toLowerCase();
+          const esCompletada = estadoNormalizado === 'completada';
+          const noEstaPagada = !paidInvoiceIds.includes(order.id || '');
+          
+          if (esCompletada) {
+            console.log(`✅ OT ${order.id} está completada. ¿Pagada? ${!noEstaPagada}`);
+          }
+          
+          return esCompletada && noEstaPagada;
+        });
 
+        console.log('📋 Facturas pendientes encontradas:', completed.length);
+        
         // Enriquecer con información de clientes y vehículos
         const enrichedInvoices = await fetchClientAndVehicleInfo(completed);
         setPendingInvoices(enrichedInvoices);
@@ -89,20 +108,47 @@ export const usePendingInvoices = () => {
     fetchPendingInvoices();
   }, []);
 
-  const markAsInvoiced = async (workOrderId: string) => {
+  const markAsInvoiced = async (workOrderId: string, registradoPor?: number) => {
     try {
-      // Marcar como pagada en el JSON
-      await invoicePaymentManager.markAsPaid(workOrderId);
+      console.log(`🧾 Generando factura desde OT ${workOrderId}...`);
+      
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+      
+      // Llamar al endpoint que usa SP_GENERAR_FACTURA_DESDE_OT
+      const response = await fetch(`${API_BASE_URL}/invoices/generate-from-ot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ot_id: parseInt(workOrderId),
+          registrado_por: registradoPor || 1
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Error al generar factura');
+      }
+      
+      console.log(`✅ Factura generada: ${result.data.numero_factura}`);
       
       // Actualizar el estado local
       setPendingInvoices(prev => 
         prev.filter(invoice => invoice.id !== workOrderId)
       );
       
-      return true;
+      return {
+        success: true,
+        data: result.data
+      };
     } catch (error) {
-      console.error('Error marking as invoiced:', error);
-      return false;
+      console.error('Error generando factura desde OT:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error desconocido'
+      };
     }
   };
 
@@ -113,9 +159,18 @@ export const usePendingInvoices = () => {
       const paidInvoiceIds = await invoicePaymentManager.getAllPaid();
       
       const workOrders = await workOrdersService.getAllWorkOrders();
-      const completed = workOrders.filter((order: WorkOrderData) => 
-        order.estado === 'Completada' && !paidInvoiceIds.includes(order.id || '')
-      );
+      
+      console.log('🔄 REFRESH - Total órdenes:', workOrders.length);
+      
+      // Filtrar con estado normalizado
+      const completed = workOrders.filter((order: WorkOrderData) => {
+        const estadoNormalizado = order.estado?.trim().toLowerCase();
+        const esCompletada = estadoNormalizado === 'completada';
+        const noEstaPagada = !paidInvoiceIds.includes(order.id || '');
+        return esCompletada && noEstaPagada;
+      });
+
+      console.log('🔄 REFRESH - Facturas pendientes:', completed.length);
 
       const enrichedInvoices = await fetchClientAndVehicleInfo(completed);
       setPendingInvoices(enrichedInvoices);

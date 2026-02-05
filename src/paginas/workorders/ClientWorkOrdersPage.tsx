@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
-import workOrderStatesManager from '../../servicios/workOrderStatesManager';
 import { showError } from '../../utilidades/sweetAlertHelpers';
 
 interface WorkOrder {
@@ -58,18 +57,7 @@ const ClientWorkOrdersPage = () => {
         throw new Error(result.message || 'Error al obtener órdenes de trabajo');
       }
       
-      // Actualizar estados desde el manager
-      const workOrdersWithUpdatedStates = await Promise.all(
-        (result.data || []).map(async (wo: WorkOrder) => {
-          const currentState = await workOrderStatesManager.getState(wo.ot_id.toString());
-          return {
-            ...wo,
-            estado_ot: currentState || wo.estado_ot
-          };
-        })
-      );
-      
-      setData(workOrdersWithUpdatedStates);
+      setData(result.data || []);
     } catch (err) {
       console.error('Error cargando órdenes de trabajo del cliente:', err);
       showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
@@ -100,10 +88,10 @@ const ClientWorkOrdersPage = () => {
   useEffect(() => {
     loadClientWorkOrders();
     
-    // Recargar cada 30 segundos para mantener estados actualizados
+    // Recargar cada 30 minutos para mantener estados actualizados
     const interval = setInterval(() => {
       loadClientWorkOrders();
-    }, 30000);
+    }, 30000*60*1000);
     
     return () => clearInterval(interval);
   }, [user?.id]);

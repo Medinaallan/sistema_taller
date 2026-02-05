@@ -1,15 +1,16 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 const notificationsService = require('../services/notificationsService');
 
-// ========== FACTURAS AHORA USAN BASE DE DATOS (NO JSON) ==========
+// ⚠️ JSON DEPRECADO - Ahora se usa SP_OBTENER_FACTURAS y SP_GENERAR_FACTURA_DESDE_OT
+
 // GET /api/invoices - Obtener facturas desde BD usando SP_OBTENER_FACTURAS
 router.get('/', async (req, res) => {
   try {
     const { factura_id, cliente_id, numero, estado, fecha_inicio, fecha_fin } = req.query;
     
-    console.log(' Obteniendo facturas desde BD...');
+    console.log('📋 Obteniendo facturas desde BD...');
     
     const pool = await getConnection();
     const result = await pool.request()
@@ -22,7 +23,7 @@ router.get('/', async (req, res) => {
       .execute('SP_OBTENER_FACTURAS');
     
     const facturas = result.recordset || [];
-    console.log(`  facturas obtenidas desde BD`);
+    console.log(`✅ ${facturas.length} facturas obtenidas desde BD`);
     
     res.json({ 
       success: true, 
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
       count: facturas.length 
     });
   } catch (error) {
-    console.error(' Error obteniendo facturas desde BD:', error);
+    console.error('❌ Error obteniendo facturas desde BD:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error obteniendo facturas desde BD', 
@@ -44,7 +45,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    console.log(` Obteniendo factura  desde BD...`);
+    console.log(`📄 Obteniendo factura ${id} desde BD...`);
     
     const pool = await getConnection();
     
@@ -77,19 +78,105 @@ router.get('/:id', async (req, res) => {
       });
     }
     
-    console.log(` Factura  encontrada`);
+    console.log(`✅ Factura ${id} encontrada`);
     
     res.json({ 
       success: true, 
       data: result.recordset[0] 
     });
   } catch (error) {
-    console.error(' Error obteniendo factura:', error);
+    console.error('❌ Error obteniendo factura:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error obteniendo factura', 
       error: error.message 
     });
+  }
+});
+    res.status(500).json({ success: false, message: 'Error leyendo factura', error: error.message });
+  }
+});
+
+// POST create
+router.post('/', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const invoices = await readInvoices();
+
+    const newInv = {
+      id: `inv-${Date.now()}-${uuidv4().slice(0,6)}`,
+      numero: generateInvoiceNumber(invoices),
+      fecha: payload.fecha || new Date().toISOString(),
+      clientId: payload.clientId || null,
+      clientName: payload.clientName || 'CONSUMIDOR FINAL',
+      items: payload.items || [],
+      subtotal: payload.subtotal || 0,
+      exento: payload.exento || 0,
+      exonerado: payload.exonerado || 0,
+      tax: payload.tax || 0,
+      discount: payload.discount || 0,
+      total: payload.total || 0,
+      metodoPago: payload.metodoPago || 'Efectivo',
+      estado: payload.estado || 'pagada',
+      createdAt: new Date().toISOString(),
+      createdBy: payload.createdBy || 'sistema'
+    };
+
+    invoices.push(newInv);
+    await writeInvoices(invoices);
+
+    // Enviar notificación al cliente si existe clientId
+    try {
+      if (newInv.clientId) {
+        await notificationsService.notifyInvoiceStatusChange(newInv.clientId, newInv, 'Creada');
+      }
+    } catch (notifErr) {
+      console.error('Error enviando notificación de factura creada:', notifErr);
+    }
+
+    res.status(201).json({ success: true, data: newInv });
+  } catch (error) {
+    console.error('Error creando factura:', error);
+    res.status(500).json({ success: false, message: 'Error creando factura', error: error.message });
+  }
+});
+
+// PUT update
+router.put('/:id', async (req, res) => {
+  try {
+    const invoices = await readInvoices();
+    const idx = invoices.findIndex(i => i.id === req.params.id || i.numero === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Factura no encontrada' });
+
+    const old = invoices[idx];
+    invoices[idx] = { ...invoices[idx], ...req.body, updatedAt: new Date().toISOString() };
+    await writeInvoices(invoices);
+
+    // Si el estado cambió, notificar al cliente
+    try {
+      const newEstado = invoices[idx].estado;
+      if (old && old.estado !== newEstado && invoices[idx].clientId) {
+        await notificationsService.notifyInvoiceStatusChange(invoices[idx].clientId, invoices[idx], newEstado || 'Actualizada');
+      }
+    } catch (notifErr) {
+      console.error('Error enviando notificación de cambio de estado de factura:', notifErr);
+    }
+
+    res.json({ success: true, data: invoices[idx] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error actualizando factura', error: error.message });
+  }
+});
+
+// DELETE
+router.delete('/:id', async (req, res) => {
+  try {
+    const invoices = await readInvoices();
+    const filtered = invoices.filter(i => !(i.id === req.params.id || i.numero === req.params.id));
+    await writeInvoices(filtered);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error eliminando factura', error: error.message });
   }
 });
 
@@ -105,7 +192,7 @@ router.post('/generate-from-ot', async (req, res) => {
       });
     }
     
-    console.log(` Generando factura desde OT ...`);
+    console.log(`🧾 Generando factura desde OT ${ot_id}...`);
     
     const pool = await getConnection();
     const result = await pool.request()
@@ -116,7 +203,7 @@ router.post('/generate-from-ot', async (req, res) => {
     const response = result.recordset[0];
     
     if (response.allow === 1) {
-      console.log(` Factura generada:  (ID: )`);
+      console.log(`✅ Factura generada: ${response.numero_factura} (ID: ${response.factura_id})`);
       
       // Intentar enviar notificación al cliente
       try {
@@ -136,10 +223,10 @@ router.post('/generate-from-ot', async (req, res) => {
             ot_id: ot_id,
             numero_ot: ot.numero_ot
           });
-          console.log(' Notificación de factura generada enviada');
+          console.log('✅ Notificación de factura generada enviada');
         }
       } catch (notifError) {
-        console.error(' Error al enviar notificación de factura:', notifError);
+        console.error('⚠️ Error al enviar notificación de factura:', notifError);
         // No fallar la operación si la notificación falla
       }
       
@@ -153,14 +240,14 @@ router.post('/generate-from-ot', async (req, res) => {
         }
       });
     } else {
-      console.warn(` No se pudo generar factura: `);
+      console.warn(`⚠️ No se pudo generar factura: ${response.msg}`);
       res.status(400).json({
         success: false,
         message: response.msg
       });
     }
   } catch (error) {
-    console.error(' Error generando factura desde OT:', error);
+    console.error('❌ Error generando factura desde OT:', error);
     res.status(500).json({
       success: false,
       message: 'Error al generar factura desde OT',

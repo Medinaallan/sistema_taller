@@ -253,6 +253,20 @@ class NotificationsService {
     return this.createNotification(parseInt(clientId, 10), titulo, cuerpo);
   }
 
+  // Notificar generación de nueva factura
+  async notifyInvoiceGenerated(clientId, invoiceData) {
+    try {
+      if (!clientId) return;
+      const titulo = '🧾 Factura Generada';
+      const numeroFactura = invoiceData.numero_factura || 'N/A';
+      const numeroOT = invoiceData.numero_ot || invoiceData.ot_id || '';
+      const cuerpo = `Su factura ${numeroFactura} ha sido generada para la orden de trabajo ${numeroOT}. ¡Gracias por su preferencia!`;
+      await this.createNotification(clientId, titulo, cuerpo);
+    } catch (error) {
+      console.error('Error notificando generación de factura:', error);
+    }
+  }
+
   // Notificación para vehículo agregado
   async notifyVehicleAdded(clientId, vehicleData) {
     const placa = vehicleData && (vehicleData.placa || vehicleData.vin || vehicleData.plate) ? (vehicleData.placa || vehicleData.vin || vehicleData.plate) : '';

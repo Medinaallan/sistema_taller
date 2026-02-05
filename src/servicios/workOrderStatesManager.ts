@@ -16,32 +16,12 @@ class WorkOrderStatesManager {
     this.initPromise = this.loadStates();
   }
 
-  // Cargar estados desde el backend
+  // ⚠️ YA NO SE USA - Los estados vienen directo de la BD con SP_OBTENER_ORDENES_TRABAJO
+  // Este método se mantiene por compatibilidad pero ya no carga nada
   private async loadStates(): Promise<void> {
-    try {
-      console.log('📂 Cargando estados desde backend...');
-      const response = await fetch(`${API_BASE_URL}/workorder-states`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        this.states = result.data || {};
-        console.log('✅ Estados cargados desde backend:', this.states);
-        this.initialized = true;
-      } else {
-        console.error('❌ Error en respuesta:', result.message);
-        this.states = {};
-        this.initialized = true; // Marcar como inicializado aunque esté vacío
-      }
-    } catch (error) {
-      console.error('❌ Error cargando estados desde backend:', error);
-      this.states = {};
-      this.initialized = true; // Marcar como inicializado aunque haya error
-    }
+    console.log('ℹ️ Estados ahora vienen directo de la BD - Este método ya no se usa');
+    this.states = {};
+    this.initialized = true;
   }
 
   // Esperar a que se complete la inicialización
@@ -49,19 +29,16 @@ class WorkOrderStatesManager {
     await this.initPromise;
   }
 
-  // Obtener el estado de una OT específica (ahora asíncrono)
+  // ⚠️ YA NO SE USA - Los estados vienen directo de la BD
+  // Se mantiene por compatibilidad pero siempre retorna null
   async getState(otId: string): Promise<WorkOrderStatus | null> {
-    await this.waitForInit();
-    const state = this.states[otId];
-    if (state) {
-      console.log(`📋 Estado de OT ${otId}: ${state}`);
-    }
-    return state || null;
+    console.log(`ℹ️ getState(${otId}) - Estados ahora vienen directo de la BD`);
+    return null;
   }
 
-  // Actualizar el estado de una OT en el backend (usando SP_GESTIONAR_ESTADO_OT)
+  // ✅ Actualizar el estado de una OT usando SP_GESTIONAR_ESTADO_OT
   async updateState(otId: string, newState: WorkOrderStatus): Promise<{ success: boolean; message?: string }> {
-    console.log(`💾 Actualizando estado de OT ${otId} a ${newState}...`);
+    console.log(`💾 Actualizando estado de OT ${otId} a ${newState} usando SP...`);
     console.log(`🔗 URL: ${API_BASE_URL}/workorder-states/${otId}`);
     
     try {
@@ -79,12 +56,11 @@ class WorkOrderStatesManager {
       console.log('📦 Resultado:', result);
       
       if (result.success) {
-        this.states[otId] = newState;
-        console.log('✅ Estado actualizado correctamente en backend');
+        console.log('✅ Estado actualizado correctamente usando SP_GESTIONAR_ESTADO_OT');
         return { success: true, message: result.message };
       } else {
         // El SP rechazó el cambio (ej: tareas pendientes)
-        console.warn('⚠️ El cambio de estado fue rechazado:', result.message);
+        console.warn('⚠️ El cambio de estado fue rechazado por el SP:', result.message);
         return { success: false, message: result.message };
       }
     } catch (error) {

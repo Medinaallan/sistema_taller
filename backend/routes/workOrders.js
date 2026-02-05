@@ -735,15 +735,14 @@ router.put('/tareas/:tareaId/estado', async (req, res) => {
           .execute('SP_OBTENER_ORDENES_TRABAJO');
 
         // Obtener la tarea usando el SP disponible (no acceder a tablas directamente)
-        // SP_OBTENER_TAREAS_OT suele devolver todas las tareas o acepta filtros; aquí solicitamos por ot_tarea_id cuando sea posible
+        // SP_OBTENER_TAREAS_OT solo acepta @ot_id, luego filtramos por ot_tarea_id
         let tareaInfo;
         try {
           const tareasRes = await pool.request()
-            .input('ot_id', sql.Int, null)
-            .input('ot_tarea_id', sql.Int, parseInt(tareaId))
+            .input('ot_id', sql.Int, parseInt(otId))
             .execute('SP_OBTENER_TAREAS_OT');
 
-          // Filtrar por el id exacto por si el SP devuelve múltiples filas
+          // Filtrar por el id exacto ya que el SP devuelve todas las tareas de la OT
           const rows = tareasRes.recordset || [];
           const filtered = rows.filter(r => (r.ot_tarea_id ? String(r.ot_tarea_id) === String(tareaId) : false));
           tareaInfo = { recordset: filtered.length ? filtered : rows };

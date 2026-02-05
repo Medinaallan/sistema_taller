@@ -123,6 +123,51 @@
           "reason": "Venta - 001-001-01-00000028",
           "createdBy": "Allan Admin",
           "createdAt": "2026-02-04T01:32:53.932Z"
+        },
+        {
+          "id": "0f5190f8-e112-4e8d-b709-85eb4b3dc441",
+          "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+          "type": "in",
+          "amount": 1000,
+          "reason": "Venta - 001-001-01-00000029",
+          "createdBy": "Allan Admin",
+          "createdAt": "2026-02-05T00:50:48.150Z"
+        },
+        {
+          "id": "2f889e3f-a6db-49c4-adc4-0dd15bd69a06",
+          "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+          "type": "in",
+          "amount": 650,
+          "reason": "Venta - 001-001-01-00000030",
+          "createdBy": "Allan Admin",
+          "createdAt": "2026-02-05T01:01:27.672Z"
+        },
+        {
+          "id": "d4e430b8-f2b9-406f-a8e4-9e1726d4907d",
+          "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+          "type": "in",
+          "amount": 650,
+          "reason": "Venta - 001-001-01-00000031",
+          "createdBy": "Allan Admin",
+          "createdAt": "2026-02-05T01:03:36.455Z"
+        },
+        {
+          "id": "0fc7e1f6-1741-4be2-a032-72879b340b0d",
+          "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+          "type": "in",
+          "amount": 2800,
+          "reason": "Venta - 001-001-01-00000002",
+          "createdBy": "Allan Admin",
+          "createdAt": "2026-02-05T01:06:55.906Z"
+        },
+        {
+          "id": "2f42a4b9-2fff-4bfd-ae73-d4701801cefe",
+          "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+          "type": "in",
+          "amount": 6750,
+          "reason": "Venta - 001-001-01-00000003",
+          "createdBy": "Allan Admin",
+          "createdAt": "2026-02-05T01:13:24.872Z"
         }
       ],
       "closedAt": null,
@@ -187,6 +232,51 @@
       "reason": "Venta - 001-001-01-00000028",
       "createdBy": "Allan Admin",
       "createdAt": "2026-02-04T01:32:53.932Z"
+    },
+    {
+      "id": "0f5190f8-e112-4e8d-b709-85eb4b3dc441",
+      "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+      "type": "in",
+      "amount": 1000,
+      "reason": "Venta - 001-001-01-00000029",
+      "createdBy": "Allan Admin",
+      "createdAt": "2026-02-05T00:50:48.150Z"
+    },
+    {
+      "id": "2f889e3f-a6db-49c4-adc4-0dd15bd69a06",
+      "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+      "type": "in",
+      "amount": 650,
+      "reason": "Venta - 001-001-01-00000030",
+      "createdBy": "Allan Admin",
+      "createdAt": "2026-02-05T01:01:27.672Z"
+    },
+    {
+      "id": "d4e430b8-f2b9-406f-a8e4-9e1726d4907d",
+      "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+      "type": "in",
+      "amount": 650,
+      "reason": "Venta - 001-001-01-00000031",
+      "createdBy": "Allan Admin",
+      "createdAt": "2026-02-05T01:03:36.455Z"
+    },
+    {
+      "id": "0fc7e1f6-1741-4be2-a032-72879b340b0d",
+      "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+      "type": "in",
+      "amount": 2800,
+      "reason": "Venta - 001-001-01-00000002",
+      "createdBy": "Allan Admin",
+      "createdAt": "2026-02-05T01:06:55.906Z"
+    },
+    {
+      "id": "2f42a4b9-2fff-4bfd-ae73-d4701801cefe",
+      "sessionId": "c2f17743-9553-4262-a347-d27f98ad9974",
+      "type": "in",
+      "amount": 6750,
+      "reason": "Venta - 001-001-01-00000003",
+      "createdBy": "Allan Admin",
+      "createdAt": "2026-02-05T01:13:24.872Z"
     }
   ]
 }
