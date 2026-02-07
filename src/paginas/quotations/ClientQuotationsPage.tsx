@@ -88,6 +88,7 @@ const ClientQuotationsPage = () => {
                   <th className="px-6 py-3"># Cotización</th>
                   <th className="px-6 py-3">Vehículo</th>
                   <th className="px-6 py-3">Cita</th>
+                  <th className="px-6 py-3">OT</th>
                   <th className="px-6 py-3">Estado</th>
                   <th className="px-6 py-3">Total</th>
                   <th className="px-6 py-3">Fecha Creación</th>
@@ -100,12 +101,20 @@ const ClientQuotationsPage = () => {
                   <tr key={quotation.cotizacion_id} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-mono text-xs">
                       {quotation.numero_cotizacion}
+                      {quotation.ot_id && !quotation.cita_id && (
+                        <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
+                          Adicional
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       {quotation.placa_vehiculo}
                     </td>
                     <td className="px-6 py-4">
-                      {quotation.numero_cita}
+                      {quotation.numero_cita || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {quotation.numero_ot || '-'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs rounded-full ${

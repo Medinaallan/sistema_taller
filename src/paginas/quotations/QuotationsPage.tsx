@@ -280,16 +280,20 @@ const QuotationsPage = () => {
                           <span className="text-green-600 text-sm font-medium px-2 py-1 bg-green-50 rounded">
                              Aprobada
                           </span>
-                          {/* Mostrar botón para generar OT si no existe */}
-                          {!quotation.numero_ot && (
+                          {/* Mostrar botón "Generar OT" solo si NO ha sido procesada (candado procesada_a_ot) */}
+                          {!quotation.procesada_a_ot ? (
                             <Button 
                               size="sm" 
                               className="bg-blue-600 hover:bg-blue-700 text-white"
                               onClick={() => handleApprove(quotation)}
-                              title="Generar Orden de Trabajo"
+                              title={quotation.ot_id ? "Agregar tareas a OT existente" : "Generar nueva Orden de Trabajo"}
                             >
-                              📋 Generar OT
+                              {quotation.ot_id ? '➕ Agregar Tareas' : '📋 Generar OT'}
                             </Button>
+                          ) : (
+                            <span className="text-gray-500 text-xs px-2 py-1 bg-gray-100 rounded flex items-center gap-1" title="Ya procesada a orden de trabajo">
+                              ✓ Procesada
+                            </span>
                           )}
                         </>
                       )}
