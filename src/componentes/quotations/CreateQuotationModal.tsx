@@ -380,7 +380,8 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       cantidad: 1,
       precio_unitario: 0,
       descuento_unitario: 0,
-      tipo_servicio_id: ''
+      tipo_servicio_id: '',
+      producto_id: ''
     });
     setItems([]);
   };
