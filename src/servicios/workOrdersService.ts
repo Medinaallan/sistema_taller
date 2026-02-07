@@ -135,19 +135,27 @@ class WorkOrdersService {
   // Obtener todas las órdenes de trabajo (SIN LÍMITE DE PAGINACIÓN)
   async getAllWorkOrders(): Promise<WorkOrderData[]> {
     try {
-      // 🔥 CRÍTICO: limit=999999 para obtener TODAS las órdenes
-      const response = await fetch(`${API_BASE_URL}/workorders?limit=999999`);
+      // 🔥 CRÍTICO: limit=999999 para obtener TODAS las órdenes + includeCosts=true para calcular costos desde cotizaciones
+      const url = `${API_BASE_URL}/workorders?limit=999999&includeCosts=true`;
+      const response = await fetch(url);
       const result: any = await response.json();
       
       if (!response.ok) {
         throw new Error(result.message || 'Error al obtener órdenes de trabajo');
       }
       
-      console.log(`📦 getAllWorkOrders: Obtenidas ${result.data?.length || 0} órdenes de ${result.count || 0} totales`);
-      
       // Mapear datos del SP al modelo WorkOrderData
       const rawOrders = Array.isArray(result.data) ? result.data : [];
       const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
+      
+      // Preservar el costo calculado desde la cotización (incluye servicios + repuestos)
+      orders.forEach((o, idx) => {
+        const raw = rawOrders[idx];
+        if (raw && raw._calculatedCost !== undefined) {
+          // @ts-ignore attach to the object for display
+          (o as any)._calculatedCost = raw._calculatedCost;
+        }
+      });
       
       return orders;
     } catch (error) {

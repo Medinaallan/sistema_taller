@@ -7,6 +7,9 @@ export interface InvoiceItem {
   price: number;
   total: number;
   type: 'product' | 'service';
+  es_obligatorio?: boolean; // Indica si el item es obligatorio (no editable)
+  factura_item_id?: number; // ID del item en la BD
+  tipo_item_inferido?: string; // 'Servicio' o 'Repuesto'
 }
 
 export interface Invoice {
@@ -56,6 +59,40 @@ class InvoicesService {
     } catch (error) {
       console.error('Error obteniendo factura por id:', error);
       return null;
+    }
+  }
+
+  // Obtener items de una factura usando SP_OBTENER_ITEMS_FACTURA
+  async getInvoiceItems(facturaId: number): Promise<InvoiceItem[]> {
+    try {
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices/${facturaId}/items` : `${base}/api/invoices/${facturaId}/items`;
+      console.log(`🔍 Obteniendo items de factura ${facturaId} desde:`, url);
+      
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.error('Error en respuesta:', res.status);
+        return [];
+      }
+      
+      const json = await res.json();
+      const items = json.data || [];
+      
+      // Mapear items de BD a formato InvoiceItem
+      return items.map((item: any) => ({
+        id: `item-${item.factura_item_id}`,
+        name: item.descripcion,
+        quantity: item.cantidad,
+        price: item.precio_unitario,
+        total: item.total,
+        type: item.tipo_servicio_id ? 'service' : 'product',
+        es_obligatorio: !!item.es_obligatorio,
+        factura_item_id: item.factura_item_id,
+        tipo_item_inferido: item.tipo_item_inferido
+      }));
+    } catch (error) {
+      console.error('Error obteniendo items de factura:', error);
+      return [];
     }
   }
 

@@ -30,6 +30,8 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
   const [cotizacionId, setCotizacionId] = useState<string | null>(null);
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   // Datos del formulario - Paso 1: Información
   const [formData, setFormData] = useState({
@@ -44,7 +46,8 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     cantidad: 1,
     precio_unitario: 0,
     descuento_unitario: 0,
-    tipo_servicio_id: ''
+    tipo_servicio_id: '',
+    producto_id: ''
   });
 
   // Items agregados
@@ -82,13 +85,67 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     }
   };
 
-  // Cargar servicios cuando se abre el modal
+  // Handler para cuando cambia el producto seleccionado
+  const handleProductChange = (productoId: string) => {
+    setItemForm(prev => ({ ...prev, producto_id: productoId }));
+    
+    if (productoId) {
+      // Buscar el producto seleccionado
+      const productoSeleccionado = products.find(p => p.id === productoId);
+      
+      if (productoSeleccionado) {
+        const precio = parseFloat(productoSeleccionado.price || 0);
+        const descripcion = productoSeleccionado.name || '';
+        
+        setItemForm(prev => ({
+          ...prev,
+          descripcion: descripcion,
+          precio_unitario: precio
+        }));
+        
+        console.log(`📦 Producto seleccionado: ${descripcion} - Precio: L${precio}`);
+      }
+    }
+  };
+
+  // Cargar servicios y productos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       loadServices();
+      loadProducts();
       loadDisplayNames();
     }
   }, [isOpen]);
+
+  const loadProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const base = API_BASE_URL.replace(/\/api$/, '');
+      const url = base.endsWith('/api') ? `${base}/products` : `${base}/api/products`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          const validProducts = Array.isArray(result.data) ? result.data : [];
+          setProducts(validProducts);
+          console.log(`📦 ${validProducts.length} productos cargados`);
+        } else {
+          console.error('Error en respuesta de productos:', result);
+          setProducts([]);
+        }
+      } else {
+        console.error('Error al cargar productos:', response.statusText);
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error('Error cargando productos:', error);
+      setProducts([]);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
 
   const loadServices = async () => {
     try {
@@ -214,7 +271,8 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         cantidad: 1,
         precio_unitario: 0,
         descuento_unitario: 0,
-        tipo_servicio_id: ''
+        tipo_servicio_id: '',
+        producto_id: ''
       });
 
       showSuccess('Item agregado exitosamente');
@@ -437,7 +495,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                 </label>
                 <Select
                   value={itemForm.tipo_item}
-                  onChange={(e) => setItemForm({ ...itemForm, tipo_item: e.target.value as 'Servicio' | 'Repuesto' })}
+                  onChange={(e) => setItemForm({ ...itemForm, tipo_item: e.target.value as 'Servicio' | 'Repuesto', tipo_servicio_id: '', producto_id: '', descripcion: '', precio_unitario: 0 })}
                   options={[
                     { value: 'Servicio', label: 'Servicio' },
                     { value: 'Repuesto', label: 'Repuesto' }
@@ -468,6 +526,33 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Al seleccionar un servicio, el precio y descripción se completarán automáticamente
+                  </p>
+                </div>
+              )}
+
+              {itemForm.tipo_item === 'Repuesto' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Producto *
+                  </label>
+                  <Select
+                    value={itemForm.producto_id}
+                    onChange={(e) => handleProductChange(e.target.value)}
+                    options={
+                      loadingProducts 
+                        ? [{ value: '', label: 'Cargando productos...' }]
+                        : [
+                            { value: '', label: '-- Seleccionar producto --' },
+                            ...(Array.isArray(products) ? products.map((p) => ({
+                              value: p.id || '',
+                              label: `${p.name || 'Producto sin nombre'} - L${(p.price || 0).toLocaleString()} ${p.stock !== undefined ? `(Stock: ${p.stock})` : ''}`
+                            })).filter(opt => opt.value) : [])
+                          ]
+                    }
+                    disabled={loadingProducts}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Al seleccionar un producto, el precio y descripción se completarán automáticamente
                   </p>
                 </div>
               )}
@@ -511,18 +596,18 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                     step="0.01"
                     value={itemForm.precio_unitario}
                     onChange={(e) => setItemForm({ ...itemForm, precio_unitario: parseFloat(e.target.value) || 0 })}
-                    placeholder={itemForm.tipo_item === 'Servicio' ? 'Se completa al seleccionar servicio' : 'Ingrese precio'}
-                    readOnly={itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0}
-                    className={itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0 ? 'bg-gray-100 cursor-not-allowed' : ''}
+                    placeholder={itemForm.tipo_item === 'Servicio' ? 'Se completa al seleccionar servicio' : 'Se completa al seleccionar producto'}
+                    readOnly={(itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0) || (itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0)}
+                    className={(itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0) || (itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0) ? 'bg-gray-100 cursor-not-allowed' : ''}
                   />
                   {itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0 && (
                     <p className="text-xs text-green-600 mt-1">
                       ✓ Precio del servicio: L{itemForm.precio_unitario.toLocaleString()} (no editable)
                     </p>
                   )}
-                  {itemForm.tipo_item === 'Repuesto' && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Ingrese el precio del repuesto manualmente
+                  {itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ Precio del producto: L{itemForm.precio_unitario.toLocaleString()} (no editable)
                     </p>
                   )}
                 </div>

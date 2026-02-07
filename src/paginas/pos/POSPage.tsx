@@ -20,6 +20,8 @@ interface POSItem {
   isTaxed?: boolean;
   exento?: boolean;
   exonerado?: boolean;
+  es_obligatorio?: boolean; // Producto obligatorio (no editable)
+  factura_item_id?: number;
 }
 
 interface CartItem extends POSItem {
@@ -223,50 +225,87 @@ const POSPage: React.FC = () => {
     });
   };
 
-  const addPendingInvoiceToCart = (pendingInvoice: any) => {
-    const precio = Number(pendingInvoice.totalAmount) || Number(pendingInvoice.total) || 0;
-    
-    const descripcionServicio = `Factura ${pendingInvoice.numero} - ${pendingInvoice.clientName} | OT #${pendingInvoice.numero_ot || 'N/A'}`;
-    
-    const invoiceItem: CartItem = {
-      id: `invoice-${pendingInvoice.factura_id}`,
-      name: descripcionServicio,
-      price: precio,
-      quantity: 1,
-      total: precio,
-      category: 'SERVICIOS',
-      type: 'service',
-      isTaxed: true,
-      exento: false,
-      exonerado: false
-    };
-    
-    // Usar directamente los datos del pendingInvoice
-    const clienteToSelect: Client | null = pendingInvoice.cliente_id && pendingInvoice.clientName ? {
-      id: pendingInvoice.cliente_id.toString(),
-      name: pendingInvoice.clientName,
-      phone: pendingInvoice.clientPhone || pendingInvoice.telefono || '',
-      email: pendingInvoice.clientEmail || '',
-      address: '',
-      password: '',
-      vehicles: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    } as Client : null;
-
-    setPosState(prev => {
-      const existingItem = prev.cart.find(item => item.id === invoiceItem.id);
+  const addPendingInvoiceToCart = async (pendingInvoice: any) => {
+    try {
+      const facturaId = pendingInvoice.factura_id;
+      console.log(`💰 Agregando factura ${facturaId} al carrito...`);
       
-      if (!existingItem) {
-        return {
-          ...prev,
-          cart: [...prev.cart, invoiceItem],
-          selectedClient: clienteToSelect || prev.selectedClient
+      // Obtener los items reales de la factura usando SP_OBTENER_ITEMS_FACTURA
+      const items = await invoicesService.getInvoiceItems(facturaId);
+      console.log(`📦 Items obtenidos:`, items);
+      
+      if (items.length === 0) {
+        console.warn('⚠️ No se encontraron items para esta factura');
+        // Fallback al comportamiento anterior si no hay items
+        const precio = Number(pendingInvoice.totalAmount) || Number(pendingInvoice.total) || 0;
+        const descripcionServicio = `Factura ${pendingInvoice.numero} - ${pendingInvoice.clientName} | OT #${pendingInvoice.numero_ot || 'N/A'}`;
+        
+        const invoiceItem: CartItem = {
+          id: `invoice-${facturaId}`,
+          name: descripcionServicio,
+          price: precio,
+          quantity: 1,
+          total: precio,
+          category: 'SERVICIOS',
+          type: 'service',
+          isTaxed: true,
+          exento: false,
+          exonerado: false,
+          es_obligatorio: false
         };
+        
+        setPosState(prev => ({
+          ...prev,
+          cart: [...prev.cart.filter(item => !item.id.startsWith(`invoice-${facturaId}`)), invoiceItem]
+        }));
+        return;
       }
       
-      return prev;
-    });
+      // Convertir items de factura a items de carrito
+      const cartItems: CartItem[] = items.map(item => ({
+        id: `invoice-${facturaId}-item-${item.factura_item_id}`,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.total,
+        category: item.type === 'service' ? 'SERVICIOS' : 'REPUESTOS',
+        type: item.type,
+        isTaxed: true,
+        exento: false,
+        exonerado: false,
+        es_obligatorio: item.es_obligatorio || false, // 🔒 Importante: productos obligatorios
+        factura_item_id: item.factura_item_id
+      }));
+      
+      // Usar directamente los datos del pendingInvoice
+      const clienteToSelect: Client | null = pendingInvoice.cliente_id && pendingInvoice.clientName ? {
+        id: pendingInvoice.cliente_id.toString(),
+        name: pendingInvoice.clientName,
+        phone: pendingInvoice.clientPhone || pendingInvoice.telefono || '',
+        email: pendingInvoice.clientEmail || '',
+        address: '',
+        password: '',
+        vehicles: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as Client : null;
+
+      setPosState(prev => {
+        // Remover items previos de esta misma factura (si existen)
+        const cartSinFactura = prev.cart.filter(item => !item.id.startsWith(`invoice-${facturaId}`));
+        
+        return {
+          ...prev,
+          cart: [...cartSinFactura, ...cartItems],
+          selectedClient: clienteToSelect || prev.selectedClient
+        };
+      });
+      
+      console.log(`✅ ${cartItems.length} items agregados al carrito`);
+    } catch (error) {
+      console.error('❌ Error agregando factura pendiente:', error);
+      // Fallback silencioso al comportamiento anterior
+    }
   };
 
   const updateCartItemQuantity = (id: string, quantity: number) => {
@@ -274,8 +313,8 @@ const POSPage: React.FC = () => {
       const item = prev.cart.find(i => i.id === id);
       if (!item) return prev;
 
-      // No permitir cambiar cantidad para servicios (siempre 1)
-      if (item.type === 'service') {
+      // No permitir cambiar cantidad para servicios O items obligatorios
+      if (item.type === 'service' || item.es_obligatorio) {
         return prev;
       }
 
@@ -293,6 +332,13 @@ const POSPage: React.FC = () => {
   };
 
   const removeFromCart = (id: string) => {
+    // Verificar si el item es obligatorio
+    const item = posState.cart.find(i => i.id === id);
+    if (item?.es_obligatorio) {
+      console.warn('⚠️ No se puede eliminar item obligatorio');
+      return;
+    }
+    
     setPosState(prev => ({
       ...prev,
       cart: prev.cart.filter(item => item.id !== id)
@@ -805,23 +851,42 @@ const POSPage: React.FC = () => {
                 <div key={item.id} className="bg-gray-50 p-3 rounded-lg">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <p className="font-medium text-sm">{item.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{item.name}</p>
+                        {item.es_obligatorio && (
+                          <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                            🔒 Obligatorio
+                          </span>
+                        )}
+                        {item.type === 'service' && !item.es_obligatorio && (
+                          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                            Servicio
+                          </span>
+                        )}
+                      </div>
                       <p className="text-green-600 font-bold">L.{item.price.toFixed(2)}</p>
                     </div>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="text-red-500 hover:text-red-700 ml-2"
+                      disabled={item.es_obligatorio}
+                      className={`ml-2 ${
+                        item.es_obligatorio 
+                          ? 'text-gray-300 cursor-not-allowed' 
+                          : 'text-red-500 hover:text-red-700'
+                      }`}
+                      title={item.es_obligatorio ? 'No se puede eliminar: producto ya utilizado' : 'Eliminar'}
                     >
                       ×
                     </button>
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center space-x-2">
-                      {item.type === 'service' ? (
+                      {item.type === 'service' || item.es_obligatorio ? (
                         <>
                           <button
                             disabled
                             className="w-6 h-6 bg-gray-200 rounded text-sm text-gray-400 cursor-not-allowed"
+                            title={item.es_obligatorio ? 'Cantidad fija: producto obligatorio' : 'Cantidad fija'}
                           >
                             -
                           </button>
@@ -829,6 +894,7 @@ const POSPage: React.FC = () => {
                           <button
                             disabled
                             className="w-6 h-6 bg-gray-200 rounded text-sm text-gray-400 cursor-not-allowed"
+                            title={item.es_obligatorio ? 'Cantidad fija: producto obligatorio' : 'Cantidad fija'}
                           >
                             +
                           </button>

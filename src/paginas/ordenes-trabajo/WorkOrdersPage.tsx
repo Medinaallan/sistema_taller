@@ -392,10 +392,10 @@ const WorkOrdersPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {formatCurrency(order.costoTotal)}
+                        {formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoTotal)}
                       </div>
                       <div className="text-sm text-gray-500">
-                        Est: {formatCurrency(order.costoEstimado)}
+                        Est: {formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoEstimado)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -632,11 +632,11 @@ function WorkOrderDetails({ order, clientName, vehicleName, serviceName, appoint
             <div className="text-sm text-purple-500">Repuestos</div>
           </div>
           <div className="bg-green-50 p-4 rounded-lg text-center">
-            <div className="text-lg font-bold text-green-600">{formatCurrency(order.costoTotal)}</div>
+            <div className="text-lg font-bold text-green-600">{formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoTotal)}</div>
             <div className="text-sm text-green-500">Total Real</div>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg text-center">
-            <div className="text-lg font-bold text-orange-600">{formatCurrency(order.costoEstimado)}</div>
+            <div className="text-lg font-bold text-orange-600">{formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoEstimado)}</div>
             <div className="text-sm text-orange-500">Estimado</div>
           </div>
         </div>

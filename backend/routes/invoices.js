@@ -93,6 +93,35 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET /api/invoices/:id/items - Obtener items de una factura usando SP_OBTENER_ITEMS_FACTURA
+router.get('/:id/items', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`📋 Obteniendo items de factura ${id}...`);
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('factura_id', sql.Int, parseInt(id))
+      .execute('SP_OBTENER_ITEMS_FACTURA');
+    
+    const items = result.recordset || [];
+    console.log(`✅ ${items.length} items encontrados`);
+    
+    res.json({ 
+      success: true, 
+      data: items
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo items de factura:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error obteniendo items de factura', 
+      error: error.message 
+    });
+  }
+});
+
 // POST /api/invoices/generate-from-ot - Generar factura desde OT usando SP
 router.post('/generate-from-ot', async (req, res) => {
   try {
