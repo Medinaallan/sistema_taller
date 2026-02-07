@@ -169,4 +169,73 @@ router.post('/generate-from-ot', async (req, res) => {
   }
 });
 
+// POST /api/invoices/register-payment - Registrar pago de factura usando SP
+router.post('/register-payment', async (req, res) => {
+  try {
+    const { factura_id, monto, metodo_pago, referencia, registrado_por } = req.body;
+    
+    if (!factura_id || !monto || !metodo_pago) {
+      return res.status(400).json({
+        success: false,
+        message: 'Los parámetros factura_id, monto y metodo_pago son requeridos'
+      });
+    }
+    
+    // Validar que el método de pago sea uno de los permitidos
+    const metodosValidos = ['Efectivo', 'Tarjeta', 'Transferencia'];
+    if (!metodosValidos.includes(metodo_pago)) {
+      return res.status(400).json({
+        success: false,
+        message: `Método de pago inválido. Debe ser uno de: ${metodosValidos.join(', ')}`
+      });
+    }
+    
+    console.log(`💰 Registrando pago de L.${monto} para factura ${factura_id} (${metodo_pago})...`);
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('factura_id', sql.Int, parseInt(factura_id))
+      .input('monto', sql.Decimal(10, 2), parseFloat(monto))
+      .input('metodo_pago', sql.VarChar(30), metodo_pago)
+      .input('referencia', sql.VarChar(100), referencia || null)
+      .input('registrado_por', sql.Int, registrado_por || 1)
+      .execute('SP_REGISTRAR_PAGO');
+    
+    const response = result.recordset[0];
+    
+    console.log('📋 Respuesta del SP_REGISTRAR_PAGO:', response);
+    
+    // Verificar si el SP devolvió éxito
+    const isSuccess = response.allow === 1 || response.allow === '1' || response[''] === '200 OK';
+    const message = response.msg || response.message || response[''] || 'Pago registrado';
+    
+    if (isSuccess) {
+      console.log(`✅ Pago registrado exitosamente: ${message}`);
+      
+      res.json({
+        success: true,
+        message: message,
+        data: {
+          factura_id: factura_id,
+          monto: monto,
+          metodo_pago: metodo_pago
+        }
+      });
+    } else {
+      console.warn(`⚠️ No se pudo registrar pago: ${message}`);
+      res.status(400).json({
+        success: false,
+        message: message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error registrando pago:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al registrar pago',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

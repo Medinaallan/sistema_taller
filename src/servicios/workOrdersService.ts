@@ -353,9 +353,70 @@ class WorkOrdersService {
   }
 
   // Completar orden de trabajo (usando SP - valida que tareas estén completadas)
-  async completeWorkOrder(id: string): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
+  async completeWorkOrder(id: string, userId?: number): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
     console.log(`✅ Completando OT ${id} (usando SP con validación de tareas)`);
-    return this.changeStatus(id, 'Completada');
+    
+    try {
+      // Primero, cambiar el estado a "Completada"
+      const statusResult = await this.changeStatus(id, 'Completada');
+      
+      if (!statusResult.success) {
+        return statusResult;
+      }
+      
+      // Obtener usuario ID desde localStorage si no se proporciona
+      const getUserId = (): number => {
+        if (userId) return userId;
+        try {
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            return parseInt(user.id) || 1;
+          }
+        } catch (error) {
+          console.error('Error obteniendo usuario ID:', error);
+        }
+        return 1;
+      };
+      
+      // Luego, generar automáticamente la factura usando el SP
+      console.log(`🧾 Generando factura automáticamente para OT ${id}...`);
+      
+      const response = await fetch(`${API_BASE_URL}/invoices/generate-from-ot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ot_id: parseInt(id),
+          registrado_por: getUserId()
+        })
+      });
+      
+      const facturaResult = await response.json();
+      
+      if (!response.ok || !facturaResult.success) {
+        console.error('❌ Error generando factura automáticamente:', facturaResult.message);
+        // No fallar la operación completa si la factura no se genera
+        return {
+          ...statusResult,
+          message: `OT completada pero no se pudo generar la factura: ${facturaResult.message}`
+        };
+      }
+      
+      console.log(`✅ Factura generada automáticamente: ${facturaResult.data.numero_factura} (ID: ${facturaResult.data.factura_id})`);
+      
+      return {
+        ...statusResult,
+        message: `OT completada exitosamente. Factura ${facturaResult.data.numero_factura} generada.`
+      };
+    } catch (error) {
+      console.error('❌ Error completando OT y generando factura:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error desconocido al completar OT'
+      };
+    }
   }
 
   // Cancelar orden de trabajo

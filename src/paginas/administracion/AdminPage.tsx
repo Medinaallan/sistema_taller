@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { UserManagementSection } from './secciones/UserManagementSection';
 import { CompanyDataSection } from './secciones/CompanyDataSection';
 import { BillingConfigSection } from './secciones/BillingConfigSection';
+import { PaymentMethodsSection } from './secciones/PaymentMethodsSection';
 import { DataManagementPanel } from '../../componentes/administracion/DataManagementPanel';
 import {
   UsersIcon,
@@ -124,6 +125,7 @@ export default function AdminPage() {
         {selectedSection === 'usuarios' && <UserManagementSection />}
         {selectedSection === 'empresa' && <CompanyDataSection />}
         {selectedSection === 'facturacion' && <BillingConfigSection />}
+        {selectedSection === 'metodos-pago' && <PaymentMethodsSection />}
         {selectedSection === 'data-reset' && <DataManagementPanel />}
         {/* Aquí se agregarán las demás secciones */}
       </div>

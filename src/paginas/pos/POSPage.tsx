@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { cashService } from '../../servicios/cashService';
 import invoicesService from '../../servicios/invoicesService';
 import { useApp } from '../../contexto/useApp';
+import { RegisterPaymentModal } from '../../componentes/pos/RegisterPaymentModal';
 
 interface POSItem {
   id: string;
@@ -84,8 +85,12 @@ const POSPage: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState<any[]>([]);
   
+  // Estados para modal de registro de pagos
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<any>(null);
+  
   // Hook para manejar facturas pendientes
-  const { pendingInvoices, loading: pendingLoading, markAsInvoiced, refreshPendingInvoices } = usePendingInvoices();
+  const { pendingInvoices, loading: pendingLoading, refreshPendingInvoices } = usePendingInvoices();
 
   // Productos cargados desde backend /api/products
   const [products, setProducts] = useState<POSItem[]>([] as POSItem[]);
@@ -219,12 +224,12 @@ const POSPage: React.FC = () => {
   };
 
   const addPendingInvoiceToCart = (pendingInvoice: any) => {
-    const precio = Number(pendingInvoice.totalAmount) || Number(pendingInvoice.costoTotal) || Number(pendingInvoice.costoEstimado) || 0;
+    const precio = Number(pendingInvoice.totalAmount) || Number(pendingInvoice.total) || 0;
     
-    const descripcionServicio = `Servicio Automotriz - ${pendingInvoice.vehicleName || 'Vehículo'} | OT #${pendingInvoice.id?.slice(-8) || ''}`;
+    const descripcionServicio = `Factura ${pendingInvoice.numero} - ${pendingInvoice.clientName} | OT #${pendingInvoice.numero_ot || 'N/A'}`;
     
     const invoiceItem: CartItem = {
-      id: `invoice-${pendingInvoice.id}`,
+      id: `invoice-${pendingInvoice.factura_id}`,
       name: descripcionServicio,
       price: precio,
       quantity: 1,
@@ -237,10 +242,10 @@ const POSPage: React.FC = () => {
     };
     
     // Usar directamente los datos del pendingInvoice
-    const clienteToSelect: Client | null = pendingInvoice.clienteId && pendingInvoice.clientName ? {
-      id: pendingInvoice.clienteId,
+    const clienteToSelect: Client | null = pendingInvoice.cliente_id && pendingInvoice.clientName ? {
+      id: pendingInvoice.cliente_id.toString(),
       name: pendingInvoice.clientName,
-      phone: pendingInvoice.clientPhone || '',
+      phone: pendingInvoice.clientPhone || pendingInvoice.telefono || '',
       email: pendingInvoice.clientEmail || '',
       address: '',
       password: '',
@@ -329,6 +334,32 @@ const POSPage: React.FC = () => {
       return;
     }
 
+    // Detectar si es una factura pendiente (viene de DB)
+    const firstItem = posState.cart[0];
+    const isFromPendingInvoice = firstItem.id.startsWith('invoice-');
+    
+    if (isFromPendingInvoice) {
+      // Es una factura pendiente - abrir modal de registro de pagos
+      const facturaId = parseInt(firstItem.id.replace('invoice-', ''));
+      const factura = pendingInvoices.find(inv => inv.factura_id === facturaId);
+      
+      if (!factura) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se encontró la factura',
+          confirmButtonColor: '#3b82f6'
+        });
+        return;
+      }
+      
+      // Abrir modal de registro de pagos
+      setSelectedInvoiceForPayment(factura);
+      setShowPaymentModal(true);
+      return;
+    }
+
+    // Resto del código para facturación normal (productos)...
     // Paso 1: Confirmar el cobro
     const confirmResult = await Swal.fire({
       title: '¿Confirmar Cobro?',
@@ -368,19 +399,18 @@ const POSPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       const serviceItems = posState.cart.filter(item => item.type === 'service');
-      const productItems = posState.cart.filter(item => item.type === 'product');
 
       // Determinar el cliente final (priorizar el de la OT si existe)
       let finalClientId = posState.selectedClient?.id || null;
       let finalClientName = posState.selectedClient?.name || 'CONSUMIDOR FINAL';
       
-      // Si hay items de servicio (OT), usar el cliente de la primera OT
+      // Si hay items de servicio (factura), usar el cliente de la primera factura
       const firstServiceItem = serviceItems[0];
       if (firstServiceItem && firstServiceItem.id.startsWith('invoice-')) {
-        const workOrderId = firstServiceItem.id.replace('invoice-', '');
-        const originalInvoice = pendingInvoices.find(inv => inv.id === workOrderId);
-        if (originalInvoice && originalInvoice.clienteId) {
-          finalClientId = originalInvoice.clienteId;
+        const facturaId = parseInt(firstServiceItem.id.replace('invoice-', ''));
+        const originalInvoice = pendingInvoices.find(inv => inv.factura_id === facturaId);
+        if (originalInvoice && originalInvoice.cliente_id) {
+          finalClientId = originalInvoice.cliente_id.toString();
           finalClientName = originalInvoice.clientName || finalClientName;
         }
       }
@@ -388,24 +418,23 @@ const POSPage: React.FC = () => {
       let newInvoice = null;
       let generatedInvoiceNumber = '';
       
-      // Si hay OTs en el carrito, generar factura desde BD usando el SP
+      // Si hay facturas en el carrito, ya están generadas en BD
       if (serviceItems.length > 0 && serviceItems[0].id.startsWith('invoice-')) {
-        const workOrderId = serviceItems[0].id.replace('invoice-', '');
+        const facturaId = parseInt(serviceItems[0].id.replace('invoice-', ''));
         
         try {
-          const result = await markAsInvoiced(workOrderId, state.user?.id || 1);
-          
-          if (!result.success) {
-            throw new Error(result.message || 'Error al generar factura');
+          const originalInvoice = pendingInvoices.find(inv => inv.factura_id === facturaId);
+          if (!originalInvoice) {
+            throw new Error('Factura no encontrada');
           }
           
-          console.log(`✅ Factura generada desde BD: ${result.data?.numero_factura}`);
-          generatedInvoiceNumber = result.data?.numero_factura || '';
+          console.log(`✅ Procesando pago de factura: ${originalInvoice.numero}`);
+          generatedInvoiceNumber = originalInvoice.numero;
           
           // Crear objeto de factura completo para impresión (con items del carrito)
           newInvoice = {
-            id: result.data?.factura_id?.toString() || `inv-${Date.now()}`,
-            numero: result.data?.numero_factura || '',
+            id: facturaId.toString(),
+            numero: originalInvoice.numero,
             fecha: new Date().toISOString(),
             clientId: finalClientId,
             clientName: finalClientName,
@@ -424,46 +453,44 @@ const POSPage: React.FC = () => {
             discount: posState.discount,
             total: posState.total,
             metodoPago: 'Efectivo',
-            estado: 'pagada',
-            createdBy: state.user?.name || 'Usuario'
+            estado: 'pagada' as 'pagada' | 'pendiente' | 'anulada',
+            createdBy: state.user?.name || 'Usuario',
+            createdAt: new Date().toISOString()
           };
           
           // Agregar al historial
-          const originalInvoice = pendingInvoices.find(inv => inv.id === workOrderId);
-          if (originalInvoice) {
-            const historyRecord = {
-              workOrderId: workOrderId,
-              clientId: originalInvoice.clienteId,
-              clientName: originalInvoice.clientName || 'Cliente no especificado',
-              clientEmail: originalInvoice.clientEmail || '',
-              clientPhone: originalInvoice.clientPhone || '',
-              vehicleId: originalInvoice.vehiculoId,
-              vehicleName: originalInvoice.vehicleName || 'Vehículo no especificado',
-              vehiclePlate: originalInvoice.vehiclePlate || '',
-              vehicleColor: originalInvoice.vehicleColor || '',
-              serviceId: originalInvoice.servicioId || 'general',
-              serviceName: 'Servicio de Taller',
-              serviceDescription: originalInvoice.descripcion || 'Servicio completado y facturado',
-              serviceCategory: originalInvoice.tipoServicio || 'Mantenimiento',
-              servicePrice: originalInvoice.costoTotal,
-              serviceDuration: '1 hora',
-              status: 'completed',
-              paymentStatus: 'paid',
-              invoiceId: result.data?.factura_id?.toString() || '',
-              invoiceNumber: result.data?.numero_factura || '',
-              invoiceTotal: posState.total,
-              date: new Date().toISOString(),
-              notes: `Factura: ${result.data?.numero_factura} - Total: L.${posState.total.toFixed(2)}`
-            };
+          const historyRecord = {
+            workOrderId: originalInvoice.numero_ot || '',
+            clientId: originalInvoice.cliente_id.toString(),
+            clientName: originalInvoice.clientName || 'Cliente no especificado',
+            clientEmail: originalInvoice.clientEmail || '',
+            clientPhone: originalInvoice.clientPhone || '',
+            vehicleId: '',
+            vehicleName: originalInvoice.vehicleName || '',
+            vehiclePlate: originalInvoice.vehiclePlate || '',
+            vehicleColor: originalInvoice.vehicleColor || '',
+            serviceId: 'general',
+            serviceName: 'Servicio de Taller',
+            serviceDescription: 'Servicio completado y facturado',
+            serviceCategory: 'Mantenimiento',
+            servicePrice: originalInvoice.total,
+            serviceDuration: '1 hora',
+            status: 'completed',
+            paymentStatus: 'paid',
+            invoiceId: facturaId.toString(),
+            invoiceNumber: originalInvoice.numero,
+            invoiceTotal: posState.total,
+            date: new Date().toISOString(),
+            notes: `Factura: ${originalInvoice.numero} - Total: L.${posState.total.toFixed(2)}`
+          };
 
-            try {
-              await serviceHistoryService.addServiceHistory(historyRecord);
-            } catch (historyError) {
-              console.error('Error al agregar al historial:', historyError);
-            }
+          try {
+            await serviceHistoryService.addServiceHistory(historyRecord);
+          } catch (historyError) {
+            console.error('Error al agregar al historial:', historyError);
           }
         } catch (error) {
-          console.error(`Error al generar factura para orden ${workOrderId}:`, error);
+          console.error(`Error al procesar factura ${facturaId}:`, error);
           throw error; // Lanzar error para que se maneje abajo
         }
       } else {
@@ -697,7 +724,7 @@ const POSPage: React.FC = () => {
                   <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                   <p className="text-gray-500">No hay facturas pendientes</p>
                   <p className="text-xs text-gray-400 mt-2">
-                    💡 Tip: Las órdenes de trabajo deben estar en estado "Completada" para aparecer aquí
+                    💡 Tip: Las facturas se generan automáticamente al completar una orden de trabajo
                   </p>
                   <p className="text-xs text-gray-400">
                     Si acabas de completar una OT, presiona el botón "Actualizar"
@@ -707,24 +734,25 @@ const POSPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pendingInvoices.map(invoice => (
                     <div
-                      key={invoice.id}
+                      key={invoice.factura_id}
                       className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center">
                           <Wrench className="w-5 h-5 text-blue-600 mr-2" />
                           <span className="font-semibold text-sm">
-                            OT #{invoice.id?.slice(-8) || 'N/A'}
+                            {invoice.numero}
                           </span>
                         </div>
                         <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                          Pendiente
+                          {invoice.estado}
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 mb-3">
                         <p><strong>Cliente:</strong> {invoice.clientName}</p>
-                        <p><strong>Vehículo:</strong> {invoice.vehicleName}</p>
-                        <p><strong>Descripción:</strong> {invoice.descripcion}</p>
+                        <p><strong>OT:</strong> {invoice.numero_ot || 'N/A'}</p>
+                        <p><strong>Fecha:</strong> {new Date(invoice.fecha_emision).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-500 mt-1"><strong>CAI:</strong> {invoice.cai_grabado}</p>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="font-bold text-lg text-green-600">
@@ -1111,6 +1139,41 @@ const POSPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/*Modal de registro de pagos múltiples */}
+      {selectedInvoiceForPayment && (
+        <RegisterPaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedInvoiceForPayment(null);
+          }}
+          facturaId={selectedInvoiceForPayment.factura_id}
+          facturaNumero={selectedInvoiceForPayment.numero}
+          totalFactura={selectedInvoiceForPayment.total}
+          saldoPendienteInicial={selectedInvoiceForPayment.saldo_pendiente}
+          onSuccess={async () => {
+            // Limpiar carrito
+            clearCart();
+            setPosState(prev => ({ ...prev, selectedClient: null }));
+            
+            // Refrescar facturas pendientes
+            await refreshPendingInvoices();
+            
+            // Mostrar mensaje de éxito
+            await Swal.fire({
+              icon: 'success',
+              title: '¡Pago Registrado!',
+              text: `La factura ${selectedInvoiceForPayment.numero} ha sido pagada exitosamente`,
+              confirmButtonColor: '#10b981'
+            });
+            
+            // Cerrar modal
+            setShowPaymentModal(false);
+            setSelectedInvoiceForPayment(null);
+          }}
+        />
       )}
     </div>
   );

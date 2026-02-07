@@ -13,13 +13,12 @@ import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
 import additionalQuotationsService, { type AdditionalQuotation } from '../../servicios/additionalQuotationsService';
 import { getDisplayNames, getClientDisplayName, getVehicleDisplayName } from '../../utilidades/dataMappers';
 import signatureRequestsService from '../../servicios/signatureRequestsService';
-import { servicesService } from '../../servicios/apiService';
 
 const WorkOrdersPage = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderData[]>([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [limit, setLimit] = useState(20);
+  const [limit] = useState(20);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -44,15 +43,11 @@ const WorkOrdersPage = () => {
   const [completedTasksMap, setCompletedTasksMap] = useState<Map<string, boolean>>(new Map());
   
   // Estado para costos calculados de cada orden
-  const [orderCostsMap, setOrderCostsMap] = useState<Map<string, number>>(new Map());
+  const [orderCostsMap] = useState<Map<string, number>>(new Map());
 
   // Estados para el modal de decisión de autorización
   const [showDecisionModal, setShowDecisionModal] = useState(false);
   const [selectedOrderForDecision, setSelectedOrderForDecision] = useState<WorkOrderData | null>(null);
-  
-  // Estados para el modal de autorización
-  const [showAuthorizationModal, setShowAuthorizationModal] = useState(false);
-  const [selectedOrderForAuth, setSelectedOrderForAuth] = useState<WorkOrderData | null>(null);
   
   const loadWorkOrders = async (p = page) => {
     try {
@@ -307,12 +302,6 @@ const WorkOrdersPage = () => {
     }
   };
 
-  // Manejar envío de autorización al cliente
-  const handleSendAuthorization = (order: WorkOrderData) => {
-    setSelectedOrderForAuth(order);
-    setShowAuthorizationModal(true);
-  };
-
   const handleCompleteWorkOrder = async (orderId: string) => {
     if (await showConfirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
@@ -379,11 +368,11 @@ const WorkOrdersPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Órdenes de Trabajo</h1>
           <p className="text-gray-600">Gestiona todas las órdenes de trabajo del taller</p>
-          <p className="text-sm text-blue-600">Debug: {workOrders.length} órdenes cargadas | Loading: {loading ? 'Sí' : 'No'}</p>
+          <p className="text-sm text-blue-600">{workOrders.length} órdenes cargadas</p>
         </div>
         <div className="flex space-x-2">
           <Button 
-            onClick={loadWorkOrders} 
+            onClick={() => loadWorkOrders()} 
             variant="secondary"
             className="flex items-center space-x-2"
           >
@@ -394,7 +383,7 @@ const WorkOrdersPage = () => {
             className="flex items-center space-x-2"
           >
             <PlusIcon className="h-4 w-4" />
-            <span>Nueva rden</span>
+            <span>Nueva Orden</span>
           </Button>
         </div>
       </div>
@@ -402,7 +391,7 @@ const WorkOrdersPage = () => {
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-           <div className="text-center">
+          <div className="text-center">
             <div className="text-2xl font-bold text-gray-600">{workOrders.length}</div>
             <div className="text-sm text-gray-500">Total Órdenes</div>
           </div>
@@ -605,14 +594,14 @@ const WorkOrdersPage = () => {
                         {/* Estados para órdenes completadas o canceladas */}
                         {order.estado === 'Completada' && (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                             Completada
+                            Completada
                           </span>
                         )}
 
                         {order.estado === 'Cancelada' && (
                           <>
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                               Cancelada
+                              Cancelada
                             </span>
                             <button
                               onClick={async () => {
@@ -627,7 +616,7 @@ const WorkOrdersPage = () => {
                               className="text-blue-600 hover:text-blue-900"
                               title="Reactivar orden"
                             >
-                              
+                              ↻
                             </button>
                           </>
                         )}
