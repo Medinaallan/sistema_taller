@@ -30,6 +30,9 @@ export default function ApproveQuotationModal({
   
   // Detectar si la cotización ya está aprobada (solo necesitamos generar OT)
   const isAlreadyApproved = quotation?.estado_cotizacion === 'Aprobada';
+  
+  // Detectar si es cotización adicional (tiene ot_id) - no necesita formulario completo
+  const isAdditionalQuotation = quotation?.ot_id !== null && quotation?.ot_id !== undefined;
 
   // Cargar lista de usuarios (asesores y mecánicos) y establecer asesor actual
   useEffect(() => {
@@ -66,6 +69,12 @@ export default function ApproveQuotationModal({
   };
 
   const validateForm = (): boolean => {
+    // Si es cotización adicional, no se requieren los campos del formulario
+    if (isAdditionalQuotation) {
+      return true;
+    }
+    
+    // Para cotizaciones iniciales, validar todos los campos
     if (!formData.asesor_id) {
       setError('No se pudo obtener el ID del asesor. Por favor, recarga la página');
       return false;
@@ -97,13 +106,36 @@ export default function ApproveQuotationModal({
 
     try {
       console.log('Iniciando aprobación de cotización:', quotation.cotizacion_id);
+      console.log('Tipo:', isAdditionalQuotation ? 'Adicional' : 'Inicial');
       
+      const usuario_id = localStorage.getItem('usuario_id');
+      
+      // Si es cotización adicional, usar el flujo simplificado
+      if (isAdditionalQuotation) {
+        console.log('🔧 Cotización adicional - Aprobando y agregando tareas a OT existente:', quotation.ot_id);
+        
+        const result = await quotationsService.approveAdditionalQuotation(
+          quotation.cotizacion_id.toString()
+        );
+        
+        console.log('Resultado:', result);
+        
+        showSuccess(result.msg);
+        
+        onSuccess({
+          ot_id: result.ot_id || quotation.ot_id || 0,
+          numero_ot: result.numero_ot || quotation.numero_ot || `OT-${quotation.ot_id}`
+        });
+        
+        onClose();
+        return;
+      }
+      
+      // Para cotizaciones iniciales, usar el flujo completo
       // Convertir hora_estimada al formato HH:mm:ss
       const horaEstimada = formData.hora_estimada.includes(':') 
         ? formData.hora_estimada 
         : `${formData.hora_estimada}:00:00`;
-
-      const usuario_id = localStorage.getItem('usuario_id');
       
       const result = await quotationsService.approveAndGenerateWorkOrder(
         quotation.cotizacion_id.toString(),
@@ -168,17 +200,34 @@ export default function ApproveQuotationModal({
     }
   };
 
+  // Determinar título del modal según el tipo de cotización
+  const getModalTitle = () => {
+    if (isAdditionalQuotation) {
+      return "Aprobar Cotización Adicional";
+    }
+    return isAlreadyApproved ? "Generar Orden de Trabajo" : "Aprobar Cotización y Generar Orden de Trabajo";
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isAlreadyApproved ? "Generar Orden de Trabajo" : "Aprobar Cotización y Generar Orden de Trabajo"}
+      title={getModalTitle()}
       size="lg"
     >
       {quotation && (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Alerta para cotizaciones adicionales */}
+          {isAdditionalQuotation && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <p className="text-sm text-purple-900">
+                <strong>🔧 Cotización Adicional:</strong> Esta cotización se agregará como nuevas tareas a la orden de trabajo existente <strong>{quotation.numero_ot || `OT-${quotation.ot_id}`}</strong>. No es necesario completar datos adicionales.
+              </p>
+            </div>
+          )}
+          
           {/* Alerta si la cotización ya está aprobada */}
-          {isAlreadyApproved && (
+          {isAlreadyApproved && !isAdditionalQuotation && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
                 <strong>Información:</strong> Esta cotización ya fue aprobada previamente. Este formulario generará la orden de trabajo asociada.
@@ -206,6 +255,12 @@ export default function ApproveQuotationModal({
                   <dt className="text-sm font-medium text-blue-900">Total</dt>
                   <dd className="text-sm text-blue-800 font-semibold">L{quotation.total?.toFixed(2)}</dd>
                 </div>
+                {isAdditionalQuotation && (
+                  <div>
+                    <dt className="text-sm font-medium text-blue-900">OT Existente</dt>
+                    <dd className="text-sm text-blue-800 font-semibold">{quotation.numero_ot || `OT-${quotation.ot_id}`}</dd>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -217,7 +272,8 @@ export default function ApproveQuotationModal({
             </div>
           )}
 
-          {/* Información requerida para la OT */}
+          {/* Información requerida para la OT - Solo mostrar para cotizaciones iniciales */}
+          {!isAdditionalQuotation && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Información de la Orden de Trabajo</h3>
             
@@ -266,13 +322,16 @@ export default function ApproveQuotationModal({
               required
             />
           </div>
+          )}
 
           {/* Información importante */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-800">
-              <strong>Nota:</strong> {isAlreadyApproved 
-                ? 'Se generará una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.'
-                : 'Al aprobar esta cotización, se generará automáticamente una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.'}
+              <strong>Nota:</strong> {isAdditionalQuotation
+                ? 'Al aprobar esta cotización adicional, los servicios cotizados se agregarán como nuevas tareas a la orden de trabajo existente y se sumará el costo al total de la OT.'
+                : (isAlreadyApproved 
+                  ? 'Se generará una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.'
+                  : 'Al aprobar esta cotización, se generará automáticamente una orden de trabajo con las especificaciones proporcionadas. Los servicios cotizados se convertirán en tareas de la orden de trabajo.')}
             </p>
           </div>
 
@@ -292,8 +351,8 @@ export default function ApproveQuotationModal({
               disabled={loading}
             >
               {loading 
-                ? (isAlreadyApproved ? 'Generando OT...' : 'Aprobando y generando OT...') 
-                : (isAlreadyApproved ? 'Generar OT' : ' Aprobar y Generar OT')}
+                ? (isAdditionalQuotation ? 'Aprobando...' : (isAlreadyApproved ? 'Generando OT...' : 'Aprobando y generando OT...')) 
+                : (isAdditionalQuotation ? '✓ Aprobar y Agregar Tareas' : (isAlreadyApproved ? 'Generar OT' : '✓ Aprobar y Generar OT'))}
             </Button>
           </div>
         </form>

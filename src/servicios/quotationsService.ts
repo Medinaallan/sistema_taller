@@ -15,6 +15,7 @@ export interface QuotationData {
   numero_ot: string;
   nombre_cliente: string;
   placa_vehiculo: string;
+  procesada_a_ot?: number | boolean; // 0/1 o false/true - Candado para evitar procesar dos veces
 }
 
 export interface QuotationResponse {
@@ -71,8 +72,20 @@ class QuotationsService {
     }
   }
 
-  // Crear nueva cotización
-  async createQuotation(quotationData: any): Promise<{ cotizacion_id: string; success: boolean; msg: string; allow: boolean }> {
+  // Crear nueva cotización (desde cita o desde OT)
+  async createQuotation(quotationData: {
+    cita_id?: number | null;
+    ot_id?: number | null;
+    fecha_vencimiento: string;
+    comentario: string;
+    registrado_por: number | null;
+  }): Promise<{ cotizacion_id: string; success: boolean; msg: string; allow: boolean }> {
+    // Validación: debe tener cita_id O ot_id, no ambos ni ninguno
+    if ((!quotationData.cita_id && !quotationData.ot_id) || 
+        (quotationData.cita_id && quotationData.ot_id)) {
+      throw new Error('Debe proporcionar cita_id O ot_id, no ambos');
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/quotations`, {
         method: 'POST',
@@ -84,8 +97,9 @@ class QuotationsService {
       
       const result = await response.json();
       
-      if (!response.ok) {
-        throw new Error(result.message || 'Error al crear cotización');
+      // Manejar correctamente cuando allow=false o la respuesta no es exitosa
+      if (!response.ok || result.allow === false) {
+        throw new Error(result.message || result.msg || 'Error al crear cotización');
       }
       
       return result;
@@ -211,6 +225,57 @@ class QuotationsService {
       };
     } catch (error) {
       console.error('Error en flujo de aprobación y generación:', error);
+      throw error;
+    }
+  }
+
+  // Flujo para cotizaciones adicionales: Aprobar + Procesar a OT existente
+  async approveAdditionalQuotation(quotationId: string): Promise<{
+    quotationApproved: boolean;
+    tasksAdded: boolean;
+    ot_id?: number;
+    numero_ot?: string;
+    msg: string;
+  }> {
+    try {
+      
+      // Verificar que sea cotización adicional
+      const quotation = await this.getQuotationById(quotationId);
+      if (!quotation) throw new Error('Cotización no encontrada');
+      if (!quotation.ot_id) throw new Error('Esta no es una cotización adicional');
+      
+      const alreadyApproved = quotation.estado_cotizacion === 'Aprobada';
+      
+      // Paso 1: Aprobar cotización solo si no está aprobada
+      if (!alreadyApproved) {
+        console.log(`Paso 1: Aprobando cotización adicional ${quotationId}...`);
+        await this.approveQuotation(quotationId);
+        console.log(' Cotización adicional aprobada');
+      } else {
+        console.log(' Cotización adicional ya estaba aprobada');
+      }
+      
+      // Paso 2: Procesar cotización adicional (SP_GENERAR_OT_DESDE_COTIZACION)
+      // Para cotizaciones adicionales, el SP solo necesita el ID, no los datos de OT
+      console.log(`Paso 2: Procesando cotización adicional a OT ${quotation.ot_id}...`);
+      const usuario_id = localStorage.getItem('usuario_id');
+      
+      const workOrderResult = await this.generateWorkOrderFromQuotation(quotationId, {
+        asesor_id: usuario_id ? parseInt(usuario_id) : 1, // Usar usuario actual o default
+        generado_por: usuario_id ? parseInt(usuario_id) : null,
+      });
+      
+      console.log(' Tareas agregadas a OT existente:', workOrderResult);
+      
+      return {
+        quotationApproved: true,
+        tasksAdded: workOrderResult.allow,
+        ot_id: workOrderResult.ot_id || quotation.ot_id,
+        numero_ot: workOrderResult.numero_ot || quotation.numero_ot,
+        msg: `Cotización adicional aprobada. Tareas agregadas a OT ${workOrderResult.numero_ot || quotation.numero_ot}.`
+      };
+    } catch (error) {
+      console.error('Error en flujo de aprobación de cotización adicional:', error);
       throw error;
     }
   }

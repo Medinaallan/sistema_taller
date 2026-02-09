@@ -3,20 +3,90 @@ const router = express.Router();
 const { sql, getConnection } = require('../config/database');
 const notificationsService = require('../services/notificationsService');
 
-// POST /quotations - Registrar nueva cotización
+// POST /quotations - Registrar nueva cotización (desde cita o desde OT)
 router.post('/', async (req, res) => {
-	const { cita_id, fecha_vencimiento, comentario, registrado_por } = req.body;
+	const { cita_id, ot_id, fecha_vencimiento, comentario, registrado_por } = req.body;
+
+	// Validación: debe tener cita_id O ot_id, no ambos ni ninguno
+	if ((!cita_id && !ot_id) || (cita_id && ot_id)) {
+		return res.status(400).json({
+			success: false,
+			message: 'Debe proporcionar cita_id O ot_id, no ambos'
+		});
+	}
 
 	try {
 		const pool = await getConnection();
+
+		// SI se proporciona ot_id, validar el estado de la OT ANTES de llamar al SP
+		if (ot_id) {
+			console.log(`🔍 Validando estado de OT ${ot_id} antes de crear cotización...`);
+			
+			const otResult = await pool.request()
+				.input('ot_id', sql.Int, parseInt(ot_id))
+				.input('cliente_id', sql.Int, null)
+				.input('placa', sql.VarChar(50), null)
+				.input('estado', sql.VarChar(50), null)
+				.input('numero_ot', sql.VarChar(20), null)
+				.execute('SP_OBTENER_ORDENES_TRABAJO');
+
+			if (otResult.recordset.length === 0) {
+				console.log(`❌ OT ${ot_id} no encontrada`);
+				return res.status(404).json({
+					success: false,
+					message: 'Orden de trabajo no encontrada'
+				});
+			}
+
+			const ot = otResult.recordset[0];
+			const estadosNoPermitidos = ['Cerrada', 'Cancelada', 'Facturada'];
+			
+			if (estadosNoPermitidos.includes(ot.estado_ot)) {
+				console.log(`❌ No se puede crear cotización para OT con estado "${ot.estado_ot}"`);
+				return res.status(400).json({
+					success: false,
+					message: `No se puede crear una cotización para una orden de trabajo con estado "${ot.estado_ot}"`,
+					estadoActual: ot.estado_ot,
+					numeroOT: ot.numero_ot
+				});
+			}
+
+			console.log(`✅ OT ${ot.numero_ot} en estado "${ot.estado_ot}" - puede recibir cotizaciones`);
+		}
+
+		// Llamar al SP con ambos parámetros (cita_id o ot_id)
+		console.log(`📝 Creando cotización ${ot_id ? `para OT ${ot_id}` : `para cita ${cita_id}`}`);
+		
 		const result = await pool.request()
 			.input('cita_id', sql.Int, cita_id || null)
+			.input('ot_id', sql.Int, ot_id || null)
 			.input('fecha_vencimiento', sql.DateTime, fecha_vencimiento)
 			.input('comentario', sql.VarChar(300), comentario || '')
 			.input('registrado_por', sql.Int, registrado_por)
 			.execute('SP_REGISTRAR_COTIZACION');
 
 		const output = result.recordset?.[0] || {};
+
+		console.log('🔵 [DEBUG] Resultado del SP_REGISTRAR_COTIZACION:');
+		console.log('  - cita_id:', cita_id);
+		console.log('  - ot_id:', ot_id);
+		console.log('  - result.recordset:', result.recordset);
+		console.log('  - output completo:', JSON.stringify(output, null, 2));
+		console.log('  - output.cotizacion_id:', output?.cotizacion_id);
+		console.log('  - output.allow:', output?.allow);
+		console.log('  - output.msg:', output?.msg);
+
+		// Manejar correctamente la respuesta del SP
+		if (output.allow === 0 || output.allow === false) {
+			console.log(`⚠️ SP rechazó la operación: ${output.msg}`);
+			return res.status(400).json({
+				success: false,
+				message: output.msg || 'El SP rechazó la operación',
+				allow: false
+			});
+		}
+
+		console.log(`✅ Cotización ${output.cotizacion_id} creada exitosamente`);
 
 		// Intentar notificar al cliente que la cotización fue creada
 		try {
@@ -31,7 +101,8 @@ router.post('/', async (req, res) => {
 
 				const cot = cotRes.recordset && cotRes.recordset[0] ? cotRes.recordset[0] : null;
 				if (cot && cot.cliente_id) {
-					await notificationsService.notifyQuotationStatusChange(cot.cliente_id, cot, 'Creada');
+					const tipoCotizacion = ot_id ? 'adicional' : 'inicial';
+					await notificationsService.notifyQuotationStatusChange(cot.cliente_id, cot, `Creada (${tipoCotizacion})`);
 				}
 			}
 		} catch (notifErr) {
@@ -97,26 +168,34 @@ router.get('/client/:userId', async (req, res) => {
 			.execute('SP_OBTENER_CITAS');
 
 		console.log(`📋 Citas encontradas para cliente_id ${cliente_id}: ${citasResult.recordset.length}`);
-		
-		if (citasResult.recordset.length === 0) {
-			console.log(`⚠️ No hay citas para el cliente_id ${cliente_id}`);
-			return res.json({
-				success: true,
-				data: [],
-				message: 'No se encontraron citas para este cliente'
-			});
-		}
-
-		// Mostrar info de las citas
-		console.log('📌 Citas:', citasResult.recordset.map(c => ({
-			cita_id: c.cita_id,
-			numero_cita: c.numero_cita,
-			nombre_cliente: c.nombre_cliente
-		})));
 
 		// Obtener los IDs de las citas del cliente
 		const citaIds = citasResult.recordset.map(cita => cita.cita_id);
 		console.log(`🎯 IDs de citas a buscar: ${citaIds.join(', ')}`);
+
+		// Paso 2.5: Obtener las OTs del cliente usando SP_OBTENER_ORDENES_TRABAJO
+		const otsResult = await pool.request()
+			.input('ot_id', sql.Int, null)
+			.input('cliente_id', sql.Int, cliente_id)
+			.input('placa', sql.VarChar(50), null)
+			.input('estado', sql.VarChar(50), null)
+			.input('numero_ot', sql.VarChar(20), null)
+			.execute('SP_OBTENER_ORDENES_TRABAJO');
+
+		console.log(`🔧 OTs encontradas para cliente_id ${cliente_id}: ${otsResult.recordset.length}`);
+
+		// Obtener los IDs de las OTs del cliente
+		const otIds = otsResult.recordset.map(ot => ot.ot_id);
+		console.log(`🎯 IDs de OTs a buscar: ${otIds.join(', ')}`);
+
+		if (citasResult.recordset.length === 0 && otsResult.recordset.length === 0) {
+			console.log(`⚠️ No hay citas ni OTs para el cliente_id ${cliente_id}`);
+			return res.json({
+				success: true,
+				data: [],
+				message: 'No se encontraron citas ni órdenes de trabajo para este cliente'
+			});
+		}
 
 		// Paso 3: Obtener todas las cotizaciones
 		const cotizacionesResult = await pool.request()
@@ -129,16 +208,26 @@ router.get('/client/:userId', async (req, res) => {
 
 		console.log(`💼 Total cotizaciones en sistema: ${cotizacionesResult.recordset.length}`);
 
-		// Paso 4: Filtrar las cotizaciones que pertenecen a las citas del cliente
-		const cotizacionesCliente = cotizacionesResult.recordset.filter(cot => 
-			citaIds.includes(cot.cita_id)
-		);
+		// Paso 4: Filtrar las cotizaciones que pertenecen a las citas O a las OTs del cliente
+		const cotizacionesCliente = cotizacionesResult.recordset.filter(cot => {
+			// Cotización inicial (con cita_id)
+			if (cot.cita_id && citaIds.includes(cot.cita_id)) {
+				return true;
+			}
+			// Cotización adicional (con ot_id)
+			if (cot.ot_id && otIds.includes(cot.ot_id)) {
+				return true;
+			}
+			return false;
+		});
 
 		console.log(`✅ Cotizaciones del cliente: ${cotizacionesCliente.length}`);
 		if (cotizacionesCliente.length > 0) {
 			console.log('📄 Cotizaciones encontradas:', cotizacionesCliente.map(c => ({
 				numero: c.numero_cotizacion,
 				cita_id: c.cita_id,
+				ot_id: c.ot_id,
+				tipo: c.cita_id ? 'inicial' : 'adicional',
 				cliente: c.nombre_cliente
 			})));
 		}
@@ -365,6 +454,82 @@ router.put('/:cotizacionId', async (req, res) => {
 			});
 		}
 
+		// Primero, obtener información de la cotización para saber si es adicional (tiene ot_id)
+		const cotRes = await pool.request()
+			.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
+			.input('cita_id', sql.Int, null)
+			.input('ot_id', sql.Int, null)
+			.input('estado', sql.VarChar(50), null)
+			.input('numero_cotizacion', sql.VarChar(20), null)
+			.execute('SP_OBTENER_COTIZACIONES');
+
+		const cotizacion = cotRes.recordset && cotRes.recordset[0] ? cotRes.recordset[0] : null;
+		if (!cotizacion) {
+			return res.status(404).json({
+				success: false,
+				message: 'Cotización no encontrada'
+			});
+		}
+
+		const esAdicional = cotizacion.ot_id !== null;
+		console.log(`\n${'='.repeat(80)}`);
+		console.log(`${esAdicional ? '🔧 Cotización ADICIONAL' : '📋 Cotización INICIAL'}`);
+		console.log(`Cotización ID: ${cotizacionId}`);
+		console.log(`OT: ${cotizacion.ot_id || 'N/A'}`);
+		console.log(`Decisión: ${decision}`);
+		console.log(`Total cotización: L${cotizacion.total}`);
+		console.log(`${'='.repeat(80)}\n`);
+
+		// Si es adicional y se va a aprobar, consultar DIRECTAMENTE la tabla para ver el costo actual
+		if (esAdicional && cotizacion.ot_id && decision === 'Aprobada') {
+			try {
+				console.log(`🔍 Consultando DIRECTAMENTE la tabla OrdenesTrabajoTable para OT #${cotizacion.ot_id}...`);
+				const directQuery = await pool.request()
+					.input('ot_id', sql.Int, cotizacion.ot_id)
+					.query('SELECT * FROM OrdenesTrabajoTable WHERE ot_id = @ot_id');
+				
+				if (directQuery.recordset && directQuery.recordset.length > 0) {
+					const otDirecta = directQuery.recordset[0];
+					console.log('📊 Columnas disponibles:', Object.keys(otDirecta));
+					console.log('📊 Datos OT (consulta directa):', JSON.stringify(otDirecta, null, 2));
+				} else {
+					console.error('❌ No se encontró la OT en la tabla');
+				}
+			} catch (directErr) {
+				console.error('Error en consulta directa:', directErr.message);
+			}
+		}
+
+		// Si es adicional, obtener el costo actual de la OT antes de aprobar
+		let costoAntes = null;
+		if (esAdicional && cotizacion.ot_id && decision === 'Aprobada') {
+			console.log(`🔍 Buscando OT #${cotizacion.ot_id} ANTES de aprobar...`);
+			const otAntesRes = await pool.request()
+				.input('ot_id', sql.Int, cotizacion.ot_id)
+				.input('cliente_id', sql.Int, null)
+				.input('placa', sql.VarChar(50), null)
+				.input('estado', sql.VarChar(50), null)
+				.input('numero_ot', sql.VarChar(20), null)
+				.execute('SP_OBTENER_ORDENES_TRABAJO');
+			
+			console.log('📊 Resultado SP_OBTENER_ORDENES_TRABAJO:', otAntesRes.recordset);
+			console.log('📊 Cantidad de registros:', otAntesRes.recordset?.length);
+			
+			if (otAntesRes.recordset && otAntesRes.recordset.length > 0) {
+				const ot = otAntesRes.recordset[0];
+				console.log('📊 Campos disponibles en OT:', Object.keys(ot));
+				console.log('📊 Datos completos OT:', JSON.stringify(ot, null, 2));
+				
+				// Buscar el campo correcto para el costo
+				costoAntes = ot.costo_estimado || ot.costoEstimado || ot.costo_total || ot.total || ot.monto_total || 0;
+				console.log(`💰 Costo ANTES de aprobar: L${costoAntes} | Cotización adicional: L${cotizacion.total}`);
+			} else {
+				console.error('❌ ERROR: SP_OBTENER_ORDENES_TRABAJO no devolvió resultados para ot_id:', cotizacion.ot_id);
+				console.error('Esto es un problema crítico - la OT debería existir');
+			}
+		}
+
+		// Ejecutar el SP de aprobación
 		const result = await pool.request()
 			.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
 			.input('usuario_id', sql.Int, usuario_id)
@@ -375,20 +540,47 @@ router.put('/:cotizacionId', async (req, res) => {
 		console.log('SP ejecutado exitosamente. Recordset:', result.recordset);
 		const output = result.recordset?.[0] || {};
 
-		// Si el SP indica que la acción fue permitida, notificar al cliente
+		// Si es adicional, verificar el costo DESPUÉS de aprobar
+		if (esAdicional && cotizacion.ot_id && decision === 'Aprobada' && costoAntes !== null) {
+			const otDespuesRes = await pool.request()
+				.input('ot_id', sql.Int, cotizacion.ot_id)
+				.input('cliente_id', sql.Int, null)
+				.input('placa', sql.VarChar(50), null)
+				.input('estado', sql.VarChar(50), null)
+				.input('numero_ot', sql.VarChar(20), null)
+				.execute('SP_OBTENER_ORDENES_TRABAJO');
+			
+			if (otDespuesRes.recordset && otDespuesRes.recordset[0]) {
+				const ot = otDespuesRes.recordset[0];
+				const costoDespues = ot.costo_estimado || ot.costoEstimado || ot.costo_total || ot.total || ot.monto_total || 0;
+				const esperado = parseFloat(costoAntes) + parseFloat(cotizacion.total);
+				console.log(`\n💰 VERIFICACIÓN DE COSTOS:`);
+				console.log(`   Costo ANTES:     L${costoAntes}`);
+				console.log(`   Cotización:      L${cotizacion.total}`);
+				console.log(`   Costo ESPERADO:  L${esperado.toFixed(2)} (ANTES + Cotización)`);
+				console.log(`   Costo DESPUÉS:   L${costoDespues}`);
+				
+				if (Math.abs(costoDespues - esperado) > 0.01) {
+					console.error(`   ⚠️ ERROR: El costo NO se sumó correctamente en SP_GESTIONAR_APROBACION_COTIZACION!`);
+					console.error(`   El SP está REEMPLAZANDO (${costoDespues}) en lugar de SUMAR (${esperado.toFixed(2)})`);
+					console.error(`   🔧 SOLUCIÓN: Modificar SP_GESTIONAR_APROBACION_COTIZACION para que haga:`);
+					console.error(`      UPDATE OrdenesTrabajoTable SET costo_estimado = costo_estimado + @total_cotizacion WHERE ot_id = @ot_id`);
+				} else {
+					console.log(`   ✅ Costo sumado correctamente`);
+				}
+				console.log(`${'='.repeat(80)}\n`);
+			}
+		}
+
+		console.log(`\n✅ Cotización ${decision === 'Aprobada' ? 'aprobada' : 'rechazada'} exitosamente`);
+		console.log(`Tipo: ${esAdicional ? 'Adicional (OT #' + cotizacion.ot_id + ')' : 'Inicial'}`);
+		console.log(`💡 Nota: Si es aprobada, use el endpoint /generar-ot para procesarla a OT\n`);
+
+		// Notificar al cliente
 		if (output.allow) {
 			try {
-				const cotRes = await pool.request()
-					.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
-					.input('cita_id', sql.Int, null)
-					.input('ot_id', sql.Int, null)
-					.input('estado', sql.VarChar(50), null)
-					.input('numero_cotizacion', sql.VarChar(20), null)
-					.execute('SP_OBTENER_COTIZACIONES');
-
-				const cot = cotRes.recordset && cotRes.recordset[0] ? cotRes.recordset[0] : null;
-				if (cot && cot.cliente_id) {
-					await notificationsService.notifyQuotationStatusChange(cot.cliente_id, cot, decision);
+				if (cotizacion && cotizacion.cliente_id) {
+					await notificationsService.notifyQuotationStatusChange(cotizacion.cliente_id, cotizacion, decision);
 				}
 			} catch (notifErr) {
 				console.error('Error enviando notificación de cambio de estado de cotización:', notifErr);
@@ -526,6 +718,19 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 		}
 
 		console.log('Cotización encontrada:', cotizacion);
+		
+		// Detectar si es cotización adicional (tiene ot_id)
+		const esAdicional = cotizacion.ot_id !== null;
+		
+		if (esAdicional) {
+			console.log(`\n${'='.repeat(80)}`);
+			console.log('🔧 COTIZACIÓN ADICIONAL DETECTADA');
+			console.log(`Cotización: ${cotizacion.numero_cotizacion}`);
+			console.log(`Se agregará a OT existente: ${cotizacion.numero_ot || cotizacion.ot_id}`);
+			console.log(`Total a agregar: L${cotizacion.total}`);
+			console.log('El SP agregará las tareas automáticamente');
+			console.log(`${'='.repeat(80)}\n`);
+		}
 
 		// Obtener la cita asociada para saber el tipo de servicio
 		let tipoServicioId = null;
@@ -550,6 +755,25 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 			}
 		}
 
+		// Si es adicional, obtener costo ANTES de procesar
+		let costoAntesGenerar = null;
+		if (esAdicional && cotizacion.ot_id) {
+			const otAntesGenerar = await pool.request()
+				.input('ot_id', sql.Int, cotizacion.ot_id)
+				.input('cliente_id', sql.Int, null)
+				.input('placa', sql.VarChar(50), null)
+				.input('estado', sql.VarChar(50), null)
+				.input('numero_ot', sql.VarChar(20), null)
+				.execute('SP_OBTENER_ORDENES_TRABAJO');
+			
+			if (otAntesGenerar.recordset && otAntesGenerar.recordset[0]) {
+				const ot = otAntesGenerar.recordset[0];
+				console.log('📊 Campos en OT (antes generar):', Object.keys(ot));
+				costoAntesGenerar = ot.costo_estimado || ot.costoEstimado || ot.costo_total || ot.total || ot.monto_total || 0;
+				console.log(`💰 Costo OT ANTES de generar: L${costoAntesGenerar}`);
+			}
+		}
+
 		// Paso 2: Generar la orden de trabajo
 		console.log('Paso 2: Generando orden de trabajo...');
 		const result = await pool.request()
@@ -567,8 +791,53 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 
 		const output = result.recordset?.[0] || {};
 		
-		// Paso 3: Crear tarea inicial automáticamente si hay tipo de servicio
-		if (output.allow && output.ot_id && tipoServicioId) {
+		// Log detallado del resultado
+		if (esAdicional) {
+			console.log(`\n✅ COTIZACIÓN ADICIONAL PROCESADA`);
+			console.log(`Tareas agregadas a OT: ${output.numero_ot || cotizacion.numero_ot}`);
+			console.log(`Estado OT actualizado: ${output.estado_ot || 'En Proceso'}`);
+			console.log(`Respuesta SP:`, output);
+			
+			// Verificar costo DESPUÉS de procesar
+			if (costoAntesGenerar !== null && output.ot_id) {
+				const otDespuesGenerar = await pool.request()
+					.input('ot_id', sql.Int, output.ot_id || cotizacion.ot_id)
+					.input('cliente_id', sql.Int, null)
+					.input('placa', sql.VarChar(50), null)
+					.input('estado', sql.VarChar(50), null)
+					.input('numero_ot', sql.VarChar(20), null)
+					.execute('SP_OBTENER_ORDENES_TRABAJO');
+				
+				if (otDespuesGenerar.recordset && otDespuesGenerar.recordset[0]) {
+					const ot = otDespuesGenerar.recordset[0];
+					const costoDespuesGenerar = ot.costo_estimado || ot.costoEstimado || ot.costo_total || ot.total || ot.monto_total || 0;
+					const esperado = parseFloat(costoAntesGenerar) + parseFloat(cotizacion.total);
+					console.log(`\n💰 VERIFICACIÓN DE COSTOS (POST SP_GENERAR_OT):`);
+					console.log(`   Costo ANTES:     L${costoAntesGenerar}`);
+					console.log(`   Cotización:      L${cotizacion.total}`);
+					console.log(`   Costo ESPERADO:  L${esperado.toFixed(2)}`);
+					console.log(`   Costo DESPUÉS:   L${costoDespuesGenerar}`);
+					
+					if (Math.abs(costoDespuesGenerar - esperado) > 0.01) {
+						console.error(`   ❌ ERROR EN SP_GENERAR_OT_DESDE_COTIZACION`);
+						console.error(`   El SP está REEMPLAZANDO (${costoDespuesGenerar}) en lugar de SUMAR (${esperado.toFixed(2)})`);
+						console.error(`   🔧 SOLUCIÓN: Modificar SP_GENERAR_OT_DESDE_COTIZACION para que cuando detecte ot_id != NULL haga:`);
+						console.error(`      UPDATE OrdenesTrabajoTable SET costo_estimado = costo_estimado + (SELECT SUM(total) FROM CotizacionesItems WHERE cotizacion_id = @cotizacion_id)`);
+					} else {
+						console.log(`   ✅ Costo sumado correctamente`);
+					}
+				}
+			}
+			console.log(`${'='.repeat(80)}\n`);
+		} else {
+			console.log(`\n✅ NUEVA OT CREADA`);
+			console.log(`Número OT: ${output.numero_ot}`);
+			console.log(`ID OT: ${output.ot_id}`);
+			console.log(`${'='.repeat(80)}\n`);
+		}
+		
+		// Paso 3: Crear tarea inicial automáticamente si hay tipo de servicio (solo para cotizaciones iniciales)
+		if (!esAdicional && output.allow && output.ot_id && tipoServicioId) {
 			console.log(`Paso 3: Creando tarea inicial para OT ${output.ot_id}...`);
 			try {
 				const tareaResult = await pool.request()

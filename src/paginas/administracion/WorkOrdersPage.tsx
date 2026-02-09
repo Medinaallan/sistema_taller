@@ -5,6 +5,7 @@ import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlert
 import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderModal';
 import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
 import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
+import CreateQuotationFromOTModal from '../../componentes/quotations/CreateQuotationFromOTModal';
 import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
 import AuthorizationDecisionModal from '../../componentes/ordenes-trabajo/AuthorizationDecisionModal';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
@@ -36,6 +37,9 @@ const WorkOrdersPage = () => {
   const [showTasksModal, setShowTasksModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedOrderForTasks, setSelectedOrderForTasks] = useState<WorkOrderData | null>(null);
+  
+  // Estados para cotización desde OT
+  const [showQuotationFromOTModal, setShowQuotationFromOTModal] = useState(false);
 
   // Estados para control de calidad
   const [showQualityControlModal, setShowQualityControlModal] = useState(false);
@@ -202,6 +206,20 @@ const WorkOrdersPage = () => {
     // Cerrar modal de agregar tarea y reabrir modal de lista de tareas
     setShowAddTaskModal(false);
     setShowTasksModal(true);
+  };
+
+  const handleAddQuotationClick = () => {
+    // Cerrar modal de tareas y abrir modal de cotización
+    setShowTasksModal(false);
+    setShowQuotationFromOTModal(true);
+  };
+
+  const handleQuotationFromOTSuccess = () => {
+    // Cerrar modal de cotización y reabrir modal de tareas
+    setShowQuotationFromOTModal(false);
+    setShowTasksModal(true);
+    // Recargar órdenes de trabajo
+    loadWorkOrders();
   };
 
   // Verificar si todas las tareas de una OT están completadas
@@ -769,6 +787,7 @@ const WorkOrdersPage = () => {
               setShowTasksModal(false);
               setShowAddTaskModal(true);
             }}
+            onAddQuotationClick={handleAddQuotationClick}
           />
 
           <AddTaskModal
@@ -776,6 +795,15 @@ const WorkOrdersPage = () => {
             onClose={handleAddTaskModalClose}
             workOrder={selectedOrderForTasks}
             onSuccess={handleAddTaskSuccess}
+          />
+
+          <CreateQuotationFromOTModal
+            isOpen={showQuotationFromOTModal}
+            onClose={() => {
+              setShowQuotationFromOTModal(false);
+            }}
+            workOrder={selectedOrderForTasks}
+            onSuccess={handleQuotationFromOTSuccess}
           />
         </>
       )}

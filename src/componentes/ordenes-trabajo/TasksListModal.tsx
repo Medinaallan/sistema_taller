@@ -9,13 +9,15 @@ interface TasksListModalProps {
   onClose: () => void;
   workOrder: WorkOrderData;
   onAddTaskClick: () => void;
+  onAddQuotationClick: () => void;
 }
 
 const TasksListModal: React.FC<TasksListModalProps> = ({ 
   isOpen, 
   onClose, 
   workOrder,
-  onAddTaskClick 
+  onAddTaskClick,
+  onAddQuotationClick 
 }) => {
   const [tareas, setTareas] = useState<OTTarea[]>([]);
   const [loading, setLoading] = useState(false);
@@ -142,20 +144,30 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
           )}
         </div>
 
-        {/* Botón para agregar nueva tarea */}
-        <div className="flex justify-end">
-          {workOrder.estado === 'Completada' ? (
+        {/* Botones para agregar tarea o cotización */}
+        <div className="flex justify-end gap-3">
+          {workOrder.estado === 'Completada' || workOrder.estado === 'Cerrada' || workOrder.estado === 'Cancelada' ? (
             <div className="text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-md">
-              ⚠️ No se pueden agregar tareas a una orden completada
+              ⚠️ No se pueden agregar tareas ni cotizaciones a una orden {workOrder.estado.toLowerCase()}
             </div>
           ) : (
-            <Button
-              onClick={onAddTaskClick}
-              className="flex items-center space-x-2"
-            >
-              <span>➕</span>
-              <span>Agregar Tarea</span>
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                onClick={onAddQuotationClick}
+                className="flex items-center space-x-2"
+              >
+                <span>📋</span>
+                <span>Agregar Cotización</span>
+              </Button>
+              <Button
+                onClick={onAddTaskClick}
+                className="flex items-center space-x-2"
+              >
+                <span>➕</span>
+                <span>Agregar Tarea</span>
+              </Button>
+            </>
           )}
         </div>
 
