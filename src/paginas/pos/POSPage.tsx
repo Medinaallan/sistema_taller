@@ -6,6 +6,7 @@ import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 import Swal from 'sweetalert2';
 import { cashService } from '../../servicios/cashService';
 import invoicesService from '../../servicios/invoicesService';
+import invoiceItemsService from '../../servicios/invoiceItemsService';
 import { useApp } from '../../contexto/useApp';
 import { RegisterPaymentModal } from '../../componentes/pos/RegisterPaymentModal';
 
@@ -90,6 +91,9 @@ const POSPage: React.FC = () => {
   // Estados para modal de registro de pagos
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<any>(null);
+  
+  // Estado para factura activa (real-time POS)
+  const [activeFacturaId, setActiveFacturaId] = useState<number | null>(null);
   
   // Hook para manejar facturas pendientes
   const { pendingInvoices, loading: pendingLoading, refreshPendingInvoices } = usePendingInvoices();
@@ -203,26 +207,72 @@ const POSPage: React.FC = () => {
     }));
   }, [posState.cart, taxRate, discountPercentage]);
 
-  const addToCart = (product: POSItem) => {
-    setPosState(prev => {
-      const existingItem = prev.cart.find(item => item.id === product.id);
+  const addToCart = async (product: POSItem) => {
+    // Verificar si hay una factura activa (OT enlazada)
+    if (!activeFacturaId) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Sin Factura Activa',
+        html: `
+          <p>Para agregar productos debe primero enlazar una Orden de Trabajo.</p>
+          <p class="text-sm text-gray-600 mt-2">Vaya a la pestaña "FACTURAS PENDIENTES" y seleccione una OT para comenzar.</p>
+        `,
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    try {
+      // Obtener usuario_id desde localStorage
+      const usuario_id = localStorage.getItem('usuario_id');
       
-      if (existingItem) {
-        return {
+      // Agregar item a la BD en tiempo real usando SP
+      const result = await invoiceItemsService.addItem({
+        factura_id: activeFacturaId,
+        descripcion: product.name,
+        cantidad: 1,
+        precio_final_unitario: product.price,
+        porcentaje_descuento: 0,
+        registrado_por: usuario_id ? parseInt(usuario_id) : 1
+      });
+
+      if (result.allow === 1) {
+        // Solo si se agregó exitosamente en BD, actualizar el carrito local
+        // Recargar items desde BD para mantener sincronización
+        const items = await invoicesService.getInvoiceItems(activeFacturaId);
+        
+        // Mapear items a CartItems
+        const cartItems: CartItem[] = items.map(item => ({
+          id: `invoice-${activeFacturaId}-item-${item.factura_item_id}`,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.total,
+          category: item.type === 'service' ? 'SERVICIOS' : 'REPUESTOS',
+          type: item.type,
+          isTaxed: true,
+          exento: false,
+          exonerado: false,
+          es_obligatorio: item.es_obligatorio || false,
+          factura_item_id: item.factura_item_id
+        }));
+        
+        setPosState(prev => ({
           ...prev,
-          cart: prev.cart.map(item =>
-            item.id === product.id
-              ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
-              : item
-          )
-        };
-      } else {
-        return {
-          ...prev,
-          cart: [...prev.cart, { ...product, total: product.price }]
-        };
+          cart: cartItems
+        }));
+        
+        console.log('✅ Producto agregado y sincronizado desde BD');
       }
-    });
+    } catch (error: any) {
+      console.error('❌ Error agregando producto:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo agregar el producto',
+        confirmButtonColor: '#ef4444'
+      });
+    }
   };
 
   const addPendingInvoiceToCart = async (pendingInvoice: any) => {
@@ -301,48 +351,144 @@ const POSPage: React.FC = () => {
         };
       });
       
-      console.log(`✅ ${cartItems.length} items agregados al carrito`);
+      // ⚡ Establecer factura activa para operaciones real-time
+      setActiveFacturaId(facturaId);
+      console.log(`✅ ${cartItems.length} items agregados al carrito | Factura activa: ${facturaId}`);
     } catch (error) {
       console.error('❌ Error agregando factura pendiente:', error);
       // Fallback silencioso al comportamiento anterior
     }
   };
 
-  const updateCartItemQuantity = (id: string, quantity: number) => {
-    setPosState(prev => {
-      const item = prev.cart.find(i => i.id === id);
-      if (!item) return prev;
+  const updateCartItemQuantity = async (id: string, quantity: number) => {
+    const item = posState.cart.find(i => i.id === id);
+    if (!item) return;
 
-      // No permitir cambiar cantidad para servicios O items obligatorios
-      if (item.type === 'service' || item.es_obligatorio) {
-        return prev;
+    // No permitir cambiar cantidad para servicios O items obligatorios
+    if (item.type === 'service' || item.es_obligatorio) {
+      return;
+    }
+
+    // Si no hay factura activa o no tiene factura_item_id, no hacer nada
+    if (!activeFacturaId || !item.factura_item_id) {
+      console.warn('⚠️ No se puede editar: sin factura activa o item sin ID');
+      return;
+    }
+
+    // Si cantidad es 0 o menos, eliminar
+    if (quantity <= 0) {
+      await removeFromCart(id);
+      return;
+    }
+
+    try {
+      // Obtener usuario_id desde localStorage
+      const usuario_id = localStorage.getItem('usuario_id');
+      
+      // Editar item en BD usando SP
+      const result = await invoiceItemsService.editItem({
+        factura_item_id: item.factura_item_id,
+        descripcion: item.name,
+        cantidad: quantity,
+        precio_final_unitario: item.price,
+        porcentaje_descuento: 0,
+        registrado_por: usuario_id ? parseInt(usuario_id) : 1
+      });
+
+      if (result.allow === 1) {
+        // Recargar items desde BD
+        const items = await invoicesService.getInvoiceItems(activeFacturaId);
+        const cartItems: CartItem[] = items.map(item => ({
+          id: `invoice-${activeFacturaId}-item-${item.factura_item_id}`,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.total,
+          category: item.type === 'service' ? 'SERVICIOS' : 'REPUESTOS',
+          type: item.type,
+          isTaxed: true,
+          exento: false,
+          exonerado: false,
+          es_obligatorio: item.es_obligatorio || false,
+          factura_item_id: item.factura_item_id
+        }));
+        
+        setPosState(prev => ({ ...prev, cart: cartItems }));
+        console.log('✅ Cantidad actualizada en BD');
       }
-
-      if (quantity <= 0) {
-        return { ...prev, cart: prev.cart.filter(i => i.id !== id) };
-      }
-
-      return {
-        ...prev,
-        cart: prev.cart.map(i =>
-          i.id === id ? { ...i, quantity, total: quantity * i.price } : i
-        )
-      };
-    });
+    } catch (error: any) {
+      console.error('❌ Error editando cantidad:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo editar la cantidad',
+        confirmButtonColor: '#ef4444'
+      });
+    }
   };
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = async (id: string) => {
     // Verificar si el item es obligatorio
     const item = posState.cart.find(i => i.id === id);
     if (item?.es_obligatorio) {
-      console.warn('⚠️ No se puede eliminar item obligatorio');
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Item Obligatorio',
+        text: 'No se puede eliminar este item. Para quitarlo debe anular la factura completa.',
+        confirmButtonColor: '#3b82f6'
+      });
       return;
     }
     
-    setPosState(prev => ({
-      ...prev,
-      cart: prev.cart.filter(item => item.id !== id)
-    }));
+    // Si no hay factura activa o no tiene factura_item_id, solo remover localmente
+    if (!activeFacturaId || !item?.factura_item_id) {
+      setPosState(prev => ({
+        ...prev,
+        cart: prev.cart.filter(cartItem => cartItem.id !== id)
+      }));
+      return;
+    }
+
+    try {
+      // Obtener usuario_id desde localStorage
+      const usuario_id = localStorage.getItem('usuario_id');
+      
+      // Eliminar item de BD usando SP
+      const result = await invoiceItemsService.deleteItem({
+        factura_item_id: item.factura_item_id,
+        registrado_por: usuario_id ? parseInt(usuario_id) : 1
+      });
+
+      if (result.allow === 1) {
+        // Recargar items desde BD
+        const items = await invoicesService.getInvoiceItems(activeFacturaId);
+        const cartItems: CartItem[] = items.map(item => ({
+          id: `invoice-${activeFacturaId}-item-${item.factura_item_id}`,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.total,
+          category: item.type === 'service' ? 'SERVICIOS' : 'REPUESTOS',
+          type: item.type,
+          isTaxed: true,
+          exento: false,
+          exonerado: false,
+          es_obligatorio: item.es_obligatorio || false,
+          factura_item_id: item.factura_item_id
+        }));
+        
+        setPosState(prev => ({ ...prev, cart: cartItems }));
+        console.log('✅ Item eliminado de BD');
+      }
+    } catch (error: any) {
+      console.error('❌ Error eliminando item:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo eliminar el item',
+        confirmButtonColor: '#ef4444'
+      });
+    }
   };
 
   const clearCart = () => {
@@ -350,6 +496,9 @@ const POSPage: React.FC = () => {
       ...prev,
       cart: []
     }));
+    // Limpiar también la factura activa
+    setActiveFacturaId(null);
+    console.log('🧹 Carrito limpiado y factura activa reseteada');
   };
 
   const filteredProducts = products.filter(product => {
