@@ -202,7 +202,7 @@ const ClientWorkOrdersPage = () => {
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         onClick={() => handleViewTasks(workOrder)}
                       >
-                        👁️ Ver Tareas
+                        Ver Tareas
                       </Button>
                     </td>
                   </tr>

@@ -148,7 +148,7 @@ const ClientQuotationsPage = () => {
                             setShowViewModal(true);
                           }}
                         >
-                          👁️ Ver
+                          Ver
                         </Button>
                         
                         {/* Botones según estado: Pendiente o Enviada */}

@@ -351,6 +351,21 @@ try {
   console.warn('El servidor continuará sin las rutas de pagos de facturas');
 }
 
+// ⚡ IMPORTAR Y CONFIGURAR RUTAS DE ITEMS DE FACTURA POS (Real-Time SP)
+try {
+  console.log('⚡ Cargando rutas de items de factura POS (Real-Time)...');
+  const invoiceItemsRouter = require('./routes/invoiceItems');
+  app.use('/api/invoice-items', invoiceItemsRouter);
+  console.log('✅ Rutas de items de factura POS cargadas exitosamente');
+  console.log('   📌 POST /api/invoice-items/add (SP_AGREGAR_ITEM_FACTURA_POS)');
+  console.log('   📌 PUT /api/invoice-items/edit (SP_EDITAR_ITEM_FACTURA_POS)');
+  console.log('   📌 DELETE /api/invoice-items/delete/:id (SP_ELIMINAR_ITEM_FACTURA_POS)');
+} catch (error) {
+  console.error('❌ Error cargando rutas de items de factura POS:', error.message);
+  console.error('Stack:', error.stack);
+  console.warn('⚠️ El servidor continuará sin las rutas de items de factura POS');
+}
+
 // IMPORTAR Y CONFIGURAR RUTAS DE FACTURAS (JSON)
 try {
   console.log('Cargando rutas de facturas (JSON)...');
