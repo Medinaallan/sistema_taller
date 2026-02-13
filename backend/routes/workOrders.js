@@ -96,7 +96,7 @@ router.get('/client/:userId', async (req, res) => {
 
     console.log(`✅ Órdenes de trabajo encontradas: ${result.recordset.length}`);
     if (result.recordset.length > 0) {
-      console.log('📋 OTs:', result.recordset.map(ot => ({
+      console.log('. OTs:', result.recordset.map(ot => ({
         numero_ot: ot.numero_ot,
         estado: ot.estado_ot,
         vehiculo: ot.placa

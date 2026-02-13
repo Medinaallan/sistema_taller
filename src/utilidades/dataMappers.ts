@@ -147,7 +147,7 @@ export async function getServiceDisplayName(serviceId: string): Promise<string> 
           cache.services.set(servicioId, displayName);
         });
         cache.lastUpdate.services = now;
-        console.log('📋 Cache de servicios actualizado:', cache.services.size, 'servicios');
+        console.log('. Cache de servicios actualizado:', cache.services.size, 'servicios');
       }
     }
 

@@ -552,7 +552,7 @@ const WorkOrdersPage = () => {
                           className="text-indigo-600 hover:text-indigo-900"
                           title="Ver y gestionar tareas"
                         >
-                          📋
+                          
                         </button>
 
                         {/* Botones específicos para órdenes "En proceso" */}

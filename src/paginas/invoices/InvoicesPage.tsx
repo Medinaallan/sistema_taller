@@ -117,50 +117,127 @@ const InvoicesPage = () => {
     }
   };
 
-  // Cargar facturas desde BD con estado "Pagada"
+  // Cargar facturas desde BD usando SP_OBTENER_PAGOS (retorna pagos realizados)
   const loadPaidInvoicesFromDB = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Cargando facturas pagadas desde BD...');
+      console.log('🔍 Cargando facturas pagadas desde BD (SP_OBTENER_PAGOS)...');
       
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
       
-      // Obtener facturas con estado "Pagada" usando el SP
-      const response = await fetch(`${API_BASE_URL}/invoices?estado=Pagada`);
+      // Obtener historial de pagos usando SP_OBTENER_PAGOS
+      const response = await fetch(`${API_BASE_URL}/invoice-payments/history`);
       
       if (!response.ok) {
-        throw new Error('Error al obtener facturas pagadas');
+        throw new Error('Error al obtener historial de pagos');
       }
       
       const result = await response.json();
-      const facturas = result.data as any[];
+      const pagos = result.data as any[];
       
-      console.log(`✅ ${facturas.length} facturas pagadas encontradas desde BD`);
+      console.log(`✅ ${pagos.length} pagos encontrados desde BD`);
+      
+      // Agrupar pagos por factura (puede haber múltiples pagos para una factura)
+      const facturaMap = new Map<number, any>();
+      
+      pagos.forEach(pago => {
+        const facturaId = pago.factura_id;
+        if (!facturaMap.has(facturaId)) {
+          facturaMap.set(facturaId, {
+            factura_id: facturaId,
+            numero_factura: pago.numero_factura,
+            estado_factura: pago.estado_factura,
+            total_factura: pago.total_factura,
+            cliente_id: pago.cliente_id,
+            nombre_cliente: pago.nombre_cliente,
+            fecha_creacion: pago.fecha_creacion,
+            pagos: []
+          });
+        }
+        facturaMap.get(facturaId).pagos.push({
+          pago_id: pago.pago_id,
+          monto: pago.monto,
+          metodo_pago: pago.metodo_pago,
+          referencia: pago.referencia,
+          fecha_creacion: pago.fecha_creacion
+        });
+      });
+      
+      // Obtener items de cada factura en paralelo
+      const facturasConItems = await Promise.all(
+        Array.from(facturaMap.values()).map(async (factura) => {
+          try {
+            const itemsResponse = await fetch(`${API_BASE_URL}/invoices/${factura.factura_id}/items`);
+            if (itemsResponse.ok) {
+              const itemsResult = await itemsResponse.json();
+              factura.items = itemsResult.data || [];
+            } else {
+              factura.items = [];
+            }
+          } catch (err) {
+            console.warn(`⚠️ No se pudieron cargar items de factura ${factura.factura_id}:`, err);
+            factura.items = [];
+          }
+          return factura;
+        })
+      );
+      
+      console.log(`✅ Items cargados para ${facturasConItems.length} facturas`);
       
       // Mapear facturas de BD a la interfaz GeneratedInvoice
-      const invoices: GeneratedInvoice[] = facturas.map(factura => ({
-        id: `INV-${factura.factura_id}`,
-        workOrderId: factura.numero_ot || '',
-        clientId: factura.cliente_id?.toString() || '',
-        clientName: factura.nombre_cliente || 'Cliente no especificado',
-        vehicleName: '', // No viene en el SP básico
-        date: new Date(factura.fecha_emision),
-        laborCost: 0, // Se puede calcular de los detalles si están disponibles
-        partsCost: 0,  // Se puede calcular de los detalles si están disponibles
-        total: factura.total || 0,
-        status: 'paid', // Todas son pagadas según el filtro
+      const invoices: GeneratedInvoice[] = facturasConItems.map(factura => {
+        // Calcular costos de mano de obra y repuestos desde los items
+        let laborCost = 0;
+        let partsCost = 0;
+        let subtotalCalculado = 0;
         
-        // Propiedades requeridas por Invoice
-        invoiceNumber: factura.numero,
-        subtotal: factura.subtotal || 0,
-        tax: factura.impuestos || 0,
-        createdAt: new Date(factura.fecha_emision),
-        updatedAt: new Date(),
+        (factura.items || []).forEach((item: any) => {
+          const itemTotal = item.cantidad * item.precio_unitario;
+          subtotalCalculado += itemTotal;
+          
+          if (item.tipo_item?.toLowerCase() === 'servicio' || item.tipo_item?.toLowerCase() === 'service') {
+            laborCost += itemTotal;
+          } else {
+            partsCost += itemTotal;
+          }
+        });
         
-        items: [] // Los items se pueden cargar por separado si es necesario
-      }));
+        // Calcular impuestos (15% ISV en Honduras)
+        const taxCalculado = subtotalCalculado * 0.15;
+        const totalCalculado = subtotalCalculado + taxCalculado;
+        
+        return {
+          id: `INV-${factura.factura_id}`,
+          workOrderId: '', // No disponible directamente en SP_OBTENER_PAGOS
+          clientId: factura.cliente_id?.toString() || '',
+          clientName: factura.nombre_cliente || 'Cliente no especificado',
+          vehicleName: '', // No disponible en SP_OBTENER_PAGOS
+          date: new Date(factura.fecha_creacion),
+          laborCost,
+          partsCost,
+          total: factura.total_factura || totalCalculado,
+          status: 'paid', // Todas son pagadas según SP_OBTENER_PAGOS
+          
+          // Propiedades requeridas por Invoice
+          invoiceNumber: factura.numero_factura,
+          subtotal: subtotalCalculado || factura.total_factura * 0.869565, // Revertir 15% si no hay items
+          tax: taxCalculado || factura.total_factura * 0.130435, // 15% del total
+          createdAt: new Date(factura.fecha_creacion),
+          updatedAt: new Date(),
+          
+          // Mapear items con la estructura correcta
+          items: (factura.items || []).map((item: any) => ({
+            id: item.item_id?.toString() || `item-${Math.random().toString(36).slice(2, 9)}`,
+            description: item.descripcion || item.nombre || '',
+            quantity: item.cantidad || 1,
+            unitPrice: item.precio_unitario || 0,
+            total: item.cantidad * item.precio_unitario,
+            type: item.tipo_item?.toLowerCase() === 'servicio' ? 'service' : 'product'
+          }))
+        };
+      });
 
-      console.log('✅ Facturas pagadas cargadas:', invoices.length);
+      console.log(`✅ Facturas pagadas cargadas: ${invoices.length} (con ${invoices.reduce((sum, inv) => sum + inv.items.length, 0)} items totales)`);
       setData(invoices);
       setPersistedData(invoices);
       setFilteredData(invoices);
@@ -188,37 +265,54 @@ const InvoicesPage = () => {
         const persisted = await invoicesService.getAllInvoices();
         const mapped: GeneratedInvoice[] = persisted
           .filter(inv => inv.estado === 'pagada') // Solo mostrar pagadas
-          .map(inv => ({
-            id: inv.id,
-            workOrderId: '',
-            clientId: inv.clientId || '',
-            clientName: inv.clientName || (inv.clientId ? getClienteName(inv.clientId) : 'CONSUMIDOR FINAL'),
-            vehicleName: '',
-            laborCost: 0,
-            partsCost: 0,
-            date: new Date(inv.fecha),
-            total: inv.total,
-            status: 'paid',
-            // Invoice fields required by existing UI
-            invoiceNumber: inv.numero,
-            subtotal: inv.subtotal,
-            tax: inv.tax,
-            createdAt: new Date(inv.createdAt || new Date()),
-            // Preserve discount/exento/exonerado for printing
-            discount: inv.discount || 0,
-            exento: inv.exento || 0,
-            exonerado: inv.exonerado || 0,
-            updatedAt: new Date(),
-            items: (inv.items || []).map(it => ({
-              id: it.id,
-              description: it.name || (it as any).description || '',
-              quantity: it.quantity || 1,
-              unitPrice: it.price || 0,
-              total: it.total || 0,
-              // preserve original type if present
-              type: (it as any).type || 'product'
-            }))
-          }));
+          .map(inv => {
+            // Calcular laborCost y partsCost desde los items
+            let laborCost = 0;
+            let partsCost = 0;
+            
+            (inv.items || []).forEach(it => {
+              const itemTotal = (it.quantity || 1) * (it.price || 0);
+              const itemType = (it as any).type || 'product';
+              
+              if (itemType === 'service' || String(it.name || '').toLowerCase().includes('servicio')) {
+                laborCost += itemTotal;
+              } else {
+                partsCost += itemTotal;
+              }
+            });
+            
+            return {
+              id: inv.id,
+              workOrderId: '',
+              clientId: inv.clientId || '',
+              clientName: inv.clientName || (inv.clientId ? getClienteName(inv.clientId) : 'CONSUMIDOR FINAL'),
+              vehicleName: '',
+              laborCost,
+              partsCost,
+              date: new Date(inv.fecha),
+              total: inv.total,
+              status: 'paid',
+              // Invoice fields required by existing UI
+              invoiceNumber: inv.numero,
+              subtotal: inv.subtotal,
+              tax: inv.tax,
+              createdAt: new Date(inv.createdAt || new Date()),
+              // Preserve discount/exento/exonerado for printing
+              discount: inv.discount || 0,
+              exento: inv.exento || 0,
+              exonerado: inv.exonerado || 0,
+              updatedAt: new Date(),
+              items: (inv.items || []).map(it => ({
+                id: it.id,
+                description: it.name || (it as any).description || '',
+                quantity: it.quantity || 1,
+                unitPrice: it.price || 0,
+                total: it.total || 0,
+                // preserve original type if present
+                type: (it as any).type || 'product'
+              }))
+            };
+          });
 
         // Combinar facturas de BD + localStorage
         const combinedMap = new Map<string, GeneratedInvoice>();
@@ -340,9 +434,9 @@ const InvoicesPage = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Facturas</h1>
-          <p className="text-gray-600">Facturas generadas automáticamente desde órdenes completadas</p>
+          <p className="text-gray-600">Historial de facturas pagadas con detalles completos</p>
           <p className="text-sm text-blue-600">
-            {loading ? 'Cargando...' : `${totalInvoices} facturas generadas desde órdenes completadas`}
+            {loading ? 'Cargando...' : `${totalInvoices} facturas registradas con pagos completados`}
           </p>
         </div>
         <div className="flex space-x-2">
@@ -419,7 +513,7 @@ const InvoicesPage = () => {
       <Card title="Facturas Generadas">
         {loading ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">Cargando facturas desde órdenes completadas...</p>
+            <p className="text-gray-500">Cargando facturas pagadas...</p>
           </div>
         ) : filteredData.length === 0 ? (
           <div className="text-center py-8">

@@ -80,7 +80,7 @@ async function migrateClientDatabase() {
         vehicles.push(vehicle);
       }
       
-      // 📋 ÓRDENES DE TRABAJO (si tiene órdenes activas)
+      // . ÓRDENES DE TRABAJO (si tiene órdenes activas)
       const activeOrders = parseInt(row.Active_Orders) || 0;
       for (let i = 1; i <= activeOrders; i++) {
         const workOrder = {
@@ -142,7 +142,7 @@ async function migrateClientDatabase() {
     console.log('✅ MIGRACIÓN COMPLETADA:');
     console.log(`   👥 ${clients.length} clientes`);
     console.log(`   🚗 ${vehicles.length} vehículos`);
-    console.log(`   📋 ${workOrders.length} órdenes de trabajo`);
+    console.log(`   . ${workOrders.length} órdenes de trabajo`);
     console.log(`   📅 ${appointments.length} citas`);
     console.log(`   💾 Backup creado en: ${backupPath}`);
     

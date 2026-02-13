@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
-const sql = require('mssql');
+const { getConnection, sql } = require('../config/database');
 
 const REQUESTS_FILE = path.join(__dirname, '../../src/data/signatureRequests.json');
 
@@ -81,28 +81,31 @@ router.put('/:otId/sign', async (req, res) => {
     
     await fs.writeFile(REQUESTS_FILE, JSON.stringify(requestsData, null, 2), 'utf8');
     
-    // Cambiar estado de la orden de trabajo a "Control de calidad" usando workOrderStatesManager
+    // Cambiar estado de la orden de trabajo a "Control de calidad" usando la API de base de datos
     try {
-      const statesFilePath = path.join(__dirname, '../../src/data/workOrders.json');
-      console.log(`📂 Ruta del archivo de estados: ${statesFilePath}`);
-      
-      const statesData = await fs.readFile(statesFilePath, 'utf8');
-      const statesJson = JSON.parse(statesData);
-      
-      if (!statesJson.workOrderStates) {
-        statesJson.workOrderStates = {};
-      }
-      
       console.log(`🔄 Cambiando estado de OT ${otId} a "Control de calidad"`);
-      statesJson.workOrderStates[otId] = 'Control de calidad';
       
-      await fs.writeFile(statesFilePath, JSON.stringify(statesJson, null, 2), 'utf8');
+      const pool = await getConnection();
       
-      console.log(`✅ Estado de OT ${otId} cambiado exitosamente a "Control de calidad"`);
-      console.log(`📄 Contenido actualizado:`, statesJson.workOrderStates);
+      // Obtener usuario actual (hardcoded por ahora)
+      const registradoPor = 1;
+      
+      // Ejecutar SP_GESTIONAR_ESTADO_OT
+      const result = await pool.request()
+        .input('ot_id', sql.Int, parseInt(otId))
+        .input('nuevo_estado', sql.VarChar(50), 'Control de calidad')
+        .input('registrado_por', sql.Int, registradoPor)
+        .execute('SP_GESTIONAR_ESTADO_OT');
+      
+      const response = result.recordset[0];
+      
+      if (response.allow === 1) {
+        console.log(`✅ Estado de OT ${otId} cambiado exitosamente a "Control de calidad"`);
+      } else {
+        console.warn(`⚠️ No se pudo actualizar estado: ${response.msg}`);
+      }
     } catch (stateError) {
       console.error('❌ Error actualizando estado de OT:', stateError);
-      console.error('❌ Stack trace:', stateError.stack);
       // No fallar la firma si no se puede actualizar el estado
     }
     

@@ -50,7 +50,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
   const loadRoles = async () => {
     try {
       setRolesLoading(true);
-      console.log('📋 Cargando roles desde SP_OBTENER_ROLES...');
+      console.log('. Cargando roles desde SP_OBTENER_ROLES...');
       
       const response = await fetch('http://localhost:8080/api/users/roles');
       const data = await response.json();

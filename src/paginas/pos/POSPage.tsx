@@ -351,11 +351,11 @@ const POSPage: React.FC = () => {
         };
       });
       
-      // ⚡ Establecer factura activa para operaciones real-time
+      //  Establecer factura activa para operaciones real-time
       setActiveFacturaId(facturaId);
-      console.log(`✅ ${cartItems.length} items agregados al carrito | Factura activa: ${facturaId}`);
+      console.log(`${cartItems.length} items agregados al carrito | Factura activa: ${facturaId}`);
     } catch (error) {
-      console.error('❌ Error agregando factura pendiente:', error);
+      console.error('Error agregando factura pendiente:', error);
       // Fallback silencioso al comportamiento anterior
     }
   };
@@ -414,10 +414,10 @@ const POSPage: React.FC = () => {
         }));
         
         setPosState(prev => ({ ...prev, cart: cartItems }));
-        console.log('✅ Cantidad actualizada en BD');
+        console.log('Cantidad actualizada en BD');
       }
     } catch (error: any) {
-      console.error('❌ Error editando cantidad:', error);
+      console.error('Error editando cantidad:', error);
       await Swal.fire({
         icon: 'error',
         title: 'Error',

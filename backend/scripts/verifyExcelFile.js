@@ -67,7 +67,7 @@ async function verifyExcelFile() {
         }
 
         console.log('\n🎉 Verificación completada exitosamente!');
-        console.log('📋 El archivo Excel es válido y compatible.');
+        console.log('. El archivo Excel es válido y compatible.');
         
         return true;
 

@@ -98,7 +98,7 @@ router.get('/:id/items', async (req, res) => {
   try {
     const { id } = req.params;
     
-    console.log(`📋 Obteniendo items de factura ${id}...`);
+    console.log(`. Obteniendo items de factura ${id}...`);
     
     const pool = await getConnection();
     const result = await pool.request()
@@ -232,7 +232,7 @@ router.post('/register-payment', async (req, res) => {
     
     const response = result.recordset[0];
     
-    console.log('📋 Respuesta del SP_REGISTRAR_PAGO:', response);
+    console.log('. Respuesta del SP_REGISTRAR_PAGO:', response);
     
     // Verificar si el SP devolvió éxito
     const isSuccess = response.allow === 1 || response.allow === '1' || response[''] === '200 OK';

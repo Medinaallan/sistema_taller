@@ -8,7 +8,7 @@ async function testExcelImport() {
 
     try {
         // Probar obtener clientes existentes
-        console.log('📋 Probando obtención de clientes existentes...');
+        console.log('. Probando obtención de clientes existentes...');
         const existingClients = await service.getExistingClients();
         console.log(`   ✅ Se encontraron ${existingClients.length} clientes existentes`);
         

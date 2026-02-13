@@ -29,6 +29,14 @@ export interface Invoice {
   estado: 'pagada' | 'pendiente' | 'anulada';
   createdAt: string;
   createdBy: string;
+  // Campos del SP_OBTENER_FACTURAS para información fiscal
+  cai_grabado?: string;
+  fecha_limite_emision?: string;
+  rango_inicial?: string;
+  rango_final?: string;
+  establecimiento?: string;
+  punto_emision?: string;
+  tipo_documento?: string;
 }
 
 const STORAGE_KEY = 'taller_invoices';

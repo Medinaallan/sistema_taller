@@ -9,8 +9,45 @@ const notificationsService = require('../services/notificationsService');
 const PAYMENTS_FILE = path.join(__dirname, '../../src/data/invoicePayments.json');
 
 /**
+ * GET /api/invoice-payments/history
+ * Obtener historial de pagos usando SP_OBTENER_PAGOS
+ * Query params: pago_id, factura_id, metodo_pago, fecha_inicio, fecha_fin
+ */
+router.get('/history', async (req, res) => {
+  try {
+    const { pago_id, factura_id, metodo_pago, fecha_inicio, fecha_fin } = req.query;
+    
+    console.log('📊 Obteniendo historial de pagos desde BD...');
+    
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('pago_id', sql.Int, pago_id ? parseInt(pago_id) : null)
+      .input('factura_id', sql.Int, factura_id ? parseInt(factura_id) : null)
+      .input('metodo_pago', sql.VarChar(30), metodo_pago || null)
+      .input('fecha_inicio', sql.Date, fecha_inicio || null)
+      .input('fecha_fin', sql.Date, fecha_fin || null)
+      .execute('SP_OBTENER_PAGOS');
+    
+    const payments = result.recordset || [];
+    console.log(`✅ ${payments.length} pagos encontrados`);
+    
+    res.json({
+      success: true,
+      data: payments
+    });
+  } catch (error) {
+    console.error('❌ Error obteniendo historial de pagos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener historial de pagos',
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/invoice-payments
- * Obtener todos los estados de pago de facturas
+ * Obtener todos los estados de pago de facturas (legacy)
  */
 router.get('/', async (req, res) => {
   try {
@@ -105,7 +142,7 @@ router.post('/mark-pending/:workOrderId', async (req, res) => {
   try {
     const { workOrderId } = req.params;
     
-    console.log(`📋 Marcando factura de OT ${workOrderId} como pendiente...`);
+    console.log(`. Marcando factura de OT ${workOrderId} como pendiente...`);
     
     const data = await fs.readFile(PAYMENTS_FILE, 'utf8');
     const paymentsData = JSON.parse(data);

@@ -288,7 +288,7 @@ const QuotationsPage = () => {
                               onClick={() => handleApprove(quotation)}
                               title={quotation.ot_id ? "Agregar tareas a OT existente" : "Generar nueva Orden de Trabajo"}
                             >
-                              {quotation.ot_id ? '➕ Agregar Tareas' : '📋 Generar OT'}
+                              {quotation.ot_id ? ' Agregar Tareas' : 'Generar OT'}
                             </Button>
                           ) : (
                             <span className="text-gray-500 text-xs px-2 py-1 bg-gray-100 rounded flex items-center gap-1" title="Ya procesada a orden de trabajo">

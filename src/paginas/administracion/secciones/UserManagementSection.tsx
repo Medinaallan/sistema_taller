@@ -142,53 +142,8 @@ const rolePermissions: Record<string, UserPermissions> = {
   }
 };
 
-const mockUsers: User[] = [
-  {
-    id: '1',
-    username: 'admin',
-    fullName: 'Administrador del Sistema',
-    email: 'admin@taller.com',
-    phone: '+504 9999-9999',
-    role: 'admin',
-    status: 'active',
-    permissions: rolePermissions.admin,
-    lastLogin: new Date(),
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date(),
-    mustChangePassword: false
-  },
-  {
-    id: '2',
-    username: 'recepcionista1',
-    fullName: 'María González',
-    email: 'maria@taller.com',
-    phone: '+504 8888-8888',
-    role: 'receptionist',
-    status: 'active',
-    permissions: rolePermissions.receptionist,
-    lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    createdAt: new Date('2024-02-15'),
-    updatedAt: new Date(),
-    mustChangePassword: false
-  },
-  {
-    id: '3',
-    username: 'mecanico1',
-    fullName: 'Carlos Rodríguez',
-    email: 'carlos@taller.com',
-    phone: '+504 7777-7777',
-    role: 'mechanic',
-    status: 'active',
-    permissions: rolePermissions.mechanic,
-    lastLogin: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    createdAt: new Date('2024-03-01'),
-    updatedAt: new Date(),
-    mustChangePassword: true
-  }
-];
-
 export function UserManagementSection() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
@@ -208,8 +163,8 @@ export function UserManagementSection() {
       const response = await fetch(`${apiUrl}/users/list`);
       
       if (!response.ok) {
-        console.error('Error fetching users:', response.status);
-        // Usar datos mockeados si hay error
+        console.error('❌ Error obteniendo usuarios:', response.status);
+        showError('Error al cargar usuarios desde la base de datos');
         return;
       }
       
@@ -1204,7 +1159,7 @@ function PasswordResetModal({ user, onClose, onSave }: PasswordResetModalProps) 
                       className="mr-2 p-1 text-gray-400 hover:text-gray-600"
                       title="Copiar contraseña"
                     >
-                      📋
+                      .
                     </button>
                   )}
                   <button

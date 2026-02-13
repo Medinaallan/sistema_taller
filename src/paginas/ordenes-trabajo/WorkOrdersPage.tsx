@@ -440,7 +440,7 @@ const WorkOrdersPage = () => {
                           className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-xs"
                           title="Ver y gestionar tareas"
                         >
-                          📋 Tareas
+                           Tareas
                         </button>
                         {/* Botón Control de Calidad - disponible si está en proceso */}
                         {order.estado === 'En proceso' && (

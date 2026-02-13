@@ -1,14 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircleIcon,
   CalendarDaysIcon,
-  TruckIcon,
-  CurrencyDollarIcon,
   DocumentTextIcon,
   StarIcon,
   EyeIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   XMarkIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
@@ -49,98 +46,28 @@ export function ClientServiceHistoryPage() {
   const [filterVehicle, setFilterVehicle] = useState<string>('all');
   const [filterYear, setFilterYear] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'cost' | 'rating'>('date');
+  const [serviceHistory, setServiceHistory] = useState<ServiceRecord[]>([]);
+  const [clientVehicles, setClientVehicles] = useState<Array<{id: string; name: string}>>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Datos de ejemplo
-  const serviceHistory: ServiceRecord[] = [
-    {
-      id: 'SH-2025-001',
-      vehicleId: '1',
-      vehicleName: 'Toyota Corolla 2020 (HTN-0123)',
-      serviceType: 'Mantenimiento Preventivo',
-      description: 'Cambio de aceite, filtros de aire y combustible, revisión general',
-      date: '2025-07-15',
-      cost: 8500,
-      technician: 'Carlos Mendoza',
-      status: 'completed',
-      rating: 5,
-      review: 'Excelente servicio, muy profesional y rápido. El auto quedó como nuevo.',
-      warranty: {
-        months: 3,
-        expiryDate: '2025-10-15'
-      },
-      invoice: {
-        number: 'FAC-2025-001',
-        downloadUrl: '#'
-      },
-      nextServiceRecommendation: {
-        service: 'Cambio de aceite',
-        recommendedDate: '2025-12-15',
-        mileage: 50000
+  // TODO: Cargar historial de servicios desde SP
+  useEffect(() => {
+    const loadServiceHistory = async () => {
+      try {
+        setLoading(true);
+        // TODO: Implementar llamada a API/SP para obtener historial
+        console.log('TODO: Cargar historial de servicios desde BD');
+        setServiceHistory([]);
+        setClientVehicles([]);
+      } catch (error) {
+        console.error('Error cargando historial:', error);
+      } finally {
+        setLoading(false);
       }
-    },
-    {
-      id: 'SH-2025-002',
-      vehicleId: '2',
-      vehicleName: 'Honda Civic 2019 (HTN-4567)',
-      serviceType: 'Cambio de Aceite',
-      description: 'Cambio de aceite sintético y filtro de aceite',
-      date: '2025-06-10',
-      cost: 3500,
-      technician: 'Miguel Rodriguez',
-      status: 'completed',
-      rating: 4,
-      warranty: {
-        months: 2,
-        expiryDate: '2025-08-10'
-      },
-      invoice: {
-        number: 'FAC-2025-002',
-        downloadUrl: '#'
-      }
-    },
-    {
-      id: 'SH-2025-003',
-      vehicleId: '1',
-      vehicleName: 'Toyota Corolla 2020 (HTN-0123)',
-      serviceType: 'Reparación de Frenos',
-      description: 'Cambio de pastillas de freno delanteras y revisión del sistema',
-      date: '2025-05-20',
-      cost: 12000,
-      technician: 'Luis Hernandez',
-      status: 'warranty',
-      rating: 5,
-      warranty: {
-        months: 6,
-        expiryDate: '2025-11-20'
-      },
-      invoice: {
-        number: 'FAC-2025-003',
-        downloadUrl: '#'
-      }
-    },
-    {
-      id: 'SH-2025-004',
-      vehicleId: '3',
-      vehicleName: 'Nissan Sentra 2021 (HTN-8910)',
-      serviceType: 'Diagnóstico General',
-      description: 'Diagnóstico completo del vehículo, revisión de códigos de error',
-      date: '2025-04-18',
-      cost: 1500,
-      technician: 'Carlos Mendoza',
-      status: 'completed',
-      rating: 4,
-      invoice: {
-        number: 'FAC-2025-004',
-        downloadUrl: '#'
-      }
-    }
-  ];
-
-  const clientVehicles = [
-    { id: '1', name: 'Toyota Corolla 2020' },
-    { id: '2', name: 'Honda Civic 2019' },
-    { id: '3', name: 'Nissan Sentra 2021' }
-  ];
+    };
+    
+    loadServiceHistory();
+  }, []);
 
   const filteredServices = serviceHistory
     .filter(service => 

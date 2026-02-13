@@ -7,17 +7,17 @@
     "brand": "Mobil",
     "model": "5W-30",
     "description": "Aceite sintético para motores",
-    "price": 12.5,
+    "price": 430,
     "cost": 8.5,
-    "isTaxed": false,
-    "exento": true,
+    "isTaxed": true,
+    "exento": false,
     "exonerado": false,
     "category": "LUBRICANTES",
     "type": "Unidad",
     "stock": 9,
     "stockMin": 2,
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-01-29T20:40:04.520Z"
+    "updatedAt": "2026-02-12T20:49:32.319Z"
   },
   {
     "id": "2",

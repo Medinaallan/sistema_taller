@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
@@ -6,6 +6,7 @@ import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegist
 import { ForgotPasswordForm } from '../../componentes/autenticacion/ForgotPasswordForm';
 import { ResetPasswordForm } from '../../componentes/autenticacion/ResetPasswordForm';
 import { InitialSetupPage } from './InitialSetupPage';
+import companyConfigService from '../../servicios/companyConfigService';
 import '../../estilos/login-animations.css';
 // import { obtenerClientesActualizados } from '../../utilidades/BaseDatosJS'; // Ya no se usa
 // import { mockUsers } from '../../utilidades/globalMockDatabaseFinal'; // Ya no necesario - ahora usa SP_LOGIN real
@@ -46,6 +47,87 @@ export function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [resetToken, setResetToken] = useState<string>('');
+  const [showInitialSetup, setShowInitialSetup] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string>('Sistema Taller');
+
+  // Detectar token de recuperación en la URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    if (tokenFromUrl) {
+      console.log('🔗 Token detectado en URL:', tokenFromUrl);
+      setResetToken(tokenFromUrl);
+      setViewMode('resetPassword');
+      
+      // Limpiar la URL para que el token no quede visible
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  // Verificar si existen usuarios administradores
+  useEffect(() => {
+    const checkAdminUsers = async () => {
+      try {
+        // Usar el endpoint de usuarios que maneja correctamente el SP
+        const response = await fetch('http://localhost:8080/api/users/list');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          // Contar administradores
+          const adminCount = data.data.filter((user: any) => 
+            user.rol === 'Administrador' || 
+            user.rol === 'administrador' || 
+            user.rol === 'ADMINISTRADOR'
+          ).length;
+          
+          console.log(`🔍 Total usuarios: ${data.data.length}, Administradores: ${adminCount}`);
+          
+          // Solo mostrar configuración inicial si NO hay administradores
+          setShowInitialSetup(adminCount === 0);
+        } else {
+          setShowInitialSetup(false);
+        }
+      } catch (error) {
+        console.error('Error verificando administradores:', error);
+        // En caso de error, NO mostrar configuración inicial (más seguro)
+        setShowInitialSetup(false);
+      }
+    };
+    
+    checkAdminUsers();
+  }, []);
+
+  // Cargar información de la empresa (logo y nombre)
+  useEffect(() => {
+    const loadCompanyInfo = async () => {
+      try {
+        const companyInfo = companyConfigService.getCompanyInfo();
+        if (!companyInfo) {
+          await companyConfigService.fetchCompanyInfo();
+          const updatedInfo = companyConfigService.getCompanyInfo();
+          if (updatedInfo?.logoUrl) {
+            setCompanyLogo(updatedInfo.logoUrl);
+          }
+          if (updatedInfo?.nombreEmpresa) {
+            setCompanyName(updatedInfo.nombreEmpresa);
+          }
+        } else {
+          if (companyInfo.logoUrl) {
+            setCompanyLogo(companyInfo.logoUrl);
+          }
+          if (companyInfo.nombreEmpresa) {
+            setCompanyName(companyInfo.nombreEmpresa);
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando información de la empresa:', error);
+      }
+    };
+    
+    loadCompanyInfo();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -249,11 +331,26 @@ export function LoginPage() {
           <div className="max-w-md w-full">
             <div className="backdrop-blur-sm bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">
-                  <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
-                </div>
+                {companyLogo ? (
+                  <img 
+                    src={companyLogo} 
+                    alt="Logo de la empresa" 
+                    className="h-24 w-24 object-contain mx-auto mb-4"
+                    style={{
+                      filter: 'brightness(0) invert(1)',
+                      opacity: 0.95
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">
+                    <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
+                  </div>
+                )}
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-                  Sistema Taller
+                  {companyName}
                 </h1>
               </div>
               
@@ -282,11 +379,26 @@ export function LoginPage() {
           <div className="max-w-md w-full">
             <div className="backdrop-blur-sm bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">
-                  <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
-                </div>
+                {companyLogo ? (
+                  <img 
+                    src={companyLogo} 
+                    alt="Logo de la empresa" 
+                    className="h-24 w-24 object-contain mx-auto mb-4"
+                    style={{
+                      filter: 'brightness(0) invert(1)',
+                      opacity: 0.95
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">
+                    <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
+                  </div>
+                )}
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-                  Sistema Taller
+                  {companyName}
                 </h1>
               </div>
               
@@ -367,11 +479,26 @@ export function LoginPage() {
           <div className="flex-1 flex items-center justify-center p-12">
             <div className="max-w-lg">
               <div className="mb-8">
-                <div className="inline-flex items-center justify-center p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl shadow-lg mb-6">
-                  <WrenchScrewdriverIcon className="h-12 w-12 text-white" />
-                </div>
+                {companyLogo ? (
+                  <img 
+                    src={companyLogo} 
+                    alt="Logo de la empresa" 
+                    className="h-42 w-42 object-contain mb-6"
+                    style={{
+                      filter: 'brightness(0) invert(1)',
+                      opacity: 0.95
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="inline-flex items-center justify-center p-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl shadow-lg mb-6">
+                    <WrenchScrewdriverIcon className="h-12 w-12 text-white" />
+                  </div>
+                )}
                 <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-4">
-                  Sistema Taller
+                  {companyName}
                 </h1>
                 <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mb-6"></div>
                 <p className="text-xl text-gray-300 leading-relaxed">
@@ -379,25 +506,6 @@ export function LoginPage() {
                   Controla inventario, citas, clientes y órdenes de trabajo 
                   desde una plataforma integral.
                 </p>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span className="text-gray-300">Gestión de clientes y vehículos</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-gray-300">Control de inventario</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                  <span className="text-gray-300">Programación de citas</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span className="text-gray-300">Órdenes de trabajo</span>
-                </div>
               </div>
             </div>
           </div>
@@ -518,15 +626,6 @@ export function LoginPage() {
                     </div>
                   )}
 
-                  {viewMode === 'login' && (
-                    <div className="bg-amber-500/20 border border-amber-400/30 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="text-xs space-y-1">
-                        <div className="font-mono text-sm">admin@taller.com</div>
-                        <div className="font-mono text-sm">admin123</div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Login Button */}
                   <div>
                     <button
@@ -570,23 +669,23 @@ export function LoginPage() {
                           ¿Eres cliente? <span className="text-purple-400 font-medium">Registra tu cuenta aquí</span>
                         </button>
 
-                        <button
-                          type="button"
-                          className="w-full text-sm text-gray-300 hover:text-white transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
-                          onClick={() => setViewMode('initialSetup')}
-                        >
-                          <span className="text-green-400 font-medium">⚙️ Configuración Inicial del Sistema</span>
-                        </button>
-                        
-                        {state.users.length > 0 && (
+                        {showInitialSetup && (
                           <button
                             type="button"
-                            className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
-                            onClick={() => setViewMode('forgotPassword')}
+                            className="w-full text-sm text-gray-300 hover:text-white transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
+                            onClick={() => setViewMode('initialSetup')}
                           >
-                            ¿Olvidaste tu contraseña?
+                            <span className="text-green-400 font-medium">⚙️ Configuración Inicial del Sistema</span>
                           </button>
                         )}
+                        
+                        <button
+                          type="button"
+                          className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
+                          onClick={() => setViewMode('forgotPassword')}
+                        >
+                          ¿Olvidaste tu contraseña?
+                        </button>
                       </div>
                     </div>
                   )}
@@ -601,11 +700,26 @@ export function LoginPage() {
           <div className="backdrop-blur-sm bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8 transform hover:scale-[1.02] transition-all duration-300">
             {/* Logo Section Mobile */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">
-                <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
-              </div>
+              {companyLogo ? (
+                <img 
+                  src={companyLogo} 
+                  alt="Logo de la empresa" 
+                  className="h-32 w-32 object-contain mx-auto mb-4"
+                  style={{
+                    filter: 'brightness(0) invert(1)',
+                    opacity: 0.95
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">
+                  <WrenchScrewdriverIcon className="h-8 w-8 text-white" />
+                </div>
+              )}
               <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-                Sistema Taller
+                {companyName}
               </h1>
               <div className="w-16 h-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mx-auto"></div>
             </div>
@@ -722,15 +836,6 @@ export function LoginPage() {
                 </div>
               )}
 
-              {viewMode === 'login' && (
-                <div className="bg-amber-500/20 border border-amber-400/30 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="text-xs text-amber-300 space-y-1">
-                    <div className="font-mono">admin@taller.com</div>
-                    <div className="font-mono">admin123</div>
-                  </div>
-                </div>
-              )}
-
               {/* Login Button Mobile */}
               <div>
                 <button
@@ -774,23 +879,23 @@ export function LoginPage() {
                       ¿Eres cliente? <span className="text-purple-400 font-medium">Registra tu cuenta aquí</span>
                     </button>
 
-                    <button
-                      type="button"
-                      className="w-full text-sm text-gray-300 hover:text-white transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
-                      onClick={() => setViewMode('initialSetup')}
-                    >
-                      <span className="text-green-400 font-medium">⚙️ Configuración Inicial del Sistema</span>
-                    </button>
-                    
-                    {state.users.length > 0 && (
+                    {showInitialSetup && (
                       <button
                         type="button"
-                        className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
-                        onClick={() => setViewMode('forgotPassword')}
+                        className="w-full text-sm text-gray-300 hover:text-white transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
+                        onClick={() => setViewMode('initialSetup')}
                       >
-                        ¿Olvidaste tu contraseña?
+                        <span className="text-green-400 font-medium">⚙️ Configuración Inicial del Sistema</span>
                       </button>
                     )}
+                    
+                    <button
+                      type="button"
+                      className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
+                      onClick={() => setViewMode('forgotPassword')}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
                   </div>
                 </div>
               )}
