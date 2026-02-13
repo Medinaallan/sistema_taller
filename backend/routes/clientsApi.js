@@ -14,7 +14,7 @@ const router = express.Router();
  */
 
 /**
- * 📋 GET /api/clients/registered - Obtener todos los clientes registrados
+ * . GET /api/clients/registered - Obtener todos los clientes registrados
  * 
  * SP: SP_OBTENER_USUARIOS (obtiene TODOS los usuarios)
  * Params: @usuario_id INT 
@@ -22,7 +22,7 @@ const router = express.Router();
  */
 router.get('/registered', async (req, res) => {
   try {
-    console.log('📋 GET /api/clients/registered - Obteniendo todos los clientes desde BD');
+    console.log('. GET /api/clients/registered - Obteniendo todos los clientes desde BD');
     
     const pool = await getConnection();
     

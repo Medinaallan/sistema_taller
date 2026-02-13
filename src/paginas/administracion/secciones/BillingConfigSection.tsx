@@ -48,7 +48,7 @@ export function BillingConfigSection() {
       console.log('🔄 Loading config...');
       await companyConfigService.initialize();
       const fullConfig = companyConfigService.getConfig();
-      console.log('📋 Full config received:', fullConfig);
+      console.log('. Full config received:', fullConfig);
       console.log('📝 CAIs in config:', fullConfig.billingConfig.cais);
       setCompanyInfo(fullConfig.companyInfo);
       setConfig(fullConfig.billingConfig);

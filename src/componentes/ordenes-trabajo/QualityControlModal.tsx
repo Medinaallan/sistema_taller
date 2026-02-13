@@ -25,16 +25,47 @@ export const QualityControlModal: React.FC<QualityControlModalProps> = ({
   const [hasSignature, setHasSignature] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Extraer información del vehículo desde las notas
+  const extractVehicleInfo = () => {
+    const notas = workOrder.notas || '';
+    const placaMatch = notas.match(/Placa:\s*([^\s|]+)/);
+    const placa = placaMatch ? placaMatch[1] : 'N/A';
+    
+    // Parsear el nombre del vehículo para obtener marca, modelo y año
+    const vehicleNameParts = vehicleName.split(' ');
+    let marca = 'N/A';
+    let modelo = '';
+    let anio = 'N/A';
+    
+    if (vehicleNameParts.length >= 2) {
+      marca = vehicleNameParts[0];
+      // Buscar el año (4 dígitos)
+      const anioIndex = vehicleNameParts.findIndex(part => /^\d{4}$/.test(part));
+      if (anioIndex !== -1) {
+        anio = vehicleNameParts[anioIndex];
+        modelo = vehicleNameParts.slice(1, anioIndex).join(' ');
+      } else {
+        modelo = vehicleNameParts.slice(1).join(' ');
+      }
+    } else if (vehicleNameParts.length === 1) {
+      marca = vehicleNameParts[0];
+    }
+    
+    return { marca, modelo: modelo || marca, anio, placa };
+  };
+
+  const vehicleInfo = extractVehicleInfo();
+
   // Datos del contrato
   const contractData = {
     cliente_nombre: clientName,
     orden_trabajo_numero: workOrder.id?.slice(-8) || 'N/A',
     taller_nombre: 'Mantun Taller',
-    vehiculo_marca: 'Vehículo', // Extraer de vehicleName si es posible
-    vehiculo_modelo: vehicleName,
-    vehiculo_anio: '2020', // Esto debería venir de la BD
-    vehiculo_placa: 'N/A', // Esto debería venir de la BD
-    vehiculo_vin: 'N/A', // Esto debería venir de la BD
+    vehiculo_marca: vehicleInfo.marca,
+    vehiculo_modelo: vehicleInfo.modelo,
+    vehiculo_anio: vehicleInfo.anio,
+    vehiculo_placa: vehicleInfo.placa,
+    vehiculo_vin: 'N/A', // Este campo requeriría consultar la BD de vehículos
     mecanico_nombre: workOrder.recomendaciones?.includes('Mecánico') 
       ? workOrder.recomendaciones.split(':')[1]?.trim() 
       : 'Personal técnico autorizado',

@@ -467,7 +467,7 @@ class WorkOrdersService {
     registrado_por?: number | null;
   }): Promise<any> {
     try {
-      console.log('📋 Registrando OT manual desde cliente:', data);
+      console.log(' Registrando OT manual desde cliente:', data);
       
       const response = await fetch(`${API_BASE_URL}/workorders/manual`, {
         method: 'POST',

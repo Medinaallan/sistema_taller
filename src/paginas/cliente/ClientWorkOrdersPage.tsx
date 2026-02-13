@@ -51,6 +51,26 @@ export function ClientWorkOrdersPage() {
   const [selectedQuotation, setSelectedQuotation] = useState<AdditionalQuotation | null>(null);
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [additionalQuotations, setAdditionalQuotations] = useState<AdditionalQuotation[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // TODO: Cargar órdenes de trabajo desde SP
+  useEffect(() => {
+    const loadWorkOrders = async () => {
+      try {
+        setLoading(true);
+        // TODO: Implementar llamada a API/SP para obtener órdenes de trabajo del cliente
+        console.log('TODO: Cargar órdenes de trabajo desde BD');
+        setWorkOrders([]);
+      } catch (error) {
+        console.error('Error cargando órdenes de trabajo:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadWorkOrders();
+  }, [state?.user?.id]);
 
   // Cargar subcotizaciones del cliente actual
   useEffect(() => {
@@ -80,129 +100,6 @@ export function ClientWorkOrdersPage() {
   const getQuotationsForOrder = (workOrderId: string): AdditionalQuotation[] => {
     return additionalQuotations.filter(q => q.workOrderId === workOrderId);
   };
-
-  // Datos de ejemplo
-  const workOrders: WorkOrder[] = [
-    {
-      id: 'OT-2025-001',
-      vehicleId: '1',
-      vehicleName: 'Toyota Corolla 2020 (HTN-0123)',
-      status: 'in-progress',
-      service: 'Mantenimiento General',
-      createdDate: '2025-08-25',
-      estimatedDelivery: '2025-08-30',
-      progress: 75,
-      description: 'Cambio de aceite, filtros y revisión general del sistema',
-      problem: 'Mantenimiento preventivo rutinario según calendario',
-      diagnosis: 'Vehículo en buen estado general. Aceite necesita cambio. Filtros en condición límite.',
-      estimatedCost: 8500,
-      photos: [],
-      updates: [
-        {
-          id: '1',
-          date: '2025-08-25 09:00',
-          message: 'Vehículo recibido en taller. Iniciando diagnóstico.',
-          type: 'info'
-        },
-        {
-          id: '2',
-          date: '2025-08-25 11:30',
-          message: 'Diagnóstico completado. Iniciando cambio de aceite y filtros.',
-          type: 'progress'
-        },
-        {
-          id: '3',
-          date: '2025-08-26 14:00',
-          message: 'Cambio de aceite completado. Revisando sistema de frenos.',
-          type: 'progress'
-        },
-        {
-          id: '4',
-          date: '2025-08-27 10:15',
-          message: 'Trabajo 75% completado. Realizando pruebas finales.',
-          type: 'progress'
-        }
-      ],
-      technician: {
-        name: 'Carlos Mendoza',
-        phone: '9876-5432'
-      }
-    },
-    {
-      id: 'OT-2025-002',
-      vehicleId: '2',
-      vehicleName: 'Honda Civic 2019 (HTN-4567)',
-      status: 'pending-parts',
-      service: 'Reparación de frenos',
-      createdDate: '2025-08-28',
-      estimatedDelivery: '2025-09-02',
-      progress: 40,
-      description: 'Cambio de pastillas y discos de freno delanteros',
-      problem: 'Frenos chirriando y pedal esponjoso',
-      diagnosis: 'Pastillas de freno gastadas completamente. Discos rayados requieren cambio.',
-      estimatedCost: 12000,
-      photos: [],
-      updates: [
-        {
-          id: '1',
-          date: '2025-08-28 08:30',
-          message: 'Vehículo ingresado. Diagnóstico inicial programado.',
-          type: 'info'
-        },
-        {
-          id: '2',
-          date: '2025-08-28 15:00',
-          message: 'Diagnóstico completado. Se requiere cambio de pastillas y discos.',
-          type: 'progress'
-        },
-        {
-          id: '3',
-          date: '2025-08-29 09:00',
-          message: 'Esperando llegada de repuestos. Entrega estimada mañana.',
-          type: 'issue'
-        }
-      ],
-      technician: {
-        name: 'Miguel Rodriguez',
-        phone: '9876-5433'
-      }
-    },
-    {
-      id: 'OT-2025-003',
-      vehicleId: '1',
-      vehicleName: 'Toyota Corolla 2020 (HTN-0123)',
-      status: 'completed',
-      service: 'Cambio de aceite',
-      createdDate: '2025-07-15',
-      estimatedDelivery: '2025-07-15',
-      actualDelivery: '2025-07-15',
-      progress: 100,
-      description: 'Cambio de aceite y filtro de aceite',
-      problem: 'Mantenimiento programado cada 5000 km',
-      diagnosis: 'Aceite en buen estado pero cumplió ciclo de cambio.',
-      estimatedCost: 3500,
-      finalCost: 3500,
-      photos: [],
-      updates: [
-        {
-          id: '1',
-          date: '2025-07-15 10:00',
-          message: 'Vehículo recibido. Iniciando cambio de aceite.',
-          type: 'info'
-        },
-        {
-          id: '2',
-          date: '2025-07-15 11:30',
-          message: 'Cambio de aceite completado. Vehículo listo.',
-          type: 'completed'
-        }
-      ],
-      technician: {
-        name: 'Carlos Mendoza',
-        phone: '9876-5432'
-      }
-    }
-  ];
 
   const filteredOrders = workOrders.filter(order => {
     switch (activeFilter) {

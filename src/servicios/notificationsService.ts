@@ -182,7 +182,7 @@ class NotificationsService {
   getNotificationIcon(type: Notification['type']): string {
     const icons = {
       'ot_created': '🔧',
-      'ot_status_change': '📋',
+      'ot_status_change': '.',
       'task_status_change': '✅',
       'appointment_approved': '📅',
       'appointment_status_change': '📆'

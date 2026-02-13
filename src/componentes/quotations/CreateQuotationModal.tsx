@@ -337,7 +337,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       if (appointment && appointment.id) {
         try {
           const usuario_id = localStorage.getItem('usuario_id');
-          console.log(`📋 Cambiando estado de cita ${appointment.id} a "aprobada"`);
+          console.log(`Cambiando estado de cita ${appointment.id} a "aprobada"`);
           
           await appointmentsService.changeStatus(
             typeof appointment.id === 'string' ? parseInt(appointment.id, 10) : appointment.id,

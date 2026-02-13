@@ -35,10 +35,25 @@ class PDFInvoiceGenerator {
 
   /**
    * Obtiene la información de la empresa desde la configuración
+   * Usa el CAI activo configurado en la sección de Información Fiscal
    */
-  private getEmpresaInfo() {
+  private async getEmpresaInfo(invoice?: Invoice) {
     const companyInfo = companyConfigService.getCompanyInfo();
-    const cai = companyConfigService.getActiveCAI('01'); // CAI para facturas
+    
+    // Cargar CAIs si no están en caché
+    let cai = companyConfigService.getActiveCAI('01');
+    if (!cai) {
+      console.log('⚠️ No hay CAIs en caché, cargando desde BD...');
+      await companyConfigService.fetchCAIs();
+      cai = companyConfigService.getActiveCAI('01');
+    }
+    
+    console.log('📋 Información fiscal para PDF:', {
+      cai: cai?.cai || 'NO CONFIGURADO',
+      rangoInicial: cai?.rangoInicial || '-',
+      rangoFinal: cai?.rangoFinal || '-',
+      fechaLimite: cai?.fechaLimiteEmision || '-'
+    });
     
     if (!companyInfo) {
       return {
@@ -47,13 +62,13 @@ class PDFInvoiceGenerator {
         direccion: 'Dirección no configurada',
         telefono: 'N/A',
         correo: 'N/A',
-        cai: 'NO CONFIGURADO',
-        rangoInicial: '',
-        rangoFinal: '',
-        fechaLimiteEmision: '',
-        establecimiento: '001',
-        puntoEmision: '001',
-        tipoDocumento: '01',
+        cai: cai?.cai || 'NO CONFIGURADO',
+        rangoInicial: cai?.rangoInicial || '',
+        rangoFinal: cai?.rangoFinal || '',
+        fechaLimiteEmision: cai?.fechaLimiteEmision ? new Date(cai.fechaLimiteEmision).toLocaleDateString('es-HN') : '',
+        establecimiento: cai?.establecimiento || '001',
+        puntoEmision: cai?.puntoEmision || '001',
+        tipoDocumento: cai?.tipoDocumento || '01',
         logoUrl: null,
         mensajePie: '¡Gracias por su preferencia!'
       };
@@ -80,7 +95,7 @@ class PDFInvoiceGenerator {
   /**
    * Genera factura en formato carta (8.5" x 11") según formato SAR Honduras
    */
-  generateCartaInvoice(invoice: Invoice): jsPDF {
+  async generateCartaInvoice(invoice: Invoice): Promise<jsPDF> {
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -92,7 +107,8 @@ class PDFInvoiceGenerator {
     let yPos = 12;
 
     // Obtener información de la empresa desde la configuración
-    const EMPRESA_INFO = this.getEmpresaInfo();
+    // Prioriza datos grabados en la factura (cai_grabado, fecha_limite_emision) sobre CAI activo
+    const EMPRESA_INFO = await this.getEmpresaInfo(invoice);
 
     // ======= MÁRGENES Y ESTILO GLOBAL =======
     const marginLeft = 15;
@@ -306,17 +322,20 @@ class PDFInvoiceGenerator {
     const contentWidth = pageWidth - margin * 2;
 
     // Obtener información de la empresa desde la configuración
-    const EMPRESA_INFO = this.getEmpresaInfo();
+    // Prioriza datos grabados en la factura (cai_grabado, fecha_limite_emision) sobre CAI activo
+    const EMPRESA_INFO = await this.getEmpresaInfo(invoice);
 
     // ========== LOGO (si existe) ==========
     if (EMPRESA_INFO.logoUrl) {
       try {
         const logoBase64 = await this.imageUrlToBase64(EMPRESA_INFO.logoUrl);
         if (logoBase64) {
-          const logoSize = 20; // mm
-          const logoX = (pageWidth - logoSize) / 2;
-          doc.addImage(logoBase64, 'PNG', logoX, yPos, logoSize, logoSize, undefined, 'FAST');
-          yPos += logoSize + 2;
+          // Dimensiones del logo ajustadas para aspecto horizontal
+          const logoWidth = 50; // mm - ancho casi todo el ticket
+          const logoHeight = 18; // mm - altura más compacta
+          const logoX = (pageWidth - logoWidth) / 2;
+          doc.addImage(logoBase64, 'PNG', logoX, yPos, logoWidth, logoHeight, undefined, 'FAST');
+          yPos += logoHeight + 2;
         }
       } catch (error) {
         console.error('Error agregando logo al ticket:', error);
@@ -540,7 +559,7 @@ class PDFInvoiceGenerator {
    */
   async downloadInvoice(invoice: Invoice, format: 'carta' | 'ticket' = 'carta'): Promise<void> {
     const doc = format === 'carta' 
-      ? this.generateCartaInvoice(invoice)
+      ? await this.generateCartaInvoice(invoice)
       : await this.generateTicketInvoice(invoice);
     
     const fileName = `Factura_${invoice.numero}_${format}.pdf`;
@@ -552,7 +571,7 @@ class PDFInvoiceGenerator {
    */
   async printInvoice(invoice: Invoice, format: InvoiceFormat = 'carta'): Promise<void> {
     const doc = format === 'carta' 
-      ? this.generateCartaInvoice(invoice)
+      ? await this.generateCartaInvoice(invoice)
       : await this.generateTicketInvoice(invoice);
     
     // Abrir en nueva pestaña

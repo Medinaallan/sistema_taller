@@ -15,7 +15,7 @@ async function testDownloadEndpoint() {
 
         const req = http.request(options, (res) => {
             console.log(`📡 Status Code: ${res.statusCode}`);
-            console.log(`📋 Headers:`, res.headers);
+            console.log(`. Headers:`, res.headers);
 
             if (res.statusCode !== 200) {
                 console.error('❌ Error en la respuesta');

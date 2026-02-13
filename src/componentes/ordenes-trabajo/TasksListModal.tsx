@@ -157,7 +157,7 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
                 onClick={onAddQuotationClick}
                 className="flex items-center space-x-2"
               >
-                <span>📋</span>
+                <span>.</span>
                 <span>Agregar Cotización</span>
               </Button>
               <Button

@@ -39,7 +39,7 @@ export const useClientesFromAPI = (): UseClientesFromAPI => {
         setClientesLegacy(clientesLegacyArray);
         
         console.log(`✅ useClientesFromAPI: ${clientesArray.length} clientes cargados desde API`);
-        console.log('📋 Clientes cargados:', clientesArray.map(c => ({
+        console.log('. Clientes cargados:', clientesArray.map(c => ({
           id: c.usuario_id,
           nombre: c.nombre_completo,
           email: c.correo,

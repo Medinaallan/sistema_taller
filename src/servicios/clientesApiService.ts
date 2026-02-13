@@ -49,7 +49,7 @@ export interface ClientStats {
  * 🌐 FUNCIONES DE API PARA CLIENTES
  */
 
-// 📋 Obtener todos los clientes
+// . Obtener todos los clientes
 export async function obtenerClientes(): Promise<Cliente[]> {
   try {
     console.log('API: Obteniendo todos los clientes...');

@@ -304,7 +304,7 @@ export function VehiclesPage() {
   const loadClients = async () => {
     try {
       setLoadingClients(true);
-      console.log('📋 Cargando clientes desde BD usando SP_OBTENER_USUARIOS...');
+      console.log('. Cargando clientes desde BD usando SP_OBTENER_USUARIOS...');
       const response = await clientesService.obtenerClientes();
       
       if (response.success && response.data) {

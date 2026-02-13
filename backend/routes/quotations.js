@@ -167,7 +167,7 @@ router.get('/client/:userId', async (req, res) => {
 			.input('numero_cita', sql.VarChar(20), null)
 			.execute('SP_OBTENER_CITAS');
 
-		console.log(`📋 Citas encontradas para cliente_id ${cliente_id}: ${citasResult.recordset.length}`);
+		console.log(`. Citas encontradas para cliente_id ${cliente_id}: ${citasResult.recordset.length}`);
 
 		// Obtener los IDs de las citas del cliente
 		const citaIds = citasResult.recordset.map(cita => cita.cita_id);
@@ -473,7 +473,7 @@ router.put('/:cotizacionId', async (req, res) => {
 
 		const esAdicional = cotizacion.ot_id !== null;
 		console.log(`\n${'='.repeat(80)}`);
-		console.log(`${esAdicional ? '🔧 Cotización ADICIONAL' : '📋 Cotización INICIAL'}`);
+		console.log(`${esAdicional ? '🔧 Cotización ADICIONAL' : '. Cotización INICIAL'}`);
 		console.log(`Cotización ID: ${cotizacionId}`);
 		console.log(`OT: ${cotizacion.ot_id || 'N/A'}`);
 		console.log(`Decisión: ${decision}`);
@@ -700,7 +700,7 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 		}
 
 		// Paso 1: Obtener información de la cotización y cita para conocer el tipo de servicio
-		console.log('📋 Paso 1: Obteniendo información de la cotización...');
+		console.log('. Paso 1: Obteniendo información de la cotización...');
 		const cotizacionResult = await pool.request()
 			.input('cotizacion_id', sql.Int, parseInt(cotizacionId))
 			.input('cita_id', sql.Int, null)

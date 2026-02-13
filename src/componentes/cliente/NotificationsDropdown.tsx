@@ -167,7 +167,7 @@ export default function NotificationsDropdown({ clientId, isOpen, onClose }: Not
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
-                        <h4 className={`text-sm font-medium ${notification.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
+                        <h4 className={`text-sm ${notification.isRead ? 'font-normal text-gray-700' : 'font-semibold text-gray-900'}`}>
                           {notification.title}
                         </h4>
                         {!notification.isRead && (

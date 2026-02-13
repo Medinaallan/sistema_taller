@@ -57,7 +57,7 @@ async function testEndpoints() {
         }
 
         // Probar endpoint de plantilla
-        console.log('\n📋 Probando GET /api/excel-import/template');
+        console.log('\n. Probando GET /api/excel-import/template');
         const templateResponse = await makeRequest({
             hostname: baseUrl,
             port: port,

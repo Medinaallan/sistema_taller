@@ -32,11 +32,6 @@ router.get('/registered', async (req, res) => {
         console.log('\u26a0\ufe0f SP_OBTENER_USUARIOS sin datos, usando fallback');
         // Datos fallback basados en los clientes que acabamos de crear
         const fallbackClients = [
-          { id: '1', name: 'Juan P\u00e9rez', phone: '555-0123', email: 'juan.perez@email.com', address: '', createdAt: new Date() },
-          { id: '2', name: 'Mar\u00eda Garc\u00eda', phone: '555-0124', email: 'maria.garcia@email.com', address: '', createdAt: new Date() },
-          { id: '3', name: 'Carlos L\u00f3pez', phone: '555-0125', email: 'carlos.lopez@email.com', address: '', createdAt: new Date() },
-          { id: '4', name: 'Ana Mart\u00ednez', phone: '555-0126', email: 'ana.martinez@email.com', address: '', createdAt: new Date() },
-          { id: '5', name: 'Roberto Silva', phone: '555-0127', email: 'roberto.silva@email.com', address: '', createdAt: new Date() }
         ];
         
         res.json({
@@ -50,11 +45,7 @@ router.get('/registered', async (req, res) => {
       
       // Datos fallback
       const fallbackClients = [
-        { id: '1', name: 'Juan P\u00e9rez', phone: '555-0123', email: 'juan.perez@email.com', address: '', createdAt: new Date() },
-        { id: '2', name: 'Mar\u00eda Garc\u00eda', phone: '555-0124', email: 'maria.garcia@email.com', address: '', createdAt: new Date() },
-        { id: '3', name: 'Carlos L\u00f3pez', phone: '555-0125', email: 'carlos.lopez@email.com', address: '', createdAt: new Date() },
-        { id: '4', name: 'Ana Mart\u00ednez', phone: '555-0126', email: 'ana.martinez@email.com', address: '', createdAt: new Date() },
-        { id: '5', name: 'Roberto Silva', phone: '555-0127', email: 'roberto.silva@email.com', address: '', createdAt: new Date() }
+        
       ];
       
       res.json({

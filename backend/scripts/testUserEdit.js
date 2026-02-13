@@ -15,7 +15,7 @@ async function testUserEdit() {
       .execute('SP_OBTENER_USUARIOS');
 
     const users = result.recordset;
-    console.log(`📋 Se encontraron ${users.length} usuarios`);
+    console.log(`. Se encontraron ${users.length} usuarios`);
 
     if (users.length === 0) {
       console.log('❌ No hay usuarios para editar');

@@ -534,6 +534,38 @@ app.delete('/api/delete-image/:key(*)', async (req, res) => {
   }
 });
 
+// Verificar si existen usuarios administradores en el sistema
+app.get('/api/auth/has-admin-users', async (req, res) => {
+  try {
+    const pool = await getConnection();
+    
+    // Usar SP_OBTENER_USUARIOS sin parámetro para obtener todos los usuarios
+    const result = await pool.request()
+      .input('usuario_id', sql.Int, null)
+      .execute('SP_OBTENER_USUARIOS');
+    
+    // Filtrar usuarios administradores (sin verificar activo ya que el SP solo devuelve activos)
+    const adminUsers = result.recordset.filter(user => 
+      user.rol === 'Administrador' || user.rol === 'administrador' || user.rol === 'ADMINISTRADOR'
+    );
+    
+    console.log(`📊 Total usuarios: ${result.recordset.length}, Administradores: ${adminUsers.length}`);
+    
+    res.json({
+      success: true,
+      hasAdminUsers: adminUsers.length > 0,
+      adminCount: adminUsers.length
+    });
+  } catch (error) {
+    console.error('Error verificando usuarios administradores:', error);
+    res.status(500).json({
+      success: false,
+      hasAdminUsers: true, // Por seguridad, asumir que hay admins si falla
+      error: 'Error verificando usuarios'
+    });
+  }
+});
+
 // Validar email (Paso 1) - USANDO SP REAL
 app.post('/api/auth/validate-email', async (req, res) => {
   console.log('Validar email:', req.body);
@@ -798,6 +830,182 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error('Error en login:', error);
     res.json({ allow: 0, msg: 'Error interno' });
+  }
+});
+
+// ==============================================
+// RECUPERACIÓN DE CONTRASEÑA
+// ==============================================
+
+const emailService = require('./services/emailService');
+
+// 1. Iniciar recuperación de contraseña
+// SP: SP_INICIAR_RECUPERACION_PASSWORD
+// Params: @correo VARCHAR(100)
+// Return: msg, allow (0, 1), token (CHAR(36))
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    console.log('🔐 Iniciando recuperación de contraseña para:', email);
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'El correo electrónico es requerido'
+      });
+    }
+
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('correo', sql.VarChar(100), email.toLowerCase())
+      .execute('SP_INICIAR_RECUPERACION_PASSWORD');
+
+    const response = result.recordset[0];
+    console.log('📝 Respuesta del SP_INICIAR_RECUPERACION_PASSWORD:', response);
+
+    // El SP devuelve: msg, allow (0 o 1), token (CHAR(36))
+    if (response.allow === 1 && response.token) {
+      console.log('✅ Token generado:', response.token);
+      
+      // Enviar email con el token (en desarrollo solo se registra en consola)
+      try {
+        const emailResult = await emailService.sendPasswordRecoveryEmail(
+          email,
+          response.token,
+          email.split('@')[0] // Usar parte del email como nombre temporal
+        );
+        
+        res.json({
+          success: true,
+          message: response.msg || 'Se ha enviado un enlace de recuperación a su correo',
+          token: response.token, // En desarrollo, devolvemos el token directamente
+          resetUrl: emailResult.resetUrl // URL completa para testing
+        });
+      } catch (emailError) {
+        console.error('⚠️ Error enviando email:', emailError);
+        // Aún así devolvemos éxito porque el token fue generado
+        res.json({
+          success: true,
+          message: response.msg || 'Token generado (email no enviado en desarrollo)',
+          token: response.token
+        });
+      }
+    } else {
+      res.status(400).json({
+        success: false,
+        message: response.msg || 'No se pudo iniciar la recuperación de contraseña'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error en recuperación de contraseña:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// 2. Validar token de recuperación
+// SP: SP_VALIDAR_TOKEN_RECUPERACION
+// Params: @token CHAR(36)
+// Return: msg, allow (0, 1)
+app.post('/api/auth/validate-reset-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    console.log('🔍 Validando token de recuperación:', token);
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'El token es requerido'
+      });
+    }
+
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('token', sql.Char(36), token)
+      .execute('SP_VALIDAR_TOKEN_RECUPERACION');
+
+    const response = result.recordset[0];
+    console.log('📝 Respuesta del SP_VALIDAR_TOKEN_RECUPERACION:', response);
+
+    // El SP devuelve: msg, allow (0 o 1)
+    const isValid = response.allow === 1;
+
+    res.json({
+      success: isValid,
+      message: response.msg,
+      valid: isValid
+    });
+
+  } catch (error) {
+    console.error('Error validando token:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// 3. Completar recuperación de contraseña
+// SP: SP_COMPLETAR_RECUPERACION_PASSWORD
+// Params: @token CHAR(36), @password NVARCHAR(100)
+// Return: msg, allow (0, 1)
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    
+    console.log('🔄 Completando recuperación de contraseña con token:', token);
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'El token y la nueva contraseña son requeridos'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña debe tener al menos 6 caracteres'
+      });
+    }
+
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('token', sql.Char(36), token)
+      .input('password', sql.NVarChar(100), newPassword)
+      .execute('SP_COMPLETAR_RECUPERACION_PASSWORD');
+
+    const response = result.recordset[0];
+    console.log('📝 Respuesta del SP_COMPLETAR_RECUPERACION_PASSWORD:', response);
+
+    // El SP devuelve: msg, allow (0 o 1)
+    if (response.allow === 1) {
+      console.log('✅ Contraseña actualizada exitosamente');
+      res.json({
+        success: true,
+        message: response.msg || 'Contraseña actualizada exitosamente'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: response.msg || 'No se pudo actualizar la contraseña'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error completando recuperación:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -1128,7 +1336,11 @@ app.put('/api/workorder-states/:otId', async (req, res) => {
 app.get('/api/workorder-states/:otId', async (req, res) => {
   try {
     const { otId } = req.params;
+<<<<<<< HEAD
     console.log(`Obteniendo estado de OT ${otId}...`);
+=======
+    console.log(`. Obteniendo estado de OT ${otId}...`);
+>>>>>>> 790a091fdebf0538a770cb326fdf8f4df5559746
     
     const pool = await getConnection();
     const result = await pool.request()
