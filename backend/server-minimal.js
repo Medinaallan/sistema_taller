@@ -1336,12 +1336,8 @@ app.put('/api/workorder-states/:otId', async (req, res) => {
 app.get('/api/workorder-states/:otId', async (req, res) => {
   try {
     const { otId } = req.params;
-<<<<<<< HEAD
     console.log(`Obteniendo estado de OT ${otId}...`);
-=======
-    console.log(`. Obteniendo estado de OT ${otId}...`);
->>>>>>> 790a091fdebf0538a770cb326fdf8f4df5559746
-    
+    console.log(`. Obteniendo estado de OT ${otId}...`);    
     const pool = await getConnection();
     const result = await pool.request()
       .input('ot_id', sql.Int, parseInt(otId))
