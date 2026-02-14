@@ -274,7 +274,7 @@ try {
   console.warn('El servidor continuará sin las rutas de estados de OT');
 }
 */
-console.log('ℹ️ Rutas de estados de OT: Usando endpoints SQL Server directos (más abajo en el código)');
+console.log('Rutas de estados de OT: Usando endpoints SQL Server directos (más abajo en el código)');
 
 //IMPORTAR Y CONFIGURAR RUTAS DE SOLICITUDES DE FIRMA
 try {
@@ -1256,7 +1256,7 @@ try {
 // GET - Obtener todos los estados (usando SP_OBTENER_ORDENES_TRABAJO)
 app.get('/api/workorder-states', async (req, res) => {
   try {
-    console.log('📥 Obteniendo todos los estados de órdenes de trabajo...');
+    console.log('Obteniendo todos los estados de órdenes de trabajo...');
     const pool = await getConnection();
     
     // Obtener todas las órdenes de trabajo usando el SP
@@ -1269,10 +1269,10 @@ app.get('/api/workorder-states', async (req, res) => {
       statesMap[row.ot_id] = row.estado_ot;
     });
     
-    console.log(`✅ ${result.recordset.length} estados obtenidos`);
+    console.log(`${result.recordset.length} estados obtenidos`);
     res.json({ success: true, data: statesMap });
   } catch (error) {
-    console.error('❌ Error obteniendo estados:', error);
+    console.error('Error obteniendo estados:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al obtener estados', 
@@ -1294,7 +1294,7 @@ app.put('/api/workorder-states/:otId', async (req, res) => {
       });
     }
     
-    console.log(`📝 Actualizando estado de OT ${otId} a: ${estado}`);
+    console.log(`Actualizando estado de OT ${otId} a: ${estado}`);
     
     // Obtener usuario actual (hardcoded por ahora, después vendrá del token)
     const registradoPor = req.user?.id || 1;
@@ -1309,21 +1309,21 @@ app.put('/api/workorder-states/:otId', async (req, res) => {
     const response = result.recordset[0];
     
     if (response.allow === 1) {
-      console.log(`✅ Estado de OT ${otId} actualizado exitosamente`);
+      console.log(`Estado de OT ${otId} actualizado exitosamente`);
       res.json({ 
         success: true, 
         message: response.msg,
         data: { otId, estado } 
       });
     } else {
-      console.warn(`⚠️ No se pudo actualizar estado: ${response.msg}`);
+      console.warn(`No se pudo actualizar estado: ${response.msg}`);
       res.status(400).json({ 
         success: false, 
         message: response.msg 
       });
     }
   } catch (error) {
-    console.error('❌ Error actualizando estado:', error);
+    console.error('Error actualizando estado:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al actualizar estado', 
@@ -1336,8 +1336,8 @@ app.put('/api/workorder-states/:otId', async (req, res) => {
 app.get('/api/workorder-states/:otId', async (req, res) => {
   try {
     const { otId } = req.params;
-    console.log(`. Obteniendo estado de OT ${otId}...`);
-    
+    console.log(`Obteniendo estado de OT ${otId}...`);
+    console.log(`. Obteniendo estado de OT ${otId}...`);    
     const pool = await getConnection();
     const result = await pool.request()
       .input('ot_id', sql.Int, parseInt(otId))
@@ -1346,9 +1346,9 @@ app.get('/api/workorder-states/:otId', async (req, res) => {
     const estado = result.recordset[0]?.estado_ot || null;
     
     if (estado) {
-      console.log(`✅ Estado de OT ${otId}: ${estado}`);
+      console.log(`Estado de OT ${otId}: ${estado}`);
     } else {
-      console.log(`⚠️ OT ${otId} no encontrada`);
+      console.log(`OT ${otId} no encontrada`);
     }
     
     res.json({ 
@@ -1356,7 +1356,7 @@ app.get('/api/workorder-states/:otId', async (req, res) => {
       data: { otId, estado } 
     });
   } catch (error) {
-    console.error('❌ Error leyendo estado:', error);
+    console.error('Error leyendo estado:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error al leer estado', 
@@ -1365,7 +1365,7 @@ app.get('/api/workorder-states/:otId', async (req, res) => {
   }
 });
 
-console.log('✅ Rutas de estados de OT cargadas: /api/workorder-states (usando SQL Server)');
+console.log('Rutas de estados de OT cargadas: /api/workorder-states (usando SQL Server)');
 
 // 404 - Debe estar AL FINAL, después de todas las rutas
 app.use('*', (req, res) => {
