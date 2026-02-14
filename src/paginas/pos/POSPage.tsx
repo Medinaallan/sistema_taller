@@ -80,8 +80,6 @@ const POSPage: React.FC = () => {
   const [cashierName, setCashierName] = useState<string>(state.user?.name || '');
   const [openingTime, setOpeningTime] = useState<string>(new Date().toLocaleString());
   const [closingCountedCash, setClosingCountedCash] = useState<number>(0);
-  const [closingShortages, setClosingShortages] = useState<number>(0);
-  const [closingOverages, setClosingOverages] = useState<number>(0);
   const [closingNotes, setClosingNotes] = useState<string>('');
   const [discountPercentage, setDiscountPercentage] = useState(0);
   const taxRate = 0.15; // 15% ISV constante
@@ -501,6 +499,125 @@ const POSPage: React.FC = () => {
     console.log('🧹 Carrito limpiado y factura activa reseteada');
   };
 
+  const handleVentaRegular = async () => {
+    // Verificar sesión de caja abierta
+    if (!currentSession) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Caja no aperturada',
+        text: 'Debe aperturar la caja antes de crear una venta.',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    // Solicitar confirmación de cliente
+    const clienteNombre = posState.selectedClient?.name || 'CONSUMIDOR FINAL';
+    const clienteId = posState.selectedClient?.id || null; // null para que el backend busque "CONSUMIDOR FINAL"
+    
+    const confirmResult = await Swal.fire({
+      title: 'Crear Venta de Mostrador',
+      html: `
+        <div style="text-align: left; margin: 20px 0;">
+          <p><strong>Cliente:</strong> ${clienteNombre}</p>
+          <p class="text-sm text-gray-600 mt-2">Se creará una factura directa sin orden de trabajo.</p>
+          <p class="text-sm text-gray-600">Podrá agregar productos después de crearla.</p>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: '✓ Crear Venta',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
+    // Mostrar loading
+    Swal.fire({
+      title: 'Creando Factura...',
+      html: '<div style="font-size: 3em;">🧾</div>',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      willOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      // Obtener usuario_id desde contexto o localStorage
+      const usuario_id = state.user?.id || parseInt(localStorage.getItem('usuario_id') || '1');
+      
+      // Construir URL correctamente (evitar doble /api)
+      const base = API_BASE.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoices/create-direct` : `${base}/api/invoices/create-direct`;
+      
+      // Preparar datos - si no hay cliente, no enviar cliente_id (el backend buscará "CONSUMIDOR FINAL")
+      const requestData: any = {
+        registrado_por: usuario_id,
+        notas: 'Venta directa de mostrador'
+      };
+      
+      // Solo incluir cliente_id si hay un cliente seleccionado
+      if (clienteId) {
+        requestData.cliente_id = parseInt(clienteId.toString());
+      }
+      
+      // Llamar al endpoint para crear factura directa
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const { factura_id, numero_factura } = result.data;
+        
+        // Establecer como factura activa
+        setActiveFacturaId(factura_id);
+        
+        // Limpiar carrito
+        setPosState(prev => ({
+          ...prev,
+          cart: []
+        }));
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Factura Creada',
+          html: `
+            <div style="text-align: center; margin: 20px 0;">
+              <p class="text-lg"><strong>Número de Factura:</strong></p>
+              <p class="text-2xl font-bold text-blue-600 my-2">${numero_factura}</p>
+              <p class="text-sm text-gray-600 mt-3">Ahora puede agregar productos al carrito</p>
+            </div>
+          `,
+          confirmButtonColor: '#10b981',
+          confirmButtonText: 'Continuar'
+        });
+
+        console.log(`✅ Factura directa creada: ${numero_factura} (ID: ${factura_id})`);
+      } else {
+        throw new Error(result.message || 'Error al crear factura');
+      }
+    } catch (error: any) {
+      console.error('❌ Error creando venta directa:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo crear la factura directa',
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(posState.searchQuery.toLowerCase());
     const matchesCategory = !posState.selectedCategory || product.category === posState.selectedCategory;
@@ -529,14 +646,49 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Detectar si es una factura pendiente (viene de DB)
-    const firstItem = posState.cart[0];
-    const isFromPendingInvoice = firstItem.id.startsWith('invoice-');
-    
-    if (isFromPendingInvoice) {
-      // Es una factura pendiente - abrir modal de registro de pagos
-      const facturaId = parseInt(firstItem.id.replace('invoice-', ''));
-      const factura = pendingInvoices.find(inv => inv.factura_id === facturaId);
+    // Detectar si hay una factura activa (recién creada o cargada)
+    if (activeFacturaId) {
+      console.log(`💰 Procesando cobro de factura activa ID: ${activeFacturaId}`);
+      
+      // Buscar la factura, primero en pendingInvoices, sino cargarla desde API
+      let factura = pendingInvoices.find(inv => inv.factura_id === activeFacturaId);
+      
+      if (!factura) {
+        console.log('🔍 Factura no encontrada en cache, cargando desde API...');
+        try {
+          // Cargar factura directamente desde la API para obtener todos los campos del SP
+          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const base = API_BASE.replace(/\/$/, '');
+          const url = base.endsWith('/api') ? `${base}/invoices/${activeFacturaId}` : `${base}/api/invoices/${activeFacturaId}`;
+          
+          const response = await fetch(url);
+          if (response.ok) {
+            const result = await response.json();
+            const facturaData = result.data;
+            
+            // Mapear la respuesta del SP a la estructura que espera el modal
+            factura = {
+              factura_id: facturaData.factura_id || activeFacturaId,
+              numero: facturaData.numero || facturaData.numero_factura,
+              cliente_id: facturaData.cliente_id || 0,
+              clientName: facturaData.nombre_cliente || facturaData.cliente_nombre || 'CONSUMIDOR FINAL',
+              clientEmail: '',
+              total: parseFloat(facturaData.total) || posState.total,
+              subtotal: parseFloat(facturaData.subtotal) || posState.subtotal,
+              impuesto: parseFloat(facturaData.impuestos) || parseFloat(facturaData.impuesto) || posState.tax,
+              saldo_pendiente: parseFloat(facturaData.saldo_pendiente) || parseFloat(facturaData.total) || posState.total,
+              estado: facturaData.estado || 'pendiente',
+              fecha: facturaData.fecha_emision || facturaData.fecha || new Date().toISOString(),
+              numero_ot: facturaData.numero_ot || null,
+              telefono: facturaData.telefono || ''
+            };
+            
+            console.log('✅ Factura cargada desde API:', factura);
+          }
+        } catch (err) {
+          console.error('❌ Error cargando factura:', err);
+        }
+      }
       
       if (!factura) {
         await Swal.fire({
@@ -776,6 +928,7 @@ const POSPage: React.FC = () => {
             <div className="flex items-center space-x-2">
                 <span className="text-lg font-semibold text-blue-600">ADMIN</span>
                 <span className="text-sm text-gray-500">TALLER-POS</span>
+                <button onClick={handleVentaRegular} className="ml-3 px-3 py-1 bg-green-600 text-white border rounded text-sm hover:bg-green-700 font-medium">Venta Regular</button>
                 <button onClick={async () => { setShowReportModal(true); await loadReport(); }} className="ml-3 px-3 py-1 bg-white border rounded text-sm hover:bg-gray-50">Arqueos</button>
             </div>
           </div>
@@ -1205,16 +1358,6 @@ const POSPage: React.FC = () => {
               <label className="block text-sm mb-1">Efectivo Contado</label>
               <input type="number" value={closingCountedCash} onChange={(e) => setClosingCountedCash(Number(e.target.value))} className="w-full px-2 py-1 border rounded" />
             </div>
-            <div className="mb-3 grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm mb-1">Faltantes</label>
-                <input type="number" value={closingShortages} onChange={(e) => setClosingShortages(Number(e.target.value))} className="w-full px-2 py-1 border rounded" />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Sobrantes</label>
-                <input type="number" value={closingOverages} onChange={(e) => setClosingOverages(Number(e.target.value))} className="w-full px-2 py-1 border rounded" />
-              </div>
-            </div>
             <div className="mb-3">
               <label className="block text-sm mb-1">Notas (opcional)</label>
               <textarea value={closingNotes} onChange={(e) => setClosingNotes(e.target.value)} className="w-full px-2 py-1 border rounded" />
@@ -1225,11 +1368,11 @@ const POSPage: React.FC = () => {
                 onClick={async () => {
                   if (!currentSession) return Swal.fire({ icon: 'warning', title: 'No hay sesión abierta' });
                   try {
-                    const resp = await cashService.closeSession({ sessionId: currentSession.id, closingBy: state.user?.name || 'Usuario', countedCash: closingCountedCash, shortages: closingShortages, overages: closingOverages, closingNotes });
+                    const resp = await cashService.closeSession({ sessionId: currentSession.id, closingBy: state.user?.name || 'Usuario', countedCash: closingCountedCash, closingNotes });
                     if (resp && resp.success) {
                       setCurrentSession(null);
                       setShowCloseModal(false);
-                      Swal.fire({ icon: 'success', title: 'Caja cerrada', text: `Diferencia: L.${(Number(closingOverages) - Number(closingShortages)).toFixed(2)}` });
+                      Swal.fire({ icon: 'success', title: 'Caja cerrada exitosamente' });
                     } else {
                       Swal.fire({ icon: 'error', title: 'Error', text: resp?.message || 'No se pudo cerrar la caja' });
                     }

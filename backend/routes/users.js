@@ -7,10 +7,8 @@ let usuariosCache = null;
 let cacheTimestamp = null;
 const CACHE_DURATION = 30000; // 30 segundos
 
-// Obtener lista de usuarios usando SP_OBTENER_USUARIOS (ULTRA OPTIMIZADO)
+// Obtener lista de usuarios usando SP_OBTENER_USUARIOS
 router.get('/list', async (req, res) => {
-  // Log eliminado: lista de usuarios (reducción de ruido en consola)
-  
   try {
     // Verificar cache
     const now = Date.now();
@@ -25,37 +23,20 @@ router.get('/list', async (req, res) => {
     }
     
     const pool = await getConnection();
-    const usuarios = [];
     
-    // Solo buscar los primeros 20 IDs conocidos más comunes
-    const idsRapidos = [2, 7, 8, 9, 10, 11, 12, 13, 15, 17, 19, 20];
+    // Obtener TODOS los usuarios usando el parámetro obtener_todos = 1
+    const result = await pool.request()
+      .input('obtener_todos', sql.Bit, 1)
+      .input('usuario_id', sql.Int, null)
+      .execute('SP_OBTENER_USUARIOS');
     
-    // Búsqueda rápida realizada (log suprimido)
-    
-    // Usar Promise.all para consultas paralelas en lugar de secuenciales
-    const promesas = idsRapidos.map(async (id) => {
-      try {
-        const result = await pool.request()
-          .input('usuario_id', sql.Int, id)
-          .execute('SP_OBTENER_USUARIOS');
-        
-        if (result.recordset.length > 0) {
-          return result.recordset[0];
-        }
-      } catch (error) {
-        console.log(`⚠️ [ROUTER] Error en ID ${id}`);
-        return null;
-      }
-    });
-    
-    const resultados = await Promise.all(promesas);
-    const usuariosEncontrados = resultados.filter(usuario => usuario !== null);
+    const usuariosEncontrados = result.recordset || [];
     
     // Actualizar cache
     usuariosCache = usuariosEncontrados;
     cacheTimestamp = now;
     
-    // Total usuarios encontrados (log suprimido)
+    console.log(`✅ ${usuariosEncontrados.length} usuarios obtenidos desde BD`);
     
     res.json({
       success: true,
@@ -383,4 +364,12 @@ router.put('/:usuarioId', async (req, res) => {
   }
 });
 
+// Función para invalidar el cache de usuarios (se puede llamar desde otros módulos)
+function invalidarCacheUsuarios() {
+  usuariosCache = null;
+  cacheTimestamp = null;
+  console.log('🔄 Cache de usuarios invalidado');
+}
+
 module.exports = router;
+module.exports.invalidarCacheUsuarios = invalidarCacheUsuarios;

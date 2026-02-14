@@ -113,7 +113,7 @@
       "openingNotes": "",
       "openedAt": "2026-02-04T01:32:48.467Z",
       "openingTime": "2026-02-04T01:32:48.467Z",
-      "status": "open",
+      "status": "closed",
       "movements": [
         {
           "id": "1ab8d5c0-07df-425b-9e1d-dd81e7b6d521",
@@ -170,12 +170,14 @@
           "createdAt": "2026-02-05T01:13:24.872Z"
         }
       ],
-      "closedAt": null,
-      "closingBy": null,
-      "closingAmount": null,
-      "closingNotes": null,
+      "closedAt": "2026-02-14T01:56:25.485Z",
+      "closingBy": "Allan Admin",
+      "closingAmount": 3567,
+      "closingNotes": "asdasda",
       "shortages": 0,
-      "overages": 0
+      "overages": 0,
+      "closingTime": "2026-02-14T01:56:25.485Z",
+      "closedBy": "Allan Admin"
     }
   ],
   "movements": [

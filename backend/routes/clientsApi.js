@@ -1,6 +1,7 @@
 const express = require('express');
 const { getConnection, sql } = require('../config/database');
 const router = express.Router();
+const usersRouter = require('./users');
 
 /**
  * 🗃️ API ENDPOINTS PARA CLIENTES - CRUD CON STORED PROCEDURES
@@ -209,6 +210,11 @@ router.post('/', async (req, res) => {
       codigo_seguridad: createResponse.codigo_seguridad
     });
     
+    // Invalidar cache de usuarios para que aparezca inmediatamente en listas
+    if (usersRouter.invalidarCacheUsuarios) {
+      usersRouter.invalidarCacheUsuarios();
+    }
+    
     console.log(`✅ Cliente creado exitosamente: ${clientData.name} (ID: ${clientData.id})`);
     
   } catch (error) {
@@ -266,6 +272,11 @@ router.put('/:id', async (req, res) => {
       },
       message: response.msg || 'Cliente actualizado exitosamente'
     });
+    
+    // Invalidar cache de usuarios para reflejar cambios inmediatamente
+    if (usersRouter.invalidarCacheUsuarios) {
+      usersRouter.invalidarCacheUsuarios();
+    }
     
     console.log(`✅ Cliente actualizado: ${name} (ID: ${id})`);
   } catch (error) {

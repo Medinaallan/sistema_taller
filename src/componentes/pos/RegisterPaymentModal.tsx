@@ -64,16 +64,21 @@ export const RegisterPaymentModal = ({
     monto: saldoPendienteInicial,
     referencia: ''
   });
+  
+  // Estado para el input de monto como string (para manejar correctamente decimales)
+  const [montoInput, setMontoInput] = useState(saldoPendienteInicial.toFixed(2));
 
   useEffect(() => {
     if (isOpen) {
       loadPaymentMethods();
       // Inicializar con el saldo pendiente real
+      const montoInicial = saldoPendienteInicial;
       setCurrentPayment({
         metodoPagoId: '',
-        monto: saldoPendienteInicial,
+        monto: montoInicial,
         referencia: ''
       });
+      setMontoInput(montoInicial.toFixed(2));
       setPayments([]);
     }
   }, [isOpen, saldoPendienteInicial]);
@@ -90,6 +95,17 @@ export const RegisterPaymentModal = ({
   };
 
   const totalPagado = payments.reduce((sum, p) => sum + p.monto, 0);
+  
+  // Función para manejar el cambio de monto (acepta punto y coma como separador decimal)
+  const handleMontoChange = (value: string) => {
+    // Permitir solo números, punto y coma
+    const sanitized = value.replace(/[^0-9.,]/g, '');
+    setMontoInput(sanitized);
+    
+    // Convertir a número (reemplazar coma por punto para parseFloat)
+    const numericValue = parseFloat(sanitized.replace(',', '.')) || 0;
+    setCurrentPayment({ ...currentPayment, monto: numericValue });
+  };
   const saldoPendiente = saldoPendienteInicial - totalPagado;
   const totalPagadoAnteriormente = totalFactura - saldoPendienteInicial;
 
@@ -130,11 +146,13 @@ export const RegisterPaymentModal = ({
     setPayments([...payments, newPayment]);
 
     // Limpiar formulario y ajustar monto al saldo pendiente
+    const nuevoSaldo = saldoPendiente - currentPayment.monto;
     setCurrentPayment({
       metodoPagoId: '',
-      monto: saldoPendiente - currentPayment.monto,
+      monto: nuevoSaldo,
       referencia: ''
     });
+    setMontoInput(nuevoSaldo.toFixed(2));
   };
 
   const handleRemovePayment = (id: string) => {
@@ -243,13 +261,12 @@ export const RegisterPaymentModal = ({
 
             <Input
               label="Monto"
-              type="number"
-              step="0.01"
-              min="0"
-              max={saldoPendiente}
-              value={currentPayment.monto}
-              onChange={(e) => setCurrentPayment({ ...currentPayment, monto: parseFloat(e.target.value) || 0 })}
+              type="text"
+              inputMode="decimal"
+              value={montoInput}
+              onChange={(e) => handleMontoChange(e.target.value)}
               placeholder="0.00"
+              className="text-right"
             />
           </div>
 

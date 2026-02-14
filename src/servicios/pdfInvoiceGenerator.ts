@@ -356,6 +356,9 @@ class PDFInvoiceGenerator {
     doc.text(direccionLines, pageWidth / 2, yPos, { align: 'center' });
     yPos += direccionLines.length * 4 + 1;
 
+    doc.text(`Correo: ${EMPRESA_INFO.correo}`, pageWidth / 2, yPos, { align: 'center' });
+    yPos += 4;
+    
     doc.text(`Tel: ${EMPRESA_INFO.telefono}`, pageWidth / 2, yPos, { align: 'center' });
     yPos += 4;
 
@@ -493,6 +496,7 @@ class PDFInvoiceGenerator {
     yPos += mensajePieLineas.length * 3.5 + 1;
     doc.setFontSize(6);
     doc.text(`Generado: ${new Date().toLocaleString('es-HN')}`, pageWidth / 2, yPos, { align: 'center' });
+    doc.text(`Original: Cliente - Copia: Emisor`, pageWidth / 2, yPos + 4, { align: 'center' });
 
     return doc;
   }

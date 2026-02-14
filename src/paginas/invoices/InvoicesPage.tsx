@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase'
 import { obtenerClientes } from '../../servicios/clientesApiService';
 import { vehiclesService } from '../../servicios/apiService';
 import invoicesService from '../../servicios/invoicesService';
+import cashService from '../../servicios/cashService';
 import { showError } from '../../utilidades/sweetAlertHelpers';
 import type { Invoice } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -87,6 +88,7 @@ const InvoicesPage = () => {
   const [filteredData, setFilteredData] = useState<GeneratedInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [currentSession, setCurrentSession] = useState<any>(null);
   // Filtros
   const [filterNumber, setFilterNumber] = useState('');
   const [filterClient, setFilterClient] = useState('');
@@ -257,6 +259,17 @@ const InvoicesPage = () => {
       await loadClientes();
       await loadVehiculos();
       
+      // Cargar sesión actual de caja
+      try {
+        const sessionResponse = await cashService.getOpen();
+        if (sessionResponse?.success && sessionResponse?.data) {
+          setCurrentSession(sessionResponse.data);
+          console.log('💼 Sesión de caja actual:', sessionResponse.data);
+        }
+      } catch (err) {
+        console.warn('⚠️ No se pudo cargar sesión de caja:', err);
+      }
+      
       // Cargar facturas pagadas desde BD
       const dbInvoices = await loadPaidInvoicesFromDB();
 
@@ -336,6 +349,19 @@ const InvoicesPage = () => {
     const apply = () => {
       let list = persistedData.slice();
 
+      // Filtro automático por turno en curso si hay sesión abierta
+      if (currentSession && currentSession.status === 'open') {
+        const sessionStart = new Date(currentSession.openedAt || currentSession.openingTime);
+        const sessionEnd = currentSession.closedAt ? new Date(currentSession.closedAt) : new Date();
+        
+        list = list.filter(inv => {
+          const invDate = new Date(inv.date);
+          return invDate >= sessionStart && invDate <= sessionEnd;
+        });
+        
+        console.log(`📊 Filtro por turno: ${list.length} facturas desde ${sessionStart.toLocaleString()}`);
+      }
+
       if (filterNumber.trim()) {
         const q = filterNumber.trim().toLowerCase();
         list = list.filter(inv => (inv.invoiceNumber || inv.id || '').toLowerCase().includes(q));
@@ -362,7 +388,7 @@ const InvoicesPage = () => {
     };
 
     apply();
-  }, [filterNumber, filterClient, filterFrom, filterTo, persistedData]);
+  }, [filterNumber, filterClient, filterFrom, filterTo, persistedData, currentSession]);
 
   const handleEdit = async (item: GeneratedInvoice) => {
     const result = await Swal.fire({
@@ -450,6 +476,34 @@ const InvoicesPage = () => {
           
         </div>
       </div>
+
+      {/* Indicador de Turno en Curso */}
+      {currentSession && currentSession.status === 'open' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-500 rounded-full p-2">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-blue-900">Turno en Curso - Filtro Automático Activo</h3>
+                <p className="text-sm text-blue-700">
+                  Apertura: {new Date(currentSession.openedAt || currentSession.openingTime).toLocaleString('es-HN')} • 
+                  Cajero: {currentSession.cashier || currentSession.openedBy}
+                </p>
+              </div>
+            </div>
+            <Badge variant="success">
+              ACTIVO
+            </Badge>
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            📊 Mostrando solo facturas del turno actual
+          </p>
+        </div>
+      )}
 
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

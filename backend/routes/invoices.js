@@ -3,7 +3,6 @@ const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 const notificationsService = require('../services/notificationsService');
 
-// ========== FACTURAS AHORA USAN BASE DE DATOS (NO JSON) ==========
 // GET /api/invoices - Obtener facturas desde BD usando SP_OBTENER_FACTURAS
 router.get('/', async (req, res) => {
   try {
@@ -106,14 +105,14 @@ router.get('/:id/items', async (req, res) => {
       .execute('SP_OBTENER_ITEMS_FACTURA');
     
     const items = result.recordset || [];
-    console.log(`✅ ${items.length} items encontrados`);
+    console.log(`${items.length} items encontrados`);
     
     res.json({ 
       success: true, 
       data: items
     });
   } catch (error) {
-    console.error('❌ Error obteniendo items de factura:', error);
+    console.error('Error obteniendo items de factura:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error obteniendo items de factura', 
@@ -168,7 +167,7 @@ router.post('/generate-from-ot', async (req, res) => {
           console.log(' Notificación de factura generada enviada');
         }
       } catch (notifError) {
-        console.error(' Error al enviar notificación de factura:', notifError);
+        console.error('Error al enviar notificación de factura:', notifError);
         // No fallar la operación si la notificación falla
       }
       
@@ -189,7 +188,7 @@ router.post('/generate-from-ot', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(' Error generando factura desde OT:', error);
+    console.error('Error generando factura desde OT:', error);
     res.status(500).json({
       success: false,
       message: 'Error al generar factura desde OT',
@@ -239,7 +238,7 @@ router.post('/register-payment', async (req, res) => {
     const message = response.msg || response.message || response[''] || 'Pago registrado';
     
     if (isSuccess) {
-      console.log(`✅ Pago registrado exitosamente: ${message}`);
+      console.log(`Pago registrado exitosamente: ${message}`);
       
       res.json({
         success: true,
@@ -251,17 +250,93 @@ router.post('/register-payment', async (req, res) => {
         }
       });
     } else {
-      console.warn(`⚠️ No se pudo registrar pago: ${message}`);
+      console.warn(`No se pudo registrar pago: ${message}`);
       res.status(400).json({
         success: false,
         message: message
       });
     }
   } catch (error) {
-    console.error('❌ Error registrando pago:', error);
+    console.error('Error registrando pago:', error);
     res.status(500).json({
       success: false,
       message: 'Error al registrar pago',
+      error: error.message
+    });
+  }
+});
+
+// POST /api/invoices/create-direct - Crear factura directa sin OT usando SP
+router.post('/create-direct', async (req, res) => {
+  try {
+    let { cliente_id, registrado_por, notas } = req.body;
+    const pool = await getConnection();
+    
+    // Si no se envía cliente_id, buscar el cliente "CONSUMIDOR FINAL" por nombre
+    if (!cliente_id) {
+      console.log('🔍 No se especificó cliente, buscando "CONSUMIDOR FINAL"...');
+      
+      // Buscar todos los usuarios
+      const usuariosResult = await pool.request()
+        .input('obtener_todos', sql.Bit, 1)
+        .input('usuario_id', sql.Int, null)
+        .execute('SP_OBTENER_USUARIOS');
+      
+      // Buscar el cliente con nombre "CONSUMIDOR FINAL"
+      const consumidorFinal = usuariosResult.recordset.find(
+        user => user.nombre_completo && user.nombre_completo.toUpperCase() === 'CONSUMIDOR FINAL'
+      );
+      
+      if (!consumidorFinal) {
+        return res.status(404).json({
+          success: false,
+          message: 'No se encontró el cliente "CONSUMIDOR FINAL". Por favor créelo primero.'
+        });
+      }
+      
+      cliente_id = consumidorFinal.usuario_id;
+      console.log(`Cliente "CONSUMIDOR FINAL" encontrado con ID: ${cliente_id}`);
+    }
+    
+    console.log(` Creando factura directa para cliente ${cliente_id}...`);
+    
+    const result = await pool.request()
+      .input('cliente_id', sql.Int, parseInt(cliente_id))
+      .input('registrado_por', sql.Int, registrado_por || 1)
+      .input('notas', sql.VarChar(300), notas || 'Venta directa de mostrador')
+      .execute('SP_CREAR_FACTURA_DIRECTA');
+    
+    const response = result.recordset[0];
+    
+    console.log(' Respuesta del SP_CREAR_FACTURA_DIRECTA:', response);
+    
+    // Verificar si el SP devolvió éxito
+    const isSuccess = response.allow === 1 || response.allow === '1' || response[''] === '200 OK';
+    const message = response.msg || response.message || response[''] || 'Factura directa creada';
+    
+    if (isSuccess) {
+      console.log(`Factura directa creada: ${response.numero_factura} (ID: ${response.factura_id})`);
+      
+      res.json({
+        success: true,
+        message: message,
+        data: {
+          factura_id: response.factura_id,
+          numero_factura: response.numero_factura
+        }
+      });
+    } else {
+      console.warn(`No se pudo crear factura directa: ${message}`);
+      res.status(400).json({
+        success: false,
+        message: message
+      });
+    }
+  } catch (error) {
+    console.error('Error creando factura directa:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear factura directa',
       error: error.message
     });
   }
