@@ -9,7 +9,7 @@ info:
 
 servers:
   - url: http://localhost:8080
-    description: Servidor de desarrollo (server-minimal.js)
+    description: Servidor de desarrollo (server.js)
   - url: https://your-production-url.com
     description: Servidor de producción
 

@@ -94,6 +94,7 @@ const InvoicesPage = () => {
   const [filterClient, setFilterClient] = useState('');
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
+  const [autoFilterBySession, setAutoFilterBySession] = useState(false); // Desactivado por defecto
 
   // Funciones de mapeo
   const getClienteName = (clienteId: string) => {
@@ -349,17 +350,45 @@ const InvoicesPage = () => {
     const apply = () => {
       let list = persistedData.slice();
 
-      // Filtro automático por turno en curso si hay sesión abierta
-      if (currentSession && currentSession.status === 'open') {
-        const sessionStart = new Date(currentSession.openedAt || currentSession.openingTime);
-        const sessionEnd = currentSession.closedAt ? new Date(currentSession.closedAt) : new Date();
+      // Filtro automático por turno en curso si está activado y hay sesión abierta
+      // Los filtros manuales de fecha tienen prioridad
+      const hasManualDateFilter = filterFrom.trim() !== '' || filterTo.trim() !== '';
+      
+      if (autoFilterBySession && currentSession && currentSession.status === 'open' && !hasManualDateFilter) {
+        const sessionOpenedAt = new Date(currentSession.openedAt || currentSession.openingTime);
+        
+        // Obtener inicio del día del turno (00:00:00)
+        const dayStart = new Date(sessionOpenedAt);
+        dayStart.setHours(0, 0, 0, 0);
+        
+        // Obtener fin del día (23:59:59) o fecha actual si el turno sigue abierto
+        const dayEnd = currentSession.closedAt 
+          ? new Date(currentSession.closedAt)
+          : new Date(); // Hora actual si el turno está abierto
+        
+        // Si el turno está abierto, extender hasta el fin del día
+        if (!currentSession.closedAt) {
+          dayEnd.setHours(23, 59, 59, 999);
+        }
+        
+        console.log('🔍 DEBUG FILTRO POR TURNO (TODO EL DÍA):');
+        console.log('  Turno abierto:', sessionOpenedAt.toLocaleString('es-HN'));
+        console.log('  Filtro DESDE:', dayStart.toLocaleString('es-HN'), '(inicio del día)');
+        console.log('  Filtro HASTA:', dayEnd.toLocaleString('es-HN'), '(fin del día/actual)');
+        console.log('  Total facturas antes de filtrar:', list.length);
         
         list = list.filter(inv => {
           const invDate = new Date(inv.date);
-          return invDate >= sessionStart && invDate <= sessionEnd;
+          const passes = invDate >= dayStart && invDate <= dayEnd;
+          
+          console.log(`  📄 Factura ${inv.invoiceNumber}:`);
+          console.log(`     Fecha factura: ${invDate.toLocaleString('es-HN')}`);
+          console.log(`     ¿Pasa filtro?: ${passes}`);
+          
+          return passes;
         });
         
-        console.log(`📊 Filtro por turno: ${list.length} facturas desde ${sessionStart.toLocaleString()}`);
+        console.log(`📊 Filtro por turno activo: ${list.length} facturas del día ${dayStart.toLocaleDateString('es-HN')}`);
       }
 
       if (filterNumber.trim()) {
@@ -388,7 +417,7 @@ const InvoicesPage = () => {
     };
 
     apply();
-  }, [filterNumber, filterClient, filterFrom, filterTo, persistedData, currentSession]);
+  }, [filterNumber, filterClient, filterFrom, filterTo, persistedData, currentSession, autoFilterBySession]);
 
   const handleEdit = async (item: GeneratedInvoice) => {
     const result = await Swal.fire({
@@ -479,29 +508,49 @@ const InvoicesPage = () => {
 
       {/* Indicador de Turno en Curso */}
       {currentSession && currentSession.status === 'open' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className={`${autoFilterBySession ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'} border rounded-lg p-4`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-blue-500 rounded-full p-2">
+              <div className={`${autoFilterBySession ? 'bg-blue-500' : 'bg-gray-400'} rounded-full p-2`}>
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-blue-900">Turno en Curso - Filtro Automático Activo</h3>
-                <p className="text-sm text-blue-700">
+                <h3 className={`font-semibold ${autoFilterBySession ? 'text-blue-900' : 'text-gray-700'}`}>
+                  Turno en Curso {autoFilterBySession ? '- Filtro por Día Activo' : ''}
+                </h3>
+                <p className={`text-sm ${autoFilterBySession ? 'text-blue-700' : 'text-gray-600'}`}>
                   Apertura: {new Date(currentSession.openedAt || currentSession.openingTime).toLocaleString('es-HN')} • 
                   Cajero: {currentSession.cashier || currentSession.openedBy}
                 </p>
               </div>
             </div>
-            <Badge variant="success">
-              ACTIVO
-            </Badge>
+            <div className="flex items-center space-x-3">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoFilterBySession}
+                  onChange={(e) => setAutoFilterBySession(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Filtrar por día del turno</span>
+              </label>
+              <Badge variant={autoFilterBySession ? 'success' : 'default'}>
+                {autoFilterBySession ? 'FILTRO ACTIVO' : 'TODAS LAS FACTURAS'}
+              </Badge>
+            </div>
           </div>
-          <p className="text-xs text-blue-600 mt-2">
-            📊 Mostrando solo facturas del turno actual
-          </p>
+          {autoFilterBySession && (
+            <p className="text-xs text-blue-600 mt-2">
+              📊 Mostrando todas las facturas del día {new Date(currentSession.openedAt || currentSession.openingTime).toLocaleDateString('es-HN')}
+            </p>
+          )}
+          {!autoFilterBySession && (
+            <p className="text-xs text-gray-600 mt-2">
+              📅 Mostrando todas las facturas de todos los días
+            </p>
+          )}
         </div>
       )}
 
@@ -558,7 +607,17 @@ const InvoicesPage = () => {
           </div>
           <div className="flex space-x-2">
             <Button onClick={() => { /* los filtros se aplican automaticamente */ }} variant="primary">Buscar</Button>
-            <Button onClick={() => { setFilterNumber(''); setFilterClient(''); setFilterFrom(''); setFilterTo(''); setFilteredData(persistedData); }} variant="secondary">Limpiar</Button>
+            <Button 
+              onClick={() => { 
+                setFilterNumber(''); 
+                setFilterClient(''); 
+                setFilterFrom(''); 
+                setFilterTo(''); 
+              }} 
+              variant="secondary"
+            >
+              Limpiar
+            </Button>
           </div>
         </div>
       </Card>

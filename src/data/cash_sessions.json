@@ -178,6 +178,23 @@
       "overages": 0,
       "closingTime": "2026-02-14T01:56:25.485Z",
       "closedBy": "Allan Admin"
+    },
+    {
+      "id": "f7c7d529-11d4-44ce-a0b1-8162efd577bb",
+      "openedBy": "Allan Admin",
+      "cashier": "Allan Admin",
+      "openingAmount": 1500,
+      "openingNotes": "fondo de cambio",
+      "openedAt": "2026-02-14T21:04:36.322Z",
+      "openingTime": "2026-02-14T21:04:36.322Z",
+      "status": "open",
+      "movements": [],
+      "closedAt": null,
+      "closingBy": null,
+      "closingAmount": null,
+      "closingNotes": null,
+      "shortages": 0,
+      "overages": 0
     }
   ],
   "movements": [

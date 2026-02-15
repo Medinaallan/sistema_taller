@@ -8,6 +8,14 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const spacesService = require('./services/spacesService');
 
+// ========================================
+// CONFIGURACIÓN DE ZONA HORARIA
+// ========================================
+// Honduras está en GMT-6 (Central Standard Time)
+process.env.TZ = 'America/Tegucigalpa';
+console.log('🕐 Zona horaria configurada: America/Tegucigalpa (GMT-6)');
+console.log('🕐 Hora actual del servidor:', new Date().toLocaleString('es-HN', { timeZone: 'America/Tegucigalpa' }));
+
 // Configuración del servidor
 const app = express();
 const server = http.createServer(app);
@@ -262,7 +270,7 @@ try {
 }
 
 //IMPORTAR Y CONFIGURAR RUTAS DE ESTADOS DE OT
-// DESHABILITADO - Ahora se maneja directamente en server-minimal.js con SQL Server
+// DESHABILITADO - Ahora se maneja directamente en server.js con SQL Server
 /*
 try {
   console.log('Cargando rutas de estados de órdenes de trabajo...');
