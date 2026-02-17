@@ -28,6 +28,10 @@ const AppointmentsPage = () => {
   const { clientes: clientesAPI } = useClientesFromAPI();
   const [servicios, setServicios] = useState<any[]>([]);
   const [vehiculos, setVehiculos] = useState<any[]>([]);
+  
+  // Estados para la vista de calendario
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   // Función para buscar el nombre del servicio por ID
   const getServiceName = (servicioId: string) => {
@@ -230,8 +234,36 @@ const AppointmentsPage = () => {
     setSelectedAppointment(null);
   };
 
+  // Manejar clic en día del calendario
+  const handleCalendarDayClick = (date: string) => {
+    setSelectedDate(date);
+    setIsNewAppointmentModalOpen(true);
+  };
+
+  // Cerrar modal y limpiar fecha seleccionada
+  const handleCloseNewAppointmentModal = () => {
+    setIsNewAppointmentModalOpen(false);
+    setSelectedDate('');
+  };
+
   return (
     <>
+      {/* Botones de cambio de vista */}
+      <div className="mb-4 flex gap-2">
+        <Button
+          variant={viewMode === 'list' ? 'primary' : 'secondary'}
+          onClick={() => setViewMode('list')}
+        >
+           Vista de Lista
+        </Button>
+        <Button
+          variant={viewMode === 'calendar' ? 'primary' : 'secondary'}
+          onClick={() => setViewMode('calendar')}
+        >
+          Vista de Calendario
+        </Button>
+      </div>
+
       <Card 
         title="Citas" 
         actions={
@@ -258,7 +290,7 @@ const AppointmentsPage = () => {
           </div>
         )}
         
-        {!loading && !error && (
+        {!loading && !error && viewMode === 'list' && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-500">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -352,12 +384,20 @@ const AppointmentsPage = () => {
             </table>
           </div>
         )}
+
+        {!loading && !error && viewMode === 'calendar' && (
+          <CalendarView
+            appointments={data}
+            onDayClick={handleCalendarDayClick}
+          />
+        )}
       </Card>
 
       <NewAppointmentModal
         isOpen={isNewAppointmentModalOpen}
-        onClose={() => setIsNewAppointmentModalOpen(false)}
+        onClose={handleCloseNewAppointmentModal}
         onSubmit={handleCreateAppointment}
+        initialDate={selectedDate}
       />
 
       <EditAppointmentModal
@@ -385,5 +425,196 @@ const AppointmentsPage = () => {
     </>
   );
 };
+
+// Componente de vista de calendario
+interface CalendarViewProps {
+  appointments: AppointmentWithNames[];
+  onDayClick: (date: string) => void;
+}
+
+function CalendarView({ appointments, onDayClick }: CalendarViewProps) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Obtener el primer y último día del mes actual
+  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+  
+  // Obtener el día de la semana del primer día (0 = domingo, 6 = sábado)
+  const firstDayWeekday = firstDayOfMonth.getDay();
+  
+  // Obtener el número de días del mes
+  const daysInMonth = lastDayOfMonth.getDate();
+  
+  // Crear array de días del mes
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  
+  // Crear array de días vacíos al inicio
+  const emptyDays = Array.from({ length: firstDayWeekday }, (_, i) => i);
+  
+  // Formatear fecha a YYYY-MM-DD
+  const formatDate = (day: number): string => {
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    return `${year}-${month}-${dayStr}`;
+  };
+  
+  // Verificar si hay citas en un día específico
+  const getAppointmentsForDay = (day: number) => {
+    const dateStr = formatDate(day);
+    return appointments.filter(apt => {
+      const aptDate = apt.date.toISOString().split('T')[0];
+      return aptDate === dateStr;
+    });
+  };
+  
+  // Navegar al mes anterior
+  const previousMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+  
+  // Navegar al mes siguiente
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+  
+  // Ir al mes actual
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+  
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  
+  const today = new Date();
+  const isToday = (day: number) => {
+    return today.getDate() === day &&
+           today.getMonth() === currentDate.getMonth() &&
+           today.getFullYear() === currentDate.getFullYear();
+  };
+  
+  return (
+    <div className="p-4">
+      {/* Controles de navegación */}
+      <div className="flex justify-between items-center mb-6">
+        <Button variant="secondary" onClick={previousMonth}>
+          ← Anterior
+        </Button>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </h2>
+          <Button variant="secondary" size="sm" onClick={goToToday}>
+            Hoy
+          </Button>
+        </div>
+        <Button variant="secondary" onClick={nextMonth}>
+          Siguiente →
+        </Button>
+      </div>
+      
+      {/* Calendario */}
+      <div className="bg-white rounded-lg shadow">
+        {/* Nombres de los días */}
+        <div className="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 rounded-t-lg overflow-hidden">
+          {dayNames.map(day => (
+            <div
+              key={day}
+              className="bg-gray-50 px-2 py-3 text-center text-sm font-semibold text-gray-700"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+        
+        {/* Días del calendario */}
+        <div className="grid grid-cols-7 gap-px bg-gray-200 border-l border-r border-b border-gray-200 rounded-b-lg overflow-hidden">
+          {/* Días vacíos al inicio */}
+          {emptyDays.map(i => (
+            <div key={`empty-${i}`} className="bg-gray-50 min-h-[100px]" />
+          ))}
+          
+          {/* Días del mes */}
+          {days.map(day => {
+            const dayAppointments = getAppointmentsForDay(day);
+            const isTodayDay = isToday(day);
+            
+            return (
+              <div
+                key={day}
+                onClick={() => onDayClick(formatDate(day))}
+                className={`
+                  bg-white min-h-[100px] p-2 cursor-pointer
+                  hover:bg-blue-50 transition-colors
+                  ${isTodayDay ? 'ring-2 ring-blue-500 ring-inset' : ''}
+                `}
+              >
+                <div className={`
+                  text-sm font-semibold mb-1
+                  ${isTodayDay ? 'text-blue-600' : 'text-gray-700'}
+                `}>
+                  {day}
+                </div>
+                
+                {/* Indicador de citas */}
+                {dayAppointments.length > 0 && (
+                  <div className="space-y-1">
+                    {dayAppointments.slice(0, 2).map((apt, idx) => (
+                      <div
+                        key={idx}
+                        className={`
+                          text-xs px-1.5 py-0.5 rounded truncate
+                          ${apt.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            apt.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                            apt.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            apt.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'}
+                        `}
+                      >
+                        {apt.time} - {apt.clientName}
+                      </div>
+                    ))}
+                    {dayAppointments.length > 2 && (
+                      <div className="text-xs text-gray-500 px-1.5">
+                        +{dayAppointments.length - 2} más
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Mensaje para crear cita */}
+                {dayAppointments.length === 0 && (
+                  <div className="text-xs text-gray-400 text-center mt-4">
+                    
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* Leyenda */}
+      <div className="mt-4 flex flex-wrap gap-4 text-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+          <span>Pendiente</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+          <span>Confirmada</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+          <span>Aprobada/Completada</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default AppointmentsPage;

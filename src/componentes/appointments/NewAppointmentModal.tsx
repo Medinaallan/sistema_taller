@@ -9,12 +9,14 @@ interface NewAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (appointment: Omit<Appointment, 'id'>) => void;
+  initialDate?: string; // Nueva prop para fecha inicial
 }
 
 const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  initialDate,
 }) => {
   const { state } = useApp();
   const [formData, setFormData] = useState({
@@ -54,7 +56,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
   }, [isOpen]);
     // Ya no se requiere cargar asesores, lógica eliminada
 
-  // Limpiar formulario al cerrar
+  // Limpiar formulario al cerrar o establecer fecha inicial
   useEffect(() => {
     if (!isOpen) {
       setFormData({
@@ -70,8 +72,14 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
       });
       setErrors({});
       setVehiculosCliente([]);
+    } else if (initialDate) {
+      // Si se proporciona una fecha inicial, establecerla
+      setFormData(prev => ({
+        ...prev,
+        date: initialDate
+      }));
     }
-  }, [isOpen]);
+  }, [isOpen, initialDate]);
 
   // Cargar clientes cuando se abra el modal
   useEffect(() => {
