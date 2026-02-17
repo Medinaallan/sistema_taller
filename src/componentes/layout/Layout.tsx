@@ -100,10 +100,40 @@ export function Layout({ children }: LayoutProps) {
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
   
   // Obtener cliente ID si el usuario es cliente
   const clientId = state.user?.role === 'client' ? state.user.id : null;
   const { unreadCount, refreshCount } = useNotifications(clientId, state.user?.role === 'client');
+
+  // Actualizar reloj cada segundo
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Formatear fecha y hora según el formato solicitado: dd/mm(letras)/yy - hh:mm:ss AM/PM
+  const formatDateTime = (date: Date) => {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = months[date.getMonth()];
+    const year = String(date.getFullYear()).slice(-2);
+    
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'p.m.' : 'a.m.';
+    
+    hours = hours % 12;
+    hours = hours ? hours : 12; // Si es 0, mostrar 12
+    const hoursStr = String(hours).padStart(2, '0');
+    
+    return `${day}/${month}/${year} - ${hoursStr}:${minutes}:${seconds} ${ampm}`;
+  };
 
   // Cargar logo de la empresa
   useEffect(() => {
@@ -370,7 +400,22 @@ export function Layout({ children }: LayoutProps) {
             </h1>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
+            {/* Reloj en tiempo real */}
+            <div className="flex items-center space-x-3">
+              <svg className="w-6 h-6" style={{ color: '#ffffff' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-md font-semibold tracking-wide" 
+                   style={{ 
+                     color: colors.text.primary,
+                     fontFamily: "'Inter', 'Segoe UI', sans-serif",
+                     letterSpacing: '0.5px'
+                   }}>
+                {formatDateTime(currentDateTime)}
+              </div>
+            </div>
+
             {/* Botón de Tema */}
             <ThemeDropdown />
 
