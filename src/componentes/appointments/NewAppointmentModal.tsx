@@ -291,6 +291,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
             value={formData.date}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('date', e.target.value)}
             error={errors.date}
+            min={new Date().toISOString().split('T')[0]}
             required
           />
 

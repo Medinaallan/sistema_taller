@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Card } from '../comunes/UI';
 import type { Appointment } from '../../tipos';
+import { showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface AppointmentWithNames extends Appointment {
   clientName?: string;
@@ -26,6 +27,15 @@ const statusConfig = {
 
 export function AppointmentCalendar({ appointments }: AppointmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Función para verificar si una fecha es pasada (anterior al día actual)
+  const isPastDate = (date: Date): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Resetear las horas para comparar solo fechas
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0);
+    return compareDate < today;
+  };
 
   const days = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -71,6 +81,13 @@ export function AppointmentCalendar({ appointments }: AppointmentCalendarProps) 
 
   const monthYear = currentDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
+  // Manejar clic en días
+  const handleDayClick = (date: Date) => {
+    if (isPastDate(date)) {
+      showWarning('No se pueden agendar citas en días pasados', 'Fecha no válida');
+    }
+  };
+
   return (
     <Card title="Calendario de Citas">
       <div className="space-y-2">
@@ -105,34 +122,35 @@ export function AppointmentCalendar({ appointments }: AppointmentCalendarProps) 
         {/* Días del calendario */}
         <div className="grid grid-cols-7 gap-0.5">
           {days.map((day, index) => (
-            <div
-              key={index}
-              className={`min-h-16 p-1 border rounded text-xs overflow-y-auto ${
-                day.isCurrentMonth ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'
-              }`}
-            >
-              <div className={`text-xs font-semibold mb-0.5 sticky top-0 bg-white ${day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
-                {day.date.getDate()}
-              </div>
+              <div
+                key={index}
+                onClick={() => handleDayClick(day.date)}
+                className={`min-h-16 p-1 border rounded text-xs overflow-y-auto cursor-pointer hover:bg-gray-50 transition-colors ${
+                  day.isCurrentMonth ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100'
+                }`}
+              >
+                <div className={`text-xs font-semibold mb-0.5 sticky top-0 bg-white ${day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {day.date.getDate()}
+                </div>
 
-              {/* Citas del día */}
-              <div className="space-y-0.5">
-                {day.appointments.length > 0 ? (
-                  day.appointments.map((apt, idx) => {
-                    const config = statusConfig[apt.status as keyof typeof statusConfig] || statusConfig.pending;
-                    return (
-                      <div
-                        key={idx}
-                        className={`text-xs px-1 py-0.5 rounded border line-clamp-1 ${config.color} ${config.textColor}`}
-                        title={`${apt.time} - ${apt.clientName || 'Cliente'}`}
-                      >
-                        {apt.time}
-                      </div>
-                    );
-                  })
-                ) : null}
+                {/* Citas del día */}
+                <div className="space-y-0.5">
+                  {day.appointments.length > 0 ? (
+                    day.appointments.map((apt, idx) => {
+                      const config = statusConfig[apt.status as keyof typeof statusConfig] || statusConfig.pending;
+                      return (
+                        <div
+                          key={idx}
+                          className={`text-xs px-1 py-0.5 rounded border line-clamp-1 ${config.color} ${config.textColor}`}
+                          title={`${apt.time} - ${apt.clientName || 'Cliente'}`}
+                        >
+                          {apt.time}
+                        </div>
+                      );
+                    })
+                  ) : null}
+                </div>
               </div>
-            </div>
           ))}
         </div>
 

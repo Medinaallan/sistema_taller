@@ -8,7 +8,7 @@ import CreateQuotationModal from '../../componentes/quotations/CreateQuotationMo
 import AppointmentActions from '../../componentes/appointments/AppointmentActions';
 import { appointmentsService, servicesService, vehiclesService } from '../../servicios/apiService';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
-import { showError, showConfirm } from '../../utilidades/sweetAlertHelpers';
+import { showError, showConfirm, showWarning } from '../../utilidades/sweetAlertHelpers';
 import { useBusinessLogs } from '../../hooks/useBusinessLogs';
 type AppointmentWithNames = Appointment & {
   clientName?: string;
@@ -236,6 +236,18 @@ const AppointmentsPage = () => {
 
   // Manejar clic en día del calendario
   const handleCalendarDayClick = (date: string) => {
+    // Validar que la fecha no sea pasada
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < today) {
+      // Mostrar alerta para días pasados
+      showWarning('No se pueden agendar citas en días pasados', 'Fecha no válida');
+      return;
+    }
+    
     setSelectedDate(date);
     setIsNewAppointmentModalOpen(true);
   };

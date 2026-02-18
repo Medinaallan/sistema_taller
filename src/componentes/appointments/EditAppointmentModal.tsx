@@ -175,6 +175,7 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
           value={formData.fecha_inicio}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('fecha_inicio', e.target.value)}
           error={errors.fecha_inicio}
+          min={new Date().toISOString().split('T')[0]}
           required
         />
         <TextArea

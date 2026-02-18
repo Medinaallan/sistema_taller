@@ -63,6 +63,48 @@
       "es_sistema": false,
       "enviado_en": "2025-12-11T01:10:54.604Z",
       "leido": false
+    },
+    {
+      "mensaje_id": 1771364503140,
+      "sala_id": "9",
+      "usuario_id": "42",
+      "rol": "mechanic",
+      "contenido": "hola",
+      "es_sistema": false,
+      "enviado_en": "2026-02-17T21:41:42.533Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1771364512338,
+      "sala_id": "9",
+      "usuario_id": "42",
+      "rol": "mechanic",
+      "contenido": "que tal",
+      "es_sistema": false,
+      "enviado_en": "2026-02-17T21:41:52.036Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1771364524103,
+      "sala_id": "9",
+      "usuario_id": "42",
+      "rol": "mechanic",
+      "contenido": "como estamos",
+      "es_sistema": false,
+      "enviado_en": "2026-02-17T21:42:03.761Z",
+      "leido": false
+    },
+    {
+      "mensaje_id": 1771364539488,
+      "sala_id": "9",
+      "usuario_id": "42",
+      "rol": "admin",
+      "contenido": "📷 Imagen",
+      "es_sistema": false,
+      "enviado_en": "2026-02-17T21:42:19.080Z",
+      "leido": false,
+      "archivo_url": "https://taller-develop.nyc3.cdn.digitaloceanspaces.com/chat-images/1771364537822-5c1105e9-7779-4f52-bb44-91c81da2c380.webp",
+      "tipo_archivo": "image/webp"
     }
   ],
   "11": [
