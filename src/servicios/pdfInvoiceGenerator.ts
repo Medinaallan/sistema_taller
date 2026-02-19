@@ -255,7 +255,13 @@ class PDFInvoiceGenerator {
 
     const exentoVal = Number((invoice as any).exento || 0);
     const exoneradoVal = Number((invoice as any).exonerado || 0);
-    const gravadoVal = Number(invoice.subtotal || 0);
+    
+    // Calcular correctamente base gravable e ISV
+    // Si total incluye ISV (15%), entonces: base = total / 1.15, isv = base * 0.15
+    const totalFactura = Number(invoice.total || 0);
+    const totalGravable = totalFactura - exentoVal - exoneradoVal - discountVal;
+    const gravadoVal = totalGravable / 1.15; // Base sin ISV
+    const isvVal = gravadoVal * 0.15; // ISV del 15%
 
     doc.text('Importe Exento:', totalsX, yPos, { align: 'right' });
     doc.text(`L ${exentoVal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
@@ -270,7 +276,7 @@ class PDFInvoiceGenerator {
     yPos += 6;
 
     doc.text('ISV (15%):', totalsX, yPos, { align: 'right' });
-    doc.text(`L ${Number(invoice.tax || 0).toFixed(2)}`, totalsValX, yPos, { align: 'right' });
+    doc.text(`L ${isvVal.toFixed(2)}`, totalsValX, yPos, { align: 'right' });
 
     yPos += 8;
     doc.setDrawColor(0);
@@ -454,7 +460,13 @@ class PDFInvoiceGenerator {
 
     const exentoVal = Number((invoice as any).exento || 0);
     const exoneradoVal = Number((invoice as any).exonerado || 0);
-    const gravadoVal = Number(invoice.subtotal || 0);
+    
+    // Calcular correctamente base gravable e ISV
+    // Si total incluye ISV (15%), entonces: base = total / 1.15, isv = base * 0.15
+    const totalFactura = Number(invoice.total || 0);
+    const totalGravable = totalFactura - exentoVal - exoneradoVal - discountVal;
+    const gravadoVal = totalGravable / 1.15; // Base sin ISV
+    const isvVal = gravadoVal * 0.15; // ISV del 15%
 
     doc.text('Importe Exento:', labelX, yPos);
     doc.text(`L ${exentoVal.toFixed(2)}`, valX, yPos, { align: 'right' });
@@ -469,7 +481,7 @@ class PDFInvoiceGenerator {
     yPos += 4;
 
     doc.text('ISV (15%):', labelX, yPos);
-    doc.text(`L ${Number(invoice.tax || 0).toFixed(2)}`, valX, yPos, { align: 'right' });
+    doc.text(`L ${isvVal.toFixed(2)}`, valX, yPos, { align: 'right' });
     yPos += 6;
 
     doc.setFont('helvetica', 'bold');

@@ -63,7 +63,23 @@ class InvoicesService {
       const res = await fetch(url);
       if (!res.ok) return null;
       const json = await res.json();
-      return json.data || null;
+      const invoice = json.data || null;
+      
+      // Cargar items de la factura si no vienen incluidos
+      if (invoice && (!invoice.items || invoice.items.length === 0)) {
+        try {
+          const facturaId = parseInt(invoice.id || id);
+          if (!isNaN(facturaId)) {
+            const items = await this.getInvoiceItems(facturaId);
+            invoice.items = items;
+          }
+        } catch (itemsError) {
+          console.warn('No se pudieron cargar items de factura:', itemsError);
+          invoice.items = invoice.items || [];
+        }
+      }
+      
+      return invoice;
     } catch (error) {
       console.error('Error obteniendo factura por id:', error);
       return null;

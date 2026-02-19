@@ -1,10 +1,11 @@
-import { useState, MouseEvent, useCallback } from 'react';
+import { useState, MouseEvent, useCallback, useEffect } from 'react';
 import { Card, Button, Select, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import type { ReportFilters, FinancialStats } from '../../tipos/index';
 import { formatCurrency } from '../../utilidades/globalMockDatabase';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import Swal from 'sweetalert2';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -136,11 +137,19 @@ function ReportFilters({ filters, onChange }: {
 }
 
 // Componente para el reporte financiero
-function FinancialReport({ stats }: { stats: FinancialStats }) {
+function FinancialReport({ stats, loading, onRefresh }: { stats: FinancialStats; loading?: boolean; onRefresh?: () => Promise<void> }) {
   return (
     <Card>
       <div className="p-4">
         <h2 className="text-lg font-semibold mb-4">Reporte Financiero</h2>
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Cargando datos...</span>
+          </div>
+        )}
+        {!loading && (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-lg border">
             <p className="text-sm text-gray-600">Ventas Totales</p>
@@ -178,10 +187,33 @@ function FinancialReport({ stats }: { stats: FinancialStats }) {
           </div>
         </div>
         <div className="mt-6 flex justify-end space-x-4">
-          <Button>
-            Generar Reporte Completo
+          <Button
+            onClick={async () => {
+              if (onRefresh) {
+                await Swal.fire({
+                  icon: 'info',
+                  title: 'Generando Reporte',
+                  text: 'Actualizando datos financieros...',
+                  showConfirmButton: false,
+                  timer: 1000
+                });
+                await onRefresh();
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Reporte Actualizado',
+                  text: 'Los datos se han actualizado correctamente',
+                  confirmButtonColor: '#3b82f6',
+                  timer: 2000
+                });
+              }
+            }}
+            disabled={loading}
+          >
+            {loading ? 'Cargando...' : 'Actualizar Datos'}
           </Button>
         </div>
+        </>
+        )}
       </div>
     </Card>
   );
@@ -760,9 +792,10 @@ export function ReportsPage() {
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     endDate: new Date(),
   });
+  const [loading, setLoading] = useState(false);
 
   // Estado inicial para datos financieros
-  const [financialStats] = useState<FinancialStats>({
+  const [financialStats, setFinancialStats] = useState<FinancialStats>({
     totalSales: 0,
     taxableAmount: 0,
     isv: 0,
@@ -772,6 +805,96 @@ export function ReportsPage() {
     transferPayments: 0,
     pendingPayments: 0,
   });
+
+  // Función para cargar datos financieros desde SP_OBTENER_PAGOS
+  const loadFinancialData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const base = API_BASE_URL.replace(/\/$/, '');
+      const url = base.endsWith('/api') ? `${base}/invoice-payments/history` : `${base}/api/invoice-payments/history`;
+      
+      // Formatear fechas para el API (YYYY-MM-DD)
+      const fechaInicio = filters.startDate.toISOString().split('T')[0];
+      const fechaFin = filters.endDate.toISOString().split('T')[0];
+      
+      const response = await fetch(`${url}?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`);
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener datos de pagos');
+      }
+      
+      const result = await response.json();
+      const pagos = result.data || [];
+      
+      // Calcular estadísticas desde los pagos
+      let totalSales = 0;
+      let cashPayments = 0;
+      let cardPayments = 0;
+      let transferPayments = 0;
+      let pendingPayments = 0;
+      
+      pagos.forEach((pago: any) => {
+        const monto = parseFloat(pago.monto || 0);
+        const totalFactura = parseFloat(pago.total_factura || 0);
+        const saldoPendiente = parseFloat(pago.saldo_pendiente || 0);
+        
+        // Sumar al total de ventas
+        if (pago.estado_factura !== 'anulada') {
+          totalSales += monto;
+        }
+        
+        // Clasificar por método de pago
+        const metodoPago = (pago.metodo_pago || '').toLowerCase();
+        if (metodoPago.includes('efectivo')) {
+          cashPayments += monto;
+        } else if (metodoPago.includes('tarjeta')) {
+          cardPayments += monto;
+        } else if (metodoPago.includes('transferencia')) {
+          transferPayments += monto;
+        }
+        
+        // Sumar saldos pendientes
+        if (saldoPendiente > 0) {
+          pendingPayments += saldoPendiente;
+        }
+      });
+      
+      // Calcular base gravable e ISV (asumiendo que todo está gravado al 15%)
+      // total = base + isv, donde isv = base * 0.15
+      // entonces: total = base * 1.15, por lo tanto: base = total / 1.15
+      const taxableAmount = totalSales / 1.15;
+      const isv = taxableAmount * 0.15;
+      const totalWithTax = totalSales;
+      
+      setFinancialStats({
+        totalSales,
+        taxableAmount,
+        isv,
+        totalWithTax,
+        cashPayments,
+        cardPayments,
+        transferPayments,
+        pendingPayments,
+      });
+      
+    } catch (error) {
+      console.error('Error cargando datos financieros:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudieron cargar los datos financieros',
+        confirmButtonColor: '#3b82f6'
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [filters.startDate, filters.endDate]);
+
+  // Cargar datos al montar y cuando cambien los filtros
+  useEffect(() => {
+    loadFinancialData();
+  }, [loadFinancialData]);
 
   // Estado inicial para datos de servicios
   const [serviceData] = useState({
@@ -859,7 +982,7 @@ export function ReportsPage() {
       </div>
 
       <ReportFilters filters={filters} onChange={setFilters} />
-      <FinancialReport stats={financialStats} />
+      <FinancialReport stats={financialStats} loading={loading} onRefresh={loadFinancialData} />
       <ServiceReport />
       <SatisfactionReport />
     </div>

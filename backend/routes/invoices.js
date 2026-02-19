@@ -3,6 +3,39 @@ const router = express.Router();
 const { getConnection, sql } = require('../config/database');
 const notificationsService = require('../services/notificationsService');
 
+/**
+ * Mapea los campos de la base de datos al formato esperado por el frontend
+ * La BD retorna: impuestos, subtotal, total
+ * El frontend espera: tax, subtotal, total
+ */
+function mapInvoiceFields(factura) {
+  if (!factura) return factura;
+  
+  // Mapear impuestos -> tax (mantener ambos por compatibilidad)
+  if (factura.impuestos !== undefined && factura.tax === undefined) {
+    factura.tax = factura.impuestos;
+  }
+  
+  return factura;
+}
+
+/**
+ * Mapea los items de factura para incluir el campo 'type' 
+ * basado en tipo_servicio_id, tipo_item, o tipo_item_inferido
+ */
+function mapInvoiceItemFields(item) {
+  if (!item) return item;
+  
+  // Determinar si es servicio o producto
+  const esServicio = !!item.tipo_servicio_id || 
+                     (item.tipo_item && item.tipo_item.toLowerCase() === 'servicio') ||
+                     (item.tipo_item_inferido && item.tipo_item_inferido.toLowerCase() === 'servicio');
+  
+  item.type = esServicio ? 'service' : 'product';
+  
+  return item;
+}
+
 // GET /api/invoices - Obtener facturas desde BD usando SP_OBTENER_FACTURAS
 router.get('/', async (req, res) => {
   try {
@@ -21,12 +54,16 @@ router.get('/', async (req, res) => {
       .execute('SP_OBTENER_FACTURAS');
     
     const facturas = result.recordset || [];
+    
+    // Mapear campos de BD a formato frontend
+    const facturasMapadas = facturas.map(f => mapInvoiceFields(f));
+    
     console.log(`  facturas obtenidas desde BD`);
     
     res.json({ 
       success: true, 
-      data: facturas,
-      count: facturas.length 
+      data: facturasMapadas,
+      count: facturasMapadas.length 
     });
   } catch (error) {
     console.error(' Error obteniendo facturas desde BD:', error);
@@ -78,9 +115,12 @@ router.get('/:id', async (req, res) => {
     
     console.log(` Factura  encontrada`);
     
+    // Mapear campos de BD a formato frontend
+    const facturaMapeada = mapInvoiceFields(result.recordset[0]);
+    
     res.json({ 
       success: true, 
-      data: result.recordset[0] 
+      data: facturaMapeada 
     });
   } catch (error) {
     console.error(' Error obteniendo factura:', error);
@@ -105,11 +145,15 @@ router.get('/:id/items', async (req, res) => {
       .execute('SP_OBTENER_ITEMS_FACTURA');
     
     const items = result.recordset || [];
-    console.log(`${items.length} items encontrados`);
+    
+    // Mapear campos de items para incluir 'type'
+    const itemsMapados = items.map(item => mapInvoiceItemFields(item));
+    
+    console.log(`${itemsMapados.length} items encontrados`);
     
     res.json({ 
       success: true, 
-      data: items
+      data: itemsMapados
     });
   } catch (error) {
     console.error('Error obteniendo items de factura:', error);

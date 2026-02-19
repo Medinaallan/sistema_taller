@@ -198,7 +198,14 @@ const InvoicesPage = () => {
           const itemTotal = item.cantidad * item.precio_unitario;
           subtotalCalculado += itemTotal;
           
-          if (item.tipo_item?.toLowerCase() === 'servicio' || item.tipo_item?.toLowerCase() === 'service') {
+          // Verificar si es servicio: usar campo 'type' si está disponible (mapeado por backend)
+          // o verificar tipo_servicio_id, tipo_item, tipo_item_inferido como fallback
+          const esServicio = item.type === 'service' || 
+                             !!item.tipo_servicio_id || 
+                             item.tipo_item?.toLowerCase() === 'servicio' || 
+                             item.tipo_item_inferido?.toLowerCase() === 'servicio';
+          
+          if (esServicio) {
             laborCost += itemTotal;
           } else {
             partsCost += itemTotal;
@@ -229,14 +236,26 @@ const InvoicesPage = () => {
           updatedAt: new Date(),
           
           // Mapear items con la estructura correcta
-          items: (factura.items || []).map((item: any) => ({
-            id: item.item_id?.toString() || `item-${Math.random().toString(36).slice(2, 9)}`,
-            description: item.descripcion || item.nombre || '',
-            quantity: item.cantidad || 1,
-            unitPrice: item.precio_unitario || 0,
-            total: item.cantidad * item.precio_unitario,
-            type: item.tipo_item?.toLowerCase() === 'servicio' ? 'service' : 'product'
-          }))
+          items: (factura.items || []).map((item: any) => {
+            // Usar campo 'type' si ya está mapeado por el backend, 
+            // de lo contrario inferir desde otros campos
+            let itemType = item.type;
+            if (!itemType) {
+              const esServicio = !!item.tipo_servicio_id || 
+                                 item.tipo_item?.toLowerCase() === 'servicio' || 
+                                 item.tipo_item_inferido?.toLowerCase() === 'servicio';
+              itemType = esServicio ? 'service' : 'product';
+            }
+            
+            return {
+              id: item.item_id?.toString() || `item-${Math.random().toString(36).slice(2, 9)}`,
+              description: item.descripcion || item.nombre || '',
+              quantity: item.cantidad || 1,
+              unitPrice: item.precio_unitario || 0,
+              total: item.cantidad * item.precio_unitario,
+              type: itemType
+            };
+          })
         };
       });
 
