@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, CheckIcon, StopIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, EyeIcon, CheckIcon, StopIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge, TextArea } from '../../componentes/comunes/UI';
 import { showError, showSuccess, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import CreateWorkOrderModal from '../../componentes/workorders/CreateWorkOrderModal';
@@ -8,6 +8,7 @@ import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import CreateQuotationFromOTModal from '../../componentes/quotations/CreateQuotationFromOTModal';
 import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
 import AuthorizationDecisionModal from '../../componentes/ordenes-trabajo/AuthorizationDecisionModal';
+import quotationsService from '../../servicios/quotationsService';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
@@ -46,8 +47,8 @@ const WorkOrdersPage = () => {
   const [selectedOrderForQC, setSelectedOrderForQC] = useState<WorkOrderData | null>(null);
   const [completedTasksMap, setCompletedTasksMap] = useState<Map<string, boolean>>(new Map());
   
-  // Estado para costos calculados de cada orden
-  const [orderCostsMap] = useState<Map<string, number>>(new Map());
+  // Estado para costos calculados de cada orden (sumados desde cotizaciones)
+  const [orderCostsMap, setOrderCostsMap] = useState<Map<string, number>>(new Map());
 
   // Estados para el modal de decisión de autorización
   const [showDecisionModal, setShowDecisionModal] = useState(false);
@@ -55,32 +56,84 @@ const WorkOrdersPage = () => {
   
   const loadWorkOrders = async (p = page) => {
     try {
-      console.log(' Iniciando carga paginada de órdenes de trabajo...');
+      console.log('🔄 Iniciando carga paginada de órdenes de trabajo...');
       setLoading(true);
       const res = await workOrdersService.getWorkOrdersPage(p, limit, true);
-      console.log(' Órdenes paginadas cargadas:', res.data);
+      console.log(`✅ ${res.data.length} órdenes paginadas cargadas (Total: ${res.count})`);
+      
+      // Log de OTs recién creadas (Abierta)
+      const nuevasOTs = res.data.filter(o => o.estado === 'Abierta');
+      if (nuevasOTs.length > 0) {
+        console.log(`📋 ${nuevasOTs.length} OT(s) en estado "Abierta":`, nuevasOTs.map(o => `#${o.id} - ${o.nombreCliente || o.clienteId}`));
+      }
+      
       setWorkOrders(res.data);
       setTotalCount(res.count || 0);
       setPage(res.page || p);
 
-      // Cargar nombres descriptivos para cada orden (lazy per page)
+      // Cargar nombres descriptivos y costos reales para cada orden
       await loadDisplayNamesForOrders(res.data);
+      await calculateRealCostsForOrders(res.data);
     } catch (err) {
-      console.error(' Error cargando órdenes de trabajo:', err);
+      console.error('❌ Error cargando órdenes de trabajo:', err);
       showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
   };
   
-  // Nota: el cálculo de costos ahora se realiza server-side por página.
+  // Calcular costos reales sumando items de cotizaciones relacionadas (SP_OBTENER_ITEMS_COTIZACION)
+  const calculateRealCostsForOrders = async (orders: WorkOrderData[]) => {
+    try {
+      console.log('💰 Calculando costos reales desde cotizaciones...');
+      const newCostsMap = new Map<string, number>();
+      
+      for (const order of orders) {
+        if (!order.id) continue;
+        
+        try {
+          // Parsear ot_id (order.id es el ot_id como string)
+          const otId = parseInt(order.id);
+          if (isNaN(otId)) {
+            console.warn(`  ⚠️ OT #${order.id} tiene ID inválido, saltando...`);
+            newCostsMap.set(order.id, 0);
+            continue;
+          }
+          
+          // Obtener todas las cotizaciones relacionadas con esta OT
+          const quotations = await quotationsService.getQuotationsByOT(otId);
+          
+          let totalCost = 0;
+          
+          // Para cada cotización, sumar el total_linea de sus items
+          for (const quotation of quotations) {
+            const items = await quotationsService.getQuotationItems(quotation.cotizacion_id.toString());
+            const quotationTotal = items.reduce((sum, item) => sum + item.total_linea, 0);
+            totalCost += quotationTotal;
+          }
+          
+          newCostsMap.set(order.id, totalCost);
+          
+          if (quotations.length > 0) {
+            console.log(`  OT #${order.id}: L${totalCost.toFixed(2)} (${quotations.length} cotizaciones)`);
+          }
+        } catch (err) {
+          console.error(`  ❌ Error calculando costo para OT #${order.id}:`, err);
+          newCostsMap.set(order.id, 0);
+        }
+      }
+      
+      setOrderCostsMap(newCostsMap);
+      console.log('✅ Costos reales calculados');
+    } catch (err) {
+      console.error('❌ Error calculando costos reales:', err);
+    }
+  };
   
   // Helper para obtener el costo total calculado de una orden
   const getOrderTotalCost = (order: WorkOrderData): number => {
     if (!order.id) return 0;
-    // Preferir costo calculado adjuntado por el backend
-    // @ts-ignore
-    if ((order as any)._calculatedCost !== undefined) return (order as any)._calculatedCost;
+    // Usar el costo calculado desde las cotizaciones
     return orderCostsMap.get(order.id) || 0;
   };
 
@@ -196,6 +249,12 @@ const WorkOrdersPage = () => {
     }
     
     setSelectedOrderForTasks(null);
+  };
+
+  // Manejar cuando cambia el estado de la OT (por ejemplo, al iniciar una tarea)
+  const handleWorkOrderStateChanged = async () => {
+    console.log('🔄 Estado de OT cambió, recargando lista...');
+    await loadWorkOrders();
   };
 
   const handleAddTaskModalClose = () => {
@@ -321,8 +380,22 @@ const WorkOrdersPage = () => {
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
+    // Validar que la OT esté en estado correcto antes de completar
+    const order = workOrders.find(o => o.id === orderId);
+    if (!order) {
+      showError('Orden de trabajo no encontrada');
+      return;
+    }
+    
+    if (order.estado !== 'Control de calidad') {
+      showError(`No se puede completar una OT en estado "${order.estado}". Solo se pueden completar OTs en estado "Control de calidad".`);
+      console.warn(`❌ Intento de completar OT #${orderId} con estado incorrecto: "${order.estado}"`);
+      return;
+    }
+    
     if (await showConfirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
+        console.log(`🔄 Completando OT #${orderId} (estado actual: ${order.estado})`);
         await workOrdersService.completeWorkOrder(orderId);
         showSuccess('Orden de trabajo completada exitosamente');
         await loadWorkOrders(); // Recargar datos
@@ -552,8 +625,10 @@ const WorkOrdersPage = () => {
                           className="text-indigo-600 hover:text-indigo-900"
                           title="Ver y gestionar tareas"
                         >
-                          
+                          📋
                         </button>
+
+                        {/* La OT se inicia automáticamente al iniciar la primera tarea */}
 
                         {/* Botones específicos para órdenes "En proceso" */}
                         {order.estado === 'En proceso' && (
@@ -587,25 +662,14 @@ const WorkOrdersPage = () => {
                           </>
                         )}
 
-                        {/* Botón Completar - para órdenes NO en proceso */}
-                        {order.estado !== 'En proceso' && order.estado !== 'Completada' && order.estado !== 'Cerrada' && (
+                        {/* Botón Completar - SOLO para órdenes en estado "Control de calidad" */}
+                        {order.estado === 'Control de calidad' && (
                           <button
                             onClick={() => handleCompleteWorkOrder(order.id!)}
                             className="text-green-600 hover:text-green-900"
-                            title="Completar orden"
+                            title="Completar orden y generar factura"
                           >
                             <CheckIcon className="h-4 w-4" />
-                          </button>
-                        )}
-
-                        {/* Botón Editar - para órdenes no completadas ni cerradas */}
-                        {order.estado !== 'Completada' && order.estado !== 'Cerrada' && (
-                          <button
-                            onClick={() => {/* TODO: Implementar edición */}}
-                            className="text-yellow-600 hover:text-yellow-900"
-                            title="Editar"
-                          >
-                            <PencilIcon className="h-4 w-4" />
                           </button>
                         )}
 
@@ -788,6 +852,7 @@ const WorkOrdersPage = () => {
               setShowAddTaskModal(true);
             }}
             onAddQuotationClick={handleAddQuotationClick}
+            onWorkOrderStateChanged={handleWorkOrderStateChanged}
           />
 
           <AddTaskModal

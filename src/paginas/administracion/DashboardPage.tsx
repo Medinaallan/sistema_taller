@@ -12,10 +12,10 @@ import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
 import { formatCurrency } from '../../utilidades/globalMockDatabase';
 import { AppointmentCalendar } from '../../componentes/calendario/AppointmentCalendar';
-import { appointmentsService } from '../../servicios/apiService';
+import { appointmentsService, vehiclesService } from '../../servicios/apiService';
 import workOrdersService from '../../servicios/workOrdersService';
 import { useClientesFromAPI } from '../../hooks/useClientesFromAPI';
-import type { Appointment } from '../../tipos';
+import type { Appointment, Client, Vehicle } from '../../tipos';
 
 
 interface StatCardProps {
@@ -50,12 +50,52 @@ export function DashboardPage() {
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [totalWorkOrders, setTotalWorkOrders] = useState(0);
   const [completedWorkOrders, setCompletedWorkOrders] = useState(0);
-  const { clientes: clientesAPI } = useClientesFromAPI();
+  const { clientes: clientesAPI, clientesLegacy, recargarClientes } = useClientesFromAPI();
 
+  // Cargar clientes y vehículos en el estado global para actualizar estadísticas
   useEffect(() => {
-    // Refrescar estadísticas del dashboard automáticamente
-    dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
-  }, [dispatch, data.vehicles.length, data.clients.length, data.workOrders.length]);
+    const loadClientsAndVehicles = async () => {
+      try {
+        console.log('🔄 DashboardPage: Cargando clientes y vehículos para estadísticas...');
+        
+        // Esperar a que los clientes se carguen
+        if (clientesLegacy && clientesLegacy.length > 0) {
+          // Actualizar estado global de clientes
+          dispatch({ type: 'SET_CLIENTS', payload: clientesLegacy });
+          console.log(`✅ Estado global actualizado: ${clientesLegacy.length} clientes`);
+        }
+        
+        // Cargar vehículos desde la API
+        const vehiclesResponse = await vehiclesService.getAll();
+        if (vehiclesResponse.success && vehiclesResponse.data) {
+          // Mapear vehículos al formato del estado global
+          const mappedVehicles: Vehicle[] = vehiclesResponse.data.map((v: any) => ({
+            id: String(v.vehiculo_id),
+            clientId: String(v.cliente_id),
+            make: v.marca,
+            model: v.modelo,
+            year: v.anio,
+            licensePlate: v.placa,
+            vin: v.vin || '',
+            color: v.color || '',
+            mileage: v.kilometraje || 0,
+          }));
+          
+          // Actualizar estado global de vehículos
+          dispatch({ type: 'SET_VEHICLES', payload: mappedVehicles });
+          console.log(`✅ Estado global actualizado: ${mappedVehicles.length} vehículos`);
+        }
+        
+        // Refrescar estadísticas después de cargar datos
+        dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
+        console.log('✅ Estadísticas del dashboard actualizadas');
+      } catch (error) {
+        console.error('❌ Error cargando datos para dashboard:', error);
+      }
+    };
+    
+    loadClientsAndVehicles();
+  }, [clientesLegacy, dispatch]);
 
   // Cargar órdenes de trabajo desde la API
   useEffect(() => {

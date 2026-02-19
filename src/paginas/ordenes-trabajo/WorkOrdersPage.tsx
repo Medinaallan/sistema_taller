@@ -3,6 +3,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Modal, Badge } from '../../componentes/comunes/UI';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
+import quotationsService from '../../servicios/quotationsService';
 import TasksListModal from '../../componentes/ordenes-trabajo/TasksListModal';
 import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import CreateQuotationFromOTModal from '../../componentes/quotations/CreateQuotationFromOTModal';
@@ -37,6 +38,9 @@ const WorkOrdersPage = () => {
   const [vehiculos, setVehiculos] = useState<any[]>([]);
   const [servicios, setServicios] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  
+  // Estado para costos calculados de cada orden (sumados desde cotizaciones)
+  const [orderCostsMap, setOrderCostsMap] = useState<Map<string, number>>(new Map());
 
   // Funciones de mapeo
   const getClienteName = (order: WorkOrderData) => {
@@ -128,14 +132,81 @@ const WorkOrdersPage = () => {
   const loadWorkOrders = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Cargando órdenes de trabajo...');
       const orders = await workOrdersService.getAllWorkOrders();
+      console.log(`✅ ${orders.length} órdenes de trabajo cargadas`);
+      
+      // Log de OTs recién creadas (Abierta)
+      const nuevasOTs = orders.filter(o => o.estado === 'Abierta');
+      if (nuevasOTs.length > 0) {
+        console.log(`📋 ${nuevasOTs.length} OT(s) en estado "Abierta":`, nuevasOTs.map(o => `#${o.id} - ${o.nombreCliente}`));
+      }
+      
       setWorkOrders(orders);
+      
+      // Calcular costos reales desde cotizaciones
+      await calculateRealCostsForOrders(orders);
     } catch (err) {
       console.error('Error cargando órdenes de trabajo:', err);
       showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Calcular costos reales sumando items de cotizaciones relacionadas (SP_OBTENER_ITEMS_COTIZACION)
+  const calculateRealCostsForOrders = async (orders: WorkOrderData[]) => {
+    try {
+      console.log('💰 Calculando costos reales desde cotizaciones...');
+      const newCostsMap = new Map<string, number>();
+      
+      for (const order of orders) {
+        if (!order.id) continue;
+        
+        try {
+          // Parsear ot_id (order.id es el ot_id como string)
+          const otId = parseInt(order.id);
+          if (isNaN(otId)) {
+            console.warn(`  ⚠️ OT #${order.id} tiene ID inválido, saltando...`);
+            newCostsMap.set(order.id, 0);
+            continue;
+          }
+          
+          // Obtener todas las cotizaciones relacionadas con esta OT
+          const quotations = await quotationsService.getQuotationsByOT(otId);
+          
+          let totalCost = 0;
+          
+          // Para cada cotización, sumar el total_linea de sus items
+          for (const quotation of quotations) {
+            const items = await quotationsService.getQuotationItems(quotation.cotizacion_id.toString());
+            const quotationTotal = items.reduce((sum, item) => sum + item.total_linea, 0);
+            totalCost += quotationTotal;
+          }
+          
+          newCostsMap.set(order.id, totalCost);
+          
+          if (quotations.length > 0) {
+            console.log(`  OT #${order.id}: L${totalCost.toFixed(2)} (${quotations.length} cotizaciones)`);
+          }
+        } catch (err) {
+          console.error(`  ❌ Error calculando costo para OT #${order.id}:`, err);
+          newCostsMap.set(order.id, 0);
+        }
+      }
+      
+      setOrderCostsMap(newCostsMap);
+      console.log('✅ Costos reales calculados');
+    } catch (err) {
+      console.error('❌ Error calculando costos reales:', err);
+    }
+  };
+  
+  // Helper para obtener el costo total calculado de una orden
+  const getOrderTotalCost = (order: WorkOrderData): number => {
+    if (!order.id) return 0;
+    // Usar el costo calculado desde las cotizaciones
+    return orderCostsMap.get(order.id) || 0;
   };
 
   useEffect(() => {
@@ -182,8 +253,22 @@ const WorkOrdersPage = () => {
   };
 
   const handleCompleteWorkOrder = async (orderId: string) => {
+    // Validar que la OT esté en estado correcto antes de completar
+    const order = workOrders.find(o => o.id === orderId);
+    if (!order) {
+      showError('Orden de trabajo no encontrada');
+      return;
+    }
+    
+    if (order.estado !== 'Control de calidad') {
+      showError(`No se puede completar una OT en estado "${order.estado}". Solo se pueden completar OTs en estado "Control de calidad".`);
+      console.warn(`❌ Intento de completar OT #${orderId} con estado incorrecto: "${order.estado}"`);
+      return;
+    }
+    
     if (await showConfirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
+        console.log(`🔄 Completando OT #${orderId} (estado actual: ${order.estado})`);
         await workOrdersService.completeWorkOrder(orderId);
         showSuccess('Orden de trabajo completada exitosamente');
         await loadWorkOrders(); // Recargar datos
@@ -215,6 +300,12 @@ const WorkOrdersPage = () => {
   const handleTaskModalClose = () => {
     setShowTasksModal(false);
     setSelectedOrderForTasks(null);
+  };
+
+  // Manejar cuando cambia el estado de la OT (por ejemplo, al iniciar una tarea)
+  const handleWorkOrderStateChanged = async () => {
+    console.log('🔄 Estado de OT cambió, recargando lista...');
+    await loadWorkOrders();
   };
 
   const handleAddTaskModalClose = () => {
@@ -410,10 +501,10 @@ const WorkOrdersPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoTotal)}
+                        {formatCurrency(getOrderTotalCost(order))}
                       </div>
                       <div className="text-sm text-gray-500">
-                        Est: {formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoEstimado)}
+                        Est: {formatCurrency(getOrderTotalCost(order))}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -435,6 +526,7 @@ const WorkOrdersPage = () => {
                         >
                           Ver
                         </button>
+                        {/* Botón Tareas - SIEMPRE visible para todas las OTs */}
                         <button
                           onClick={() => handleViewTasks(order)}
                           className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 text-xs"
@@ -442,6 +534,7 @@ const WorkOrdersPage = () => {
                         >
                            Tareas
                         </button>
+                        {/* La OT se inicia automáticamente al iniciar la primera tarea */}
                         {/* Botón Control de Calidad - disponible si está en proceso */}
                         {order.estado === 'En proceso' && (
                           <button
@@ -462,8 +555,8 @@ const WorkOrdersPage = () => {
                             ⏸️ Pausar
                           </button>
                         )}
-                        {/* Botón Completar - disponible si está en progreso */}
-                        {order.estado === 'En proceso' && (
+                        {/* Botón Completar - SOLO disponible en Control de calidad */}
+                        {order.estado === 'Control de calidad' && (
                           <button
                             onClick={() => handleCompleteWorkOrder(order.id!)}
                             className="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-semibold"
@@ -472,13 +565,6 @@ const WorkOrdersPage = () => {
                              Completar
                           </button>
                         )}
-                        <button
-                          onClick={() => {/* TODO: Implementar edición */}}
-                          className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-xs"
-                          title="Editar"
-                        >
-                           Editar
-                        </button>
                         <button
                           onClick={() => handleDeleteWorkOrder(order.id!)}
                           className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
@@ -516,6 +602,7 @@ const WorkOrdersPage = () => {
             serviceName={getServiceName(selectedWorkOrder.servicioId)} 
             appointmentName={selectedWorkOrder.appointmentId ? getAppointmentName(selectedWorkOrder.appointmentId) : undefined}
             quotationName={selectedWorkOrder.quotationId ? `COT-${selectedWorkOrder.quotationId?.substring(0, 8)}` : undefined}
+            totalCost={getOrderTotalCost(selectedWorkOrder)}
           />
         )}
       </Modal>
@@ -532,6 +619,7 @@ const WorkOrdersPage = () => {
               setShowAddTaskModal(true);
             }}
             onAddQuotationClick={handleAddQuotationClick}
+            onWorkOrderStateChanged={handleWorkOrderStateChanged}
           />
 
           <AddTaskModal
@@ -575,9 +663,10 @@ interface WorkOrderDetailsProps {
   serviceName?: string;
   appointmentName?: string;
   quotationName?: string;
+  totalCost?: number;
 }
 
-function WorkOrderDetails({ order, clientName, vehicleName, serviceName, appointmentName, quotationName }: WorkOrderDetailsProps) {
+function WorkOrderDetails({ order, clientName, vehicleName, serviceName, appointmentName, quotationName, totalCost = 0 }: WorkOrderDetailsProps) {
   return (
     <div className="space-y-6">
       {/* Información básica */}
@@ -660,11 +749,11 @@ function WorkOrderDetails({ order, clientName, vehicleName, serviceName, appoint
             <div className="text-sm text-purple-500">Repuestos</div>
           </div>
           <div className="bg-green-50 p-4 rounded-lg text-center">
-            <div className="text-lg font-bold text-green-600">{formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoTotal)}</div>
+            <div className="text-lg font-bold text-green-600">{formatCurrency(totalCost)}</div>
             <div className="text-sm text-green-500">Total Real</div>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg text-center">
-            <div className="text-lg font-bold text-orange-600">{formatCurrency((order as any)._calculatedCost !== undefined ? (order as any)._calculatedCost : order.costoEstimado)}</div>
+            <div className="text-lg font-bold text-orange-600">{formatCurrency(totalCost)}</div>
             <div className="text-sm text-orange-500">Estimado</div>
           </div>
         </div>

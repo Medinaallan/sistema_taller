@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, Card } from '../comunes/UI';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
 import { appointmentsService } from '../../servicios/apiService';
-import { showError, showSuccess } from '../../utilidades/sweetAlertHelpers';
+import { showError } from '../../utilidades/sweetAlertHelpers';
 
 interface ApproveQuotationModalProps {
   isOpen: boolean;
   onClose: () => void;
   quotation: QuotationData | null;
-  onSuccess: (result: { ot_id: number; numero_ot: string }) => void;
+  onSuccess: (result: { ot_id: number; numero_ot: string; isAdditional?: boolean }) => void;
 }
 
 export default function ApproveQuotationModal({
@@ -118,13 +118,14 @@ export default function ApproveQuotationModal({
           quotation.cotizacion_id.toString()
         );
         
-        console.log('Resultado:', result);
+        console.log('✅ Resultado cotización adicional:', result);
         
-        showSuccess(result.msg);
+        // No mostrar mensaje aquí - se mostrará en la página padre
         
         onSuccess({
           ot_id: result.ot_id || quotation.ot_id || 0,
-          numero_ot: result.numero_ot || quotation.numero_ot || `OT-${quotation.ot_id}`
+          numero_ot: result.numero_ot || quotation.numero_ot || `OT-${quotation.ot_id}`,
+          isAdditional: true
         });
         
         onClose();
@@ -182,7 +183,8 @@ export default function ApproveQuotationModal({
         console.warn('No hay cita_id en la cotización:', quotation);
       }
       
-      showSuccess(`${result.msg}`);
+      // No mostrar mensaje aquí - se mostrará en la página padre con más contexto
+      console.log('✅ Cotización aprobada y OT generada:', result);
       
       onSuccess({
         ot_id: result.ot_id || 0,

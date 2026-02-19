@@ -10,6 +10,7 @@ interface TasksListModalProps {
   workOrder: WorkOrderData;
   onAddTaskClick: () => void;
   onAddQuotationClick: () => void;
+  onWorkOrderStateChanged?: () => void; // Callback cuando cambia el estado de la OT
 }
 
 const TasksListModal: React.FC<TasksListModalProps> = ({ 
@@ -17,7 +18,8 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
   onClose, 
   workOrder,
   onAddTaskClick,
-  onAddQuotationClick 
+  onAddQuotationClick,
+  onWorkOrderStateChanged
 }) => {
   const [tareas, setTareas] = useState<OTTarea[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,13 +56,23 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
       
       // Si se está iniciando una tarea por primera vez y la OT está en estado 'Abierta', iniciarla automáticamente
       if (nuevoEstado === 'En proceso' && workOrder.estado === 'Abierta') {
-        console.log('Iniciando OT automáticamente al iniciar primera tarea...');
+        console.log('🚀 Iniciando OT automáticamente al iniciar primera tarea...');
         try {
-          await workOrdersService.startWorkOrder(workOrder.id!);
-          console.log('OT iniciada automáticamente');
-          showSuccess('Tarea iniciada. La orden de trabajo se ha iniciado automáticamente.');
+          const result = await workOrdersService.startWorkOrder(workOrder.id!);
+          console.log('✅ OT iniciada automáticamente');
+          
+          if (result.success) {
+            showSuccess('✅ Tarea iniciada\n\n🚀 La orden de trabajo se ha iniciado automáticamente y ahora está "En proceso".');
+            
+            // Notificar al componente padre que la OT cambió de estado
+            if (onWorkOrderStateChanged) {
+              onWorkOrderStateChanged();
+            }
+          } else {
+            showAlert('Tarea iniciada (nota: ' + result.message + ')');
+          }
         } catch (otError) {
-          console.error('Error al iniciar OT automáticamente:', otError);
+          console.error('❌ Error al iniciar OT automáticamente:', otError);
           // No fallar si no se puede iniciar la OT, la tarea ya se inició
           showAlert('Tarea iniciada (nota: la orden de trabajo no se pudo iniciar automáticamente)');
         }
@@ -69,11 +81,6 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
       }
       
       await loadTareas(); // Recargar tareas
-      
-      // Recargar la página para actualizar el estado de la OT
-      if (nuevoEstado === 'En proceso' && workOrder.estado === 'Abierta') {
-        window.location.reload();
-      }
     } catch (err) {
       showError('Error al cambiar estado: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }
@@ -120,32 +127,49 @@ const TasksListModal: React.FC<TasksListModalProps> = ({
             </div>
           </div>
           
-          {/* Botón para iniciar OT si está Abierta y hay tareas en proceso */}
+          {/* Alerta si la OT sigue Abierta con tareas en proceso */}
           {workOrder.estado === 'Abierta' && tareas.some(t => t.estado_tarea === 'En proceso') && (
-            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <p className="text-sm text-yellow-800 mb-2">
-                ⚠️ Hay tareas en proceso pero la OT sigue en estado "Abierta"
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-800">
+                ℹ️ La OT se iniciará automáticamente cuando comiences la primera tarea
               </p>
-              <button
-                onClick={async () => {
-                  try {
-                    await workOrdersService.startWorkOrder(workOrder.id!);
-                    showSuccess('Orden de trabajo iniciada correctamente');
-                    window.location.reload();
-                  } catch (error) {
-                    showError('Error al iniciar OT: ' + (error instanceof Error ? error.message : 'Error desconocido'));
-                  }
-                }}
-                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
-              >
-                🚀 Iniciar Orden de Trabajo
-              </button>
             </div>
           )}
         </div>
 
-        {/* Botones para agregar tarea o cotización */}
+        {/* Botones para agregar tarea, cotización o reanudar OT */}
         <div className="flex justify-end gap-3">
+          {/* Botón de Reanudar OT (solo cuando está en espera de repuestos) */}
+          {workOrder.estado === 'En espera de repuestos' && (
+            <Button
+              variant="primary"
+              onClick={async () => {
+                try {
+                  const result = await workOrdersService.changeStatus(
+                    workOrder.id!,
+                    'En proceso'
+                  );
+                  
+                  if (result.success) {
+                    showSuccess('✅ Orden de trabajo reanudada. Estado: En proceso');
+                    if (onWorkOrderStateChanged) {
+                      onWorkOrderStateChanged();
+                    }
+                    onClose(); // Cerrar el modal después de reanudar
+                  } else {
+                    showError(result.message || 'No se pudo reanudar la OT');
+                  }
+                } catch (err) {
+                  showError('Error al reanudar OT: ' + (err instanceof Error ? err.message : 'Error desconocido'));
+                }
+              }}
+              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+            >
+              <PlayIcon className="h-5 w-5" />
+              <span>Reanudar OT</span>
+            </Button>
+          )}
+          
           {workOrder.estado === 'Completada' || workOrder.estado === 'Cerrada' || workOrder.estado === 'Cancelada' ? (
             <div className="text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-md">
               ⚠️ No se pueden agregar tareas ni cotizaciones a una orden {workOrder.estado.toLowerCase()}

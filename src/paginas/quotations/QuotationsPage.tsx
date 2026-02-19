@@ -360,7 +360,14 @@ const QuotationsPage = () => {
         quotation={selectedQuotationForApprove}
         onSuccess={async (result) => {
           await loadQuotations();
-          showSuccess(`Cotización aprobada exitosamente\n\nOrden de trabajo generada:\nNúmero: ${result.numero_ot}\nID: ${result.ot_id}`);
+          
+          if (result.isAdditional) {
+            // Mensaje para cotización adicional
+            showSuccess(`✅ Cotización adicional aprobada\n\n🔧 Tareas agregadas a OT existente:\n• Número: ${result.numero_ot}\n• ID: ${result.ot_id}\n\nDirígete a 'Órdenes de Trabajo' para ver las nuevas tareas.`);
+          } else {
+            // Mensaje para cotización inicial
+            showSuccess(`✅ Cotización aprobada exitosamente\n\n📋 Orden de Trabajo CREADA:\n• Número: ${result.numero_ot}\n• ID: ${result.ot_id}\n\n⚠️ Nota: La OT ha sido creada pero aún no está completada. Dirígete a 'Órdenes de Trabajo' para gestionarla.`);
+          }
         }}
       />
     </>

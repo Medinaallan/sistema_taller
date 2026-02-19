@@ -55,6 +55,21 @@ class QuotationsService {
     }
   }
 
+  // Obtener cotizaciones de una OT específica
+  async getQuotationsByOT(otId: number): Promise<QuotationData[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/quotations?ot_id=${otId}`);
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al obtener cotizaciones de la OT');
+      }
+      return Array.isArray(result.data) ? result.data : [];
+    } catch (error) {
+      console.error('Error fetching OT quotations:', error);
+      throw error;
+    }
+  }
+
   // Obtener cotización por ID
   async getQuotationById(id: string): Promise<QuotationData | null> {
     try {
@@ -236,6 +251,7 @@ class QuotationsService {
     ot_id?: number;
     numero_ot?: string;
     msg: string;
+    otPaused?: boolean;
   }> {
     try {
       
@@ -267,12 +283,45 @@ class QuotationsService {
       
       console.log(' Tareas agregadas a OT existente:', workOrderResult);
       
+      // Paso 3: Verificar si la cotización contiene repuestos
+      console.log(`🔍 Paso 3: Verificando si cotización contiene repuestos...`);
+      const items = await this.getQuotationItems(quotationId);
+      console.log('Items de cotización:', items.map(i => ({ tipo: i.tipo_item, desc: i.descripcion })));
+      const hasSpares = items.some(item => item.tipo_item.trim().toLowerCase() === 'repuesto');
+      
+      let otPaused = false;
+      let msg = `Cotización adicional aprobada. Tareas agregadas a OT ${workOrderResult.numero_ot || quotation.numero_ot}.`;
+      
+      if (hasSpares) {
+        console.log('🛠️ Cotización contiene repuestos. Pausando OT automáticamente...');
+        
+        // Importar dinámicamente workOrdersService para evitar dependencias circulares
+        const { default: workOrdersService } = await import('./workOrdersService');
+        
+        const pauseResult = await workOrdersService.changeStatus(
+          quotation.ot_id.toString(), 
+          'En espera de repuestos'
+        );
+        
+        if (pauseResult.success) {
+          console.log('⏸️ OT pausada automáticamente por repuestos');
+          otPaused = true;
+          msg = `Cotización adicional aprobada con repuestos. OT ${workOrderResult.numero_ot || quotation.numero_ot} pausada automáticamente. Use "Reanudar" en el modal de tareas cuando los repuestos estén listos.`;
+        } else {
+          console.warn('⚠️ No se pudo pausar OT:', pauseResult.message);
+          console.warn('   Detalles:', pauseResult);
+        }
+      } else {
+        console.log('✅ Cotización no contiene repuestos. OT continúa activa.');
+      }
+      
       return {
         quotationApproved: true,
         tasksAdded: workOrderResult.allow,
         ot_id: workOrderResult.ot_id || quotation.ot_id,
         numero_ot: workOrderResult.numero_ot || quotation.numero_ot,
-        msg: `Cotización adicional aprobada. Tareas agregadas a OT ${workOrderResult.numero_ot || quotation.numero_ot}.`
+        msg,
+        otPaused
       };
     } catch (error) {
       console.error('Error en flujo de aprobación de cotización adicional:', error);
