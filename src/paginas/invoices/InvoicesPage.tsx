@@ -279,16 +279,23 @@ const InvoicesPage = () => {
       await loadClientes();
       await loadVehiculos();
       
-      // Cargar sesión actual de caja
+      // Cargar sesión actual de caja usando nuevo endpoint
+      /*
       try {
-        const sessionResponse = await cashService.getOpen();
-        if (sessionResponse?.success && sessionResponse?.data) {
-          setCurrentSession(sessionResponse.data);
-          console.log('💼 Sesión de caja actual:', sessionResponse.data);
+        if (state.user?.id) {
+          const statusResp = await cashService.checkStatus(state.user.id);
+          if (statusResp?.success && statusResp.data?.estado === 'Abierta') {
+            const summaryResp = await cashService.getCurrentSummary(state.user.id);
+            if (summaryResp?.success) {
+              setCurrentSession(summaryResp.data);
+              console.log('💼 Sesión de caja actual:', summaryResp.data);
+            }
+          }
         }
       } catch (err) {
         console.warn('⚠️ No se pudo cargar sesión de caja:', err);
       }
+      */
       
       // Cargar facturas pagadas desde BD
       const dbInvoices = await loadPaidInvoicesFromDB();

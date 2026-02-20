@@ -141,22 +141,32 @@ const POSPage: React.FC = () => {
     }
   }, [posState.activeTab]);
 
-  // Cargar sesión de caja abierta al montar
+  // Verificar estado de caja al montar
   useEffect(() => {
-    const loadOpen = async () => {
+    const checkCashStatus = async () => {
+      if (!state.user?.id) return;
       try {
-        const resp = await cashService.getOpen();
-        if (resp && resp.success) setCurrentSession(resp.data);
+        const resp = await cashService.checkStatus(state.user.id);
+        if (resp && resp.success && resp.data?.estado === 'Abierta') {
+          // Si está abierta, cargar el resumen actual
+          const summaryResp = await cashService.getCurrentSummary(state.user.id);
+          if (summaryResp && summaryResp.success) {
+            setCurrentSession(summaryResp.data);
+          }
+        } else {
+          setCurrentSession(null);
+        }
       } catch (err) {
-        console.error('Error fetching open cash session', err);
+        console.error('Error fetching cash status', err);
       }
     };
-    loadOpen();
-  }, []);
+    checkCashStatus();
+  }, [state.user?.id]);
 
   const loadReport = async () => {
+    if (!state.user?.id) return;
     try {
-      const resp = await cashService.getReport();
+      const resp = await cashService.getHistory(state.user.id);
       if (resp && resp.success) setReportData(resp.data || []);
       else setReportData([]);
     } catch (err) {
@@ -849,20 +859,9 @@ const POSPage: React.FC = () => {
         throw new Error('No se pudo crear la factura');
       }
 
-      // Registrar movimiento de entrada en la sesión de caja (venta en efectivo)
-      try {
-        if (currentSession) {
-          await cashService.addMovement({
-            sessionId: currentSession.id,
-            type: 'in',
-            amount: posState.total,
-            reason: `Venta - ${generatedInvoiceNumber || newInvoice.id}`,
-            createdBy: state.user?.name || 'Usuario'
-          });
-        }
-      } catch (movementErr) {
-        console.error('Error registrando movimiento de caja:', movementErr);
-      }
+      // NOTA: Los movimientos de caja ahora se registran automáticamente en SQL Server
+      // a través de los stored procedures cuando se crean facturas o pagos.
+      // Ya no es necesario registrar movimientos manualmente desde el frontend.
 
       // Limpiar carrito
       clearCart();
@@ -1328,10 +1327,18 @@ const POSPage: React.FC = () => {
               <button onClick={() => setShowOpenModal(false)} className="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
               <button
                 onClick={async () => {
+                  if (!state.user?.id) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Usuario no identificado' });
+                    return;
+                  }
                   try {
-                    const resp = await cashService.openSession({ openedBy: cashierName || state.user?.name || 'Usuario', openingAmount, notes: openingNotes });
+                    const resp = await cashService.openSession(state.user.id, openingAmount);
                     if (resp && resp.success) {
-                      setCurrentSession(resp.data);
+                      // Recargar resumen actual para actualizar currentSession
+                      const summaryResp = await cashService.getCurrentSummary(state.user.id);
+                      if (summaryResp && summaryResp.success) {
+                        setCurrentSession(summaryResp.data);
+                      }
                       setShowOpenModal(false);
                       Swal.fire({ icon: 'success', title: 'Caja aperturada', text: `Monto inicial: L.${Number(openingAmount).toFixed(2)}` });
                     } else {
@@ -1367,8 +1374,12 @@ const POSPage: React.FC = () => {
               <button
                 onClick={async () => {
                   if (!currentSession) return Swal.fire({ icon: 'warning', title: 'No hay sesión abierta' });
+                  if (!state.user?.id) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Usuario no identificado' });
+                    return;
+                  }
                   try {
-                    const resp = await cashService.closeSession({ sessionId: currentSession.id, closingBy: state.user?.name || 'Usuario', countedCash: closingCountedCash, closingNotes });
+                    const resp = await cashService.closeSession(state.user.id, closingCountedCash, closingNotes);
                     if (resp && resp.success) {
                       setCurrentSession(null);
                       setShowCloseModal(false);
@@ -1410,38 +1421,56 @@ const POSPage: React.FC = () => {
                 <thead>
                   <tr className="text-left text-sm text-gray-600 border-b">
                     <th className="py-2 px-3">#</th>
-                    <th className="py-2 px-3">Caja</th>
-                    <th className="py-2 px-3">Responsable</th>
-                    <th className="py-2 px-3">Hora Apertura</th>
-                    <th className="py-2 px-3">Hora Cierre</th>
+                    <th className="py-2 px-3">Arqueo ID</th>
+                    <th className="py-2 px-3">Estado</th>
+                    <th className="py-2 px-3">Fecha Apertura</th>
+                    <th className="py-2 px-3">Fecha Cierre</th>
                     <th className="py-2 px-3">Monto Inicial</th>
-                    <th className="py-2 px-3">Ventas</th>
-                    <th className="py-2 px-3">Ingresos</th>
-                    <th className="py-2 px-3">Efectivo</th>
+                    <th className="py-2 px-3">Monto Final Real</th>
+                    <th className="py-2 px-3">Efectivo Esperado</th>
                     <th className="py-2 px-3">Diferencia</th>
                     <th className="py-2 px-3">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reportData.map((r, idx) => (
-                    <tr key={r.id} className="border-b hover:bg-gray-50">
-                      <td className="py-2 px-3 align-top">{idx + 1}</td>
-                      <td className="py-2 px-3 align-top">{r.caja}</td>
-                      <td className="py-2 px-3 align-top">{r.cashier}</td>
-                      <td className="py-2 px-3 align-top">{r.openingTime ? new Date(r.openingTime).toLocaleString() : '-'}</td>
-                      <td className="py-2 px-3 align-top">{r.closingTime ? new Date(r.closingTime).toLocaleString() : '********'}</td>
-                      <td className="py-2 px-3 align-top">L.{(r.openingAmount || 0).toFixed(2)}</td>
-                      <td className="py-2 px-3 align-top">L.{(r.salesTotal || 0).toFixed(2)}</td>
-                      <td className="py-2 px-3 align-top">L.{(r.incomes || 0).toFixed(2)}</td>
-                      <td className="py-2 px-3 align-top">L.{(r.expectedCash || 0).toFixed(2)}</td>
-                      <td className="py-2 px-3 align-top">{r.difference != null ? `L.${r.difference.toFixed(2)}` : '-'}</td>
-                      <td className="py-2 px-3 align-top">
-                        <div className="flex items-center space-x-2">
-                          <button onClick={() => { Swal.fire({ title: 'Detalle de Sesión', html: `<pre style="text-align:left">${JSON.stringify(r, null, 2)}</pre>`, width: 800 }); }} className="px-2 py-1 bg-green-500 text-white rounded text-sm">Ver</button>
-                        </div>
+                  {reportData.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="text-center py-4 text-gray-500">
+                        No hay historial de arqueos
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    reportData.map((r, idx) => (
+                      <tr key={r.arqueo_id} className="border-b hover:bg-gray-50">
+                        <td className="py-2 px-3 align-top">{idx + 1}</td>
+                        <td className="py-2 px-3 align-top">{r.arqueo_id}</td>
+                        <td className="py-2 px-3 align-top">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            r.estado === 'Abierta' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {r.estado}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 align-top">{r.fecha_apertura ? new Date(r.fecha_apertura).toLocaleString() : '-'}</td>
+                        <td className="py-2 px-3 align-top">{r.fecha_cierre ? new Date(r.fecha_cierre).toLocaleString() : '-'}</td>
+                        <td className="py-2 px-3 align-top">L.{(r.monto_inicial || 0).toFixed(2)}</td>
+                        <td className="py-2 px-3 align-top">{r.monto_final_real != null ? `L.${r.monto_final_real.toFixed(2)}` : '-'}</td>
+                        <td className="py-2 px-3 align-top">{r.efectivo_esperado != null ? `L.${r.efectivo_esperado.toFixed(2)}` : '-'}</td>
+                        <td className="py-2 px-3 align-top">
+                          {r.diferencia != null ? (
+                            <span className={r.diferencia === 0 ? 'text-green-600' : 'text-red-600'}>
+                              L.{r.diferencia.toFixed(2)}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="py-2 px-3 align-top">
+                          <div className="flex items-center space-x-2">
+                            <button onClick={() => { Swal.fire({ title: 'Detalle de Sesión', html: `<pre style="text-align:left">${JSON.stringify(r, null, 2)}</pre>`, width: 800 }); }} className="px-2 py-1 bg-green-500 text-white rounded text-sm">Ver</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
