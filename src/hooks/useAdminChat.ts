@@ -1,18 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { chatService, ChatMensajeDTO } from '../servicios/chatService';
-import { obtenerClientesActualizados } from '../utilidades/BaseDatosJS';
+import { chatService, ChatMensajeDTO, ChatSalaDTO } from '../servicios/chatService';
+import { useApp } from '../contexto/useApp';
 
 export interface ChatClienteItem {
-  id: string;              // client.id
-  nombre: string;
+  sala_id: number;         // ID de la sala de chat
+  ot_id: number;           // ID de la orden de trabajo
+  numero_ot: string;       // Número de OT
+  nombre: string;          // Placa o identificador
+  vehiculo: string;        // Descripción del vehículo
+  estado_ot: string;       // Estado de la OT
   avatar?: string;
   ultimoMensaje?: string;
-  timestampUltimo?: string; // ISO
+  timestampUltimo?: string;
   noLeidos: number;
+  cerrada: boolean;
 }
 
 interface SalaEstado {
-  sala_id: string;                 // = client.id
+  sala_id: number;
   mensajes: ChatMensajeDTO[];
   cargandoHistorial: boolean;
   historialCargado: boolean;
@@ -21,14 +26,15 @@ interface SalaEstado {
 }
 
 export function useAdminChat() {
+  const { state } = useApp();
   const [clientes, setClientes] = useState<ChatClienteItem[]>([]);
   const [busqueda, setBusqueda] = useState('');
-  const [salaActiva, setSalaActiva] = useState<string | null>(null);
-  const salasRef = useRef<Map<string, SalaEstado>>(new Map());
+  const [salaActiva, setSalaActiva] = useState<number | null>(null);
+  const salasRef = useRef<Map<number, SalaEstado>>(new Map());
   const [renderTick, setRenderTick] = useState(0);
   const [conectado, setConectado] = useState(false);
-  const [typingMap, setTypingMap] = useState<Record<string, boolean>>({});
-  const salaActivaRef = useRef<string | null>(null);
+  const [typingMap, setTypingMap] = useState<Record<number, boolean>>({});
+  const salaActivaRef = useRef<number | null>(null);
   
   // Mantener la referencia actualizada
   useEffect(() => {
@@ -40,51 +46,66 @@ export function useAdminChat() {
     return `https://ui-avatars.com/api/?name=${encoded}&background=random&rounded=true&size=64`;
   };
 
-  // Función para obtener TODOS los clientes desde SP_OBTENER_USUARIOS
-  const obtenerTodosLosClientes = async (): Promise<ChatClienteItem[]> => {
+  // Función para obtener todas las salas de chat del admin desde API REST
+  const obtenerSalasChat = async (): Promise<ChatClienteItem[]> => {
     try {
-      console.log(' Cargando clientes para chat admin desde SP_OBTENER_USUARIOS...');
-      
-      // Obtener clientes desde BaseDatosJS (que usa el SP_OBTENER_USUARIOS)
-      const clientesAPI = await obtenerClientesActualizados();
-      console.log(' Clientes obtenidos del SP:', clientesAPI.length, clientesAPI);
+      if (!state.user?.id) {
+        console.warn('No hay usuario ID disponible');
+        return [];
+      }
+
+      const usuarioIdNum = parseInt(state.user.id, 10);
+      if (isNaN(usuarioIdNum)) {
+        console.error('ID de usuario no es un número válido:', state.user.id);
+        return [];
+      }
+
+      console.log('Cargando salas de chat del admin...');
+      const salasAPI: ChatSalaDTO[] = await chatService.obtenerChatsUsuario(usuarioIdNum);
+      console.log('Salas obtenidas:', salasAPI.length, salasAPI);
       
       // Mapear a estructura ChatClienteItem
-      const clientesChat = clientesAPI.map(cliente => ({
-        id: cliente.id,
-        nombre: cliente.name,
-        avatar: generarAvatar(cliente.name),
-        noLeidos: 0
+      const salasChat: ChatClienteItem[] = salasAPI.map(sala => ({
+        sala_id: sala.sala_id,
+        ot_id: sala.ot_id,
+        numero_ot: sala.numero_ot,
+        nombre: sala.placa || sala.numero_ot,
+        vehiculo: sala.vehiculo,
+        estado_ot: sala.estado_ot,
+        avatar: generarAvatar(sala.placa || sala.numero_ot),
+        ultimoMensaje: sala.ultimo_mensaje,
+        timestampUltimo: sala.fecha_ultimo_mensaje,
+        noLeidos: sala.mensajes_no_leidos,
+        cerrada: sala.cerrada
       }));
       
-      console.log(' Total clientes para chat:', clientesChat.length, clientesChat);
-      
-      return clientesChat;
+      console.log('Total salas de chat:', salasChat.length);
+      return salasChat;
     } catch (error) {
-      console.error(' Error cargando clientes:', error);
+      console.error('Error cargando salas de chat:', error);
       return [];
     }
   };
 
-  const seleccionarSala = useCallback(async (clientId: string) => {
+  const seleccionarSala = useCallback(async (salaId: number) => {
     // Evitar re-seleccionar la misma sala
-    if (salaActiva === clientId) {
+    if (salaActiva === salaId) {
       return;
     }
     
-    setSalaActiva(clientId);
-    setClientes(prev => prev.map(c => c.id === clientId ? { ...c, noLeidos: 0 } : c));
-    let sala = salasRef.current.get(clientId);
+    setSalaActiva(salaId);
+    setClientes(prev => prev.map(c => c.sala_id === salaId ? { ...c, noLeidos: 0 } : c));
+    let sala = salasRef.current.get(salaId);
     if (!sala) {
-      sala = { sala_id: clientId, mensajes: [], cargandoHistorial: false, historialCargado: false };
-      salasRef.current.set(clientId, sala);
+      sala = { sala_id: salaId, mensajes: [], cargandoHistorial: false, historialCargado: false };
+      salasRef.current.set(salaId, sala);
     }
     // Importante: suscribir ANTES de solicitar/unir para no perder el evento 'chat:historial'
     if (!sala.historialCargado && !sala.cargandoHistorial) {
       sala.cargandoHistorial = true;
       sala.intentosHistorial = (sala.intentosHistorial || 0) + 1;
-      const unsubHist = chatService.on('chat:historial', (data: { sala_id: string; mensajes: ChatMensajeDTO[] }) => {
-        if (data.sala_id === clientId) {
+      const unsubHist = chatService.on('chat:historial', (data: { sala_id: number; mensajes: ChatMensajeDTO[] }) => {
+        if (data.sala_id === salaId) {
           sala!.mensajes = [...data.mensajes, ...sala!.mensajes];
           sala!.historialCargado = true;
           sala!.cargandoHistorial = false;
@@ -92,15 +113,16 @@ export function useAdminChat() {
           unsubHist();
         }
       });
-      // Ahora sí, solicitar historial y unirse a la sala (si ya hay conexión)
+      // Ahora sí,solicitar historial y unirse a la sala (si ya hay conexión)
+      const usuarioIdNum = state.user?.id ? parseInt(state.user.id, 10) : undefined;
       if (chatService.estaConectado()) {
-        chatService.unirSala(clientId);
-        chatService.solicitarHistorial(clientId);
+        chatService.unirSala(salaId, usuarioIdNum);
+        chatService.solicitarHistorial(salaId, usuarioIdNum);
       } else {
         // Deferir acciones hasta conectarse
         const unsubOnConnect = chatService.on('connect', () => {
-          chatService.unirSala(clientId);
-          chatService.solicitarHistorial(clientId);
+          chatService.unirSala(salaId, usuarioIdNum);
+          chatService.solicitarHistorial(salaId, usuarioIdNum);
           unsubOnConnect();
         });
       }
@@ -108,24 +130,25 @@ export function useAdminChat() {
       // Reintento: si en 1200ms no llega historial, solicitar de nuevo hasta 3 veces
       const intentoActual = sala.intentosHistorial;
       setTimeout(() => {
-        const salaAun = salasRef.current.get(clientId);
+        const salaAun = salasRef.current.get(salaId);
         if (!salaAun) return;
-        const sigueActiva = salaActiva === clientId;
+        const sigueActiva = salaActiva === salaId;
         const noLlego = !salaAun.historialCargado && salaAun.cargandoHistorial && (salaAun.intentosHistorial === intentoActual);
         if (sigueActiva && noLlego && (salaAun.intentosHistorial || 0) < 3) {
           salaAun.intentosHistorial = (salaAun.intentosHistorial || 0) + 1;
           if (chatService.estaConectado()) {
-            chatService.solicitarHistorial(clientId);
+            chatService.solicitarHistorial(salaId, usuarioIdNum);
           }
         }
       }, 1200);
     } else {
       // Asegurar que estamos unidos a la sala aunque ya haya historial
+      const usuarioIdNum = state.user?.id ? parseInt(state.user.id, 10) : undefined;
       if (chatService.estaConectado()) {
-        chatService.unirSala(clientId);
+        chatService.unirSala(salaId, usuarioIdNum);
       } else {
         const unsubOnConnect = chatService.on('connect', () => {
-          chatService.unirSala(clientId);
+          chatService.unirSala(salaId, usuarioIdNum);
           unsubOnConnect();
         });
       }
@@ -133,15 +156,16 @@ export function useAdminChat() {
   setRenderTick(n => n + 1);
     }
     // Marcar leídos (también sensible a conexión)
+    const usuarioIdNum = state.user?.id ? parseInt(state.user.id, 10) : undefined;
     if (chatService.estaConectado()) {
-      chatService.marcarLeidos(clientId);
+      chatService.marcarLeidos(salaId, usuarioIdNum);
     } else {
       const unsubOnConnect2 = chatService.on('connect', () => {
-        chatService.marcarLeidos(clientId);
+        chatService.marcarLeidos(salaId, usuarioIdNum);
         unsubOnConnect2();
       });
     }
-  }, [salaActiva]); // Agregar salaActiva como dependencia
+  }, [salaActiva, state.user?.id]);
 
   // Inicializar conexión socket una sola vez
   useEffect(() => {
@@ -149,7 +173,7 @@ export function useAdminChat() {
     const unsubConnect = chatService.on('connect', () => setConectado(true));
     const unsubDisconnect = chatService.on('disconnect', () => setConectado(false));
     const unsubMensaje = chatService.on('chat:mensaje', (msg: ChatMensajeDTO) => {
-      const salaId = msg.sala_id || 'global';
+      const salaId = msg.sala_id;
       let sala = salasRef.current.get(salaId);
       if (!sala) {
         sala = { sala_id: salaId, mensajes: [], cargandoHistorial: false, historialCargado: false };
@@ -161,7 +185,7 @@ export function useAdminChat() {
       }
       // Actualizar datos de cliente (ultimo mensaje / no leidos)
       setClientes(prev => prev.map(c => {
-        if (c.id === salaId) {
+        if (c.sala_id === salaId) {
           // Usar la referencia para obtener el valor actual de salaActiva
           const esSalaActiva = salaActivaRef.current === salaId;
             return {
@@ -180,7 +204,7 @@ export function useAdminChat() {
       unsubDisconnect();
       unsubMensaje();
     };
-  }, []); // Remover salaActiva de dependencias para evitar re-suscripciones
+  }, []);
 
   // Typing listener separado para no recrear en cada salaActiva cambio
   useEffect(() => {
@@ -190,48 +214,65 @@ export function useAdminChat() {
     return () => { unsubTyping(); };
   }, []);
 
-  // Cargar clientes al montar - AHORA incluye clientes de BD
+  // Cargar salas de chat al montar
   useEffect(() => {
+    if (!state.user?.id) return;
+    
     (async () => {
-      const clientesCombinados = await obtenerTodosLosClientes();
-      setClientes(clientesCombinados);
+      const salas = await obtenerSalasChat();
+      setClientes(salas);
     })();
-  }, []);
+  }, [state.user?.id]);
 
-  // Auto-seleccionar primer cliente SOLO una vez cuando se cargan los clientes inicialmente
+  // Auto-seleccionar primera sala SOLO una vez cuando se cargan las salas inicialmente
   useEffect(() => {
     if (!salaActiva && clientes.length > 0) {
-      // Solo auto-seleccionar si no hay sala activa y hay clientes
+      // Solo auto-seleccionar si no hay sala activa y hay salas
       // Usar setTimeout para evitar que se ejecute múltiples veces en el mismo tick
       const timer = setTimeout(() => {
         if (!salaActiva && clientes.length > 0) {
-          seleccionarSala(clientes[0].id);
+          seleccionarSala(clientes[0].sala_id);
         }
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [clientes.length]); // Solo depende del length, no de clientes completo ni seleccionarSala
-
+  }, [clientes.length]);
 
   const enviarMensaje = useCallback((contenido: string) => {
-    if (!salaActiva || !contenido.trim()) return;
-    chatService.enviarMensaje({ sala_id: salaActiva, contenido });
-  }, [salaActiva]);
+    if (!salaActiva || !contenido.trim() || !state.user?.id) return;
+    const usuarioIdNum = parseInt(state.user.id, 10);
+    if (isNaN(usuarioIdNum)) {
+      console.error('ID de usuario no válido');
+      return;
+    }
+    chatService.enviarMensaje({ 
+      sala_id: salaActiva, 
+      contenido,
+      usuario_id: usuarioIdNum,
+      rol: 'admin'
+    });
+  }, [salaActiva, state.user?.id]);
 
   const enviarMensajeConImagen = useCallback(async (contenido: string, archivo: File) => {
-    if (!salaActiva) return;
+    if (!salaActiva || !state.user?.id) return;
+    const usuarioIdNum = parseInt(state.user.id, 10);
+    if (isNaN(usuarioIdNum)) {
+      console.error('ID de usuario no válido');
+      return;
+    }
     try {
       await chatService.enviarMensajeConImagen({
         sala_id: salaActiva,
         contenido: contenido || '📷 Imagen',
         archivo: archivo,
-        rol: 'admin'
+        rol: 'admin',
+        usuario_id: usuarioIdNum
       });
     } catch (error) {
       console.error('Error enviando mensaje con imagen:', error);
       throw error;
     }
-  }, [salaActiva]);
+  }, [salaActiva, state.user?.id]);
 
   const mensajesSalaActiva: ChatMensajeDTO[] = useMemo(() => {
     if (!salaActiva) return [];
@@ -241,7 +282,11 @@ export function useAdminChat() {
   const clientesFiltrados = useMemo(() => {
     const term = busqueda.toLowerCase();
     if (!term) return clientes;
-    return clientes.filter(c => c.nombre.toLowerCase().includes(term));
+    return clientes.filter(c => 
+      c.nombre.toLowerCase().includes(term) || 
+      c.numero_ot.toLowerCase().includes(term) ||
+      c.vehiculo.toLowerCase().includes(term)
+    );
   }, [clientes, busqueda]);
 
   return {

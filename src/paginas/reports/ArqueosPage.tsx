@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cashService } from '../../servicios/cashService';
 import { useApp } from '../../contexto/useApp';
 import Swal from 'sweetalert2';
@@ -14,7 +14,7 @@ export default function ArqueosPage() {
   const loadCurrentSummary = async () => {
     if (!state.user?.id) return;
     try {
-      const resp = await cashService.getCurrentSummary(state.user.id);
+      const resp = await cashService.getCurrentSummary(Number(state.user.id));
       if (resp && resp.success) {
         setCurrentSummary(resp.data);
       } else {
@@ -30,7 +30,7 @@ export default function ArqueosPage() {
     if (!state.user?.id) return;
     setLoading(true);
     try {
-      const resp = await cashService.getHistory(state.user.id, fechaInicio, fechaFin);
+      const resp = await cashService.getHistory(Number(state.user.id), fechaInicio, fechaFin);
       if (resp && resp.success) {
         setHistoryData(resp.data || []);
       } else {
@@ -76,16 +76,16 @@ export default function ArqueosPage() {
               </p>
             </div>
             <div className="bg-yellow-50 p-4 rounded">
-              <p className="text-sm text-gray-600">Total Ventas</p>
-              <p className="text-xl font-bold text-yellow-700">L.{(currentSummary.total_ventas || 0).toFixed(2)}</p>
+              <p className="text-sm text-gray-600">Ventas en Efectivo</p>
+              <p className="text-xl font-bold text-yellow-700">L.{(currentSummary.ventas_efectivo || 0).toFixed(2)}</p>
             </div>
             <div className="bg-indigo-50 p-4 rounded">
-              <p className="text-sm text-gray-600">Total Pagos</p>
-              <p className="text-xl font-bold text-indigo-700">L.{(currentSummary.total_pagos || 0).toFixed(2)}</p>
+              <p className="text-sm text-gray-600">Ventas Otros</p>
+              <p className="text-xl font-bold text-indigo-700">L.{(currentSummary.ventas_otros || 0).toFixed(2)}</p>
             </div>
             <div className="bg-red-50 p-4 rounded">
-              <p className="text-sm text-gray-600">Efectivo Esperado</p>
-              <p className="text-xl font-bold text-red-700">L.{(currentSummary.efectivo_esperado || 0).toFixed(2)}</p>
+              <p className="text-sm text-gray-600">Total Esperado en Caja</p>
+              <p className="text-xl font-bold text-red-700">L.{(currentSummary.total_esperado_en_caja || 0).toFixed(2)}</p>
             </div>
             {currentSummary.monto_final_real != null && (
               <>

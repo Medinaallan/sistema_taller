@@ -1,26 +1,43 @@
 // Servicio de Chat en tiempo real para el panel de administración y clientes
-// Usa Socket.IO para manejar salas basadas en el ID de cliente.
+// Usa Socket.IO para manejar salas basadas en el ID de sala.
 // Cada sala representa la conversación cliente <-> taller (admin / staff).
+// Los mensajes se almacenan en SQL Server usando Stored Procedures.
 
 import { io, Socket } from 'socket.io-client';
 
 export interface ChatMensajeDTO {
-  mensaje_id: number;           // Identificador único del mensaje (puede venir del backend)
-  sala_id: string;              // ID lógico de la sala (por convención usamos clientId)
-  usuario_id: string;           // ID del usuario que envía (admin o client)
+  mensaje_id: number;           // Identificador único del mensaje (viene del backend)
+  sala_id: number;              // ID de la sala de chat
+  usuario_id: number;           // ID del usuario que envía
+  remitente?: string;           // Nombre del remitente (opcional, viene del historial)
   rol: 'admin' | 'client' | 'mechanic' | 'receptionist';
+  rol_remitente?: string;       // Rol del remitente (opcional, viene del historial)
   contenido: string;            // Texto del mensaje
   es_sistema: boolean;          // Mensajes generados por el sistema
   enviado_en: string;           // ISO string
   leido: boolean;               // Bandera de lectura
-  // Campos opcionales para futura extensión (archivos, imágenes, etc.)
+  es_mio?: boolean;             // Para saber si el mensaje es del usuario actual
+  // Campos opcionales para archivos
   archivo_url?: string;
   tipo_archivo?: string;
 }
 
 export interface ChatHistorialResponse {
-  sala_id: string;
+  sala_id: number;
   mensajes: ChatMensajeDTO[];
+}
+
+export interface ChatSalaDTO {
+  sala_id: number;
+  ot_id: number;
+  numero_ot: string;
+  estado_ot: string;
+  placa: string;
+  vehiculo: string;
+  cerrada: boolean;
+  ultimo_mensaje: string;
+  fecha_ultimo_mensaje: string;
+  mensajes_no_leidos: number;
 }
 
 // Opciones de inicialización del servicio
@@ -28,25 +45,15 @@ interface ChatServiceOptions {
   baseUrl?: string;      // URL del backend HTTP
   socketUrl?: string;    // URL del servidor Socket.IO
   token?: string;        // (Preparado) Token de autenticación si se requiere
-  adminId?: string;      // ID del usuario admin actual
+  userId?: number;       // ID del usuario actual
 }
-
-// Eventos que el backend debería soportar (se documentan para alineación futura):
-// 'joinRoom' -> payload: { sala_id }
-// 'leaveRoom' -> payload: { sala_id }
-// 'chat:send' -> payload: ChatMensajeDTO (sin mensaje_id si el backend lo genera)
-// 'chat:mensaje' -> mensaje individual recibido
-// 'chat:historial' -> ChatHistorialResponse para una sala
-// 'chat:notificacion' -> { sala_id, ultimo_contenido, conteo_no_leidos }
-// Actualmente el backend solo reemite 'chatMessage'. Extenderemos client-side
-// para encapsular y permitir futura evolución sin cambiar la UI.
 
 class ChatService {
   private socket: Socket | null = null;
   private opciones: Required<ChatServiceOptions>;
   private listeners: { [evento: string]: Function[] } = {};
   private conectado = false;
-  private currentUserId: string;
+  private currentUserId: number;
   private currentRole: ChatMensajeDTO['rol'];
 
   constructor(opts?: ChatServiceOptions) {
@@ -54,13 +61,13 @@ class ChatService {
       baseUrl: opts?.baseUrl || 'http://localhost:8080',
       socketUrl: opts?.socketUrl || 'http://localhost:8080',
       token: opts?.token || '',
-      adminId: opts?.adminId || 'admin-1'
+      userId: opts?.userId || 0
     };
-    this.currentUserId = this.opciones.adminId;
+    this.currentUserId = this.opciones.userId;
     this.currentRole = 'admin';
   }
 
-  setUserContext(id: string, rol: ChatMensajeDTO['rol']) {
+  setUserContext(id: number, rol: ChatMensajeDTO['rol']) {
     this.currentUserId = id;
     this.currentRole = rol;
   }
@@ -74,71 +81,70 @@ class ChatService {
 
     this.socket.on('connect', () => {
       this.conectado = true;
+      console.log('💬 Socket.IO conectado');
       this.emitirLocal('connect');
     });
 
     this.socket.on('disconnect', () => {
       this.conectado = false;
+      console.log('💬 Socket.IO desconectado');
       this.emitirLocal('disconnect');
     });
 
-    // Compat: backend actual solo usa 'chatMessage'
-    this.socket.on('chatMessage', (msg: any) => {
-      // Adaptar estructura recibida a nuestro DTO estándar
-      const normalizado: ChatMensajeDTO = {
-        mensaje_id: Number(msg.id) || Date.now(),
-        sala_id: msg.sala_id || msg.clientId || 'global',
-        usuario_id: msg.usuario_id || msg.sender || 'desconocido',
-        rol: msg.rol || msg.sender || 'client',
-        contenido: msg.text || msg.contenido || '',
-        es_sistema: msg.es_sistema || false,
-        enviado_en: msg.timestamp ? new Date(msg.timestamp).toISOString() : new Date().toISOString(),
-        leido: msg.leido ?? true,
-        archivo_url: msg.archivo_url,
-        tipo_archivo: msg.tipo_archivo
-      };
-      this.emitirLocal('chat:mensaje', normalizado);
-    });
-
-    // Eventos avanzados del backend nuevo
+    // Evento de mensaje nuevo
     this.socket.on('chat:mensaje', (msg: any) => {
       const normalizado: ChatMensajeDTO = {
-        mensaje_id: msg.mensaje_id || Date.now(),
+        mensaje_id: msg.mensaje_id,
         sala_id: msg.sala_id,
         usuario_id: msg.usuario_id,
+        remitente: msg.remitente,
         rol: msg.rol,
+        rol_remitente: msg.rol_remitente,
         contenido: msg.contenido,
         es_sistema: !!msg.es_sistema,
         enviado_en: msg.enviado_en || new Date().toISOString(),
         leido: !!msg.leido,
+        es_mio: msg.usuario_id === this.currentUserId,
         archivo_url: msg.archivo_url,
         tipo_archivo: msg.tipo_archivo
       };
       this.emitirLocal('chat:mensaje', normalizado);
     });
 
+    // Evento de historial
     this.socket.on('chat:historial', (data: any) => {
       const mensajes: ChatMensajeDTO[] = (data.mensajes || []).map((m: any) => ({
-        mensaje_id: m.mensaje_id || Date.now(),
+        mensaje_id: m.mensaje_id,
         sala_id: m.sala_id,
         usuario_id: m.usuario_id,
-        rol: m.rol,
+        remitente: m.remitente,
+        rol: m.rol || m.rol_remitente,
+        rol_remitente: m.rol_remitente,
         contenido: m.contenido,
         es_sistema: !!m.es_sistema,
         enviado_en: m.enviado_en || new Date().toISOString(),
         leido: !!m.leido,
+        es_mio: !!m.es_mio || m.usuario_id === this.currentUserId,
         archivo_url: m.archivo_url,
         tipo_archivo: m.tipo_archivo
       }));
       this.emitirLocal('chat:historial', { sala_id: data.sala_id, mensajes });
     });
 
+    // Evento de mensajes leídos
     this.socket.on('chat:leido', (info: any) => {
       this.emitirLocal('chat:leido', info);
     });
 
+    // Evento de indicador escribiendo
     this.socket.on('chat:typing', (info: any) => {
       this.emitirLocal('chat:typing', info);
+    });
+
+    // Evento de error
+    this.socket.on('chat:error', (error: any) => {
+      console.error('Error de chat:', error);
+      this.emitirLocal('chat:error', error);
     });
   }
 
@@ -159,57 +165,151 @@ class ChatService {
     (this.listeners[evento] || []).forEach(h => h(payload));
   }
 
-  // Unir a sala (lado cliente - el backend futuro debería manejar rooms reales)
-  unirSala(sala_id: string) {
+  // Unir a sala (el backend maneja rooms reales con Socket.IO)
+  unirSala(sala_id: number, usuario_consultante?: number) {
     if (!this.socket) return;
-    this.socket.emit('joinRoom', { sala_id }); // Backend futuro
+    this.socket.emit('joinRoom', { 
+      sala_id, 
+      usuario_consultante: usuario_consultante || this.currentUserId 
+    });
   }
 
-  salirSala(sala_id: string) {
+  salirSala(sala_id: number) {
     if (!this.socket) return;
     this.socket.emit('leaveRoom', { sala_id });
   }
 
-  // Enviar mensaje estándar
-  enviarMensaje(data: { sala_id: string; contenido: string; rol?: ChatMensajeDTO['rol']; usuario_id?: string; archivo_url?: string; tipo_archivo?: string; }) {
+  // Enviar mensaje estándar (usando SP del backend)
+  enviarMensaje(data: { 
+    sala_id: number; 
+    contenido: string; 
+    rol?: ChatMensajeDTO['rol']; 
+    usuario_id?: number; 
+    archivo_url?: string; 
+    tipo_archivo?: string; 
+  }) {
     if (!this.socket) return;
-    const mensaje: ChatMensajeDTO = {
-      mensaje_id: this.generarId(),
+    
+    const mensaje = {
       sala_id: data.sala_id,
       usuario_id: data.usuario_id || this.currentUserId,
       rol: data.rol || this.currentRole,
       contenido: data.contenido,
-      es_sistema: false,
-      enviado_en: new Date().toISOString(),
-      leido: false,
       archivo_url: data.archivo_url,
       tipo_archivo: data.tipo_archivo
     };
-  // Camino nuevo principal únicamente
-  this.socket.emit('chat:send', mensaje);
-  // Ya no hacemos optimistic UI para evitar duplicados; la respuesta llegará vía 'chat:mensaje'
+    
+    this.socket.emit('chat:send', mensaje);
   }
 
-  // Simulación de historial (hasta tener endpoint real) - se puede reemplazar por fetch/solicitud socket
-  async obtenerHistorialSala(_sala_id: string): Promise<ChatMensajeDTO[]> { // _ prefijo para evitar warning de no uso
-    // En un backend real: this.socket.emit('chat:historial:solicitar', { sala_id }) y esperar 'chat:historial'
-    // Por ahora devolvemos array vacío (persistencia no implementada todavía en backend)
-    return [];
-  }
-
-  solicitarHistorial(sala_id: string) {
+  // Solicitar historial de una sala
+  solicitarHistorial(sala_id: number, usuario_consultante?: number) {
     if (!this.socket) return;
-    this.socket.emit('chat:historial:solicitar', { sala_id });
+    this.socket.emit('chat:historial:solicitar', { 
+      sala_id, 
+      usuario_consultante: usuario_consultante || this.currentUserId 
+    });
   }
 
-  marcarLeidos(sala_id: string, rolLectura: string = 'admin') {
+  // Marcar mensajes como leídos
+  marcarLeidos(sala_id: number, usuario_id?: number) {
     if (!this.socket) return;
-    this.socket.emit('chat:leer', { sala_id, rolLectura });
+    this.socket.emit('chat:leer', { 
+      sala_id, 
+      usuario_id: usuario_id || this.currentUserId 
+    });
   }
 
-  setTyping(sala_id: string, rol: string = 'admin', escribiendo: boolean) {
+  // Indicador de escritura
+  setTyping(sala_id: number, rol?: string, escribiendo: boolean = false) {
     if (!this.socket) return;
-    this.socket.emit('chat:typing', { sala_id, rol, escribiendo });
+    this.socket.emit('chat:typing', { 
+      sala_id, 
+      rol: rol || this.currentRole, 
+      escribiendo 
+    });
+  }
+
+  // ==================== API REST ENDPOINTS ====================
+
+  // Iniciar sala de chat para una OT
+  async iniciarSala(ot_id: number, registrado_por: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.opciones.baseUrl}/api/chat/iniciar-sala`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ot_id, registrado_por })
+      });
+      
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Error al iniciar sala');
+      }
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error iniciando sala:', error);
+      throw error;
+    }
+  }
+
+  // Obtener todas las salas de chat de un usuario
+  async obtenerChatsUsuario(usuario_id: number): Promise<ChatSalaDTO[]> {
+    try {
+      const response = await fetch(
+        `${this.opciones.baseUrl}/api/chat/chats-usuario/${usuario_id}`
+      );
+      
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Error al obtener chats');
+      }
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error obteniendo chats del usuario:', error);
+      throw error;
+    }
+  }
+
+  // Obtener historial de una sala (vía REST, alternativa a Socket.IO)
+  async obtenerHistorialSala(sala_id: number, usuario_consultante: number): Promise<ChatMensajeDTO[]> {
+    try {
+      const response = await fetch(
+        `${this.opciones.baseUrl}/api/chat/historial-sala/${sala_id}?usuario_consultante=${usuario_consultante}`
+      );
+      
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Error al obtener historial');
+      }
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error obteniendo historial:', error);
+      throw error;
+    }
+  }
+
+  // Agregar participante a una sala
+  async agregarParticipante(sala_id: number, nuevo_usuario_id: number, registrado_por: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.opciones.baseUrl}/api/chat/agregar-participante`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sala_id, nuevo_usuario_id, registrado_por })
+      });
+      
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.msg || 'Error al agregar participante');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error agregando participante:', error);
+      throw error;
+    }
   }
 
   // Subir imagen al servidor
@@ -237,7 +337,13 @@ class ChatService {
   }
 
   // Enviar mensaje con imagen
-  async enviarMensajeConImagen(data: { sala_id: string; contenido?: string; archivo: File; rol?: ChatMensajeDTO['rol']; usuario_id?: string; }) {
+  async enviarMensajeConImagen(data: { 
+    sala_id: number; 
+    contenido?: string; 
+    archivo: File; 
+    rol?: ChatMensajeDTO['rol']; 
+    usuario_id?: number; 
+  }) {
     try {
       const imageUrl = await this.subirImagen(data.archivo);
       
@@ -255,10 +361,6 @@ class ChatService {
       console.error('Error enviando mensaje con imagen:', error);
       throw error;
     }
-  }
-
-  private generarId() {
-    return Date.now() + Math.floor(Math.random() * 1000);
   }
 }
 

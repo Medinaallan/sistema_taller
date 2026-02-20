@@ -292,23 +292,74 @@ router.post('/manual', async (req, res) => {
 
     const output = result.recordset?.[0] || {};
     
-    // Enviar notificación al cliente si la OT fue creada exitosamente
-    if (output.allow && output.ot_id) {
+    // Si la OT se creó exitosamente pero no retorna ot_id, buscarla
+    let otIdFinal = output.ot_id;
+    let numeroOtFinal = output.numero_ot;
+    
+    if (output.allow && !output.ot_id) {
+      console.log('⚠️ SP_REGISTRAR_OT_MANUAL no retornó ot_id, buscando OT creada para cliente:', cliente_id, 'vehiculo:', vehiculo_id);
+      try {
+        // Buscar la OT usando SP_OBTENER_ORDENES_TRABAJO (sin parámetros, filtramos después)
+        const buscarOT = await pool.request()
+          .execute('SP_OBTENER_ORDENES_TRABAJO');
+        
+        // Filtrar por cliente_id y vehiculo_id, ordenar por fecha más reciente
+        const otsCandidatas = buscarOT.recordset
+          .filter(ot => 
+            ot.cliente_id && parseInt(ot.cliente_id) === parseInt(cliente_id) &&
+            ot.vehiculo_id && parseInt(ot.vehiculo_id) === parseInt(vehiculo_id)
+          )
+          .sort((a, b) => {
+            // Ordenar por ot_id descendente (el más reciente es el mayor ID)
+            return b.ot_id - a.ot_id;
+          });
+        
+        if (otsCandidatas.length > 0) {
+          const otEncontrada = otsCandidatas[0];
+          otIdFinal = otEncontrada.ot_id;
+          numeroOtFinal = otEncontrada.numero_ot;
+          console.log('✅ OT encontrada con ot_id:', otIdFinal, 'numero_ot:', numeroOtFinal);
+        } else {
+          console.error('❌ No se encontró la OT creada para cliente:', cliente_id, 'vehiculo:', vehiculo_id);
+        }
+      } catch (buscarError) {
+        console.error('❌ Error buscando OT creada:', buscarError);
+      }
+    }
+    
+        // Iniciar sala de chat para la OT si fue creada exitosamente
+    if (output.allow && otIdFinal) {
+      try {
+        console.log('🔵 Iniciando sala de chat para OT:', otIdFinal, 'registrado_por:', registrado_por);
+        const chatResult = await pool.request()
+          .input('ot_id', sql.Int, otIdFinal)
+          .input('registrado_por', sql.Int, registrado_por ? parseInt(registrado_por) : null)
+          .execute('SP_INICIAR_SALA_CHAT');
+        
+        const chatOutput = chatResult.recordset?.[0] || {};
+        console.log('✅ Sala de chat iniciada para OT:', otIdFinal, 'Resultado:', chatOutput);
+      } catch (chatError) {
+        console.error('⚠️ Error al iniciar sala de chat:', chatError);
+        // No fallar la operación si la sala de chat falla
+      }
+    }
+        // Enviar notificación al cliente si la OT fue creada exitosamente
+    if (output.allow && otIdFinal) {
       try {
         // Intentar obtener datos completos de la OT (numero_ot y placa) para enviar en la notificación
         const otResult = await pool.request()
-          .input('ot_id', sql.Int, output.ot_id)
+          .input('ot_id', sql.Int, otIdFinal)
           .input('cliente_id', sql.Int, null)
           .input('placa', sql.VarChar(50), null)
           .input('estado', sql.VarChar(50), null)
           .input('numero_ot', sql.VarChar(20), null)
           .execute('SP_OBTENER_ORDENES_TRABAJO');
 
-        const otData = (otResult.recordset && otResult.recordset[0]) ? otResult.recordset[0] : { ot_id: output.ot_id, numero_ot: output.numero_ot };
+        const otData = (otResult.recordset && otResult.recordset[0]) ? otResult.recordset[0] : { ot_id: otIdFinal, numero_ot: numeroOtFinal };
 
         await notificationsService.notifyOTCreated(cliente_id, {
-          ot_id: otData.ot_id || output.ot_id,
-          numero_ot: otData.numero_ot || output.numero_ot,
+          ot_id: otData.ot_id || otIdFinal,
+          numero_ot: otData.numero_ot || numeroOtFinal,
           placa: otData.placa || null,
           vehiculo_id: vehiculo_id
         });
@@ -323,8 +374,8 @@ router.post('/manual', async (req, res) => {
       success: output.allow || false,
       msg: output.msg || 'Orden de trabajo registrada',
       allow: output.allow || false,
-      ot_id: output.ot_id,
-      numero_ot: output.numero_ot,
+      ot_id: otIdFinal,
+      numero_ot: numeroOtFinal,
       data: output
     });
   } catch (error) {
@@ -409,11 +460,55 @@ router.post('/from-quotation', async (req, res) => {
 
     const output = result.recordset?.[0] || {};
     
+    // Si la OT se creó exitosamente pero no retorna ot_id, buscarla
+    let otIdFinal = output.ot_id;
+    
+    if (output.allow && !output.ot_id) {
+      console.log('⚠️ SP no retornó ot_id, buscando OT creada para cotización:', cotizacion_id);
+      try {
+        // Buscar la OT usando SP_OBTENER_ORDENES_TRABAJO (sin parámetros, filtramos después)
+        const buscarOT = await pool.request()
+          .execute('SP_OBTENER_ORDENES_TRABAJO');
+        
+        // Filtrar por cotizacion_id
+        const otEncontrada = buscarOT.recordset.find(ot => 
+          ot.cotizacion_id && parseInt(ot.cotizacion_id) === parseInt(cotizacion_id)
+        );
+        
+        if (otEncontrada) {
+          otIdFinal = otEncontrada.ot_id;
+          console.log('✅ OT encontrada con ot_id:', otIdFinal);
+        } else {
+          console.error('❌ No se encontró la OT creada para cotización:', cotizacion_id);
+        }
+      } catch (buscarError) {
+        console.error('❌ Error buscando OT creada:', buscarError);
+      }
+    }
+    
+    // Iniciar sala de chat para la OT si fue creada exitosamente
+    if (output.allow && otIdFinal) {
+      try {
+        console.log('🔵 Iniciando sala de chat para OT desde cotización:', otIdFinal, 'generado_por:', generado_por);
+        const chatResult = await pool.request()
+          .input('ot_id', sql.Int, otIdFinal)
+          .input('registrado_por', sql.Int, generado_por ? parseInt(generado_por) : null)
+          .execute('SP_INICIAR_SALA_CHAT');
+        
+        const chatOutput = chatResult.recordset?.[0] || {};
+        console.log('✅ Sala de chat iniciada para OT:', otIdFinal, 'Resultado:', chatOutput);
+      } catch (chatError) {
+        console.error('⚠️ Error al iniciar sala de chat:', chatError);
+        console.error('⚠️ Detalles del error:', chatError.message);
+        // No fallar la operación si la sala de chat falla
+      }
+    }
+    
     res.status(200).json({
       success: output.allow || false,
       msg: output.msg || 'Orden de trabajo generada',
       allow: output.allow || false,
-      ot_id: output.ot_id,
+      ot_id: otIdFinal || output.ot_id,
       numero_ot: output.numero_ot,
       data: output
     });

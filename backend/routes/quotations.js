@@ -791,6 +791,20 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 
 		const output = result.recordset?.[0] || {};
 		
+		// Iniciar sala de chat para la OT si fue creada exitosamente
+		if (output.allow && output.ot_id) {
+			try {
+				await pool.request()
+					.input('ot_id', sql.Int, output.ot_id)
+					.input('registrado_por', sql.Int, generado_por || null)
+					.execute('SP_INICIAR_SALA_CHAT');
+				console.log('✅ Sala de chat iniciada para OT:', output.ot_id);
+			} catch (chatError) {
+				console.error('⚠️ Error al iniciar sala de chat:', chatError);
+				// No fallar la operación si la sala de chat falla
+			}
+		}
+		
 		// Log detallado del resultado
 		if (esAdicional) {
 			console.log(`\n✅ COTIZACIÓN ADICIONAL PROCESADA`);

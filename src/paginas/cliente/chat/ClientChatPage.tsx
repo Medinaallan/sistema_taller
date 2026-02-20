@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { chatService, ChatMensajeDTO } from '../../../servicios/chatService';
 import { useApp } from '../../../contexto/useApp';
-import { obtenerClientesActualizados } from '../../../utilidades/BaseDatosJS';
 import ImageModal from '../../../componentes/comunes/ImageModal';
 import { showError } from '../../../utilidades/sweetAlertHelpers';
 
@@ -10,34 +9,57 @@ interface LocalMsg extends ChatMensajeDTO {}
 
 export default function ClientChatPage() {
   const { state } = useApp();
-  // ID real en la sala: debe ser el mismo que ve el admin (client-1, client-2, ...)
-  const [salaId, setSalaId] = useState<string | null>(null);
+  // ID de la sala y del usuario (ahora números)
+  const [salaId, setSalaId] = useState<number | null>(null);
+  const [usuarioId, setUsuarioId] = useState<number | null>(null);
   const [mensajes, setMensajes] = useState<LocalMsg[]>([]);
   const [input, setInput] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [typingAdmin, setTypingAdmin] = useState(false);
+  const [cargando, setCargando] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Conectar y unir sala del cliente
-  // Resolver el ID de la sala a partir del email del usuario (coincide con CSV)
+  // Obtener el ID del usuario directamente del contexto (ya viene del login)
   useEffect(() => {
     let cancelado = false;
     (async () => {
-      if (!state.user?.email) return;
+      if (!state.user?.id) {
+        console.error('❌ No hay usuario logueado');
+        setCargando(false);
+        return;
+      }
+
       try {
-        const lista = await obtenerClientesActualizados();
-        const found = lista.find(c => c.email.toLowerCase() === state.user!.email.toLowerCase());
-        if (!cancelado) {
-          if (found) {
-            setSalaId(found.id); // client-N
-          } else {
-            // fallback: usar id actual o derivar uno determinista
-            setSalaId(state.user.id.startsWith('client-') ? state.user.id : 'client-fallback');
-          }
+        // El state.user.id ya contiene el usuario_id de la BD (viene del SP_LOGIN)
+        const usuarioIdNum = parseInt(state.user.id, 10);
+        console.log('✅ Usuario logueado con ID:', usuarioIdNum, 'Email:', state.user.email);
+        setUsuarioId(usuarioIdNum);
+        
+        // Conectar socket UNA SOLA VEZ
+        chatService.conectar();
+        chatService.setUserContext(usuarioIdNum, 'client');
+        
+        // Obtener las salas de chat del usuario usando SP_OBTENER_CHATS_USUARIO
+        console.log('🔍 Obteniendo salas de chat para usuario_id:', usuarioIdNum);
+        const salas = await chatService.obtenerChatsUsuario(usuarioIdNum);
+        console.log('📋 Salas de chat obtenidas:', salas.length, salas);
+        
+        if (salas && salas.length > 0) {
+          // Usar la primera sala disponible (o la más reciente)
+          setSalaId(salas[0].sala_id);
+          console.log('✅ Sala seleccionada:', salas[0].sala_id, 'OT:', salas[0].numero_ot);
+        } else {
+          console.warn('⚠️ No se encontraron salas de chat para el usuario');
+          console.warn('⚠️ Asegúrate de tener una orden de trabajo asignada');
         }
-      } catch {
-        if (!cancelado) setSalaId(state.user?.id || 'client-fallback');
+      } catch (error) {
+        console.error('❌ Error obteniendo salas de chat:', error);
+        if (!cancelado) {
+          showError('Error al cargar el chat');
+        }
+      } finally {
+        if (!cancelado) setCargando(false);
       }
     })();
     return () => { cancelado = true; };
@@ -45,22 +67,39 @@ export default function ClientChatPage() {
 
   // Conectar y unir a la sala ya resuelta
   useEffect(() => {
-    if (!salaId) return;
-    chatService.conectar();
-    chatService.setUserContext(salaId, 'client');
-    // Suscribir ANTES para no perder el primer 'chat:historial'
-    const unsubHist = chatService.on('chat:historial', (data: { sala_id: string; mensajes: ChatMensajeDTO[] }) => {
+    if (!salaId || !usuarioId) return;
+    
+    // Suscribir a historial
+    const unsubHist = chatService.on('chat:historial', (data: { sala_id: number; mensajes: ChatMensajeDTO[] }) => {
       if (data.sala_id === salaId) {
         setMensajes(data.mensajes);
-        // Recibido el historial inicial; podemos dejar de escuchar este evento puntual
-        unsubHist();
       }
     });
-    // Unir/solicitar cuando haya conexión
+    
+    // Suscribir a mensajes nuevos
+    const unsubMsg = chatService.on('chat:mensaje', (msg: ChatMensajeDTO) => {
+      if (msg.sala_id === salaId) {
+        setMensajes((prev: LocalMsg[]) => {
+          const existe = prev.find((m: LocalMsg) => m.mensaje_id === msg.mensaje_id);
+          return existe ? prev : [...prev, msg];
+        });
+      }
+    });
+    
+    // Suscribir a indicador de escritura
+    const unsubTyping = chatService.on('chat:typing', (info: any) => {
+      if (info.sala_id === salaId && info.rol !== 'client') {
+        setTypingAdmin(!!info.escribiendo);
+      }
+    });
+    
+    // Función para unirse y solicitar historial
     const doJoinAndFetch = () => {
-      chatService.unirSala(salaId);
-      chatService.solicitarHistorial(salaId);
+      chatService.unirSala(salaId, usuarioId);
+      chatService.solicitarHistorial(salaId, usuarioId);
     };
+    
+    // Ejecutar si ya hay conexión, o esperar a que conecte
     if (chatService.estaConectado()) {
       doJoinAndFetch();
     } else {
@@ -69,37 +108,17 @@ export default function ClientChatPage() {
         unsubOnConnect();
       });
     }
-    // Reintento: si en 1200ms no llega historial, re-solicitar (hasta 2 veces aquí)
-    let retries = 0;
-    const timer = setInterval(() => {
-      if (retries >= 2) { clearInterval(timer); return; }
-      if (chatService.estaConectado()) {
-        // Solo reintentar si aún no hay mensajes
-        setMensajes(prev => {
-          if (prev.length === 0) {
-            chatService.solicitarHistorial(salaId);
-            retries += 1;
-          }
-          return prev;
-        });
-      }
-    }, 1200);
-    const unsubMsg = chatService.on('chat:mensaje', (msg: ChatMensajeDTO) => {
-      if (msg.sala_id === salaId) {
-        setMensajes((prev: LocalMsg[]) => prev.find((m: LocalMsg) => m.mensaje_id === msg.mensaje_id) ? prev : [...prev, msg]);
-      }
-    });
-    const unsubTyping = chatService.on('chat:typing', (info: any) => {
-      if (info.sala_id === salaId && info.rol === 'admin') setTypingAdmin(!!info.escribiendo);
-    });
+    
+    // Cleanup: desuscribir de todos los eventos y salir de la sala
     return () => {
       unsubHist();
       unsubMsg();
       unsubTyping();
-      chatService.salirSala(salaId);
-  clearInterval(timer);
+      if (salaId) {
+        chatService.salirSala(salaId);
+      }
     };
-  }, [salaId]);
+  }, [salaId, usuarioId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -107,7 +126,7 @@ export default function ClientChatPage() {
 
   const handleSend = async () => {
     if (!input.trim() && !image) return;
-    if (!salaId) return;
+    if (!salaId || !usuarioId) return;
 
     try {
       if (image) {
@@ -117,7 +136,7 @@ export default function ClientChatPage() {
           contenido: input || '📷 Imagen',
           archivo: image,
           rol: 'client',
-          usuario_id: salaId
+          usuario_id: usuarioId
         });
       } else {
         // Enviar solo texto
@@ -125,7 +144,7 @@ export default function ClientChatPage() {
           sala_id: salaId, 
           contenido: input, 
           rol: 'client', 
-          usuario_id: salaId 
+          usuario_id: usuarioId
         });
       }
       
@@ -137,6 +156,30 @@ export default function ClientChatPage() {
     }
   };
 
+  if (cargando) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-blue-900">Cargando chat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!salaId || !usuarioId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Chat no disponible</h2>
+          <p className="text-gray-600">
+            No tienes una conversación activa. El chat se activará cuando tengas una orden de trabajo.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 flex flex-col">
       <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col p-2 sm:p-4 relative">
@@ -146,7 +189,7 @@ export default function ClientChatPage() {
             <h1 className="text-lg sm:text-2xl font-bold text-blue-900 truncate">Chat con el Taller</h1>
             <p className="text-xs sm:text-sm text-blue-700">
               Soporte y atención personalizada 
-              {typingAdmin && <span className="text-xs text-gray-500 animate-pulse ml-2">Admin escribiendo...</span>}
+              {typingAdmin && <span className="text-xs text-gray-500 animate-pulse ml-2">Escribiendo...</span>}
             </p>
           </div>
         </div>
@@ -171,12 +214,12 @@ export default function ClientChatPage() {
             </div>
           )}
           {mensajes.map((msg: LocalMsg) => {
-            const esCliente = msg.rol === 'client';
-            let bubbleColor = esCliente ? 'bg-blue-500' : 'bg-green-100';
-            let textColor = esCliente ? 'text-white' : 'text-green-900';
-            let align = esCliente ? 'justify-end' : 'justify-start';
-            let label = esCliente ? 'Tú' : (msg.rol === 'admin' ? 'Admin' : msg.rol);
-            let avatar = esCliente
+            const esMio = msg.es_mio || msg.usuario_id === usuarioId;
+            let bubbleColor = esMio ? 'bg-blue-500' : 'bg-green-100';
+            let textColor = esMio ? 'text-white' : 'text-green-900';
+            let align = esMio ? 'justify-end' : 'justify-start';
+            let label = esMio ? 'Tú' : (msg.remitente || msg.rol_remitente || 'Taller');
+            let avatar = esMio
               ? 'https://cdn-icons-png.flaticon.com/512/921/921347.png'
               : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
             return (
@@ -205,7 +248,9 @@ export default function ClientChatPage() {
                   )}
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-[10px] sm:text-xs font-semibold opacity-70">{label}</span>
-                    <span className={`text-[10px] sm:text-xs ml-2 ${esCliente ? 'text-white' : 'text-gray-600'}`}>{new Date(msg.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className={`text-[10px] sm:text-xs ml-2 ${esMio ? 'text-white' : 'text-gray-600'}`}>
+                      {new Date(msg.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 </div>
               </div>

@@ -101,14 +101,7 @@ router.get('/current-summary', async (req, res) => {
     
     res.json({
       success: true,
-      data: data ? {
-        arqueo_id: data.arqueo_id,
-        fecha_apertura: data.fecha_apertura,
-        monto_inicial: data.monto_inicial,
-        ventas_efectivo: data.ventas_efectivo,
-        ventas_otros: data.ventas_otros,
-        total_esperado_en_caja: data.total_esperado_en_caja
-      } : null
+      data: data
     });
 
   } catch (err) {
@@ -188,9 +181,55 @@ router.get('/history', async (req, res) => {
 
     const result = await request.execute('SP_OBTENER_HISTORIAL_ARQUEOS');
     
+    // Función para parsear fechas en formato "DD/MM/YYYY HH:MMAM/PM"
+    const parsearFechaCustom = (fechaStr) => {
+      if (!fechaStr) return null;
+      try {
+        // Formato: "19/02/2026 10:44PM"
+        const regex = /(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2})(AM|PM)/i;
+        const match = fechaStr.match(regex);
+        
+        if (!match) {
+          // Intentar parseo directo si no coincide con el formato esperado
+          const date = new Date(fechaStr);
+          return isNaN(date.getTime()) ? null : date.toISOString();
+        }
+        
+        const [_, dia, mes, anio, hora12, minutos, ampm] = match;
+        let hora24 = parseInt(hora12);
+        
+        // Convertir de 12h a 24h
+        if (ampm.toUpperCase() === 'PM' && hora24 !== 12) {
+          hora24 += 12;
+        } else if (ampm.toUpperCase() === 'AM' && hora24 === 12) {
+          hora24 = 0;
+        }
+        
+        // Crear fecha en formato ISO (mes es 0-indexed en JavaScript)
+        const fecha = new Date(
+          parseInt(anio),
+          parseInt(mes) - 1,
+          parseInt(dia),
+          hora24,
+          parseInt(minutos)
+        );
+        
+        return isNaN(fecha.getTime()) ? null : fecha.toISOString();
+      } catch {
+        return null;
+      }
+    };
+    
+    // Normalizar las fechas para asegurar serialización correcta
+    const normalizedData = result.recordset.map(row => ({
+      ...row,
+      fecha_apertura: parsearFechaCustom(row.fecha_apertura),
+      fecha_cierre: parsearFechaCustom(row.fecha_cierre)
+    }));
+    
     res.json({
       success: true,
-      data: result.recordset
+      data: normalizedData
     });
 
   } catch (err) {

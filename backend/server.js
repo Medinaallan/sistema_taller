@@ -1160,20 +1160,47 @@ try {
 
 const PORT = process.env.PORT || 8080;
 
-// ====== CHAT AVANZADO (rooms + historial en memoria) ======
-const { guardarMensaje, obtenerHistorial, marcarLeidos } = require('./chatStorage');
-
+// ====== CHAT AVANZADO (usando SQL Server Stored Procedures) ======
 io.on('connection', (socket) => {
-  console.log('Nuevo cliente conectado:', socket.id);
+  console.log('💬 Nuevo cliente conectado:', socket.id);
 
-  // Unirse a una sala específica (clientId)
-  socket.on('joinRoom', ({ sala_id }) => {
-    if (!sala_id) return;
-    socket.join(sala_id);
-    console.log(`Socket ${socket.id} unido a sala ${sala_id}`);
-    // Enviar historial actual al solicitante
-    const historial = obtenerHistorial(sala_id);
-    socket.emit('chat:historial', { sala_id, mensajes: historial });
+  // Unirse a una sala específica (sala_id)
+  socket.on('joinRoom', async ({ sala_id, usuario_consultante }) => {
+    console.log('🔵 joinRoom llamado:', { sala_id, usuario_consultante, socket_id: socket.id });
+    if (!sala_id) {
+      console.log('⚠️ No se proporcionó sala_id');
+      return;
+    }
+    socket.join(sala_id.toString());
+    console.log(`✅ Socket ${socket.id} unido a sala ${sala_id}`);
+    
+    // Cargar historial desde SQL Server
+    try {
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('sala_id', sql.Int, parseInt(sala_id))
+        .input('usuario_consultante', sql.Int, parseInt(usuario_consultante || 0))
+        .execute('SP_OBTENER_HISTORIAL_SALA');
+      
+      const mensajes = result.recordset.map(m => ({
+        mensaje_id: m.mensaje_id,
+        sala_id: m.sala_id,
+        usuario_id: m.usuario_id,
+        remitente: m.remitente,
+        rol: m.rol_remitente,
+        contenido: m.contenido,
+        archivo_url: m.archivo_url,
+        es_sistema: m.es_sistema,
+        enviado_en: m.enviado_en,
+        leido: m.leido,
+        es_mio: m.es_mio
+      }));
+      
+      socket.emit('chat:historial', { sala_id, mensajes });
+    } catch (error) {
+      console.error('Error cargando historial:', error);
+      socket.emit('chat:error', { mensaje: 'Error cargando historial' });
+    }
   });
 
   socket.on('leaveRoom', ({ sala_id }) => {
@@ -1182,66 +1209,115 @@ io.on('connection', (socket) => {
     console.log(`Socket ${socket.id} salió de sala ${sala_id}`);
   });
 
-  // Mensaje genérico compat (legacy)
-  
-  socket.on('chatMessage', (msg) => {
-    // Adaptar msg a estructura estándar y guardar
-    const mensaje = {
-      mensaje_id: msg.id || Date.now(),
-      sala_id: msg.sala_id || msg.clientId || 'global',
-      usuario_id: msg.usuario_id || socket.id,
-      rol: msg.sender || 'client',
-      contenido: msg.text || msg.contenido || '',
-      es_sistema: false,
-      enviado_en: msg.timestamp || new Date().toISOString(),
-      leido: false,
-      archivo_url: msg.archivo_url,
-      tipo_archivo: msg.tipo_archivo
-    };
-    guardarMensaje(mensaje);
-    io.to(mensaje.sala_id).emit('chatMessage', mensaje); // Solo a la sala
-  });
-
-  // Nuevo evento enviar mensaje estándar
-  socket.on('chat:send', (data) => {
-    if (!data || !data.sala_id || !data.contenido) return;
-    const mensaje = {
-  // Usar el ID enviado por el cliente si existe para permitir de-duplicación en UI
-  mensaje_id: data.mensaje_id || Date.now(),
-      sala_id: data.sala_id,
-      usuario_id: data.usuario_id || socket.id,
-      rol: data.rol || 'client',
-      contenido: data.contenido,
-      es_sistema: false,
-      enviado_en: new Date().toISOString(),
-      leido: false,
-      archivo_url: data.archivo_url,
-      tipo_archivo: data.tipo_archivo
-    };
-    guardarMensaje(mensaje);
-    io.to(mensaje.sala_id).emit('chat:mensaje', mensaje);
+  // Nuevo evento enviar mensaje estándar (usando SP)
+  socket.on('chat:send', async (data) => {
+    console.log('📨 Socket recibió chat:send con data:', JSON.stringify(data, null, 2));
+    
+    if (!data || !data.sala_id || !data.contenido || !data.usuario_id) {
+      console.log('❌ Datos incompletos para enviar mensaje:', {
+        data_exists: !!data,
+        sala_id: data?.sala_id,
+        contenido: data?.contenido,
+        usuario_id: data?.usuario_id
+      });
+      return;
+    }
+    
+    try {
+      console.log('✅ Datos completos, ejecutando SP_ENVIAR_MENSAJE...');
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('sala_id', sql.Int, parseInt(data.sala_id))
+        .input('usuario_id', sql.Int, parseInt(data.usuario_id))
+        .input('contenido', sql.NVarChar(1000), data.contenido)
+        .input('archivo_url', sql.VarChar(255), data.archivo_url || null)
+        .execute('SP_ENVIAR_MENSAJE');
+      
+      console.log('📊 SP_ENVIAR_MENSAJE ejecutado. Resultado:', result.recordset);
+      const respuesta = result.recordset[0];
+      
+      if (respuesta && respuesta.allow === 1) {
+        // Mensaje guardado exitosamente, emitir a la sala
+        const mensaje = {
+          mensaje_id: respuesta.mensaje_id,
+          sala_id: data.sala_id,
+          usuario_id: data.usuario_id,
+          rol: data.rol || 'client',
+          contenido: data.contenido,
+          es_sistema: false,
+          enviado_en: new Date().toISOString(),
+          leido: false,
+          archivo_url: data.archivo_url,
+          tipo_archivo: data.tipo_archivo
+        };
+        console.log('📤 Emitiendo chat:mensaje a sala', data.sala_id, ':', mensaje);
+        io.to(data.sala_id.toString()).emit('chat:mensaje', mensaje);
+      } else {
+        console.log('⚠️ SP_ENVIAR_MENSAJE no permitió el envío:', respuesta);
+        socket.emit('chat:error', { mensaje: respuesta?.msg || 'Error enviando mensaje' });
+      }
+    } catch (error) {
+      console.error('❌ Error enviando mensaje:', error);
+      socket.emit('chat:error', { mensaje: 'Error enviando mensaje' });
+    }
   });
 
   // Solicitar historial explícito
-  socket.on('chat:historial:solicitar', ({ sala_id }) => {
+  socket.on('chat:historial:solicitar', async ({ sala_id, usuario_consultante }) => {
     if (!sala_id) return;
-    const historial = obtenerHistorial(sala_id);
-    socket.emit('chat:historial', { sala_id, mensajes: historial });
-   });
+    
+    try {
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('sala_id', sql.Int, parseInt(sala_id))
+        .input('usuario_consultante', sql.Int, parseInt(usuario_consultante || 0))
+        .execute('SP_OBTENER_HISTORIAL_SALA');
+      
+      const mensajes = result.recordset.map(m => ({
+        mensaje_id: m.mensaje_id,
+        sala_id: m.sala_id,
+        usuario_id: m.usuario_id,
+        remitente: m.remitente,
+        rol: m.rol_remitente,
+        contenido: m.contenido,
+        archivo_url: m.archivo_url,
+        es_sistema: m.es_sistema,
+        enviado_en: m.enviado_en,
+        leido: m.leido,
+        es_mio: m.es_mio
+      }));
+      
+      socket.emit('chat:historial', { sala_id, mensajes });
+    } catch (error) {
+      console.error('Error obteniendo historial:', error);
+      socket.emit('chat:error', { mensaje: 'Error obteniendo historial' });
+    }
+  });
 
   // Marcar mensajes como leídos
-  socket.on('chat:leer', ({ sala_id, rolLectura }) => {
-    if (!sala_id || !rolLectura) return;
-    const cambios = marcarLeidos(sala_id, rolLectura);
-    if (cambios > 0) {
-      io.to(sala_id).emit('chat:leido', { sala_id, rolLectura });
+  socket.on('chat:leer', async ({ sala_id, usuario_id }) => {
+    if (!sala_id || !usuario_id) return;
+    
+    try {
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('sala_id', sql.Int, parseInt(sala_id))
+        .input('usuario_id', sql.Int, parseInt(usuario_id))
+        .execute('SP_MARCAR_MENSAJES_LEIDOS');
+      
+      const respuesta = result.recordset[0];
+      if (respuesta && respuesta.allow === 1) {
+        io.to(sala_id.toString()).emit('chat:leido', { sala_id, usuario_id });
+      }
+    } catch (error) {
+      console.error('Error marcando mensajes como leídos:', error);
     }
   });
 
   // Indicador escribiendo en el chat
   socket.on('chat:typing', ({ sala_id, rol, escribiendo }) => {
     if (!sala_id) return;
-    socket.to(sala_id).emit('chat:typing', { sala_id, rol, escribiendo: !!escribiendo });
+    socket.to(sala_id.toString()).emit('chat:typing', { sala_id, rol, escribiendo: !!escribiendo });
   });
 
   socket.on('disconnect', () => {
@@ -1258,6 +1334,77 @@ try {
 } catch (error) {
   console.error('Error cargando endpoint de historial desde factura pagada:', error.message);
 }
+
+// Registrar endpoints de chat (SQL SERVER - SP)
+try {
+  console.log('💬 Cargando endpoints de chat...');
+  const chatRouter = require('./routes/chat');
+  app.use('/api/chat', chatRouter);
+  console.log('✅ Endpoints de chat habilitados');
+} catch (error) {
+  console.error('❌ Error cargando endpoints de chat:', error.message);
+}
+
+// ==================== ENDPOINT DE DIAGNÓSTICO CHAT ====================
+app.get('/api/chat/diagnostico', async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const diagnostico = {
+      stored_procedures_disponibles: [],
+      chats_usuario_9: null,
+      chats_usuario_13: null,
+      errores: []
+    };
+
+    // 1. Verificar qué SPs de chat existen
+    try {
+      const sps = await pool.request().query(`
+        SELECT ROUTINE_NAME 
+        FROM INFORMATION_SCHEMA.ROUTINES 
+        WHERE ROUTINE_TYPE = 'PROCEDURE' 
+        AND ROUTINE_NAME LIKE '%CHAT%' OR ROUTINE_NAME LIKE '%SALA%' OR ROUTINE_NAME LIKE '%MENSAJE%'
+        ORDER BY ROUTINE_NAME
+      `);
+      diagnostico.stored_procedures_disponibles = sps.recordset.map(sp => sp.ROUTINE_NAME);
+    } catch (error) {
+      diagnostico.errores.push({ paso: 'listar_sps', error: error.message });
+    }
+
+    // 2. Probar SP_OBTENER_CHATS_USUARIO con usuario 9 (cliente)
+    try {
+      const chatsCliente = await pool.request()
+        .input('usuario_id', sql.Int, 9)
+        .execute('SP_OBTENER_CHATS_USUARIO');
+      
+      diagnostico.chats_usuario_9 = {
+        total: chatsCliente.recordset.length,
+        salas: chatsCliente.recordset
+      };
+    } catch (error) {
+      diagnostico.chats_usuario_9 = { error: error.message };
+    }
+
+    // 3. Probar SP_OBTENER_CHATS_USUARIO con usuario 13 (admin)
+    try {
+      const chatsAdmin = await pool.request()
+        .input('usuario_id', sql.Int, 13)
+        .execute('SP_OBTENER_CHATS_USUARIO');
+      
+      diagnostico.chats_usuario_13 = {
+        total: chatsAdmin.recordset.length,
+        salas: chatsAdmin.recordset
+      };
+    } catch (error) {
+      diagnostico.chats_usuario_13 = { error: error.message };
+    }
+
+    res.json({ success: true, diagnostico });
+
+  } catch (error) {
+    console.error('Error en diagnóstico:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // ==================== ESTADOS DE OT (SQL SERVER - SP) ====================
 
