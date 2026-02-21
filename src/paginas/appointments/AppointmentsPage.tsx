@@ -237,7 +237,9 @@ const AppointmentsPage = () => {
   // Manejar clic en día del calendario
   const handleCalendarDayClick = (date: string) => {
     // Validar que la fecha no sea pasada
-    const selectedDate = new Date(date);
+    // Parsear la fecha YYYY-MM-DD como fecha local para evitar problemas de zona horaria
+    const parts = date.split('-').map(p => parseInt(p, 10));
+    const selectedDate = new Date(parts[0], parts[1] - 1, parts[2]);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);

@@ -301,6 +301,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
             value={formData.time}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('time', e.target.value)}
             error={errors.time}
+            step={1800}
             required
           />
         </div>

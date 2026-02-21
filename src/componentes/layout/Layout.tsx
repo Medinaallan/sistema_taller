@@ -69,9 +69,17 @@ const navigationItems: NavigationItem[] = [
   { name: 'Solicitar Cita', href: '/client-appointments', icon: CalendarDaysIcon, roles: ['client'] },
   { name: 'Mis Cotizaciones', href: '/client-quotations', icon: DocumentTextIcon, roles: ['client'] },
   { name: 'Mis Órdenes de Trabajo', href: '/client-workorders', icon: ClipboardDocumentCheckIcon, roles: ['client'] },
-  { name: 'Inventario', href: '/inventory', icon: TruckIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Proveedores', href: '/suppliers', icon: UsersIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Productos', href: '/products', icon: TruckIcon, roles: ['admin', 'receptionist'] },
+  // Productos dropdown with nested children: Ver listado, Stock -> Inventario, Proveedores -> Proveedores
+  {
+    name: 'Productos',
+    icon: TruckIcon,
+    roles: ['admin', 'receptionist'],
+    children: [
+      { name: 'Ver listado', href: '/products', icon: TruckIcon, roles: ['admin', 'receptionist'] },
+      { name: 'Stock', href: '/inventory', icon: ClipboardDocumentListIcon, roles: ['admin', 'receptionist'] },
+      { name: 'Proveedores', href: '/suppliers', icon: UsersIcon, roles: ['admin', 'receptionist'] }
+    ]
+  },
   { name: 'Servicios', href: '/services', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Bitácora', href: '/logs', icon: BellIcon, roles: ['admin'] },
   { name: 'Recordatorios', href: '/reminders', icon: BellIcon, roles: ['admin', 'receptionist'] },
@@ -89,7 +97,7 @@ const navigationItems: NavigationItem[] = [
     ]
   },
   { name: 'Chat con Cliente', href: '/admin-chat', icon: BellIcon, roles: ['admin', 'receptionist', 'mechanic'] },
-  { name: 'Administración', href: '/admin', icon: Cog6ToothIcon, roles: ['admin'] },
+  { name: 'Configuración', href: '/admin', icon: Cog6ToothIcon, roles: ['admin'] },
   { name: 'Ayuda', href: '/help', icon: QuestionMarkCircleIcon, roles: ['admin', 'mechanic', 'receptionist', 'client'] },
 ];
 
@@ -285,29 +293,82 @@ export function Layout({ children }: LayoutProps) {
                         {item.children.filter(child => 
                           state.user ? child.roles.includes(state.user.role) : false
                         ).map((child) => {
-                          const isChildActive = location.pathname === child.href;
+                          const childKey = `${item.name}__${child.name}`;
+                          const isChildExpanded = expandedItems.has(childKey);
+                          const hasGrandChildren = !!child.children && child.children.length > 0;
+
+                          // Determine active state: either child href matches or any grandchild href matches
+                          const isChildActive = location.pathname === child.href || (
+                            child.children ? child.children.some(g => location.pathname === g.href) : false
+                          );
+
                           return (
                             <li key={child.name}>
-                              <Link
-                                to={child.href!}
-                                className={clsx(
-                                  'flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 border-l-4',
-                                  isChildActive ? 'shadow-md text-white' : ''
-                                )}
-                                style={{
-                                  backgroundColor: isChildActive ? `${colors.primary}60` : 'transparent',
-                                  color: isChildActive ? colors.text.primary : colors.text.primary,
-                                  borderColor: isChildActive ? colors.primary : 'transparent'
-                                }}
-                              >
-                                <child.icon 
-                                  className={clsx(
-                                    'h-4 w-4 mr-3',
+                              {hasGrandChildren ? (
+                                <>
+                                  <button
+                                    onClick={() => handleToggleExpanded(childKey)}
+                                    className={clsx(
+                                      'w-full flex items-center justify-between text-sm font-semibold rounded-lg transition-all duration-200 px-3 py-2',
+                                      isChildActive ? 'text-white shadow-md' : ''
+                                    )}
+                                    style={{
+                                      backgroundColor: isChildActive ? `${colors.primary}60` : 'transparent',
+                                      color: isChildActive ? colors.text.primary : colors.text.primary,
+                                      borderColor: isChildActive ? colors.primary : 'transparent'
+                                    }}
+                                  >
+                                    <div className="flex items-center">
+                                      <child.icon className="h-4 w-4 mr-3" style={{ color: isChildActive ? colors.primary : colors.text.secondary }} />
+                                      <span className="font-semibold">{child.name}</span>
+                                    </div>
+                                    <ChevronRightIcon className={clsx('h-4 w-4 transition-transform duration-200', isChildExpanded ? 'rotate-90' : '')} />
+                                  </button>
+
+                                  {isChildExpanded && (
+                                    <ul className="mt-2 ml-4 space-y-1">
+                                      {child.children!.filter(g => state.user ? g.roles.includes(state.user.role) : false).map((g) => {
+                                        const isGrandActive = location.pathname === g.href;
+                                        return (
+                                          <li key={g.name}>
+                                            <Link
+                                              to={g.href!}
+                                              className={clsx(
+                                                'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 border-l-4',
+                                                isGrandActive ? 'shadow-md text-white' : ''
+                                              )}
+                                              style={{
+                                                backgroundColor: isGrandActive ? `${colors.primary}60` : 'transparent',
+                                                color: isGrandActive ? colors.text.primary : colors.text.primary,
+                                                borderColor: isGrandActive ? colors.primary : 'transparent'
+                                              }}
+                                            >
+                                              <g.icon className="h-4 w-4 mr-3" style={{ color: isGrandActive ? colors.primary : colors.text.secondary }} />
+                                              {g.name}
+                                            </Link>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
                                   )}
-                                  style={{ color: isChildActive ? colors.primary : colors.text.secondary }}
-                                />
-                                {child.name}
-                              </Link>
+                                </>
+                              ) : (
+                                <Link
+                                  to={child.href!}
+                                  className={clsx(
+                                    'flex items-center px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 border-l-4',
+                                    isChildActive ? 'shadow-md text-white' : ''
+                                  )}
+                                  style={{
+                                    backgroundColor: isChildActive ? `${colors.primary}60` : 'transparent',
+                                    color: isChildActive ? colors.text.primary : colors.text.primary,
+                                    borderColor: isChildActive ? colors.primary : 'transparent'
+                                  }}
+                                >
+                                  <child.icon className="h-4 w-4 mr-3" style={{ color: isChildActive ? colors.primary : colors.text.secondary }} />
+                                  {child.name}
+                                </Link>
+                              )}
                             </li>
                           );
                         })}

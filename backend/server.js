@@ -1017,44 +1017,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// ==============================================
-// RUTAS DE ADMINISTRACIÓN DE DATOS
-// ==============================================
-
-const dataResetService = require('./services/dataResetService');
-
-// Obtener estadísticas de datos
-app.get('/api/admin/data-stats', async (req, res) => {
-  try {
-    console.log('Solicitando estadísticas de datos...');
-    const stats = await dataResetService.getDataStats();
-    res.json(stats);
-  } catch (error) {
-    console.error('Error obteniendo estadísticas:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error obteniendo estadísticas de datos',
-      error: error.message
-    });
-  }
-});
-
-// Restablecer todos los datos
-app.post('/api/admin/reset-data', async (req, res) => {
-  try {
-    console.log('Iniciando restablecimiento de datos desde API...');
-    const result = await dataResetService.resetAllData();
-    console.log('Restablecimiento completado desde API');
-    res.json(result);
-  } catch (error) {
-    console.error('Error restableciendo datos:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error restableciendo datos',
-      error: error.message
-    });
-  }
-});
+// Data reset endpoints removed: functionality deprecated and UI removed.
+// If needed in future, reintroduce with proper safeguards and database-backed implementation.
 
 // NOTA: Los endpoints de clientes ahora se manejan en routes/clientsApi.js
 // Los endpoints duplicados fueron removidos para evitar conflictos

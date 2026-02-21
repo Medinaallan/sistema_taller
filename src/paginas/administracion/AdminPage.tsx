@@ -3,7 +3,6 @@ import { UserManagementSection } from './secciones/UserManagementSection';
 import { CompanyDataSection } from './secciones/CompanyDataSection';
 import { BillingConfigSection } from './secciones/BillingConfigSection';
 import { PaymentMethodsSection } from './secciones/PaymentMethodsSection';
-import { DataManagementPanel } from '../../componentes/administracion/DataManagementPanel';
 import {
   UsersIcon,
   CurrencyDollarIcon,
@@ -47,13 +46,7 @@ const configSections: ConfigSection[] = [
     icon: DocumentTextIcon,
     path: 'facturacion'
   },
-  {
-    id: 'impuestos',
-    title: 'Configuración de Impuestos',
-    description: 'ISV, retenciones y otros impuestos',
-    icon: CalculatorIcon,
-    path: 'impuestos'
-  },
+
   {
     id: 'moneda',
     title: 'Configuración de Moneda',
@@ -90,13 +83,6 @@ const configSections: ConfigSection[] = [
     path: 'servicios'
   },
   {
-    id: 'data-reset',
-    title: 'Restablecimiento de Datos',
-    description: 'Restablecer todos los archivos CSV con datos de ejemplo',
-    icon: CogIcon,
-    path: 'data-reset'
-  },
-  {
     id: 'sistema',
     title: 'Configuración del Sistema',
     description: 'Respaldos, restauración y configuración general',
@@ -126,7 +112,7 @@ export default function AdminPage() {
         {selectedSection === 'empresa' && <CompanyDataSection />}
         {selectedSection === 'facturacion' && <BillingConfigSection />}
         {selectedSection === 'metodos-pago' && <PaymentMethodsSection />}
-        {selectedSection === 'data-reset' && <DataManagementPanel />}
+        {/* Data reset panel removed */}
         {/* Aquí se agregarán las demás secciones */}
       </div>
     );

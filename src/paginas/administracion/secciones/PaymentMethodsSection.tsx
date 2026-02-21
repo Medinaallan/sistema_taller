@@ -251,13 +251,13 @@ export const PaymentMethodsSection = () => {
           </p>
           <div className="flex gap-4 mt-3">
             <span className="px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-              💵 Efectivo
+              Efectivo
             </span>
             <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
-              💳 Tarjeta
+              Tarjeta
             </span>
             <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-sm font-medium">
-              🏦 Transferencia
+              Transferencia
             </span>
           </div>
         </div>

@@ -288,9 +288,9 @@ export default function AdminChatPage() {
                   
                   return (
                     <div key={m.mensaje_id} className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}> 
-                      <div className={`max-w-xs sm:max-w-sm rounded-lg px-3 py-2 text-xs shadow-md ${bgColor} ${textColor}`}> 
+                      <div className={`max-w-sm sm:max-w-md rounded-lg px-4 py-3 text-base shadow-md ${bgColor} ${textColor}`}> 
                         {/* Nombre del remitente */}
-                        <div className={`text-[10px] font-semibold mb-1 ${nombreColor}`}>
+                        <div className={`text-[12px] font-semibold mb-1 ${nombreColor}`}>
                           {nombreMostrar}
                         </div>
                         
@@ -302,7 +302,7 @@ export default function AdminChatPage() {
                               alt="Imagen del chat" 
                               className="max-w-full h-auto rounded cursor-pointer mb-1"
                               onClick={() => setModalImage(m.archivo_url!)}
-                              style={{ maxHeight: '150px' }}
+                              style={{ maxHeight: '200px' }}
                             />
                             {m.contenido && m.contenido !== '📷 Imagen' && (
                               <div className="whitespace-pre-wrap break-words">{m.contenido}</div>
@@ -313,7 +313,7 @@ export default function AdminChatPage() {
                         )}
                         
                         {/* Hora */}
-                        <div className={`mt-1 text-[10px] opacity-80 text-right`}>
+                        <div className={`mt-1 text-[11px] opacity-80 text-right`}>
                           {new Date(m.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
