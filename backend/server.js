@@ -1162,17 +1162,17 @@ const PORT = process.env.PORT || 8080;
 
 // ====== CHAT AVANZADO (usando SQL Server Stored Procedures) ======
 io.on('connection', (socket) => {
-  console.log('💬 Nuevo cliente conectado:', socket.id);
+  console.log(' Nuevo cliente conectado:', socket.id);
 
   // Unirse a una sala específica (sala_id)
   socket.on('joinRoom', async ({ sala_id, usuario_consultante }) => {
-    console.log('🔵 joinRoom llamado:', { sala_id, usuario_consultante, socket_id: socket.id });
+    console.log(' joinRoom llamado:', { sala_id, usuario_consultante, socket_id: socket.id });
     if (!sala_id) {
-      console.log('⚠️ No se proporcionó sala_id');
+      console.log(' No se proporcionó sala_id');
       return;
     }
     socket.join(sala_id.toString());
-    console.log(`✅ Socket ${socket.id} unido a sala ${sala_id}`);
+    console.log(` Socket ${socket.id} unido a sala ${sala_id}`);
     
     // Cargar historial desde SQL Server
     try {
@@ -1182,20 +1182,48 @@ io.on('connection', (socket) => {
         .input('usuario_consultante', sql.Int, parseInt(usuario_consultante || 0))
         .execute('SP_OBTENER_HISTORIAL_SALA');
       
-      const mensajes = result.recordset.map(m => ({
-        mensaje_id: m.mensaje_id,
-        sala_id: m.sala_id,
-        usuario_id: m.usuario_id,
-        remitente: m.remitente,
-        rol: m.rol_remitente,
-        contenido: m.contenido,
-        archivo_url: m.archivo_url,
-        es_sistema: m.es_sistema,
-        enviado_en: m.enviado_en,
-        leido: m.leido,
-        es_mio: m.es_mio
-      }));
+      console.log(' SP_OBTENER_HISTORIAL_SALA devolvió:', result.recordset.length, 'mensajes');
       
+      // Mostrar detalles de mensajes con archivos
+      const mensajesConArchivos = result.recordset.filter(m => m.archivo_url);
+      if (mensajesConArchivos.length > 0) {
+        console.log('  Mensajes con archivo_url:', mensajesConArchivos.length);
+        mensajesConArchivos.forEach((m, i) => {
+          console.log(`  [${i+1}] mensaje_id: ${m.mensaje_id}, archivo_url: ${m.archivo_url}`);
+        });
+      }
+      
+      const mensajes = result.recordset.map(m => {
+        // Deducir tipo_archivo basándose en archivo_url (el SP no devuelve tipo_archivo)
+        let tipo_archivo = null;
+        if (m.archivo_url) {
+          const url = m.archivo_url.toLowerCase();
+          if (url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/)) {
+            tipo_archivo = 'image/jpeg';
+          }
+        }
+        
+        return {
+          mensaje_id: m.mensaje_id,
+          sala_id: m.sala_id,
+          usuario_id: m.usuario_id,
+          remitente: m.remitente,
+          rol: m.rol_remitente,
+          rol_remitente: m.rol_remitente,
+          contenido: m.contenido,
+          archivo_url: m.archivo_url || null,
+          tipo_archivo: tipo_archivo,
+          es_sistema: m.es_sistema,
+          enviado_en: m.enviado_en,
+          leido: m.leido,
+          es_mio: m.es_mio
+        };
+      });
+      
+      console.log(' Emitiendo historial con', mensajes.length, 'mensajes');
+      if (mensajes.some(m => m.archivo_url)) {
+        console.log(' Mensajes mapeados con archivos:', mensajes.filter(m => m.archivo_url).length);
+      }
       socket.emit('chat:historial', { sala_id, mensajes });
     } catch (error) {
       console.error('Error cargando historial:', error);
@@ -1211,10 +1239,10 @@ io.on('connection', (socket) => {
 
   // Nuevo evento enviar mensaje estándar (usando SP)
   socket.on('chat:send', async (data) => {
-    console.log('📨 Socket recibió chat:send con data:', JSON.stringify(data, null, 2));
+    console.log(' Socket recibió chat:send con data:', JSON.stringify(data, null, 2));
     
     if (!data || !data.sala_id || !data.contenido || !data.usuario_id) {
-      console.log('❌ Datos incompletos para enviar mensaje:', {
+      console.log(' Datos incompletos para enviar mensaje:', {
         data_exists: !!data,
         sala_id: data?.sala_id,
         contenido: data?.contenido,
@@ -1224,7 +1252,9 @@ io.on('connection', (socket) => {
     }
     
     try {
-      console.log('✅ Datos completos, ejecutando SP_ENVIAR_MENSAJE...');
+      console.log(' Datos completos, ejecutando SP_ENVIAR_MENSAJE...');
+      console.log(' archivo_url recibido:', data.archivo_url || 'null');
+      console.log(' tipo_archivo recibido:', data.tipo_archivo || 'null');
       const pool = await getConnection();
       const result = await pool.request()
         .input('sala_id', sql.Int, parseInt(data.sala_id))
@@ -1236,22 +1266,64 @@ io.on('connection', (socket) => {
       console.log('📊 SP_ENVIAR_MENSAJE ejecutado. Resultado:', result.recordset);
       const respuesta = result.recordset[0];
       
+      if (respuesta) {
+        console.log('📋 Respuesta del SP:');
+        console.log('   - allow:', respuesta.allow);
+        console.log('   - mensaje_id:', respuesta.mensaje_id);
+        console.log('   - msg:', respuesta.msg);
+      }
+      
       if (respuesta && respuesta.allow === 1) {
-        // Mensaje guardado exitosamente, emitir a la sala
-        const mensaje = {
-          mensaje_id: respuesta.mensaje_id,
-          sala_id: data.sala_id,
-          usuario_id: data.usuario_id,
-          rol: data.rol || 'client',
-          contenido: data.contenido,
-          es_sistema: false,
-          enviado_en: new Date().toISOString(),
-          leido: false,
-          archivo_url: data.archivo_url,
-          tipo_archivo: data.tipo_archivo
-        };
-        console.log('📤 Emitiendo chat:mensaje a sala', data.sala_id, ':', mensaje);
-        io.to(data.sala_id.toString()).emit('chat:mensaje', mensaje);
+        // Mensaje guardado exitosamente, consultar información del usuario
+        try {
+          const userResult = await pool.request()
+            .input('obtener_todos', sql.Bit, 0)
+            .input('usuario_id', sql.Int, parseInt(data.usuario_id))
+            .execute('SP_OBTENER_USUARIOS');
+          
+          const usuario = userResult.recordset[0];
+          
+          // Mensaje completo con información del remitente
+          const mensaje = {
+            mensaje_id: respuesta.mensaje_id,
+            sala_id: data.sala_id,
+            usuario_id: data.usuario_id,
+            remitente: usuario ? usuario.nombre_completo : 'Usuario',
+            rol: usuario ? usuario.rol : (data.rol || 'client'),
+            rol_remitente: usuario ? usuario.rol : (data.rol || 'client'),
+            contenido: data.contenido,
+            es_sistema: false,
+            enviado_en: new Date().toISOString(),
+            leido: false,
+            archivo_url: data.archivo_url || null,
+            tipo_archivo: data.tipo_archivo || null
+          };
+          console.log('📤 Emitiendo chat:mensaje a sala', data.sala_id);
+          console.log('   👤 Usuario:', mensaje.remitente, '| Rol:', mensaje.rol);
+          console.log('   📎 Archivo:', mensaje.archivo_url ? 'SÍ' : 'NO');
+          if (mensaje.archivo_url) {
+            console.log('   🔗 URL:', mensaje.archivo_url);
+          }
+          io.to(data.sala_id.toString()).emit('chat:mensaje', mensaje);
+        } catch (userError) {
+          console.error('⚠️ Error consultando usuario, enviando mensaje sin nombre:', userError);
+          // Si falla consultar el usuario, enviar el mensaje de todos modos
+          const mensaje = {
+            mensaje_id: respuesta.mensaje_id,
+            sala_id: data.sala_id,
+            usuario_id: data.usuario_id,
+            remitente: 'Usuario',
+            rol: data.rol || 'client',
+            rol_remitente: data.rol || 'client',
+            contenido: data.contenido,
+            es_sistema: false,
+            enviado_en: new Date().toISOString(),
+            leido: false,
+            archivo_url: data.archivo_url || null,
+            tipo_archivo: data.tipo_archivo || null
+          };
+          io.to(data.sala_id.toString()).emit('chat:mensaje', mensaje);
+        }
       } else {
         console.log('⚠️ SP_ENVIAR_MENSAJE no permitió el envío:', respuesta);
         socket.emit('chat:error', { mensaje: respuesta?.msg || 'Error enviando mensaje' });
@@ -1273,20 +1345,48 @@ io.on('connection', (socket) => {
         .input('usuario_consultante', sql.Int, parseInt(usuario_consultante || 0))
         .execute('SP_OBTENER_HISTORIAL_SALA');
       
-      const mensajes = result.recordset.map(m => ({
-        mensaje_id: m.mensaje_id,
-        sala_id: m.sala_id,
-        usuario_id: m.usuario_id,
-        remitente: m.remitente,
-        rol: m.rol_remitente,
-        contenido: m.contenido,
-        archivo_url: m.archivo_url,
-        es_sistema: m.es_sistema,
-        enviado_en: m.enviado_en,
-        leido: m.leido,
-        es_mio: m.es_mio
-      }));
+      console.log('📜 [SOLICITAR] SP_OBTENER_HISTORIAL_SALA devolvió:', result.recordset.length, 'mensajes');
       
+      // Mostrar detalles de mensajes con archivos
+      const mensajesConArchivos = result.recordset.filter(m => m.archivo_url);
+      if (mensajesConArchivos.length > 0) {
+        console.log('🖼️  [SOLICITAR] Mensajes con archivo_url:', mensajesConArchivos.length);
+        mensajesConArchivos.forEach((m, i) => {
+          console.log(`  [${i+1}] mensaje_id: ${m.mensaje_id}, archivo_url: ${m.archivo_url}`);
+        });
+      }
+      
+      const mensajes = result.recordset.map(m => {
+        // Deducir tipo_archivo basándose en archivo_url (el SP no devuelve tipo_archivo)
+        let tipo_archivo = null;
+        if (m.archivo_url) {
+          const url = m.archivo_url.toLowerCase();
+          if (url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/)) {
+            tipo_archivo = 'image/jpeg';
+          }
+        }
+        
+        return {
+          mensaje_id: m.mensaje_id,
+          sala_id: m.sala_id,
+          usuario_id: m.usuario_id,
+          remitente: m.remitente,
+          rol: m.rol_remitente,
+          rol_remitente: m.rol_remitente,
+          contenido: m.contenido,
+          archivo_url: m.archivo_url || null,
+          tipo_archivo: tipo_archivo,
+          es_sistema: m.es_sistema,
+          enviado_en: m.enviado_en,
+          leido: m.leido,
+          es_mio: m.es_mio
+        };
+      });
+      
+      console.log('📤 [SOLICITAR] Emitiendo historial con', mensajes.length, 'mensajes');
+      if (mensajes.some(m => m.archivo_url)) {
+        console.log('✅ [SOLICITAR] Mensajes mapeados con archivos:', mensajes.filter(m => m.archivo_url).length);
+      }
       socket.emit('chat:historial', { sala_id, mensajes });
     } catch (error) {
       console.error('Error obteniendo historial:', error);

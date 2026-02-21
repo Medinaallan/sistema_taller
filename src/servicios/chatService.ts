@@ -93,13 +93,14 @@ class ChatService {
 
     // Evento de mensaje nuevo
     this.socket.on('chat:mensaje', (msg: any) => {
+      console.log('📩 chat:mensaje recibido:', JSON.stringify(msg, null, 2));
       const normalizado: ChatMensajeDTO = {
         mensaje_id: msg.mensaje_id,
         sala_id: msg.sala_id,
         usuario_id: msg.usuario_id,
         remitente: msg.remitente,
-        rol: msg.rol,
-        rol_remitente: msg.rol_remitente,
+        rol: msg.rol || msg.rol_remitente,
+        rol_remitente: msg.rol_remitente || msg.rol,
         contenido: msg.contenido,
         es_sistema: !!msg.es_sistema,
         enviado_en: msg.enviado_en || new Date().toISOString(),
@@ -108,18 +109,30 @@ class ChatService {
         archivo_url: msg.archivo_url,
         tipo_archivo: msg.tipo_archivo
       };
+      console.log('✅ Mensaje normalizado:', JSON.stringify(normalizado, null, 2));
       this.emitirLocal('chat:mensaje', normalizado);
     });
 
     // Evento de historial
     this.socket.on('chat:historial', (data: any) => {
+      console.log('📜 chat:historial recibido, mensajes:', data.mensajes?.length || 0);
+      
+      // Verificar si hay mensajes con archivos
+      const conArchivos = (data.mensajes || []).filter((m: any) => m.archivo_url);
+      if (conArchivos.length > 0) {
+        console.log('🖼️  Mensajes con archivo_url en historial:', conArchivos.length);
+        conArchivos.forEach((m: any, i: number) => {
+          console.log(`  [${i+1}] mensaje_id: ${m.mensaje_id}, archivo_url: ${m.archivo_url}, tipo: ${m.tipo_archivo}`);
+        });
+      }
+      
       const mensajes: ChatMensajeDTO[] = (data.mensajes || []).map((m: any) => ({
         mensaje_id: m.mensaje_id,
         sala_id: m.sala_id,
         usuario_id: m.usuario_id,
         remitente: m.remitente,
         rol: m.rol || m.rol_remitente,
-        rol_remitente: m.rol_remitente,
+        rol_remitente: m.rol_remitente || m.rol,
         contenido: m.contenido,
         es_sistema: !!m.es_sistema,
         enviado_en: m.enviado_en || new Date().toISOString(),
@@ -128,6 +141,7 @@ class ChatService {
         archivo_url: m.archivo_url,
         tipo_archivo: m.tipo_archivo
       }));
+      console.log('✅ Historial normalizado con', mensajes.length, 'mensajes');
       this.emitirLocal('chat:historial', { sala_id: data.sala_id, mensajes });
     });
 

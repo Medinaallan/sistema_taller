@@ -175,9 +175,14 @@ export function Layout({ children }: LayoutProps) {
     setExpandedItems(newExpanded);
   };
 
-  const filteredNavigation = navigationItems.filter(item => 
-    state.user ? item.roles.includes(state.user.role) : false
-  );
+  const filteredNavigation = navigationItems.filter(item => {
+    if (!state.user) return false;
+    if (item.roles.includes(state.user.role)) return true;
+    if (item.children) {
+      return item.children.some(child => child.roles.includes(state.user.role));
+    }
+    return false;
+  });
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f9fafb' }}>

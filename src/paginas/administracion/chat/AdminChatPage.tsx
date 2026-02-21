@@ -240,10 +240,61 @@ export default function AdminChatPage() {
                   </div>
                 )}
                 {mensajes.map((m: ChatMensajeDTO) => {
-                  const esAdmin = m.rol === 'admin';
+                  // Si es un mensaje del sistema, mostrarlo centrado como WhatsApp
+                  if (m.es_sistema) {
+                    return (
+                      <div key={m.mensaje_id} className="flex justify-center my-3">
+                        <div className="bg-gray-200 bg-opacity-80 text-gray-700 text-xs px-3 py-1 rounded-full shadow-sm max-w-xs text-center">
+                          {m.contenido}
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Mensaje normal
+                  // Determinar si el mensaje es propio
+                  const esMio = m.usuario_id === parseInt(state.user?.id || '0');
+                  
+                  // Asignar colores según el rol
+                  let bgColor = '';
+                  let textColor = '';
+                  let nombreColor = '';
+                  
+                  if (m.rol === 'admin') {
+                    bgColor = 'bg-blue-500';
+                    textColor = 'text-white';
+                    nombreColor = 'text-blue-200';
+                  } else if (m.rol === 'mechanic') {
+                    bgColor = 'bg-amber-500';
+                    textColor = 'text-white';
+                    nombreColor = 'text-amber-200';
+                  } else if (m.rol === 'client') {
+                    bgColor = 'bg-green-500';
+                    textColor = 'text-white';
+                    nombreColor = 'text-green-200';
+                  } else if (m.rol === 'receptionist') {
+                    bgColor = 'bg-purple-500';
+                    textColor = 'text-white';
+                    nombreColor = 'text-purple-200';
+                  } else {
+                    // Rol desconocido
+                    bgColor = 'bg-gray-500';
+                    textColor = 'text-white';
+                    nombreColor = 'text-gray-200';
+                  }
+                  
+                  // Obtener nombre para mostrar
+                  const nombreMostrar = esMio ? 'Tú' : (m.remitente || m.rol_remitente || m.rol);
+                  
                   return (
-                    <div key={m.mensaje_id} className={`flex ${esAdmin ? 'justify-end' : 'justify-start'}`}> 
-                      <div className={`max-w-xs sm:max-w-sm rounded px-2 sm:px-3 py-2 text-xs shadow ${esAdmin ? 'bg-blue-100' : 'bg-gray-100'}`}> 
+                    <div key={m.mensaje_id} className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}> 
+                      <div className={`max-w-xs sm:max-w-sm rounded-lg px-3 py-2 text-xs shadow-md ${bgColor} ${textColor}`}> 
+                        {/* Nombre del remitente */}
+                        <div className={`text-[10px] font-semibold mb-1 ${nombreColor}`}>
+                          {nombreMostrar}
+                        </div>
+                        
+                        {/* Contenido del mensaje */}
                         {m.archivo_url && m.tipo_archivo?.startsWith('image/') ? (
                           <div>
                             <img 
@@ -260,7 +311,11 @@ export default function AdminChatPage() {
                         ) : (
                           <div className="whitespace-pre-wrap break-words">{m.contenido}</div>
                         )}
-                        <div className="mt-1 text-[10px] text-gray-500 text-right">{new Date(m.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        
+                        {/* Hora */}
+                        <div className={`mt-1 text-[10px] opacity-80 text-right`}>
+                          {new Date(m.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </div>
                     </div>
                   );

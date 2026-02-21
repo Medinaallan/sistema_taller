@@ -214,22 +214,60 @@ export default function ClientChatPage() {
             </div>
           )}
           {mensajes.map((msg: LocalMsg) => {
+            // Si es un mensaje del sistema, mostrarlo centrado como WhatsApp
+            if (msg.es_sistema) {
+              return (
+                <div key={msg.mensaje_id} className="flex justify-center my-4">
+                  <div className="bg-white bg-opacity-70 backdrop-blur-sm text-gray-700 text-xs sm:text-sm px-4 py-2 rounded-full shadow-md max-w-xs text-center border border-gray-200">
+                    {msg.contenido}
+                  </div>
+                </div>
+              );
+            }
+            
+            // Mensaje normal
             const esMio = msg.es_mio || msg.usuario_id === usuarioId;
-            let bubbleColor = esMio ? 'bg-blue-500' : 'bg-green-100';
-            let textColor = esMio ? 'text-white' : 'text-green-900';
-            let align = esMio ? 'justify-end' : 'justify-start';
-            let label = esMio ? 'Tú' : (msg.remitente || msg.rol_remitente || 'Taller');
-            let avatar = esMio
-              ? 'https://cdn-icons-png.flaticon.com/512/921/921347.png'
-              : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+            
+            // Asignar colores según el rol
+            let bgColor = '';
+            let textColor = '';
+            let nombreColor = '';
+            
+            if (msg.rol === 'admin') {
+              bgColor = 'bg-blue-500';
+              textColor = 'text-white';
+              nombreColor = 'text-blue-200';
+            } else if (msg.rol === 'mechanic') {
+              bgColor = 'bg-amber-500';
+              textColor = 'text-white';
+              nombreColor = 'text-amber-200';
+            } else if (msg.rol === 'client') {
+              bgColor = 'bg-green-500';
+              textColor = 'text-white';
+              nombreColor = 'text-green-200';
+            } else if (msg.rol === 'receptionist') {
+              bgColor = 'bg-purple-500';
+              textColor = 'text-white';
+              nombreColor = 'text-purple-200';
+            } else {
+              // Rol desconocido
+              bgColor = 'bg-gray-500';
+              textColor = 'text-white';
+              nombreColor = 'text-gray-200';
+            }
+            
+            const nombreMostrar = esMio ? 'Tú' : (msg.remitente || msg.rol_remitente || msg.rol);
+            const align = esMio ? 'justify-end' : 'justify-start';
+            
             return (
-              <div key={msg.mensaje_id} className={`mb-4 sm:mb-6 flex ${align} items-end`}>
-                <img 
-                  src={avatar} 
-                  alt={label} 
-                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border shadow mr-2 ${align === 'justify-end' ? 'order-2 ml-2 mr-0' : ''}`} 
-                />
-                <div className={`max-w-xs sm:max-w-sm px-3 sm:px-4 py-2 sm:py-3 rounded-2xl text-sm sm:text-base font-medium shadow ${bubbleColor} ${textColor} relative`}>
+              <div key={msg.mensaje_id} className={`mb-4 sm:mb-6 flex ${align}`}>
+                <div className={`max-w-xs sm:max-w-sm px-3 sm:px-4 py-2 sm:py-3 rounded-2xl shadow-lg ${bgColor} ${textColor} relative`}>
+                  {/* Nombre del remitente */}
+                  <div className={`text-[10px] sm:text-xs font-bold mb-1 ${nombreColor}`}>
+                    {nombreMostrar}
+                  </div>
+                  
+                  {/* Contenido del mensaje */}
                   {msg.archivo_url && msg.tipo_archivo?.startsWith('image/') ? (
                     <div className="mb-2">
                       <img 
@@ -244,13 +282,12 @@ export default function ClientChatPage() {
                       )}
                     </div>
                   ) : (
-                    <span className="text-xs sm:text-sm">{msg.contenido}</span>
+                    <span className="text-xs sm:text-sm block">{msg.contenido}</span>
                   )}
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-[10px] sm:text-xs font-semibold opacity-70">{label}</span>
-                    <span className={`text-[10px] sm:text-xs ml-2 ${esMio ? 'text-white' : 'text-gray-600'}`}>
-                      {new Date(msg.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                  
+                  {/* Hora */}
+                  <div className="text-[10px] sm:text-xs mt-2 opacity-80 text-right">
+                    {new Date(msg.enviado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               </div>
