@@ -38,7 +38,15 @@ class PDFInvoiceGenerator {
    * Usa el CAI activo configurado en la sección de Información Fiscal
    */
   private async getEmpresaInfo(invoice?: Invoice) {
-    const companyInfo = companyConfigService.getCompanyInfo();
+    let companyInfo = companyConfigService.getCompanyInfo();
+    if (!companyInfo) {
+      try {
+        await companyConfigService.fetchCompanyInfo();
+      } catch (error) {
+        console.error('Error fetching company info before generating PDF:', error);
+      }
+      companyInfo = companyConfigService.getCompanyInfo();
+    }
     
     // Cargar CAIs si no están en caché
     let cai = companyConfigService.getActiveCAI('01');
@@ -179,13 +187,18 @@ class PDFInvoiceGenerator {
     doc.setFont('helvetica', 'normal');
     // Columna 1: Datos de Factura
     doc.text(`Número: ${invoice.numero}`, col1X, yPos);
-    doc.text(`Fecha: ${new Date(invoice.fecha).toLocaleString('es-HN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`, col1X, yPos + 5);
+    const invoiceDate = this.resolveInvoiceDate(invoice);
+    const formattedDate = invoiceDate
+      ? invoiceDate.toLocaleString('es-HN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : 'Fecha no disponible';
+
+    doc.text(`Fecha: ${formattedDate}`, col1X, yPos + 5);
     doc.text(`Método de Pago: ${invoice.metodoPago || 'Efectivo'}`, col1X, yPos + 10);
 
     // Columna 2: Datos del Cliente
@@ -399,7 +412,12 @@ class PDFInvoiceGenerator {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
-    doc.text(`Fecha: ${new Date(invoice.fecha).toLocaleString('es-HN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`, margin, yPos);
+    const invoiceDate = this.resolveInvoiceDate(invoice);
+    const formattedTicketDate = invoiceDate
+      ? invoiceDate.toLocaleString('es-HN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+      : 'Fecha no disponible';
+
+    doc.text(`Fecha: ${formattedTicketDate}`, margin, yPos);
     yPos += 4;
     doc.text(`Cliente: ${invoice.clientName || 'CONSUMIDOR FINAL'}`, margin, yPos);
     yPos += 4;
@@ -568,6 +586,27 @@ class PDFInvoiceGenerator {
     }
 
     return resultado.trim();
+  }
+
+  private resolveInvoiceDate(invoice: Invoice): Date | null {
+    const candidates = [
+      invoice.fecha,
+      invoice.createdAt,
+      (invoice as any).fecha_creacion,
+      (invoice as any).fecha_registro,
+      (invoice as any).fecha_factura,
+      (invoice as any).fecha_generacion
+    ];
+
+    for (const raw of candidates) {
+      if (!raw) continue;
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.valueOf())) {
+        return parsed;
+      }
+    }
+
+    return null;
   }
 
   /**

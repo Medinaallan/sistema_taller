@@ -1547,14 +1547,37 @@ const POSPage: React.FC = () => {
             
             // Refrescar facturas pendientes
             await refreshPendingInvoices();
-            
-            // Mostrar mensaje de éxito
-            await Swal.fire({
+            const invoiceId = selectedInvoiceForPayment.factura_id;
+            const invoiceNumero = selectedInvoiceForPayment.numero;
+
+            let invoiceForPrint = null;
+            try {
+              invoiceForPrint = await invoicesService.getInvoiceById(String(invoiceId));
+            } catch (error) {
+              console.error('Error cargando factura para imprimir:', error);
+            }
+
+            const successAlertResult = await Swal.fire({
               icon: 'success',
               title: '¡Pago Registrado!',
-              text: `La factura ${selectedInvoiceForPayment.numero} ha sido pagada exitosamente`,
-              confirmButtonColor: '#10b981'
+              text: `La factura ${invoiceNumero} ha sido pagada exitosamente`,
+              html: invoiceForPrint ? '<p>Elige el formato que deseas imprimir</p>' : undefined,
+              confirmButtonText: invoiceForPrint ? 'Carta 8.5"' : 'Aceptar',
+              denyButtonText: invoiceForPrint ? 'Ticket 80mm' : undefined,
+              showDenyButton: Boolean(invoiceForPrint),
+              showCancelButton: true,
+              cancelButtonText: 'Cerrar',
+              confirmButtonColor: '#10b981',
+              focusConfirm: false
             });
+
+            if (invoiceForPrint) {
+              if (successAlertResult.isConfirmed) {
+                invoicesService.printInvoiceCarta(invoiceForPrint);
+              } else if (successAlertResult.isDenied) {
+                invoicesService.printInvoiceTicket(invoiceForPrint);
+              }
+            }
             
             // Cerrar modal
             setShowPaymentModal(false);
