@@ -1,6 +1,7 @@
 import type { Appointment } from '../../tipos';
 import { useState, useEffect } from 'react';
 import { Card, Button } from '../../componentes/comunes/UI';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import NewAppointmentModal from '../../componentes/appointments/NewAppointmentModal';
 import EditAppointmentModal from '../../componentes/appointments/EditAppointmentModal';
 import AppointmentDetailsModal from '../../componentes/appointments/AppointmentDetailsModal';
@@ -19,6 +20,7 @@ const AppointmentsPage = () => {
   const businessLogs = useBusinessLogs();
   const [data, setData] = useState<AppointmentWithNames[]>([]);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isEditAppointmentModalOpen, setIsEditAppointmentModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCreateQuotationModalOpen, setIsCreateQuotationModalOpen] = useState(false);
@@ -281,9 +283,14 @@ const AppointmentsPage = () => {
       <Card 
         title="Citas" 
         actions={
-          <Button onClick={() => setIsNewAppointmentModalOpen(true)}>
-            Nueva Cita
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setIsHistoryOpen(true)}>
+              <div className="flex items-center gap-2"><ClockIcon className="h-4 w-4"/>Historial de Citas</div>
+            </Button>
+            <Button onClick={() => setIsNewAppointmentModalOpen(true)}>
+              Nueva Cita
+            </Button>
+          </div>
         }
       >
         {loading && (
@@ -319,14 +326,20 @@ const AppointmentsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.length === 0 ? (
+                {data.filter(d => {
+                  const s = String(d.status || '').toLowerCase();
+                  return !(s.includes('aprob') || s.includes('approved'));
+                }).length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                       No hay citas disponibles
                     </td>
                   </tr>
                 ) : (
-                  data.map((appointment: AppointmentWithNames) => (
+                  data.filter(d => {
+                    const s = String(d.status || '').toLowerCase();
+                    return !(s.includes('aprob') || s.includes('approved'));
+                  }).map((appointment: AppointmentWithNames) => (
                     <tr key={appointment.id} className="bg-white border-b hover:bg-gray-50">
                       <td className="px-6 py-4">
                         {appointment.date.toLocaleDateString('es-ES')}
@@ -406,6 +419,73 @@ const AppointmentsPage = () => {
           />
         )}
       </Card>
+
+        {isHistoryOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4 rounded-t-2xl text-white flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-white/10 p-2 rounded-lg mr-3">
+                    <ClockIcon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Historial de Citas Aprobadas</h3>
+                    <p className="text-gray-200 text-sm">Listado de citas en estado aprobada</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsHistoryOpen(false)} className="text-white hover:bg-white/10 p-2 rounded-lg">Cerrar</button>
+              </div>
+              <div className="p-6">
+                {data.filter(d => {
+                  const s = String(d.status || '').toLowerCase();
+                  return s.includes('aprob') || s.includes('approved') || s.includes('confirm');
+                }).length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">No hay citas aprobadas en el historial.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-gray-500">
+                      <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3">Fecha</th>
+                          <th className="px-6 py-3">Hora</th>
+                          <th className="px-6 py-3">Cliente</th>
+                          <th className="px-6 py-3">Vehículo</th>
+                          <th className="px-6 py-3">Servicio</th>
+                          <th className="px-6 py-3">Estado</th>
+                          <th className="px-6 py-3">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.filter(d => {
+                        const s = String(d.status || '').toLowerCase();
+                        return s.includes('aprob') || s.includes('approved') || s.includes('confirm');
+                      }).map((appointment) => (
+                        <tr key={appointment.id} className="bg-white border-b hover:bg-gray-50">
+                          <td className="px-6 py-4">{appointment.date.toLocaleDateString('es-ES')}</td>
+                          <td className="px-6 py-4">{appointment.time}</td>
+                          <td className="px-6 py-4">{appointment.clientName}</td>
+                          <td className="px-6 py-4">{appointment.vehicleName}</td>
+                          <td className="px-6 py-4">{getServiceName(appointment.serviceTypeId)}</td>
+                          <td className="px-6 py-4">{appointment.status}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="secondary" onClick={() => handleViewDetails(appointment)}>
+                                Ver Detalles
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
       <NewAppointmentModal
         isOpen={isNewAppointmentModalOpen}

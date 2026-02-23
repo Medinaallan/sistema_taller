@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Button, Input, Select, Card } from '../comunes/UI';
 import quotationsService, { type QuotationData } from '../../servicios/quotationsService';
 import { appointmentsService } from '../../servicios/apiService';
+import { usuariosService } from '../../servicios/usuariosService';
 import { showError } from '../../utilidades/sweetAlertHelpers';
 
 interface ApproveQuotationModalProps {
@@ -41,21 +42,32 @@ export default function ApproveQuotationModal({
         // Obtener usuario actual desde localStorage
         const usuarioActual = localStorage.getItem('usuario_id');
         
-        // TODO: Llamar a endpoint para obtener usuarios
-        // Por ahora, usando datos simulados + usuario actual
-        const usuariosList = [
-          { id: 1, nombre: 'Asesor 1', rol: 'asesor' },
-          { id: 2, nombre: 'Asesor 2', rol: 'asesor' },
-          { id: 3, nombre: 'Mecánico 1', rol: 'mecanico' },
-          { id: 4, nombre: 'Mecánico 2', rol: 'mecanico' },
-        ];
-        
-        // Si hay usuario actual, agregarlo a la lista o usarlo
-        if (usuarioActual) {
-          setFormData(prev => ({ ...prev, asesor_id: usuarioActual }));
+        // Llamar al servicio de usuarios (SP_OBTENER_USUARIOS) y filtrar solo mecánicos
+        try {
+          const resp = await usuariosService.obtenerUsuarios();
+          if (resp.success && resp.data) {
+            const allUsers = Array.isArray(resp.data) ? resp.data : [resp.data];
+            const mecanicos = allUsers
+              .filter((u: any) => (u.rol || '').toString().toLowerCase().includes('mec'))
+              .map((u: any) => ({ id: u.usuario_id, nombre: u.nombre_completo, rol: u.rol }));
+
+            setUsers(mecanicos);
+
+            // Si sólo hay un mecánico disponible, auto-seleccionarlo (opcional)
+            if (mecanicos.length === 1) {
+              setFormData(prev => ({ ...prev, mecanico_encargado_id: mecanicos[0].id.toString() }));
+            }
+          } else {
+            setUsers([]);
+          }
+
+          if (usuarioActual) {
+            setFormData(prev => ({ ...prev, asesor_id: usuarioActual }));
+          }
+        } catch (err) {
+          console.error('Error al obtener usuarios desde usuariosService:', err);
+          setUsers([]);
         }
-        
-        setUsers(usuariosList);
       } catch (err) {
         console.error('Error cargando usuarios:', err);
       }
@@ -291,7 +303,7 @@ export default function ApproveQuotationModal({
               onChange={(e) => handleInputChange('mecanico_encargado_id', e.target.value)}
               options={[
                 { value: '', label: 'Seleccionar mecánico (opcional)...' },
-                ...users.filter(u => u.rol === 'mecanico').map(m => ({ value: m.id.toString(), label: m.nombre }))
+                ...users.map(m => ({ value: m.id.toString(), label: m.nombre }))
               ]}
             />
 

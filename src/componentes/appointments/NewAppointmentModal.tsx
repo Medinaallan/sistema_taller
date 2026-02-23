@@ -185,6 +185,17 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
     }))
   ];
 
+  // Generar opciones de hora cada 30 minutos (00:00, 00:30, ... 23:30)
+  const timeOptions = [
+    { value: '', label: 'Seleccionar hora...' },
+    ...Array.from({ length: 24 }).flatMap((_, hour) => {
+      const h = String(hour).padStart(2, '0');
+      return [
+        { value: `${h}:00`, label: `${h}:00` },
+        { value: `${h}:30`, label: `${h}:30` },
+      ];
+    })
+  ];
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -295,14 +306,13 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
             required
           />
 
-          <Input
+          <Select
             label="Hora"
-            type="time"
             value={formData.time}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('time', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('time', e.target.value)}
             error={errors.time}
-            step={1800}
             required
+            options={timeOptions.map((opt, idx) => ({ ...opt, key: `time_opt_${idx}` }))}
           />
         </div>
 
@@ -371,7 +381,7 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
               .filter(servicio => servicio.id !== undefined && servicio.id !== null && servicio.id !== '')
               .map(servicio => ({
                 value: String(servicio.id),
-                label: `${servicio.name} - $${servicio.basePrice}`,
+                label: `${servicio.name} - L. ${servicio.basePrice}`,
                 key: `servicio_${servicio.id}`
               }))
           ]}

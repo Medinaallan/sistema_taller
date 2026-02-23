@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
       .input('cliente_id', sql.Int, req.query.cliente_id || null)
       .input('vehiculo_id', sql.Int, req.query.vehiculo_id || null)
       .input('estado', sql.VarChar(50), req.query.estado || null)
-      .input('fecha_inicio', sql.Date, req.query.fecha_inicio || null)
+      .input('fecha_inicio', sql.DateTime, req.query.fecha_inicio || null)
       .input('numero_cita', sql.VarChar(20), req.query.numero_cita || null)
       .execute('SP_OBTENER_CITAS');
     res.json({
@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       .input('cliente_id', sql.Int, cliente_id)
       .input('vehiculo_id', sql.Int, vehiculo_id)
       .input('tipo_servicio_id', sql.Int, tipo_servicio_id)
-      .input('fecha_inicio', sql.Date, fecha_inicio)
+      .input('fecha_inicio', sql.DateTime, fecha_inicio)
       .input('asesor_id', sql.Int, asesor_id || null)
       .input('notas_cliente', sql.VarChar(400), notas_cliente || null)
       .input('canal_origen', sql.VarChar(20), canal_origen)
@@ -119,7 +119,7 @@ router.put('/:id', async (req, res) => {
     const result = await pool.request()
       .input('cita_id', sql.Int, req.params.id)
       .input('tipo_servicio_id', sql.Int, tipo_servicio_id)
-      .input('fecha_inicio', sql.Date, fecha_inicio)
+      .input('fecha_inicio', sql.DateTime, fecha_inicio)
       .input('notas_cliente', sql.VarChar(400), notas_cliente || null)
       .input('editado_por', sql.Int, editado_por)
       .execute('SP_EDITAR_CITA');
@@ -169,7 +169,7 @@ router.put('/:id/status', async (req, res) => {
           .input('cliente_id', sql.Int, null)
           .input('vehiculo_id', sql.Int, null)
           .input('estado', sql.VarChar(50), null)
-          .input('fecha_inicio', sql.Date, null)
+          .input('fecha_inicio', sql.DateTime, null)
           .input('numero_cita', sql.VarChar(20), null)
           .execute('SP_OBTENER_CITAS');
         

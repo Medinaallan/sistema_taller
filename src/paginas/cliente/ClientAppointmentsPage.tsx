@@ -12,6 +12,7 @@ import { useApp } from '../../contexto/useApp';
 import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 import { servicesService, vehiclesService, appointmentsService } from '../../servicios/apiService';
+import AppointmentDetailsModal from '../../componentes/appointments/AppointmentDetailsModal';
 
 interface Appointment {
   id: string;
@@ -42,6 +43,7 @@ interface AppointmentForm {
 export function ClientAppointmentsPage() {
   const { state } = useApp();
   const [showForm, setShowForm] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
   const [serviceTypes, setServiceTypes] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -49,6 +51,8 @@ export function ClientAppointmentsPage() {
   const [loadingVehicles, setLoadingVehicles] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const [formData, setFormData] = useState<AppointmentForm>({
     vehicleId: '',
@@ -457,6 +461,39 @@ export function ClientAppointmentsPage() {
             </div>
             <div className="flex space-x-2">
               <button 
+                onClick={async () => {
+                  try {
+                    const idNum = Number(appointment.id);
+                    let res = null;
+                    if (!isNaN(idNum)) {
+                      const resp = await appointmentsService.getById(idNum);
+                      if (resp && resp.success && resp.data) {
+                        res = Array.isArray(resp.data) ? resp.data[0] : resp.data;
+                      }
+                    }
+
+                    const raw = res || {};
+
+                    const mapped = {
+                      id: raw.cita_id || raw.id || appointment.id,
+                      clientId: String(raw.cliente_id || raw.clienteId || state.user?.id || appointment.contactPhone || ''),
+                      vehicleId: String(raw.vehiculo_id || raw.vehiculoId || appointment.vehicleId),
+                      serviceTypeId: raw.tipo_servicio_id || raw.tipo_servicio || appointment.serviceType,
+                      date: raw.fecha_inicio ? new Date(raw.fecha_inicio) : (new Date(appointment.date)),
+                      time: raw.hora || appointment.time,
+                      status: (raw.estado || appointment.status || 'pending'),
+                      notes: (raw.notas_cliente || raw.notas || appointment.notes || ''),
+                      createdAt: raw.fecha_creacion ? new Date(raw.fecha_creacion) : new Date(),
+                      updatedAt: raw.fecha_modificacion ? new Date(raw.fecha_modificacion) : new Date()
+                    };
+
+                    setSelectedAppointment(mapped);
+                    setShowDetails(true);
+                  } catch (error) {
+                    console.error('Error cargando detalles de cita:', error);
+                    showError('No se pudieron cargar los detalles de la cita');
+                  }
+                }}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
               >
                 Ver Detalles
@@ -717,6 +754,47 @@ export function ClientAppointmentsPage() {
     </div>
   );
 
+  const renderHistoryModal = () => {
+    const isApprovedStatus = (s: any) => {
+      if (!s) return false;
+      const v = String(s).toLowerCase();
+      return v.includes('aprob') || v.includes('approved') || v.includes('confirm');
+    };
+    const approvedAppointments = appointments.filter(a => isApprovedStatus(a.status));
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4 rounded-t-2xl text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="bg-white/10 p-2 rounded-lg mr-3">
+                  <ClockIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Historial de Citas Aprobadas</h3>
+                  <p className="text-gray-200 text-sm">Listado de citas en estado aprobada</p>
+                </div>
+              </div>
+              <button onClick={() => setShowHistory(false)} className="text-white hover:bg-white/10 p-2 rounded-lg">Cerrar</button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {approvedAppointments.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No hay citas aprobadas en el historial.</p>
+              </div>
+            ) : (
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                {approvedAppointments.map(renderAppointmentCard)}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
@@ -761,13 +839,23 @@ export function ClientAppointmentsPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-white text-indigo-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center shadow-lg w-full lg:w-auto"
-            >
-              <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-              Nueva Cita
-            </button>
+            <div className="flex gap-3 w-full lg:w-auto">
+              <button
+                onClick={() => setShowHistory(true)}
+                className="bg-white/10 text-white border border-white/20 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:bg-white/20 transition-colors flex items-center justify-center w-full lg:w-auto"
+              >
+                <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Historial de Citas
+              </button>
+
+              <button
+                onClick={() => setShowForm(true)}
+                className="bg-white text-indigo-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:bg-indigo-50 transition-colors flex items-center justify-center shadow-lg w-full lg:w-auto"
+              >
+                <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Nueva Cita
+              </button>
+            </div>
           </div>
         </div>
 
@@ -838,6 +926,17 @@ export function ClientAppointmentsPage() {
 
         {/* Modal de nueva cita */}
         {showForm && renderNewAppointmentForm()}
+        {showHistory && renderHistoryModal()}
+        {showDetails && selectedAppointment && (
+          <AppointmentDetailsModal
+            isOpen={showDetails}
+            onClose={() => { setShowDetails(false); setSelectedAppointment(null); }}
+            appointment={selectedAppointment}
+            clientName={state.user?.nombre_completo || state.user?.name || state.user?.fullName || 'Cliente'}
+            vehicleName={clientVehicles.find(v => String(v.id) === String(selectedAppointment?.vehicleId)) ? `${clientVehicles.find(v => String(v.id) === String(selectedAppointment?.vehicleId))?.brand} ${clientVehicles.find(v => String(v.id) === String(selectedAppointment?.vehicleId))?.model} (${clientVehicles.find(v => String(v.id) === String(selectedAppointment?.vehicleId))?.licensePlate})` : String(selectedAppointment?.vehicleId)}
+            serviceName={serviceTypes.find(s => String(s.id) === String(selectedAppointment?.serviceTypeId))?.name || String(selectedAppointment?.serviceTypeId)}
+          />
+        )}
       </div>
     </div>
   );

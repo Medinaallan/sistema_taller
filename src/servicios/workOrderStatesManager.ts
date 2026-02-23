@@ -19,7 +19,6 @@ class WorkOrderStatesManager {
   // ⚠️ YA NO SE USA - Los estados vienen directo de la BD con SP_OBTENER_ORDENES_TRABAJO
   // Este método se mantiene por compatibilidad pero ya no carga nada
   private async loadStates(): Promise<void> {
-    console.log('ℹ️ Estados ahora vienen directo de la BD - Este método ya no se usa');
     this.states = {};
     this.initialized = true;
   }

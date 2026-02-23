@@ -184,8 +184,21 @@ router.get('/client/:userId', async (req, res) => {
 
 		console.log(`🔧 OTs encontradas para cliente_id ${cliente_id}: ${otsResult.recordset.length}`);
 
-		// Obtener los IDs de las OTs del cliente
-		const otIds = otsResult.recordset.map(ot => ot.ot_id);
+				// Obtener los IDs de las OTs del cliente
+				const otRows = otsResult.recordset || [];
+				const otIds = otRows.map(ot => ot.ot_id);
+
+				// Determinar OTs cerradas (no queremos mostrar cotizaciones ligadas a OTs cerradas)
+				const estadosNoPermitidos = ['Cerrada', 'Cancelada', 'Facturada'];
+				const closedOtIds = otRows
+					.filter(ot => estadosNoPermitidos.includes((ot.estado_ot || '').toString()))
+					.map(ot => ot.ot_id);
+
+				// Mapear posibles relaciones OT -> cita (si el SP devuelve campo cita_id en OT)
+				const otByCita = {};
+				otRows.forEach(ot => {
+					if (ot.cita_id) otByCita[String(ot.cita_id)] = ot;
+				});
 		console.log(`🎯 IDs de OTs a buscar: ${otIds.join(', ')}`);
 
 		if (citasResult.recordset.length === 0 && otsResult.recordset.length === 0) {
@@ -208,16 +221,30 @@ router.get('/client/:userId', async (req, res) => {
 
 		console.log(`💼 Total cotizaciones en sistema: ${cotizacionesResult.recordset.length}`);
 
-		// Paso 4: Filtrar las cotizaciones que pertenecen a las citas O a las OTs del cliente
+		// Paso 4: Filtrar las cotizaciones que pertenecen a las citas o a las OTs del cliente
+		// Además, excluir cotizaciones ligadas a OTs que están en estado cerrado/cancelado/facturado
 		const cotizacionesCliente = cotizacionesResult.recordset.filter(cot => {
-			// Cotización inicial (con cita_id)
+			// Si la cotización está ligada a una OT cerrada, excluirla
+			if (cot.ot_id && closedOtIds.includes(cot.ot_id)) {
+				return false;
+			}
+
+			// Cotización inicial (con cita_id) -> incluir solo si la cita pertenece al cliente
+			// y no está asociada a una OT cerrada
 			if (cot.cita_id && citaIds.includes(cot.cita_id)) {
+				// Si existe una OT relacionada con esta cita y está cerrada, excluir
+				const relatedOt = otByCita[String(cot.cita_id)];
+				if (relatedOt && estadosNoPermitidos.includes((relatedOt.estado_ot || '').toString())) {
+					return false;
+				}
 				return true;
 			}
+
 			// Cotización adicional (con ot_id)
 			if (cot.ot_id && otIds.includes(cot.ot_id)) {
 				return true;
 			}
+
 			return false;
 		});
 
