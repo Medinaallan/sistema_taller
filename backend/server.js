@@ -726,7 +726,7 @@ app.get('/api/users/roles', async (req, res) => {
 app.post('/api/users/panel', async (req, res) => {
   console.log('Registrar usuario panel admin:', req.body);
   try {
-    const { nombre_completo, correo, telefono, rol, registradoPor } = req.body;
+    const { nombre_completo, correo, telefono, rol, registradoPor, rtn } = req.body;
     
     if (!nombre_completo || !correo || !telefono || !rol) {
       return res.json({
@@ -740,6 +740,7 @@ app.post('/api/users/panel', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), nombre_completo)
       .input('correo', sql.VarChar(100), correo)
       .input('telefono', sql.VarChar(30), telefono)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .input('rol', sql.VarChar(50), rol)
       .input('registradoPor', sql.Int, registradoPor || null)
       .execute('SP_REGISTRAR_USUARIO_PANEL_ADMIN');
@@ -765,7 +766,7 @@ app.post('/api/users/panel', async (req, res) => {
 app.post('/api/auth/register-client', async (req, res) => {
   console.log('Registrar cliente (frontend endpoint):', req.body);
   try {
-    const { fullName, email, phone } = req.body;
+    const { fullName, email, phone, rtn } = req.body;
     
     if (!fullName || !email || !phone) {
       return res.json({
@@ -779,6 +780,7 @@ app.post('/api/auth/register-client', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), fullName)
       .input('correo', sql.VarChar(100), email)
       .input('telefono', sql.VarChar(30), phone)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .execute('SP_REGISTRAR_USUARIO_CLIENTE');
     
     const response = result.recordset[0];

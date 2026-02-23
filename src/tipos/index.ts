@@ -7,6 +7,7 @@ export interface User {
   role: 'admin' | 'mechanic' | 'receptionist' | 'client';
   name: string;
   phone?: string;
+  rtn?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,7 @@ export interface Client {
   id: string;
   name: string;
   phone: string;
+  rtn?: string;
   email: string;
   address?: string;
   password: string;

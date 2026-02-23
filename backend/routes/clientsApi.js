@@ -35,15 +35,19 @@ router.get('/registered', async (req, res) => {
     console.log(`📊 SP_OBTENER_USUARIOS devolvió ${result.recordset.length} usuarios`);
     
     // Transformar datos al formato esperado por el frontend
-    const clients = result.recordset.map(user => ({
-      id: user.usuario_id?.toString(),
-      name: user.nombre_completo,
-      email: user.correo,
-      phone: user.telefono || '',
-      role: user.rol,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
+    const clients = result.recordset.map(user => {
+      const rtnVal = user.rtn || user.RTN || user.Rtn || '';
+      return {
+        id: user.usuario_id?.toString(),
+        name: user.nombre_completo,
+        email: user.correo,
+        phone: user.telefono || '',
+        role: user.rol,
+        rtn: rtnVal,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    });
     
     res.json({
       success: true,
@@ -106,6 +110,7 @@ router.get('/:id', async (req, res) => {
       email: user.correo,
       phone: user.telefono,
       role: user.rol,
+      rtn: user.rtn || user.RTN || user.Rtn || '',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -133,7 +138,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone } = req.body;
+    const { name, email, phone, rtn } = req.body;
     console.log('➕ POST /api/clients - Creando nuevo cliente:', name);
     
     // Validaciones básicas
@@ -152,6 +157,7 @@ router.post('/', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), name)
       .input('correo', sql.VarChar(100), email.toLowerCase())
       .input('telefono', sql.VarChar(30), phone)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .execute('SP_REGISTRAR_USUARIO_CLIENTE');
     
     const createResponse = createResult.recordset[0];
@@ -199,6 +205,7 @@ router.post('/', async (req, res) => {
       email: clienteCreado.correo,
       phone: clienteCreado.telefono,
       role: clienteCreado.rol,
+      rtn: clienteCreado.rtn || clienteCreado.RTN || clienteCreado.Rtn || '',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -234,7 +241,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone } = req.body;
+    const { name, email, phone, rtn } = req.body;
     console.log(`✏️ PUT /api/clients/${id} - Actualizando cliente`);
     
     // Validaciones básicas
@@ -251,6 +258,7 @@ router.put('/:id', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), name)
       .input('correo', sql.VarChar(100), email.toLowerCase())
       .input('telefono', sql.VarChar(30), phone)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .execute('SP_EDITAR_USUARIO');
     
     const response = result.recordset[0];

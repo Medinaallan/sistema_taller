@@ -115,7 +115,7 @@ router.post('/verify-security-code', async (req, res) => {
 // Return: '200 OK' as response, 'Usuario registrado con éxito' as msg, codigo_seguridad
 router.post('/register-client', async (req, res) => {
   try {
-    const { email, fullName, phone } = req.body;
+    const { email, fullName, phone, rtn } = req.body;
     
     console.log('➕ Registrando cliente:', { fullName, email, phone });
 
@@ -132,6 +132,7 @@ router.post('/register-client', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), fullName)
       .input('correo', sql.VarChar(100), email.toLowerCase())
       .input('telefono', sql.VarChar(30), phone)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .execute('SP_REGISTRAR_USUARIO_CLIENTE');
 
     const response = result.recordset[0];

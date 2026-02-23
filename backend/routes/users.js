@@ -38,11 +38,17 @@ router.get('/list', async (req, res) => {
     
     console.log(`✅ ${usuariosEncontrados.length} usuarios obtenidos desde BD`);
     
+    // Normalize rtn casing in each user record for consistency
+    const normalizedUsers = usuariosEncontrados.map(u => ({
+      ...u,
+      rtn: u.rtn || u.RTN || u.Rtn || ''
+    }));
+
     res.json({
       success: true,
-      data: usuariosEncontrados,
-      count: usuariosEncontrados.length,
-      message: `Usuarios obtenidos exitosamente (${usuariosEncontrados.length} usuarios)`,
+      data: normalizedUsers,
+      count: normalizedUsers.length,
+      message: `Usuarios obtenidos exitosamente (${normalizedUsers.length} usuarios)`,
       cached: false
     });
     
@@ -103,6 +109,9 @@ router.get('/:id', async (req, res) => {
     const user = result.recordset[0];
     
     if (user) {
+      // Normalize rtn casing
+      user.rtn = user.rtn || user.RTN || user.Rtn || '';
+
       res.json({
         success: true,
         data: user
@@ -160,7 +169,7 @@ router.post('/validate-email', async (req, res) => {
 // Crear usuario administrador
 router.post('/admin', async (req, res) => {
   try {
-    const { nombre_completo, correo, telefono, registradoPor } = req.body;
+    const { nombre_completo, correo, telefono, registradoPor, rtn } = req.body;
 
     if (!nombre_completo || !correo || !telefono) {
       return res.status(400).json({
@@ -174,6 +183,7 @@ router.post('/admin', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), nombre_completo)
       .input('correo', sql.VarChar(100), correo)
       .input('telefono', sql.VarChar(30), telefono)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .input('rol', sql.VarChar(50), 'Administrador')
       .input('registradoPor', sql.Int, registradoPor || 1)
       .execute('SP_REGISTRAR_USUARIO_PANEL_ADMIN');
@@ -197,7 +207,7 @@ router.post('/admin', async (req, res) => {
 // Crear usuario mecánico
 router.post('/mecanico', async (req, res) => {
   try {
-    const { nombre_completo, correo, telefono, registradoPor } = req.body;
+    const { nombre_completo, correo, telefono, registradoPor, rtn } = req.body;
 
     if (!nombre_completo || !correo || !telefono) {
       return res.status(400).json({
@@ -211,6 +221,7 @@ router.post('/mecanico', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), nombre_completo)
       .input('correo', sql.VarChar(100), correo)
       .input('telefono', sql.VarChar(30), telefono)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .input('rol', sql.VarChar(50), 'Mecánico')
       .input('registradoPor', sql.Int, registradoPor || 1)
       .execute('SP_REGISTRAR_USUARIO_PANEL_ADMIN');
@@ -234,7 +245,7 @@ router.post('/mecanico', async (req, res) => {
 // Crear usuario de cualquier tipo para el panel (endpoint genérico)
 router.post('/panel', async (req, res) => {
   try {
-    const { nombre_completo, correo, telefono, rol, registradoPor } = req.body;
+    const { nombre_completo, correo, telefono, rol, registradoPor, rtn } = req.body;
 
     if (!nombre_completo || !correo || !telefono || !rol) {
       return res.status(400).json({
@@ -257,6 +268,7 @@ router.post('/panel', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), nombre_completo)
       .input('correo', sql.VarChar(100), correo)
       .input('telefono', sql.VarChar(30), telefono)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .input('rol', sql.VarChar(50), rol)
       .input('registradoPor', sql.Int, registradoPor || 1)
       .execute('SP_REGISTRAR_USUARIO_PANEL_ADMIN');
@@ -280,7 +292,7 @@ router.post('/panel', async (req, res) => {
 // PUT /users/:usuarioId - Editar usuario (SP_EDITAR_USUARIO)
 router.put('/:usuarioId', async (req, res) => {
   const { usuarioId } = req.params;
-  const { nombre_completo, correo, telefono } = req.body;
+  const { nombre_completo, correo, telefono, rtn } = req.body;
 
   try {
     console.log(`📝 Editando usuario ${usuarioId}`);
@@ -342,6 +354,7 @@ router.put('/:usuarioId', async (req, res) => {
       .input('nombre_completo', sql.VarChar(100), nombre_completo || null)
       .input('correo', sql.VarChar(100), correo || null)
       .input('telefono', sql.VarChar(30), telefono || null)
+      .input('rtn', sql.VarChar(20), rtn || null)
       .execute('SP_EDITAR_USUARIO');
 
     console.log('✅ SP ejecutado exitosamente. Recordset:', result.recordset);

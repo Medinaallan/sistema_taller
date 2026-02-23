@@ -769,6 +769,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
     fullName: user?.fullName || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    rtn: (user as any)?.rtn || '',
     role: user?.role || 'receptionist',
     status: user?.status || 'active'
   });
@@ -794,7 +795,8 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
           body: JSON.stringify({
             nombre_completo: formData.fullName,
             correo: formData.email,
-            telefono: formData.phone
+            telefono: formData.phone,
+            rtn: (formData as any).rtn || null
           })
         });
 
@@ -886,6 +888,18 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                RTN
+              </label>
+              <input
+                type="text"
+                value={(formData as any).rtn}
+                onChange={(e) => setFormData({...formData, rtn: e.target.value})}
                 className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>

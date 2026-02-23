@@ -20,6 +20,7 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
     name: client?.name || '',
     phone: client?.phone || '',
     email: client?.email || '',
+    rtn: (client as any)?.rtn || '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -108,6 +109,16 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
         error={errors.phone}
         placeholder="555-1234"
         required
+        disabled={isSubmitting}
+      />
+
+      <Input
+        label="RTN"
+        name="rtn"
+        type="text"
+        value={(formData as any).rtn}
+        onChange={handleInputChange}
+        placeholder="RTN (opcional)"
         disabled={isSubmitting}
       />
 
@@ -317,7 +328,8 @@ export function ClientsPage() {
           body: JSON.stringify({
             name: clientData.name,
             email: clientData.email,
-            phone: clientData.phone
+            phone: clientData.phone,
+            rtn: (clientData as any).rtn || null
           })
         });
         
@@ -372,7 +384,8 @@ export function ClientsPage() {
           body: JSON.stringify({
             name: clientData.name,
             email: clientData.email,
-            phone: clientData.phone
+            phone: clientData.phone,
+            rtn: (clientData as any).rtn || null
           })
         });
         

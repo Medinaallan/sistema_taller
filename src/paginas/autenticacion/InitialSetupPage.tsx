@@ -8,6 +8,7 @@ interface FormData {
   name: string;
   email: string;
   phone: string;
+  rtn?: string;
   role: string;
   password: string;
   confirmPassword: string;
@@ -32,6 +33,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
     name: '',
     email: '',
     phone: '',
+    rtn: '',
     role: '',
     password: '',
     confirmPassword: ''
@@ -159,6 +161,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
           nombre_completo: formData.name,
           correo: formData.email,
           telefono: formData.phone,
+          rtn: formData.rtn || null,
           rol: formData.role,
           registradoPor: null // Primer usuario del sistema
         })
@@ -317,6 +320,16 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
                   error={errors.phone}
                   placeholder="(504) 1234-5678"
                   required
+                  disabled={loading}
+                />
+                <Input
+                  id="rtn"
+                  name="rtn"
+                  type="text"
+                  label="RTN (opcional)"
+                  value={formData.rtn}
+                  onChange={handleInputChange}
+                  placeholder="RTN del usuario"
                   disabled={loading}
                 />
 
