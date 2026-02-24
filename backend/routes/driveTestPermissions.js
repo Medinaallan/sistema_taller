@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
         }
       });
     } else {
-      console.warn(`⚠️ SP rechazó la creación: ${response.msg}`);
+      console.warn(`SP rechazó la creación: ${response.msg}`);
       return res.status(400).json({
         success: false,
         message: response.msg
