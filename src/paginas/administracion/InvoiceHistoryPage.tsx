@@ -150,7 +150,7 @@ export function InvoiceHistoryPage() {
       if (result.isConfirmed) {
         handlePrintInvoice(invoice);
       }
-    });
+    }); 
   };
 
   const handleAnularInvoice = async (invoice: Invoice) => {

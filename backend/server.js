@@ -269,6 +269,18 @@ try {
   console.warn('El servidor continuará sin las rutas de órdenes de trabajo');
 }
 
+// PERMISOS DE PRUEBA DE MANEJO / CONTROL DE CALIDAD
+try {
+  console.log('Cargando rutas de permisos de prueba de manejo...');
+  const driveTestPermissionsRouter = require('./routes/driveTestPermissions');
+  app.use('/api/drive-test-permissions', driveTestPermissionsRouter);
+  console.log('Rutas de permisos de prueba de manejo cargadas exitosamente');
+  console.log('/api/drive-test-permissions/* endpoints disponibles');
+} catch (error) {
+  console.error('Error cargando rutas de permisos de prueba de manejo:', error.message);
+  console.warn('El servidor continuará sin las rutas de permisos de prueba de manejo');
+}
+
 //IMPORTAR Y CONFIGURAR RUTAS DE ESTADOS DE OT
 // DESHABILITADO - Ahora se maneja directamente en server.js con SQL Server
 /*

@@ -8,6 +8,7 @@ export interface Cliente {
   correo: string;
   telefono: string;
   rol: string;
+  rtn?: string;
 }
 
 export interface ClienteResponse {
@@ -121,8 +122,9 @@ class ClientesService {
       name: cliente.nombre_completo,
       email: cliente.correo,
       phone: cliente.telefono,
-      address: '', // No tenemos dirección en el nuevo sistema
-      password: '', // No exponemos contraseñas
+      rtn: cliente.rtn || '',
+      address: '', 
+      password: '', 
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

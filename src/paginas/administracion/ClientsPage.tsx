@@ -615,6 +615,10 @@ export function ClientsPage() {
               <p className="mt-1 text-sm text-gray-900">{selectedClient.email}</p>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">RTN</label>
+              <p className="mt-1 text-sm text-gray-900">{selectedClient.rtn ?? 'No disponible'}</p>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700">Teléfono</label>
               <p className="mt-1 text-sm text-gray-900">{selectedClient.phone}</p>
             </div>

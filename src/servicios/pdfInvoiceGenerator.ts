@@ -1,11 +1,13 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Invoice } from './invoicesService';
+import clientesService from './clientesService';
 import companyConfigService from './companyConfigService';
 
 type InvoiceFormat = 'carta' | 'ticket';
 
 class PDFInvoiceGenerator {
+  private clientRtnCache = new Map<string, string | null>();
   
   /**
    * Convierte una imagen URL a base64 para evitar problemas de CORS
@@ -117,6 +119,7 @@ class PDFInvoiceGenerator {
     // Obtener información de la empresa desde la configuración
     // Prioriza datos grabados en la factura (cai_grabado, fecha_limite_emision) sobre CAI activo
     const EMPRESA_INFO = await this.getEmpresaInfo(invoice);
+    const clientRtn = await this.resolveClientRtn(invoice.clientId);
 
     // ======= MÁRGENES Y ESTILO GLOBAL =======
     const marginLeft = 15;
@@ -204,7 +207,8 @@ class PDFInvoiceGenerator {
     // Columna 2: Datos del Cliente
     doc.text(`Nombre: ${invoice.clientName}`, col2X, yPos);
     if (invoice.clientId) {
-      doc.text(`ID Cliente: ${invoice.clientId}`, col2X, yPos + 5);
+      const rtnText = clientRtn || 'No disponible';
+      doc.text(`RTN: ${rtnText}`, col2X, yPos + 5);
     } else {
       doc.text('RTN/Identidad: Consumidor Final', col2X, yPos + 5);
     }
@@ -343,6 +347,7 @@ class PDFInvoiceGenerator {
     // Obtener información de la empresa desde la configuración
     // Prioriza datos grabados en la factura (cai_grabado, fecha_limite_emision) sobre CAI activo
     const EMPRESA_INFO = await this.getEmpresaInfo(invoice);
+    const clientRtn = await this.resolveClientRtn(invoice.clientId);
 
     // ========== LOGO (si existe) ==========
     if (EMPRESA_INFO.logoUrl) {
@@ -350,7 +355,7 @@ class PDFInvoiceGenerator {
         const logoBase64 = await this.imageUrlToBase64(EMPRESA_INFO.logoUrl);
         if (logoBase64) {
           // Dimensiones del logo ajustadas para aspecto horizontal
-          const logoWidth = 50; // mm - ancho casi todo el ticket
+          const logoWidth = 65; // mm - ancho casi todo el ticket
           const logoHeight = 18; // mm - altura más compacta
           const logoX = (pageWidth - logoWidth) / 2;
           doc.addImage(logoBase64, 'PNG', logoX, yPos, logoWidth, logoHeight, undefined, 'FAST');
@@ -422,7 +427,11 @@ class PDFInvoiceGenerator {
     doc.text(`Cliente: ${invoice.clientName || 'CONSUMIDOR FINAL'}`, margin, yPos);
     yPos += 4;
     if (invoice.clientId) {
-      doc.text(`RTN: ${invoice.clientId}`, margin, yPos);
+      const rtnText = clientRtn || 'No disponible';
+      doc.text(`RTN: ${rtnText}`, margin, yPos);
+      yPos += 4;
+    } else {
+      doc.text('RTN/Identidad: Consumidor Final', margin, yPos);
       yPos += 4;
     }
     doc.text(`Pago: ${invoice.metodoPago || 'Efectivo'}`, margin, yPos);
@@ -586,6 +595,37 @@ class PDFInvoiceGenerator {
     }
 
     return resultado.trim();
+  }
+
+  private async resolveClientRtn(clientId?: string | null): Promise<string | null> {
+    if (!clientId) return null;
+    const normalizedId = clientId.toString();
+    if (this.clientRtnCache.has(normalizedId)) {
+      return this.clientRtnCache.get(normalizedId) || null;
+    }
+
+    try {
+      const idNumber = Number(normalizedId);
+      if (Number.isNaN(idNumber)) {
+        this.clientRtnCache.set(normalizedId, null);
+        return null;
+      }
+
+      const response = await clientesService.obtenerCliente(idNumber);
+      if (response.success && response.data) {
+        const clienteRecord = Array.isArray(response.data) ? response.data[0] : response.data;
+        if (clienteRecord) {
+          const rtn = clienteRecord.rtn || null;
+        this.clientRtnCache.set(normalizedId, rtn);
+        return rtn;
+        }
+      }
+    } catch (error) {
+      console.error('Error resolviendo RTN del cliente:', error);
+    }
+
+    this.clientRtnCache.set(normalizedId, null);
+    return null;
   }
 
   private resolveInvoiceDate(invoice: Invoice): Date | null {

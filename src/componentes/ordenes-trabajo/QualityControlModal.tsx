@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Modal, Button } from '../comunes/UI';
 import { WorkOrderData } from '../../servicios/workOrdersService';
+import { driveTestPermissionsService } from '../../servicios/driveTestPermissionsService';
 import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
 interface QualityControlModalProps {
@@ -159,24 +160,52 @@ export const QualityControlModal: React.FC<QualityControlModalProps> = ({
 
       const signatureDataUrl = canvas.toDataURL('image/png');
 
-      // Aquí guardarías la firma y el consentimiento en el backend
-      // Por ahora, lo guardamos en localStorage como ejemplo
-      const consentimiento = {
-        orden_trabajo_id: workOrder.id,
-        cliente_nombre: contractData.cliente_nombre,
-        vehiculo: contractData.vehiculo_modelo,
-        firma: signatureDataUrl,
-        fecha_autorizacion: new Date().toISOString(),
-        contrato: contractData
-      };
+      // Obtener el ID del usuario actual desde localStorage
+      let registradoPor = 1;
+      try {
+        const savedUser = localStorage.getItem('tallerApp_user');
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
+          const parsedId = parseInt(user.id);
+          if (!isNaN(parsedId)) registradoPor = parsedId;
+        }
+      } catch {
+        // fallback a 1
+      }
 
-      // Guardar en localStorage (temporal)
-      const consentimientos = JSON.parse(localStorage.getItem('consentimientos-calidad') || '[]');
-      consentimientos.push(consentimiento);
-      localStorage.setItem('consentimientos-calidad', JSON.stringify(consentimientos));
+      const otId = workOrder.id || '';
+
+      // Paso 1: Registrar el permiso de prueba de manejo (estado Pendiente)
+      const createResult = await driveTestPermissionsService.createPermission({
+        otId,
+        descripcion: contractData.servicio_descripcion,
+        registradoPor
+      });
+
+      if (!createResult.success) {
+        // Si ya existe un permiso pendiente u otro conflicto, ignorar y tratar de resolver de todas formas
+        // o mostrar el error dependiendo del mensaje
+        if (!createResult.message?.toLowerCase().includes('ya existe')) {
+          showError(createResult.message || 'Error al registrar el permiso de prueba');
+          return;
+        }
+        console.warn('Permiso ya existente, procediendo a resolver:', createResult.message);
+      }
+
+      // Paso 2: Resolver el permiso como Aprobado con la firma digital
+      const resolveResult = await driveTestPermissionsService.resolvePermission(otId, {
+        estadoResolucion: 'Aprobado',
+        firmadoPor: registradoPor,
+        firmaBase64: signatureDataUrl
+      });
+
+      if (!resolveResult.success) {
+        showError(resolveResult.message || 'Error al guardar la firma digital');
+        return;
+      }
 
       showSuccess('Autorización firmada exitosamente. El vehículo puede pasar a Control de Calidad.');
-      
+
       onComplete();
       onClose();
     } catch (error) {
