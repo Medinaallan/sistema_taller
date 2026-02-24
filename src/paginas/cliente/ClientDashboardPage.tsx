@@ -103,6 +103,16 @@ export function ClientDashboardPage() {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [selectedSignatureRequest, setSelectedSignatureRequest] = useState<SignatureRequest | null>(null);
 
+  // Órdenes que están en espera de aprobación (para mostrar alerta y botón de autorización)
+  const waitingOrders = clientWorkOrders.filter(o => {
+    try {
+      const st = String(o.estado || '').toLowerCase();
+      return st.includes('espera') || st.includes('espera de aprobacion') || st.includes('espera de aprobación');
+    } catch (e) {
+      return false;
+    }
+  });
+
   // Guard para evitar errores si no hay usuario
   if (!state?.user) {
     return (
@@ -653,6 +663,30 @@ export function ClientDashboardPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Si la OT está en espera de aprobación, mostrar botón de autorización */}
+                {String(order.estado || '').toLowerCase().includes('espera') && (
+                  <div className="px-4 py-4 border-t border-gray-100 flex justify-end">
+                    <button
+                      onClick={() => {
+                        const req: SignatureRequest = {
+                          otId: String(order.id || ''),
+                          clienteId: String(state.user?.id || ''),
+                          clienteNombre: state.user?.name || '',
+                          vehiculoInfo: order.nombreVehiculo || '',
+                          descripcion: order.descripcion || '',
+                          fechaSolicitud: new Date().toISOString(),
+                          estado: 'pending'
+                        };
+                        setSelectedSignatureRequest(req);
+                        setShowSignatureModal(true);
+                      }}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      Autorizar
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1096,10 +1130,51 @@ export function ClientDashboardPage() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Alertas de solicitud de firma pendiente */}
         {state.user?.id && (
-          <SignatureRequestAlerts
-            clienteId={state.user.id}
-            onSignatureRequestClick={handleSignatureRequestClick}
-          />
+          <>
+            <SignatureRequestAlerts
+              clienteId={state.user.id}
+              onSignatureRequestClick={handleSignatureRequestClick}
+            />
+
+            {/* Fallback: si no hay solicitudes desde el servicio pero hay OTs en espera, mostrar alerta */}
+            {waitingOrders.length > 0 && (
+              <div className="mb-6">
+                {waitingOrders.map((order: any) => (
+                  <div key={order.id} className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-start">
+                      <div className="ml-3 flex-1">
+                        <h3 className="text-sm font-medium text-yellow-800">⚠️ Autorización Pendiente - Orden #{String(order.id).slice(-8)}</h3>
+                        <div className="mt-2 text-sm text-yellow-700">
+                          <p>La orden se encuentra en espera de aprobación. Por favor revisa y autoriza para permitir pruebas de manejo y control de calidad.</p>
+                          <p className="mt-1 font-semibold">{order.descripcion || order.nombreVehiculo || ''}</p>
+                        </div>
+                        <div className="mt-3">
+                          <button
+                            onClick={() => {
+                              const req: SignatureRequest = {
+                                otId: String(order.id || ''),
+                                clienteId: String(state.user?.id || ''),
+                                clienteNombre: state.user?.name || '',
+                                vehiculoInfo: order.nombreVehiculo || '',
+                                descripcion: order.descripcion || '',
+                                fechaSolicitud: new Date().toISOString(),
+                                estado: 'pending'
+                              };
+                              setSelectedSignatureRequest(req);
+                              setShowSignatureModal(true);
+                            }}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"
+                          >
+                            Ver y Firmar Autorización
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* Header - Improved Responsive Design */}

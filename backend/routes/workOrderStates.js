@@ -22,9 +22,46 @@ router.get('/', async (req, res) => {
       .input('numero_ot', sql.VarChar(20), null)
       .execute('SP_OBTENER_ORDENES_TRABAJO');
     
+    // Verificar permisos aprobados para OTs en espera y, si existen, actualizar estado a Control de calidad.
+    // Esto se hace de forma silenciosa (sin logs) para que la transición ocurra automáticamente cuando
+    // se consulten los estados.
+    const records = result.recordset || [];
+    for (const ot of records) {
+      const estadoTexto = String(ot.estado_ot || '').toLowerCase();
+      if (estadoTexto.includes('espera')) {
+        try {
+          const permisoCheck = await pool.request()
+            .input('permiso_id', sql.Int, null)
+            .input('ot_id', sql.Int, parseInt(ot.ot_id))
+            .input('cliente_id', sql.Int, null)
+            .input('estado', sql.VarChar(50), 'Aprobado')
+            .input('fecha_inicio', sql.Date, null)
+            .input('fecha_fin', sql.Date, null)
+            .execute('SP_OBTENER_PERMISO_PRUEBA_MANEJO');
+
+          const permiso = permisoCheck.recordset?.[0];
+          if (permiso) {
+            const registradoPor = permiso.firmado_por || permiso.registrado_por || 1;
+            // Intentar actualizar estado; no provoca error si falla
+            try {
+              await pool.request()
+                .input('ot_id', sql.Int, parseInt(ot.ot_id))
+                .input('nuevo_estado', sql.VarChar(50), 'Control de calidad')
+                .input('registrado_por', sql.Int, parseInt(registradoPor))
+                .execute('SP_GESTIONAR_ESTADO_OT');
+            } catch (_) {
+              // silencioso
+            }
+          }
+        } catch (_) {
+          // silencioso
+        }
+      }
+    }
+
     // Crear un mapa de estados
     const statesMap = {};
-    result.recordset.forEach(ot => {
+    records.forEach(ot => {
       statesMap[ot.ot_id.toString()] = ot.estado_ot;
     });
     

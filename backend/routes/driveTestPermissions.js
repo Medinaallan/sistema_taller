@@ -115,6 +115,28 @@ router.get('/ot/:otId', async (req, res) => {
 
     const permiso = result.recordset?.[0] || null;
 
+    // Si el SP devolvió un permiso y su estado es 'Aprobado', intentar actualizar
+    // el estado de la OT a 'Control de calidad' invocando SP_GESTIONAR_ESTADO_OT.
+    if (permiso && (String(permiso.estado || permiso.estado_resolucion || '').toLowerCase() === 'aprobado')) {
+      try {
+        const registradoPor = permiso.firmado_por || permiso.registrado_por || 1;
+        const stateRes = await pool.request()
+          .input('ot_id', sql.Int, parseInt(otId))
+          .input('nuevo_estado', sql.VarChar(50), 'Control de calidad')
+          .input('registrado_por', sql.Int, parseInt(registradoPor))
+          .execute('SP_GESTIONAR_ESTADO_OT');
+
+        const stateResp = stateRes.recordset?.[0];
+        if (stateResp && stateResp.allow !== 1) {
+          console.warn('SP_GESTIONAR_ESTADO_OT rechazó el cambio de estado:', stateResp.msg);
+        } else {
+          console.log(`✅ Estado de OT ${otId} actualizado a Control de calidad (vía SP_OBTENER_PERMISO)`);
+        }
+      } catch (stateError) {
+        console.error('Error llamando SP_GESTIONAR_ESTADO_OT desde SP_OBTENER_PERMISO handler:', stateError);
+      }
+    }
+
     res.json({
       success: true,
       data: permiso
@@ -245,6 +267,25 @@ router.put('/:otId/resolve', async (req, res) => {
 
     if (response.allow === 1) {
       console.log(`✅ Permiso resuelto: ${estadoResolucion}`);
+      // Si se aprobó el permiso, intentar mover la OT a Control de calidad
+      if (estadoResolucion === 'Aprobado') {
+        try {
+          const stateRes = await pool.request()
+            .input('ot_id', sql.Int, parseInt(otId))
+            .input('nuevo_estado', sql.VarChar(50), 'Control de calidad')
+            .input('registrado_por', sql.Int, parseInt(firmadoPor))
+            .execute('SP_GESTIONAR_ESTADO_OT');
+
+          const stateResp = stateRes.recordset?.[0];
+          if (stateResp && stateResp.allow !== 1) {
+            console.warn('No se pudo actualizar estado de OT tras aprobar permiso:', stateResp.msg);
+          } else {
+            console.log(`✅ Estado de OT ${otId} actualizado a Control de calidad`);
+          }
+        } catch (stateError) {
+          console.error('Error actualizando estado de OT tras resolver permiso:', stateError);
+        }
+      }
       return res.json({
         success: true,
         message: response.msg,
