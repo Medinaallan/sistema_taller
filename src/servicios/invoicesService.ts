@@ -9,6 +9,7 @@ export interface InvoiceItem {
   type: 'product' | 'service';
   es_obligatorio?: boolean; // Indica si el item es obligatorio (no editable)
   factura_item_id?: number; // ID del item en la BD
+  is_from_ot?: boolean; // Indica si el item proviene de una OT (no editable cantidad)
   tipo_item_inferido?: string; // 'Servicio' o 'Repuesto'
 }
 
@@ -103,6 +104,8 @@ class InvoicesService {
       const items = json.data || [];
       
       // Mapear items de BD a formato InvoiceItem
+      // Algunos items retornados por el SP incluyen flags como `es_agregado_pos` (1 = agregado desde POS)
+      // Para los items que NO fueron agregados por POS (es_agregado_pos != 1) asumimos que vienen de la OT
       return items.map((item: any) => ({
         id: `item-${item.factura_item_id}`,
         name: item.descripcion,
@@ -112,6 +115,7 @@ class InvoicesService {
         type: item.tipo_servicio_id ? 'service' : 'product',
         es_obligatorio: !!item.es_obligatorio,
         factura_item_id: item.factura_item_id,
+        is_from_ot: !(Number(item.es_agregado_pos || 0) === 1),
         tipo_item_inferido: item.tipo_item_inferido
       }));
     } catch (error) {

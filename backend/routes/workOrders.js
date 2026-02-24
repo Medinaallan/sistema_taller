@@ -142,6 +142,40 @@ router.get('/', async (req, res) => {
     const start = (p - 1) * l;
     const pageOrders = allOrders.slice(start, start + l);
 
+    // Para los elementos que se van a renderizar en la página actual, comprobar
+    // si existe un permiso aprobado y, en tal caso, invocar SP_GESTIONAR_ESTADO_OT
+    // para mover la OT a 'Control de calidad'. Esto se hace de forma silenciosa.
+    if (pageOrders.length > 0) {
+      await Promise.all(pageOrders.map(async (order) => {
+        try {
+          const permisoRes = await pool.request()
+            .input('permiso_id', sql.Int, null)
+            .input('ot_id', sql.Int, order.ot_id)
+            .input('cliente_id', sql.Int, null)
+            .input('estado', sql.VarChar(50), 'Aprobado')
+            .input('fecha_inicio', sql.Date, null)
+            .input('fecha_fin', sql.Date, null)
+            .execute('SP_OBTENER_PERMISO_PRUEBA_MANEJO');
+
+          const permiso = permisoRes.recordset?.[0];
+          if (permiso) {
+            const registradoPor = permiso.firmado_por || permiso.registrado_por || 1;
+            try {
+              await pool.request()
+                .input('ot_id', sql.Int, order.ot_id)
+                .input('nuevo_estado', sql.VarChar(50), 'Control de calidad')
+                .input('registrado_por', sql.Int, parseInt(registradoPor))
+                .execute('SP_GESTIONAR_ESTADO_OT');
+            } catch (_) {
+              // silencioso: no interrumpir la respuesta por errores de SP de estado
+            }
+          }
+        } catch (_) {
+          // silencioso
+        }
+      }));
+    }
+
     // Si se solicita, calcular costos sólo para la página actual
     const includeCostsBool = String(includeCosts).toLowerCase() === 'true';
     

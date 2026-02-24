@@ -262,6 +262,8 @@ const POSPage: React.FC = () => {
           exento: false,
           exonerado: false,
           es_obligatorio: item.es_obligatorio || false,
+          // si el item NO fue agregado desde POS, asumimos que viene de la OT
+          is_from_ot: !!item.is_from_ot,
           factura_item_id: item.factura_item_id
         }));
         
@@ -332,6 +334,7 @@ const POSPage: React.FC = () => {
         exento: false,
         exonerado: false,
         es_obligatorio: item.es_obligatorio || false, // 🔒 Importante: productos obligatorios
+        is_from_ot: !!item.is_from_ot,
         factura_item_id: item.factura_item_id
       }));
       
@@ -374,6 +377,11 @@ const POSPage: React.FC = () => {
 
     // No permitir cambiar cantidad para servicios O items obligatorios
     if (item.type === 'service' || item.es_obligatorio) {
+      return;
+    }
+
+    // No permitir editar cantidad si el item viene de una OT
+    if ((item as any).is_from_ot) {
       return;
     }
 
