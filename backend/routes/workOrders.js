@@ -145,8 +145,14 @@ router.get('/', async (req, res) => {
     // Para los elementos que se van a renderizar en la página actual, comprobar
     // si existe un permiso aprobado y, en tal caso, invocar SP_GESTIONAR_ESTADO_OT
     // para mover la OT a 'Control de calidad'. Esto se hace de forma silenciosa.
+    // NOTA: No aplicar si la OT ya está en un estado terminal (Completada, Cerrada, Facturada).
+    const ESTADOS_TERMINALES = ['Completada', 'Cerrada', 'Facturada', 'Completado', 'Cerrado', 'Facturado'];
     if (pageOrders.length > 0) {
       await Promise.all(pageOrders.map(async (order) => {
+        // Si la OT ya está en estado terminal, no revertir su estado
+        const estadoActual = order.estado_ot || order.estado || '';
+        if (ESTADOS_TERMINALES.includes(estadoActual)) return;
+
         try {
           const permisoRes = await pool.request()
             .input('permiso_id', sql.Int, null)

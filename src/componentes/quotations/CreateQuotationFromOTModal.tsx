@@ -385,7 +385,7 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
             
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
-                ℹ️ Esta cotización adicional requiere aprobación del cliente. Una vez aprobada, los servicios se agregarán como tareas y los repuestos se sumarán al costo.
+                Esta cotización adicional requiere aprobación del cliente. Una vez aprobada, los servicios se agregarán como tareas y los repuestos se sumarán al costo.
               </p>
             </div>
 
