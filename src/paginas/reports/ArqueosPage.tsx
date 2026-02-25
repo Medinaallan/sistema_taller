@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { cashService } from '../../servicios/cashService';
 import { useApp } from '../../contexto/useApp';
 import Swal from 'sweetalert2';
+import { printArqueoTicket } from '../../utilidades/ticketPrinter';
 
 export default function ArqueosPage() {
   const { state } = useApp();
@@ -24,6 +25,48 @@ export default function ArqueosPage() {
       console.error('Error loading current summary', err);
       setCurrentSummary(null);
     }
+  };
+
+  const formatCurrency = (v: any) => {
+    const n = Number(v || 0);
+    try {
+      return new Intl.NumberFormat('es-HN', { style: 'currency', currency: 'HNL', minimumFractionDigits: 2 }).format(n);
+    } catch (e) {
+      return `L.${n.toFixed(2)}`;
+    }
+  };
+
+  const formatDate = (d: any) => {
+    if (!d) return '-';
+    try {
+      return new Date(d).toLocaleString();
+    } catch (e) {
+      return String(d);
+    }
+  };
+
+  const buildArqueoDetailHtml = (r: any) => {
+    return `
+      <div style="text-align:left; font-family:system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;">
+        <h3 style="margin:0 0 8px 0; font-size:18px;">Detalle de Arqueo</h3>
+        <table style="width:100%; border-collapse:separate; border-spacing:8px 6px;">
+          <tbody>
+            <tr><td style="width:40%; font-weight:600;">Arqueo ID</td><td>${r.arqueo_id ?? '-'}</td></tr>
+            <tr><td style="font-weight:600;">Responsable</td><td>${r.nombre_completo ?? '-'}</td></tr>
+            <tr><td style="font-weight:600;">Fecha Apertura</td><td>${formatDate(r.fecha_apertura)}</td></tr>
+            <tr><td style="font-weight:600;">Fecha Cierre</td><td>${formatDate(r.fecha_cierre)}</td></tr>
+            <tr><td style="font-weight:600;">Monto Inicial</td><td>${formatCurrency(r.monto_inicial)}</td></tr>
+            <tr><td style="font-weight:600;">Ventas en Efectivo</td><td>${formatCurrency((r.monto_ventas_efectivo ?? r.ventas_efectivo ?? r.ventas) || 0)}</td></tr>
+            <tr><td style="font-weight:600;">Otros Pagos</td><td>${formatCurrency(r.monto_otros_pagos ?? r.otros_pagos ?? 0)}</td></tr>
+            <tr><td style="font-weight:600;">Efectivo Esperado</td><td>${formatCurrency(r.monto_final_esperado ?? r.efectivo_esperado ?? r.total_esperado_en_caja ?? 0)}</td></tr>
+            <tr><td style="font-weight:600;">Monto Final Real</td><td>${r.monto_final_real != null ? formatCurrency(r.monto_final_real) : '-'}</td></tr>
+            <tr><td style="font-weight:600;">Diferencia</td><td style="color:${(r.diferencia || 0) === 0 ? '#16a34a' : '#dc2626'}; font-weight:600;">${r.diferencia != null ? formatCurrency(r.diferencia) : '-'}</td></tr>
+            <tr><td style="font-weight:600;">Estado</td><td>${r.estado ?? '-'}</td></tr>
+            <tr><td style="vertical-align:top; font-weight:600;">Observaciones</td><td>${r.observaciones ? String(r.observaciones).replace(/\n/g, '<br/>') : '-'}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   };
 
   const loadHistory = async () => {
@@ -229,16 +272,25 @@ export default function ArqueosPage() {
                         ) : '-'}
                       </td>
                       <td className="py-2 px-3 align-top">
-                        <button
-                          onClick={() => Swal.fire({
-                            title: 'Detalle de Arqueo',
-                            html: `<pre style="text-align:left">${JSON.stringify(r, null, 2)}</pre>`,
-                            width: 800
-                          })}
-                          className="px-2 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                        >
-                          Ver
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => Swal.fire({
+                              title: 'Detalle de Arqueo',
+                              html: buildArqueoDetailHtml(r),
+                              width: 700,
+                              confirmButtonText: 'OK'
+                            })}
+                            className="px-2 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                          >
+                            Ver
+                          </button>
+                          <button
+                            onClick={() => printArqueoTicket(r)}
+                            className="px-2 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                          >
+                            Ticket
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
