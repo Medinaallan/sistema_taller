@@ -35,7 +35,6 @@ export async function getClientDisplayName(clientId: string): Promise<string> {
   try {
     // Cargar clientes si el cache está vacío o expirado
     if ((now - cache.lastUpdate.clients) >= CACHE_DURATION) {
-      console.log('🔄 Actualizando cache de clientes...');
       const resultado = await clientesService.obtenerClientes();
       if (resultado.success && resultado.data) {
         const clientes = Array.isArray(resultado.data) ? resultado.data : [resultado.data];
@@ -43,23 +42,19 @@ export async function getClientDisplayName(clientId: string): Promise<string> {
         clientes.forEach(cliente => {
           const id = cliente.usuario_id?.toString();
           cache.clients.set(id, cliente.nombre_completo || cliente.correo);
-          console.log(`  ✓ Cliente ${id}: ${cliente.nombre_completo}`);
         });
         cache.lastUpdate.clients = now;
-        console.log('✅ Cache de clientes actualizado:', cache.clients.size, 'clientes');
       }
     }
 
     // Verificar si existe en cache
     if (cache.clients.has(clientIdStr)) {
       const name = cache.clients.get(clientIdStr);
-      console.log(`🔍 Cliente encontrado - ID: ${clientIdStr} -> ${name}`);
       return name || clientIdStr;
     }
 
     // Si no está en cache y el cache es reciente, intentar recargar una vez
     if ((now - cache.lastUpdate.clients) < CACHE_DURATION) {
-      console.log(`⚠️ Cliente ${clientIdStr} no encontrado en cache, recargando...`);
       const resultado = await clientesService.obtenerClientes();
       if (resultado.success && resultado.data) {
         const clientes = Array.isArray(resultado.data) ? resultado.data : [resultado.data];
@@ -75,10 +70,8 @@ export async function getClientDisplayName(clientId: string): Promise<string> {
       }
     }
 
-    console.log(`❌ Cliente ${clientIdStr} NO encontrado en ninguna fuente`);
     return `Cliente #${clientIdStr}`;
   } catch (error) {
-    console.error('Error obteniendo nombre de cliente:', error);
     return `Cliente #${clientIdStr}`;
   }
 }
@@ -115,7 +108,6 @@ export async function getVehicleDisplayName(vehicleId: string): Promise<string> 
     const name = cache.vehicles.get(vehicleId);
     return name || `Vehículo #${vehicleId}`;
   } catch (error) {
-    console.error('Error obteniendo nombre de vehículo:', error);
     return `Vehículo #${vehicleId}`;
   }
 }
@@ -147,15 +139,12 @@ export async function getServiceDisplayName(serviceId: string): Promise<string> 
           cache.services.set(servicioId, displayName);
         });
         cache.lastUpdate.services = now;
-        console.log('. Cache de servicios actualizado:', cache.services.size, 'servicios');
       }
     }
 
     const name = cache.services.get(serviceId?.toString());
-    console.log(`🔍 Buscando servicio ID: ${serviceId}, encontrado: ${name || 'NO ENCONTRADO'}`);
     return name || `Servicio #${serviceId}`;
   } catch (error) {
-    console.error('Error obteniendo nombre de servicio:', error);
     return `Servicio #${serviceId}`;
   }
 }
@@ -187,7 +176,6 @@ export async function getDisplayNames(data: {
       serviceName
     };
   } catch (error) {
-    console.error('Error obteniendo nombres descriptivos:', error);
     return {
       clientName: data.clientId ? `Cliente #${data.clientId}` : 'No especificado',
       vehicleName: data.vehicleId ? `Vehículo #${data.vehicleId}` : 'No especificado',

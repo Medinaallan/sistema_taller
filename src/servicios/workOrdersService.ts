@@ -95,10 +95,7 @@ class WorkOrdersService {
     // El SP SP_OBTENER_ORDENES_TRABAJO ya devuelve el estado correcto
     const estado = (spData.estado_ot as WorkOrderStatus) || 'Abierta';
     
-    // 🔍 DEBUGGING: Log cuando hay inconsistencias de estado
-    if (spData.estado_ot && !['Abierta', 'En proceso', 'Control de calidad', 'Completada', 'Cerrada', 'En espera de repuestos', 'En espera de aprobación', 'Cancelada'].includes(spData.estado_ot)) {
-      console.warn(`⚠️ Estado de OT no reconocido: "${spData.estado_ot}" para OT #${otId}`);
-    }
+
     
     // Construir nombre del vehículo con marca, modelo y año
     const vehiculoNombre = spData.marca && spData.modelo 
@@ -135,11 +132,6 @@ class WorkOrdersService {
       fechaCreacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
       fechaActualizacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
     };
-    
-    // 🔍 DEBUGGING: Log de mapeo completo para nuevas OTs
-    if (spData.estado_ot === 'Abierta') {
-      console.log(`📋 OT #${otId} mapeada - Estado: "${estado}" | Cliente: ${mappedOrder.nombreCliente}`);
-    }
     
     return mappedOrder;
   }

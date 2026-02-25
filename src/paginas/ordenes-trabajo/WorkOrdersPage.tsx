@@ -92,7 +92,7 @@ const WorkOrdersPage = () => {
         setVehiculos(rawVehicles);
       }
     } catch (error) {
-      console.error('Error cargando vehículos:', error);
+      // Error silencioso al cargar vehículos
     }
   };
 
@@ -108,7 +108,7 @@ const WorkOrdersPage = () => {
         setServicios(mappedServices);
       }
     } catch (error) {
-      console.error('Error cargando servicios:', error);
+      // Error silencioso al cargar servicios
     }
   };
 
@@ -124,7 +124,7 @@ const WorkOrdersPage = () => {
         setAppointments(appointmentsData);
       }
     } catch (error) {
-      console.error('Error cargando citas:', error);
+      // Error silencioso al cargar citas
     }
   };
 
@@ -132,22 +132,13 @@ const WorkOrdersPage = () => {
   const loadWorkOrders = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Cargando órdenes de trabajo...');
       const orders = await workOrdersService.getAllWorkOrders();
-      console.log(`✅ ${orders.length} órdenes de trabajo cargadas`);
-      
-      // Log de OTs recién creadas (Abierta)
-      const nuevasOTs = orders.filter(o => o.estado === 'Abierta');
-      if (nuevasOTs.length > 0) {
-        console.log(`📋 ${nuevasOTs.length} OT(s) en estado "Abierta":`, nuevasOTs.map(o => `#${o.id} - ${o.nombreCliente}`));
-      }
       
       setWorkOrders(orders);
       
       // Calcular costos reales desde cotizaciones
       await calculateRealCostsForOrders(orders);
     } catch (err) {
-      console.error('Error cargando órdenes de trabajo:', err);
       showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -157,7 +148,6 @@ const WorkOrdersPage = () => {
   // Calcular costos reales sumando items de cotizaciones relacionadas (SP_OBTENER_ITEMS_COTIZACION)
   const calculateRealCostsForOrders = async (orders: WorkOrderData[]) => {
     try {
-      console.log('💰 Calculando costos reales desde cotizaciones...');
       const newCostsMap = new Map<string, number>();
       
       for (const order of orders) {
@@ -167,7 +157,6 @@ const WorkOrdersPage = () => {
           // Parsear ot_id (order.id es el ot_id como string)
           const otId = parseInt(order.id);
           if (isNaN(otId)) {
-            console.warn(`  ⚠️ OT #${order.id} tiene ID inválido, saltando...`);
             newCostsMap.set(order.id, 0);
             continue;
           }
@@ -185,20 +174,14 @@ const WorkOrdersPage = () => {
           }
           
           newCostsMap.set(order.id, totalCost);
-          
-          if (quotations.length > 0) {
-            console.log(`  OT #${order.id}: L${totalCost.toFixed(2)} (${quotations.length} cotizaciones)`);
-          }
         } catch (err) {
-          console.error(`  ❌ Error calculando costo para OT #${order.id}:`, err);
           newCostsMap.set(order.id, 0);
         }
       }
       
       setOrderCostsMap(newCostsMap);
-      console.log('✅ Costos reales calculados');
     } catch (err) {
-      console.error('❌ Error calculando costos reales:', err);
+      // Error silencioso al calcular costos
     }
   };
   
@@ -262,13 +245,11 @@ const WorkOrdersPage = () => {
     
     if (order.estado !== 'Control de calidad') {
       showError(`No se puede completar una OT en estado "${order.estado}". Solo se pueden completar OTs en estado "Control de calidad".`);
-      console.warn(`❌ Intento de completar OT #${orderId} con estado incorrecto: "${order.estado}"`);
       return;
     }
     
     if (await showConfirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
-        console.log(`🔄 Completando OT #${orderId} (estado actual: ${order.estado})`);
         await workOrdersService.completeWorkOrder(orderId);
         showSuccess('Orden de trabajo completada exitosamente');
         await loadWorkOrders(); // Recargar datos
@@ -304,7 +285,6 @@ const WorkOrdersPage = () => {
 
   // Manejar cuando cambia el estado de la OT (por ejemplo, al iniciar una tarea)
   const handleWorkOrderStateChanged = async () => {
-    console.log('🔄 Estado de OT cambió, recargando lista...');
     await loadWorkOrders();
   };
 

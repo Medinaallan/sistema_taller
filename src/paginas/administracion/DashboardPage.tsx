@@ -56,13 +56,10 @@ export function DashboardPage() {
   useEffect(() => {
     const loadClientsAndVehicles = async () => {
       try {
-        console.log('🔄 DashboardPage: Cargando clientes y vehículos para estadísticas...');
-        
         // Esperar a que los clientes se carguen
         if (clientesLegacy && clientesLegacy.length > 0) {
           // Actualizar estado global de clientes
           dispatch({ type: 'SET_CLIENTS', payload: clientesLegacy });
-          console.log(`✅ Estado global actualizado: ${clientesLegacy.length} clientes`);
         }
         
         // Cargar vehículos desde la API
@@ -83,14 +80,12 @@ export function DashboardPage() {
           
           // Actualizar estado global de vehículos
           dispatch({ type: 'SET_VEHICLES', payload: mappedVehicles });
-          console.log(`✅ Estado global actualizado: ${mappedVehicles.length} vehículos`);
         }
         
         // Refrescar estadísticas después de cargar datos
         dispatch({ type: 'REFRESH_DASHBOARD_STATS' });
-        console.log('✅ Estadísticas del dashboard actualizadas');
       } catch (error) {
-        console.error('❌ Error cargando datos para dashboard:', error);
+        // Error silencioso al cargar datos del dashboard
       }
     };
     
@@ -111,7 +106,7 @@ export function DashboardPage() {
           setCompletedWorkOrders(completad);
         }
       } catch (error) {
-        console.error('Error cargando órdenes de trabajo:', error);
+        // Error silencioso al cargar órdenes de trabajo
       }
     };
     loadWorkOrders();
@@ -153,7 +148,7 @@ export function DashboardPage() {
           setAppointments(appointmentsData);
         }
       } catch (error) {
-        console.error('Error cargando citas para el calendario:', error);
+        // Error silencioso al cargar citas
       }
     };
     loadAppointments();

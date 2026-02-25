@@ -19,7 +19,6 @@ export const useClientesFromAPI = (): UseClientesFromAPI => {
   const [count, setCount] = useState(0);
 
   const recargarClientes = async () => {
-    console.log('🔄 useClientesFromAPI: Recargando clientes desde API...');
     setLoading(true);
     setError(null);
 
@@ -38,20 +37,11 @@ export const useClientesFromAPI = (): UseClientesFromAPI => {
         );
         setClientesLegacy(clientesLegacyArray);
         
-        console.log(`✅ useClientesFromAPI: ${clientesArray.length} clientes cargados desde API`);
-        console.log('. Clientes cargados:', clientesArray.map(c => ({
-          id: c.usuario_id,
-          nombre: c.nombre_completo,
-          email: c.correo,
-          rol: c.rol
-        })));
-        
       } else {
         setError(resultado.message || 'Error al cargar clientes');
         setClientes([]);
         setClientesLegacy([]);
         setCount(0);
-        console.log('❌ useClientesFromAPI: Error cargando clientes:', resultado.message);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
@@ -59,14 +49,12 @@ export const useClientesFromAPI = (): UseClientesFromAPI => {
       setClientes([]);
       setClientesLegacy([]);
       setCount(0);
-      console.error('❌ useClientesFromAPI: Error de conexión:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('🚀 useClientesFromAPI: Iniciando carga inicial de clientes...');
     recargarClientes();
   }, []);
 

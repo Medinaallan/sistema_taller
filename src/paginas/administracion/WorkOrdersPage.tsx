@@ -56,16 +56,8 @@ const WorkOrdersPage = () => {
   
   const loadWorkOrders = async (p = page) => {
     try {
-      console.log('🔄 Iniciando carga paginada de órdenes de trabajo...');
       setLoading(true);
       const res = await workOrdersService.getWorkOrdersPage(p, limit, true);
-      console.log(`✅ ${res.data.length} órdenes paginadas cargadas (Total: ${res.count})`);
-      
-      // Log de OTs recién creadas (Abierta)
-      const nuevasOTs = res.data.filter(o => o.estado === 'Abierta');
-      if (nuevasOTs.length > 0) {
-        console.log(`📋 ${nuevasOTs.length} OT(s) en estado "Abierta":`, nuevasOTs.map(o => `#${o.id} - ${o.nombreCliente || o.clienteId}`));
-      }
       
       setWorkOrders(res.data);
       setTotalCount(res.count || 0);
@@ -75,7 +67,6 @@ const WorkOrdersPage = () => {
       await loadDisplayNamesForOrders(res.data);
       await calculateRealCostsForOrders(res.data);
     } catch (err) {
-      console.error('❌ Error cargando órdenes de trabajo:', err);
       showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -85,7 +76,6 @@ const WorkOrdersPage = () => {
   // Calcular costos reales sumando items de cotizaciones relacionadas (SP_OBTENER_ITEMS_COTIZACION)
   const calculateRealCostsForOrders = async (orders: WorkOrderData[]) => {
     try {
-      console.log('💰 Calculando costos reales desde cotizaciones...');
       const newCostsMap = new Map<string, number>();
       
       for (const order of orders) {
@@ -95,7 +85,6 @@ const WorkOrdersPage = () => {
           // Parsear ot_id (order.id es el ot_id como string)
           const otId = parseInt(order.id);
           if (isNaN(otId)) {
-            console.warn(`  ⚠️ OT #${order.id} tiene ID inválido, saltando...`);
             newCostsMap.set(order.id, 0);
             continue;
           }
@@ -113,20 +102,14 @@ const WorkOrdersPage = () => {
           }
           
           newCostsMap.set(order.id, totalCost);
-          
-          if (quotations.length > 0) {
-            console.log(`  OT #${order.id}: L${totalCost.toFixed(2)} (${quotations.length} cotizaciones)`);
-          }
         } catch (err) {
-          console.error(`  ❌ Error calculando costo para OT #${order.id}:`, err);
           newCostsMap.set(order.id, 0);
         }
       }
       
       setOrderCostsMap(newCostsMap);
-      console.log('✅ Costos reales calculados');
     } catch (err) {
-      console.error('❌ Error calculando costos reales:', err);
+      // Error silencioso al calcular costos
     }
   };
   
@@ -158,7 +141,6 @@ const WorkOrdersPage = () => {
             });
           }
         } catch (error) {
-          console.error(`Error cargando nombres para orden ${order.id}:`, error);
           // Fallback a IDs si hay error
           if (order.id) {
             namesMap.set(order.id, {
@@ -171,7 +153,7 @@ const WorkOrdersPage = () => {
       
       setWorkOrdersWithNames(namesMap);
     } catch (error) {
-      console.error('Error cargando nombres descriptivos:', error);
+      // Error silencioso al cargar nombres
     }
   };
 
@@ -253,7 +235,6 @@ const WorkOrdersPage = () => {
 
   // Manejar cuando cambia el estado de la OT (por ejemplo, al iniciar una tarea)
   const handleWorkOrderStateChanged = async () => {
-    console.log('🔄 Estado de OT cambió, recargando lista...');
     await loadWorkOrders();
   };
 
@@ -289,7 +270,6 @@ const WorkOrdersPage = () => {
       const allCompleted = tareas.every(t => t.estado_tarea === 'Completada');
       return allCompleted;
     } catch (error) {
-      console.error('Error verificando tareas:', error);
       return false;
     }
   };
@@ -354,7 +334,6 @@ const WorkOrdersPage = () => {
       await loadWorkOrders();
       setSelectedOrderForDecision(null);
     } catch (error) {
-      console.error('Error enviando solicitud al cliente:', error);
       showError('Error al enviar solicitud al cliente');
     }
   };
@@ -373,7 +352,6 @@ const WorkOrdersPage = () => {
         showSuccess('Vehículo movido a Control de Calidad exitosamente');
         await loadWorkOrders(); // Recargar datos
       } catch (error) {
-        console.error('Error moviendo a control de calidad:', error);
         showError('Error al cambiar estado');
       }
     }
@@ -389,13 +367,11 @@ const WorkOrdersPage = () => {
     
     if (order.estado !== 'Control de calidad') {
       showError(`No se puede completar una OT en estado "${order.estado}". Solo se pueden completar OTs en estado "Control de calidad".`);
-      console.warn(`❌ Intento de completar OT #${orderId} con estado incorrecto: "${order.estado}"`);
       return;
     }
     
     if (await showConfirm('¿Estás seguro de que quieres completar esta orden y generar la factura?')) {
       try {
-        console.log(`🔄 Completando OT #${orderId} (estado actual: ${order.estado})`);
         await workOrdersService.completeWorkOrder(orderId);
         showSuccess('Orden de trabajo completada exitosamente');
         await loadWorkOrders(); // Recargar datos
@@ -1139,7 +1115,6 @@ function AdditionalQuotationForm({ workOrder, onClose }: AdditionalQuotationForm
       showSuccess('Cotización adicional creada y enviada al cliente exitosamente');
       onClose();
     } catch (error) {
-      console.error('Error creando cotización adicional:', error);
       showError('Error al crear la cotización adicional');
     } finally {
       setLoading(false);
@@ -1191,8 +1166,6 @@ Cotización ID: ${quotation.id}`;
         leido: false
       };
 
-      console.log('Enviando cotización al chat del cliente...', chatMessage);
-      
       // Intentar enviar usando el chatService real
       try {
         // Inicializar el servicio de chat si no está conectado
@@ -1205,10 +1178,7 @@ Cotización ID: ${quotation.id}`;
         
         // Enviar el mensaje
         chatService.enviarMensaje(chatMessage);
-        
-        console.log('✅ Mensaje de cotización enviado exitosamente al chat');
       } catch (chatError) {
-        console.error('⚠️ Error enviando al chat, guardando en localStorage como respaldo:', chatError);
         
         // Guardar en localStorage como respaldo si el chat falla
         const backupMessages = JSON.parse(localStorage.getItem('backup-chat-messages') || '[]');
@@ -1222,7 +1192,6 @@ Cotización ID: ${quotation.id}`;
       }
       
     } catch (error) {
-      console.error('Error enviando cotización al chat:', error);
       throw error;
     }
   };
