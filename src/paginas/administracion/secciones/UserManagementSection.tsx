@@ -163,13 +163,12 @@ export function UserManagementSection() {
       const response = await fetch(`${apiUrl}/users/list`);
       
       if (!response.ok) {
-        console.error('❌ Error obteniendo usuarios:', response.status);
         showError('Error al cargar usuarios desde la base de datos');
         return;
       }
       
       const result = await response.json();
-      console.log('✅ Usuarios obtenidos del SP:', result.data);
+      // usuarios obtenidos del SP en `result.data`
       
       if (result.success && Array.isArray(result.data)) {
         // Mapear datos del SP al formato de User
@@ -190,11 +189,10 @@ export function UserManagementSection() {
             mustChangePassword: false
           }));
         
-        console.log(' Usuarios mapeados (excluyendo clientes):', mappedUsers);
         setUsers(mappedUsers);
       }
     } catch (error) {
-      console.error(' Error cargando usuarios:', error);
+      // error cargando usuarios desde API
     }
   };
 

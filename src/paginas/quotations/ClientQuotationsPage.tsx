@@ -38,9 +38,21 @@ const ClientQuotationsPage = () => {
     }
     
     try {
-      await quotationsService.approveQuotation(quotation.cotizacion_id.toString());
-      await loadClientQuotations(); // Recargar datos
-      showSuccess('Cotización aprobada exitosamente. Se convertirá en orden de trabajo.');
+      const isAdditional = quotation.ot_id !== null && quotation.ot_id !== undefined;
+
+      if (isAdditional) {
+        // Cotización adicional: aprobar + procesar tareas a la OT existente
+        const result = await quotationsService.approveAdditionalQuotation(
+          quotation.cotizacion_id.toString()
+        );
+        await loadClientQuotations();
+        showSuccess(result.msg || 'Cotización adicional aprobada. Las tareas han sido agregadas a la orden de trabajo.');
+      } else {
+        // Cotización inicial: solo aprobar (la OT ya existe o el admin la generará)
+        await quotationsService.approveQuotation(quotation.cotizacion_id.toString());
+        await loadClientQuotations();
+        showSuccess('Cotización aprobada exitosamente.');
+      }
     } catch (err) {
       showError('Error aprobando cotización: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     }

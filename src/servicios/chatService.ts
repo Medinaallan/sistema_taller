@@ -81,19 +81,16 @@ class ChatService {
 
     this.socket.on('connect', () => {
       this.conectado = true;
-      console.log('💬 Socket.IO conectado');
       this.emitirLocal('connect');
     });
 
     this.socket.on('disconnect', () => {
       this.conectado = false;
-      console.log('💬 Socket.IO desconectado');
       this.emitirLocal('disconnect');
     });
 
     // Evento de mensaje nuevo
     this.socket.on('chat:mensaje', (msg: any) => {
-      console.log('📩 chat:mensaje recibido:', JSON.stringify(msg, null, 2));
       const normalizado: ChatMensajeDTO = {
         mensaje_id: msg.mensaje_id,
         sala_id: msg.sala_id,
@@ -109,21 +106,16 @@ class ChatService {
         archivo_url: msg.archivo_url,
         tipo_archivo: msg.tipo_archivo
       };
-      console.log('✅ Mensaje normalizado:', JSON.stringify(normalizado, null, 2));
       this.emitirLocal('chat:mensaje', normalizado);
     });
 
     // Evento de historial
     this.socket.on('chat:historial', (data: any) => {
-      console.log('📜 chat:historial recibido, mensajes:', data.mensajes?.length || 0);
       
       // Verificar si hay mensajes con archivos
       const conArchivos = (data.mensajes || []).filter((m: any) => m.archivo_url);
       if (conArchivos.length > 0) {
-        console.log('🖼️  Mensajes con archivo_url en historial:', conArchivos.length);
-        conArchivos.forEach((m: any, i: number) => {
-          console.log(`  [${i+1}] mensaje_id: ${m.mensaje_id}, archivo_url: ${m.archivo_url}, tipo: ${m.tipo_archivo}`);
-        });
+        // detalles de mensajes con archivos omitidos en logs
       }
       
       const mensajes: ChatMensajeDTO[] = (data.mensajes || []).map((m: any) => ({
@@ -141,7 +133,6 @@ class ChatService {
         archivo_url: m.archivo_url,
         tipo_archivo: m.tipo_archivo
       }));
-      console.log('✅ Historial normalizado con', mensajes.length, 'mensajes');
       this.emitirLocal('chat:historial', { sala_id: data.sala_id, mensajes });
     });
 
@@ -157,7 +148,6 @@ class ChatService {
 
     // Evento de error
     this.socket.on('chat:error', (error: any) => {
-      console.error('Error de chat:', error);
       this.emitirLocal('chat:error', error);
     });
   }
@@ -262,7 +252,6 @@ class ChatService {
       
       return result.data;
     } catch (error) {
-      console.error('Error iniciando sala:', error);
       throw error;
     }
   }
@@ -281,7 +270,6 @@ class ChatService {
       
       return result.data;
     } catch (error) {
-      console.error('Error obteniendo chats del usuario:', error);
       throw error;
     }
   }
@@ -300,7 +288,6 @@ class ChatService {
       
       return result.data;
     } catch (error) {
-      console.error('Error obteniendo historial:', error);
       throw error;
     }
   }
@@ -321,7 +308,6 @@ class ChatService {
       
       return result;
     } catch (error) {
-      console.error('Error agregando participante:', error);
       throw error;
     }
   }
@@ -345,7 +331,6 @@ class ChatService {
         throw new Error(result.error || 'Error subiendo imagen');
       }
     } catch (error) {
-      console.error('Error subiendo imagen:', error);
       throw error;
     }
   }
@@ -372,7 +357,6 @@ class ChatService {
       
       return imageUrl;
     } catch (error) {
-      console.error('Error enviando mensaje con imagen:', error);
       throw error;
     }
   }

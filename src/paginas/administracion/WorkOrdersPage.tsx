@@ -8,7 +8,6 @@ import AddTaskModal from '../../componentes/ordenes-trabajo/AddTaskModal';
 import CreateQuotationFromOTModal from '../../componentes/quotations/CreateQuotationFromOTModal';
 import { QualityControlModal } from '../../componentes/ordenes-trabajo/QualityControlModal';
 import AuthorizationDecisionModal from '../../componentes/ordenes-trabajo/AuthorizationDecisionModal';
-import quotationsService from '../../servicios/quotationsService';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
 import workOrdersService, { type WorkOrderData } from '../../servicios/workOrdersService';
 import { chatService, type ChatMensajeDTO } from '../../servicios/chatService';
@@ -46,9 +45,6 @@ const WorkOrdersPage = () => {
   const [showQualityControlModal, setShowQualityControlModal] = useState(false);
   const [selectedOrderForQC, setSelectedOrderForQC] = useState<WorkOrderData | null>(null);
   const [completedTasksMap, setCompletedTasksMap] = useState<Map<string, boolean>>(new Map());
-  
-  // Estado para costos calculados de cada orden (sumados desde cotizaciones)
-  const [orderCostsMap, setOrderCostsMap] = useState<Map<string, number>>(new Map());
 
   // Estados para el modal de decisión de autorización
   const [showDecisionModal, setShowDecisionModal] = useState(false);
@@ -57,67 +53,24 @@ const WorkOrdersPage = () => {
   const loadWorkOrders = async (p = page) => {
     try {
       setLoading(true);
-      const res = await workOrdersService.getWorkOrdersPage(p, limit, true);
+      const res = await workOrdersService.getWorkOrdersPage(p, limit);
       
       setWorkOrders(res.data);
       setTotalCount(res.count || 0);
       setPage(res.page || p);
 
-      // Cargar nombres descriptivos y costos reales para cada orden
+      // Cargar nombres descriptivos para cada orden
       await loadDisplayNamesForOrders(res.data);
-      await calculateRealCostsForOrders(res.data);
     } catch (err) {
       showError('Error cargando órdenes de trabajo: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
   };
-  
-  // Calcular costos reales sumando items de cotizaciones relacionadas (SP_OBTENER_ITEMS_COTIZACION)
-  const calculateRealCostsForOrders = async (orders: WorkOrderData[]) => {
-    try {
-      const newCostsMap = new Map<string, number>();
-      
-      for (const order of orders) {
-        if (!order.id) continue;
-        
-        try {
-          // Parsear ot_id (order.id es el ot_id como string)
-          const otId = parseInt(order.id);
-          if (isNaN(otId)) {
-            newCostsMap.set(order.id, 0);
-            continue;
-          }
-          
-          // Obtener todas las cotizaciones relacionadas con esta OT
-          const quotations = await quotationsService.getQuotationsByOT(otId);
-          
-          let totalCost = 0;
-          
-          // Para cada cotización, sumar el total_linea de sus items
-          for (const quotation of quotations) {
-            const items = await quotationsService.getQuotationItems(quotation.cotizacion_id.toString());
-            const quotationTotal = items.reduce((sum, item) => sum + item.total_linea, 0);
-            totalCost += quotationTotal;
-          }
-          
-          newCostsMap.set(order.id, totalCost);
-        } catch (err) {
-          newCostsMap.set(order.id, 0);
-        }
-      }
-      
-      setOrderCostsMap(newCostsMap);
-    } catch (err) {
-      // Error silencioso al calcular costos
-    }
-  };
-  
-  // Helper para obtener el costo total calculado de una orden
+
+  // Helper para obtener el costo total de una orden (viene directo del SP como campo 'costo')
   const getOrderTotalCost = (order: WorkOrderData): number => {
-    if (!order.id) return 0;
-    // Usar el costo calculado desde las cotizaciones
-    return orderCostsMap.get(order.id) || 0;
+    return order.costoEstimado || order.costoTotal || 0;
   };
 
   // Cargar nombres descriptivos para las órdenes

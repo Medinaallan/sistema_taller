@@ -33,7 +33,6 @@ router.post('/iniciar-sala', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al iniciar sala de chat:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -77,7 +76,6 @@ router.post('/enviar-mensaje', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al enviar mensaje:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -94,7 +92,6 @@ router.get('/chats-usuario/:usuario_id', async (req, res) => {
   try {
     const { usuario_id } = req.params;
 
-    console.log('📋 Solicitando chats para usuario_id:', usuario_id);
 
     if (!usuario_id) {
       return res.status(400).json({
@@ -108,8 +105,6 @@ router.get('/chats-usuario/:usuario_id', async (req, res) => {
       .input('usuario_id', sql.Int, parseInt(usuario_id))
       .execute('SP_OBTENER_CHATS_USUARIO');
 
-    console.log('✅ SP_OBTENER_CHATS_USUARIO ejecutado. Salas encontradas:', result.recordset.length);
-    console.log('📋 Salas:', JSON.stringify(result.recordset, null, 2));
 
     res.json({
       success: true,
@@ -117,7 +112,6 @@ router.get('/chats-usuario/:usuario_id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error al obtener chats del usuario:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -155,7 +149,6 @@ router.get('/historial-sala/:sala_id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al obtener historial de sala:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -196,7 +189,6 @@ router.post('/marcar-leidos', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al marcar mensajes como leídos:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -238,7 +230,6 @@ router.post('/agregar-participante', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al agregar participante:', error);
     res.status(500).json({
       success: false,
       error: error.message

@@ -182,54 +182,8 @@ router.get('/', async (req, res) => {
       }));
     }
 
-    // Si se solicita, calcular costos sólo para la página actual
-    const includeCostsBool = String(includeCosts).toLowerCase() === 'true';
-    
-    if (includeCostsBool && pageOrders.length > 0) {
-      // Calcular costos para cada OT de la página en paralelo
-      await Promise.all(pageOrders.map(async (order) => {
-        try {
-          // Buscar cotización asociada a esta OT usando SP_OBTENER_COTIZACIONES con ot_id
-          const cotizacionResult = await pool.request()
-            .input('cotizacion_id', sql.Int, null)
-            .input('cita_id', sql.Int, null)
-            .input('ot_id', sql.Int, order.ot_id)
-            .input('estado', sql.VarChar(50), null)
-            .input('numero_cotizacion', sql.VarChar(20), null)
-            .execute('SP_OBTENER_COTIZACIONES');
-
-          // Si existe cotización, usar su campo 'total' (incluye servicios + productos)
-          if (cotizacionResult.recordset && cotizacionResult.recordset.length > 0) {
-            const cotizacion = cotizacionResult.recordset[0];
-            order._calculatedCost = parseFloat(cotizacion.total) || 0;
-          } else {
-            // Si no tiene cotización, calcular desde tareas + precios base
-            const serviceTypesResult = await pool.request().execute('SP_OBTENER_TIPOS_SERVICIO');
-            const serviceTypes = Array.isArray(serviceTypesResult.recordset) ? serviceTypesResult.recordset : [];
-            const priceByTipo = {};
-            serviceTypes.forEach(st => {
-              if (st.tipo_servicio_id !== undefined) {
-                priceByTipo[String(st.tipo_servicio_id)] = parseFloat(st.precio_base || 0);
-              }
-            });
-
-            const tareasResult = await pool.request()
-              .input('ot_id', sql.Int, order.ot_id)
-              .execute('SP_OBTENER_TAREAS_OT');
-
-            const totalCost = tareasResult.recordset.reduce((sum, tarea) => {
-              const precio = priceByTipo[String(tarea.tipo_servicio_id)] || 0;
-              return sum + precio;
-            }, 0);
-
-            order._calculatedCost = totalCost;
-          }
-        } catch (err) {
-          console.error(`Error calculando costo para OT ${order.ot_id}:`, err);
-          order._calculatedCost = 0;
-        }
-      }));
-    }
+    // El SP_OBTENER_ORDENES_TRABAJO ya retorna el campo 'costo' directamente.
+    // No se necesita calcular costos adicionales desde cotizaciones.
 
     res.json({
       success: true,
@@ -337,7 +291,7 @@ router.post('/manual', async (req, res) => {
     let numeroOtFinal = output.numero_ot;
     
     if (output.allow && !output.ot_id) {
-      console.log('⚠️ SP_REGISTRAR_OT_MANUAL no retornó ot_id, buscando OT creada para cliente:', cliente_id, 'vehiculo:', vehiculo_id);
+      console.log(' SP_REGISTRAR_OT_MANUAL no retornó ot_id, buscando OT creada para cliente:', cliente_id, 'vehiculo:', vehiculo_id);
       try {
         // Buscar la OT usando SP_OBTENER_ORDENES_TRABAJO (sin parámetros, filtramos después)
         const buscarOT = await pool.request()

@@ -117,17 +117,17 @@ class WorkOrdersService {
       nombreVehiculo: vehiculoNombre,
       problema: spData.notas_recepcion || '',
       diagnostico: '',
-      tipoServicio: 'corrective',
+      tipoServicio: 'corrective' as const,
       fechaEstimadaCompletado: spData.fecha_estimada ? new Date(spData.fecha_estimada).toISOString() : undefined,
       fechaInicioReal: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
       costoManoObra: 0,
       costoPartes: 0,
-      // CORRECCIÓN: costoTotal debe venir del SP
-      costoTotal: spData.costo_total || spData.costoTotal || 0,
-      costoEstimado: spData.costo_total || spData.costoTotal || 0,
+      // CORRECCIÓN: costoTotal debe venir del SP (campo 'costo' del SP_OBTENER_ORDENES_TRABAJO)
+      costoTotal: parseFloat(spData.costo || spData.costo_total || spData.costoTotal || 0),
+      costoEstimado: parseFloat(spData.costo || spData.costo_total || spData.costoTotal || 0),
       notas: `Placa: ${spData.placa} | Odómetro: ${spData.odometro_ingreso}km | Asesor: ${spData.nombre_asesor || 'N/A'}`,
       recomendaciones: spData.nombre_mecanico ? `Mecánico asignado: ${spData.nombre_mecanico}` : '',
-      estadoPago: 'pending',
+      estadoPago: 'pending' as const,
       estado: estado, // ✅ Estado viene directo de la BD (SP_OBTENER_ORDENES_TRABAJO)
       fechaCreacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
       fechaActualizacion: spData.fecha_recepcion ? new Date(spData.fecha_recepcion).toISOString() : undefined,
@@ -139,8 +139,8 @@ class WorkOrdersService {
   // Obtener todas las órdenes de trabajo (SIN LÍMITE DE PAGINACIÓN)
   async getAllWorkOrders(): Promise<WorkOrderData[]> {
     try {
-      // 🔥 CRÍTICO: limit=999999 para obtener TODAS las órdenes + includeCosts=true para calcular costos desde cotizaciones
-      const url = `${API_BASE_URL}/workorders?limit=999999&includeCosts=true`;
+      // El SP_OBTENER_ORDENES_TRABAJO retorna el campo 'costo' directamente, sin necesidad de includeCosts
+      const url = `${API_BASE_URL}/workorders?limit=999999`;
       const response = await fetch(url);
       const result: any = await response.json();
       
@@ -151,16 +151,6 @@ class WorkOrdersService {
       // Mapear datos del SP al modelo WorkOrderData
       const rawOrders = Array.isArray(result.data) ? result.data : [];
       const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
-      
-      // Preservar el costo calculado desde la cotización (incluye servicios + repuestos)
-      orders.forEach((o, idx) => {
-        const raw = rawOrders[idx];
-        if (raw && raw._calculatedCost !== undefined) {
-          // @ts-ignore attach to the object for display
-          (o as any)._calculatedCost = raw._calculatedCost;
-        }
-      });
-      
       return orders;
     } catch (error) {
       console.error('Error fetching work orders:', error);
@@ -169,12 +159,11 @@ class WorkOrdersService {
   }
 
   // Obtener una página de órdenes de trabajo (server-side pagination)
-  async getWorkOrdersPage(page = 1, limit = 20, includeCosts = false): Promise<{ data: WorkOrderData[]; count: number; page: number; limit: number}> {
+  async getWorkOrdersPage(page = 1, limit = 20): Promise<{ data: WorkOrderData[]; count: number; page: number; limit: number}> {
     try {
       const url = new URL(`${API_BASE_URL}/workorders`);
       url.searchParams.set('page', String(page));
       url.searchParams.set('limit', String(limit));
-      if (includeCosts) url.searchParams.set('includeCosts', 'true');
 
       const response = await fetch(url.toString());
       const result: any = await response.json();
@@ -185,16 +174,6 @@ class WorkOrdersService {
 
       const rawOrders = Array.isArray(result.data) ? result.data : [];
       const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
-
-      // mapSpDataToWorkOrder returns WorkOrderData; preserve calculated cost if present
-      orders.forEach((o, idx) => {
-        const raw = rawOrders[idx];
-        if (raw && raw._calculatedCost !== undefined) {
-          // @ts-ignore attach to the object for display
-          (o as any)._calculatedCost = raw._calculatedCost;
-        }
-      });
-
       return { data: orders, count: result.count || 0, page: result.page || page, limit: result.limit || limit };
     } catch (error) {
       console.error('Error fetching paged work orders:', error);

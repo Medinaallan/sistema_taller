@@ -22,7 +22,6 @@ export default function ClientRemindersPage() {
         setClientReminders([]);
       }
     } catch (error) {
-      console.error('Error al cargar recordatorios del cliente:', error);
       setClientReminders([]);
     } finally {
       setLoading(false);

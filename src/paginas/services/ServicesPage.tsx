@@ -36,7 +36,6 @@ const ServicesPage = () => {
     try {
       setLoading(true);
       const response = await servicesService.getAll();
-      console.log('Respuesta de servicios:', response);
       
       // Verificar si response.data contiene los servicios o si están en response.recordset
       const servicesArray = response.data || response.recordset || [];
@@ -44,7 +43,6 @@ const ServicesPage = () => {
       if (Array.isArray(servicesArray) && servicesArray.length > 0) {
         // Mapear los datos del backend al formato esperado por la interfaz Service
         const mappedServices = servicesArray.map((service: any) => {
-          console.log('Mapeando servicio:', service);
           return {
             id: service.tipo_servicio_id || service.id || Math.random().toString(),
             name: service.nombre || service.name || 'Sin nombre',
@@ -55,7 +53,6 @@ const ServicesPage = () => {
             updatedAt: service.updatedAt || new Date(),
           };
         });
-        console.log('Servicios mapeados:', mappedServices);
         setData(mappedServices);
       }
     } catch (error) {

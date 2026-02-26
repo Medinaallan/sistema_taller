@@ -79,9 +79,11 @@ export default function AdminChatPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Filtrar solo usuarios que no sean clientes
-        const usuariosSistema = data.data.filter((u: Usuario) => 
-          u.rol !== 'cliente' && u.usuario_id !== parseInt(state.user?.id || '0')
+        // Filtrar solo Mecánicos y Administradores (excluir al usuario actual)
+        const ROLES_PERMITIDOS = ['Mecánico', 'Administrador'];
+        const usuariosSistema = data.data.filter((u: Usuario) =>
+          ROLES_PERMITIDOS.includes(u.rol) &&
+          u.usuario_id !== parseInt(state.user?.id || '0')
         );
         setUsuarios(usuariosSistema);
       } else {

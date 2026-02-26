@@ -43,8 +43,6 @@ class RemindersService {
    */
   async obtenerRecordatorios(): Promise<ReminderResponse> {
     try {
-      console.log('Obteniendo todos los recordatorios...');
-      
       const response = await fetch(`${API_BASE}/reminders`, {
         method: 'GET',
         headers: {
@@ -53,11 +51,9 @@ class RemindersService {
       });
 
       const data = await response.json();
-      console.log('Recordatorios obtenidos:', data);
 
       return data;
     } catch (error) {
-      console.error('Error al obtener recordatorios:', error);
       return {
         success: false,
         message: 'Error al obtener recordatorios',
@@ -71,8 +67,6 @@ class RemindersService {
    */
   async obtenerRecordatoriosPorCliente(clientId: string): Promise<ReminderResponse> {
     try {
-      console.log(`Obteniendo recordatorios del cliente ${clientId}...`);
-      
       const response = await fetch(`${API_BASE}/reminders/client/${clientId}`, {
         method: 'GET',
         headers: {
@@ -81,11 +75,9 @@ class RemindersService {
       });
 
       const data = await response.json();
-      console.log('Recordatorios del cliente obtenidos:', data);
 
       return data;
     } catch (error) {
-      console.error('Error al obtener recordatorios del cliente:', error);
       return {
         success: false,
         message: 'Error al obtener recordatorios del cliente',
@@ -99,8 +91,6 @@ class RemindersService {
    */
   async obtenerRecordatoriosProximos(dias: number = 7): Promise<ReminderResponse> {
     try {
-      console.log(`Obteniendo recordatorios próximos (${dias} días)...`);
-      
       const response = await fetch(`${API_BASE}/reminders/upcoming?days=${dias}`, {
         method: 'GET',
         headers: {
@@ -109,11 +99,9 @@ class RemindersService {
       });
 
       const data = await response.json();
-      console.log('Recordatorios próximos obtenidos:', data);
 
       return data;
     } catch (error) {
-      console.error('Error al obtener recordatorios próximos:', error);
       return {
         success: false,
         message: 'Error al obtener recordatorios próximos',
@@ -127,8 +115,6 @@ class RemindersService {
    */
   async obtenerRecordatoriosVencidos(): Promise<ReminderResponse> {
     try {
-      console.log('Obteniendo recordatorios vencidos...');
-      
       const response = await fetch(`${API_BASE}/reminders/expired`, {
         method: 'GET',
         headers: {
@@ -137,11 +123,9 @@ class RemindersService {
       });
 
       const data = await response.json();
-      console.log('Recordatorios vencidos obtenidos:', data);
 
       return data;
     } catch (error) {
-      console.error('Error al obtener recordatorios vencidos:', error);
       return {
         success: false,
         message: 'Error al obtener recordatorios vencidos',
@@ -155,8 +139,6 @@ class RemindersService {
    */
   async crearRecordatorio(reminderData: Partial<Reminder>): Promise<ReminderResponse> {
     try {
-      console.log('Creando nuevo recordatorio:', reminderData);
-      
       const response = await fetch(`${API_BASE}/reminders`, {
         method: 'POST',
         headers: {
@@ -170,24 +152,19 @@ class RemindersService {
         data = await response.json();
       } catch (err) {
         const text = await response.text().catch(() => '');
-        console.error('No JSON in response creating reminder. status=', response.status, 'body=', text);
         return { success: false, message: `HTTP ${response.status}`, error: text };
       }
 
       if (!response.ok) {
-        console.error('Error al crear recordatorio, status=', response.status, data);
         return { success: false, message: data?.message || data?.msg || `HTTP ${response.status}`, error: data };
       }
 
       if (data.success) {
-        console.log('Recordatorio creado exitosamente:', data.data);
       } else {
-        console.error('Respuesta sin success al crear recordatorio:', data);
       }
 
       return data;
     } catch (error) {
-      console.error('Error al crear recordatorio:', error);
       return {
         success: false,
         message: 'Error al crear recordatorio',
@@ -230,8 +207,6 @@ class RemindersService {
    */
   async eliminarRecordatorio(id: string): Promise<ReminderResponse> {
     try {
-      console.log(`Eliminando recordatorio ${id}...`);
-      
       const response = await fetch(`${API_BASE}/reminders/${id}`, {
         method: 'DELETE',
         headers: {
@@ -240,16 +215,8 @@ class RemindersService {
       });
 
       const data = await response.json();
-      
-      if (data.success) {
-        console.log('Recordatorio eliminado exitosamente');
-      } else {
-        console.error('Error al eliminar recordatorio:', data.message);
-      }
-
       return data;
     } catch (error) {
-      console.error('Error al eliminar recordatorio:', error);
       return {
         success: false,
         message: 'Error al eliminar recordatorio',
@@ -324,8 +291,6 @@ class RemindersService {
    */
   async enviarNotificacion(id: string): Promise<ReminderResponse> {
     try {
-      console.log(`Enviando notificación para recordatorio ${id}...`);
-      
       const response = await fetch(`${API_BASE}/reminders/${id}/notify`, {
         method: 'POST',
         headers: {
@@ -334,16 +299,8 @@ class RemindersService {
       });
 
       const data = await response.json();
-      
-      if (data.success) {
-        console.log('Notificación enviada exitosamente:', data.notificationDetails);
-      } else {
-        console.error('Error al enviar notificación:', data.message);
-      }
-
       return data;
     } catch (error) {
-      console.error('Error al enviar notificación:', error);
       return {
         success: false,
         message: 'Error al enviar notificación',

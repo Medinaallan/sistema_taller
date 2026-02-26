@@ -56,13 +56,10 @@ export function useAdminChat() {
 
       const usuarioIdNum = parseInt(state.user.id, 10);
       if (isNaN(usuarioIdNum)) {
-        console.error('ID de usuario no es un número válido:', state.user.id);
         return [];
       }
 
-      console.log('Cargando salas de chat del admin...');
       const salasAPI: ChatSalaDTO[] = await chatService.obtenerChatsUsuario(usuarioIdNum);
-      console.log('Salas obtenidas:', salasAPI.length, salasAPI);
       
       // Mapear a estructura ChatClienteItem
       const salasChat: ChatClienteItem[] = salasAPI.map(sala => ({
@@ -79,10 +76,8 @@ export function useAdminChat() {
         cerrada: sala.cerrada
       }));
       
-      console.log('Total salas de chat:', salasChat.length);
       return salasChat;
     } catch (error) {
-      console.error('Error cargando salas de chat:', error);
       return [];
     }
   };
@@ -242,7 +237,6 @@ export function useAdminChat() {
     if (!salaActiva || !contenido.trim() || !state.user?.id) return;
     const usuarioIdNum = parseInt(state.user.id, 10);
     if (isNaN(usuarioIdNum)) {
-      console.error('ID de usuario no válido');
       return;
     }
     chatService.enviarMensaje({ 
@@ -269,7 +263,6 @@ export function useAdminChat() {
         usuario_id: usuarioIdNum
       });
     } catch (error) {
-      console.error('Error enviando mensaje con imagen:', error);
       throw error;
     }
   }, [salaActiva, state.user?.id]);
