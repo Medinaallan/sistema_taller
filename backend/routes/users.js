@@ -7,6 +7,25 @@ let usuariosCache = null;
 let cacheTimestamp = null;
 const CACHE_DURATION = 30000; // 30 segundos
 
+// Helpers para normalizar valores y comparar sin acentos
+function stripDiacritics(str) {
+  if (!str) return '';
+  try {
+    return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  } catch (e) {
+    return str;
+  }
+}
+
+function normalizeUser(u) {
+  const rolRaw = u.rol || u.Rol || u.ROL || u.role || u.rol_nombre || '';
+  return {
+    ...u,
+    rtn: u.rtn || u.RTN || u.Rtn || '',
+    rol: rolRaw
+  };
+}
+
 // Obtener lista de usuarios usando SP_OBTENER_USUARIOS
 router.get('/list', async (req, res) => {
   try {
@@ -32,17 +51,12 @@ router.get('/list', async (req, res) => {
     
     const usuariosEncontrados = result.recordset || [];
     
-    // Actualizar cache
-    usuariosCache = usuariosEncontrados;
+    // Normalizar y actualizar cache
+    const normalizedUsers = usuariosEncontrados.map(normalizeUser);
+    usuariosCache = normalizedUsers;
     cacheTimestamp = now;
-    
-    console.log(`✅ ${usuariosEncontrados.length} usuarios obtenidos desde BD`);
-    
-    // Normalize rtn casing in each user record for consistency
-    const normalizedUsers = usuariosEncontrados.map(u => ({
-      ...u,
-      rtn: u.rtn || u.RTN || u.Rtn || ''
-    }));
+
+    console.log(`✅ ${normalizedUsers.length} usuarios (normalizados) obtenidos desde BD`);
 
     res.json({
       success: true,
@@ -59,6 +73,58 @@ router.get('/list', async (req, res) => {
       message: 'Error al obtener usuarios',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+// Obtener sólo mecánicos (filtrado en backend, comparación sin acentos)
+router.get('/mecanicos', async (req, res) => {
+  try {
+    const now = Date.now();
+
+    // Usar cache si está disponible y vigente
+    if (usuariosCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+      const mecanicos = (usuariosCache || []).filter(u => {
+        const rolNorm = stripDiacritics((u.rol || '').toString()).toLowerCase();
+        return rolNorm.includes('mecanico') || rolNorm.includes('mechanic');
+      });
+
+      return res.json({
+        success: true,
+        data: mecanicos,
+        count: mecanicos.length,
+        cached: true
+      });
+    }
+
+    // Si no hay cache vigente, solicitar al SP y filtrar
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('obtener_todos', sql.Bit, 1)
+      .input('usuario_id', sql.Int, null)
+      .execute('SP_OBTENER_USUARIOS');
+
+    const usuariosEncontrados = result.recordset || [];
+    const normalizedUsers = usuariosEncontrados.map(normalizeUser);
+
+    // Actualizar cache global
+    usuariosCache = normalizedUsers;
+    cacheTimestamp = now;
+
+    const mecanicos = normalizedUsers.filter(u => {
+      const rolNorm = stripDiacritics((u.rol || '').toString()).toLowerCase();
+      return rolNorm.includes('mecanico') || rolNorm.includes('mechanic');
+    });
+
+    res.json({
+      success: true,
+      data: mecanicos,
+      count: mecanicos.length,
+      cached: false
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo mecánicos:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener mecánicos' });
   }
 });
 

@@ -82,7 +82,7 @@ const navigationItems: NavigationItem[] = [
   },
   { name: 'Servicios', href: '/services', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Bitácora', href: '/logs', icon: BellIcon, roles: ['admin'] },
-  { name: 'Recordatorios', href: '/reminders', icon: BellIcon, roles: ['admin', 'receptionist'] },
+  { name: 'Recordatorios', href: '/reminders', icon: BellIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Mis Recordatorios', href: '/client-reminders', icon: BellIcon, roles: ['client'] },
   { name: 'Historial de Servicios', href: '/client-service-history', icon: DocumentTextIcon, roles: ['client'] },
   { name: 'Historial Global', href: '/admin-historial', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },

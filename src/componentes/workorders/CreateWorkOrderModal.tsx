@@ -59,18 +59,12 @@ const CreateWorkOrderModal: React.FC<CreateWorkOrderModalProps> = ({
   useEffect(() => {
     const loadMechanics = async () => {
       try {
-        // Cargar usuarios del API
-        const res = await fetch('/api/users');
+        // Cargar mecánicos desde el API (endpoint backend especializado)
+        const res = await fetch('/api/users/mecanicos');
         const response = await res.json();
 
         if (response.success && response.data) {
-          // Filtrar usuarios con rol "mecanico" o similar
-          const mechanicsFiltered = response.data.filter((user: any) => 
-            user.rol?.toLowerCase().includes('mecanico') || 
-            user.rol?.toLowerCase().includes('mechanic')
-          );
-          
-          const mapped = mechanicsFiltered.map((m: any) => ({
+          const mapped = response.data.map((m: any) => ({
             id: m.usuario_id || m.id,
             nombre: m.nombre_completo || m.name,
             correo: m.correo || m.email
