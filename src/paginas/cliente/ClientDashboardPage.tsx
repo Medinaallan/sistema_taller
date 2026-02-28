@@ -322,19 +322,19 @@ export function ClientDashboardPage() {
   };
 
   const renderOverviewTab = () => (
-    <div className="space-y-6">
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-6">
+      {/* Quick Stats - mobile: 4 cols grid, desktop keep previous layout */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+          <div className="p-2 sm:p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <TruckIcon className="h-6 w-6 text-gray-400" />
+                <TruckIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-2 sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Vehículos Activos</dt>
-                  <dd className="text-lg font-medium text-gray-900">{clientVehicles.length}</dd>
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Vehículos Activos</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">{clientVehicles.length}</dd>
                 </dl>
               </div>
             </div>
@@ -342,15 +342,15 @@ export function ClientDashboardPage() {
         </div>
 
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+          <div className="p-2 sm:p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <WrenchScrewdriverIcon className="h-6 w-6 text-gray-400" />
+                <WrenchScrewdriverIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-2 sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Servicios Activos</dt>
-                  <dd className="text-lg font-medium text-gray-900">
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Servicios Activos</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">
                     {clientWorkOrders.filter(o => o.estado !== 'Completada' && o.estado !== 'Cerrada' && o.estado !== 'Cancelada').length}
                   </dd>
                 </dl>
@@ -360,15 +360,15 @@ export function ClientDashboardPage() {
         </div>
 
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+          <div className="p-2 sm:p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <CalendarDaysIcon className="h-6 w-6 text-gray-400" />
+                <CalendarDaysIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-2 sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Próximas Citas</dt>
-                  <dd className="text-lg font-medium text-gray-900">{appointments.length}</dd>
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Próximas Citas</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">{appointments.length}</dd>
                 </dl>
               </div>
             </div>
@@ -376,15 +376,15 @@ export function ClientDashboardPage() {
         </div>
 
         <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+          <div className="p-2 sm:p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-6 w-6 text-gray-400" />
+                <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-2 sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Cotizaciones</dt>
-                  <dd className="text-lg font-medium text-gray-900">
+                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Cotizaciones</dt>
+                  <dd className="text-sm sm:text-lg font-medium text-gray-900">
                     {quotations.filter(q => q.status === 'pending' || q.status === 'sent').length}
                   </dd>
                 </dl>
@@ -1126,7 +1126,7 @@ export function ClientDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden sm:overflow-x-visible">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Alertas de solicitud de firma pendiente */}
         {state.user?.id && (
@@ -1202,9 +1202,9 @@ export function ClientDashboardPage() {
             </div>
           </div>
           
-          {/* Responsive Stats Grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-            <div className="bg-white/10 rounded-lg p-3">
+          {/* Responsive Stats Grid (mobile: horizontal scroll, desktop: grid) */}
+          <div className="flex space-x-3 overflow-x-auto py-2 sm:grid sm:grid-cols-4 sm:gap-4">
+            <div className="bg-white/10 rounded-lg p-3 min-w-[140px] flex-shrink-0 sm:min-w-0">
               <div className="flex items-center">
                 <TruckIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
                 <div className="ml-2 sm:ml-3">
@@ -1213,7 +1213,7 @@ export function ClientDashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-white/10 rounded-lg p-3">
+            <div className="bg-white/10 rounded-lg p-3 min-w-[140px] flex-shrink-0 sm:min-w-0">
               <div className="flex items-center">
                 <WrenchScrewdriverIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
                 <div className="ml-2 sm:ml-3">
@@ -1224,7 +1224,7 @@ export function ClientDashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-white/10 rounded-lg p-3">
+            <div className="bg-white/10 rounded-lg p-3 min-w-[140px] flex-shrink-0 sm:min-w-0">
               <div className="flex items-center">
                 <CalendarDaysIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
                 <div className="ml-2 sm:ml-3">

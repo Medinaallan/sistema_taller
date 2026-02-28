@@ -35,7 +35,7 @@ export const usePendingInvoices = () => {
     const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
     
     try {
-      console.log('🔍 Obteniendo facturas pendientes desde BD...');
+      
       
       // Obtener facturas con estado "Pendiente" usando el SP
       const response = await fetch(`${API_BASE_URL}/invoices?estado=Pendiente`);
@@ -47,7 +47,7 @@ export const usePendingInvoices = () => {
       const result = await response.json();
       const facturas = result.data as FacturaDB[];
       
-      console.log(`✅ ${facturas.length} facturas pendientes encontradas desde BD`);
+      
       
       // Mapear facturas a la interfaz PendingInvoice
       const pendingInvoices: PendingInvoice[] = facturas.map(factura => ({
@@ -89,7 +89,7 @@ export const usePendingInvoices = () => {
   // al completar la OT. Ahora solo actualizamos el estado de la factura a "Pagada"
   const markAsInvoiced = async (facturaId: number) => {
     try {
-      console.log(`💰 Marcando factura ${facturaId} como pagada...`);
+      
       
       // TODO: Implementar endpoint para cambiar estado de factura a "Pagada"
       // Por ahora, solo actualizamos el estado local
@@ -114,7 +114,7 @@ export const usePendingInvoices = () => {
   const refreshPendingInvoices = async () => {
     setLoading(true);
     try {
-      console.log('🔄 Actualizando facturas pendientes...');
+      
       const facturas = await fetchPendingInvoicesFromDB();
       setPendingInvoices(facturas);
     } catch (error) {

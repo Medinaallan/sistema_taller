@@ -52,7 +52,7 @@ export interface ClientStats {
 // . Obtener todos los clientes
 export async function obtenerClientes(): Promise<Cliente[]> {
   try {
-    console.log('API: Obteniendo todos los clientes...');
+    
     const response = await fetch(`${API_BASE_URL}/clients/registered`, {
       method: 'GET',
       headers: {
@@ -66,7 +66,7 @@ export async function obtenerClientes(): Promise<Cliente[]> {
     if (!result.success || !result.data) {
       throw new Error(result.error || 'Error obteniendo clientes');
     }
-    console.log(`API: ${result.data.length} clientes obtenidos`);
+    
     return result.data;
   } catch (error) {
     console.error('API Error obteniendo clientes:', error);
@@ -77,7 +77,7 @@ export async function obtenerClientes(): Promise<Cliente[]> {
 // 🔍 Obtener un cliente específico
 export async function obtenerCliente(id: string): Promise<Cliente> {
   try {
-    console.log(`API: Obteniendo cliente ${id}...`);
+    
     
     const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
       method: 'GET',
@@ -96,7 +96,7 @@ export async function obtenerCliente(id: string): Promise<Cliente> {
       throw new Error(result.error || 'Cliente no encontrado');
     }
     
-    console.log(`API: Cliente ${result.data.name} obtenido`);
+    
     return result.data;
     
   } catch (error) {
@@ -108,7 +108,7 @@ export async function obtenerCliente(id: string): Promise<Cliente> {
 // ➕ Crear nuevo cliente
 export async function crearCliente(clienteData: ClienteNuevo): Promise<Cliente> {
   try {
-    console.log('API: Creando nuevo cliente...', clienteData.name);
+    
     
     // Obtener usuario_id del localStorage
     const usuario_id = localStorage.getItem('usuario_id');
@@ -135,7 +135,7 @@ export async function crearCliente(clienteData: ClienteNuevo): Promise<Cliente> 
       throw new Error(result.error || 'Error creando cliente');
     }
     
-    console.log(`API: Cliente ${result.data.name} creado (${result.data.id})`);
+    
     return result.data;
     
   } catch (error) {
@@ -147,7 +147,7 @@ export async function crearCliente(clienteData: ClienteNuevo): Promise<Cliente> 
 // 📝 Actualizar cliente
 export async function actualizarCliente(id: string, updates: Partial<ClienteNuevo>): Promise<Cliente> {
   try {
-    console.log(`API: Actualizando cliente ${id}...`);
+    
     
     const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
       method: 'PUT',
@@ -168,7 +168,7 @@ export async function actualizarCliente(id: string, updates: Partial<ClienteNuev
       throw new Error(result.error || 'Error actualizando cliente');
     }
     
-    console.log(`API: Cliente ${result.data.name} actualizado`);
+    
     return result.data;
     
   } catch (error) {
@@ -180,7 +180,7 @@ export async function actualizarCliente(id: string, updates: Partial<ClienteNuev
 // 🗑️ Eliminar cliente
 export async function eliminarCliente(id: string): Promise<void> {
   try {
-    console.log(`API: Eliminando cliente ${id}...`);
+    
     
     const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
       method: 'DELETE',
@@ -200,7 +200,7 @@ export async function eliminarCliente(id: string): Promise<void> {
       throw new Error(result.error || 'Error eliminando cliente');
     }
     
-    console.log(`API: Cliente ${id} eliminado`);
+    
     
   } catch (error) {
     console.error(`API Error eliminando cliente ${id}:`, error);
@@ -211,7 +211,7 @@ export async function eliminarCliente(id: string): Promise<void> {
 // 🔍 Buscar clientes
 export async function buscarClientes(filtros: Record<string, string>): Promise<Cliente[]> {
   try {
-    console.log('API: Buscando clientes con filtros...', filtros);
+    
     
     const queryParams = new URLSearchParams(filtros).toString();
     const response = await fetch(`${API_BASE_URL}/clients/search?${queryParams}`, {
@@ -231,7 +231,7 @@ export async function buscarClientes(filtros: Record<string, string>): Promise<C
       throw new Error(result.error || 'Error buscando clientes');
     }
     
-    console.log(`API: ${result.data.length} clientes encontrados`);
+    
     return result.data;
     
   } catch (error) {
@@ -243,7 +243,7 @@ export async function buscarClientes(filtros: Record<string, string>): Promise<C
 // 📊 Obtener estadísticas de clientes
 export async function obtenerEstadisticasClientes(): Promise<ClientStats> {
   try {
-    console.log('API: Obteniendo estadísticas de clientes...');
+    
     
     const response = await fetch(`${API_BASE_URL}/clients/stats`, {
       method: 'GET',
@@ -262,7 +262,7 @@ export async function obtenerEstadisticasClientes(): Promise<ClientStats> {
       throw new Error(result.error || 'Error obteniendo estadísticas');
     }
     
-    console.log('API: Estadísticas obtenidas');
+    
     return result.data;
     
   } catch (error) {

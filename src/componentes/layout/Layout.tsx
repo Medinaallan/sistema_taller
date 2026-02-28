@@ -143,6 +143,10 @@ export function Layout({ children }: LayoutProps) {
     return `${day}/${month}/${year} - ${hoursStr}:${minutes}:${seconds} ${ampm}`;
   };
 
+  // Dividir fecha y hora para mostrar la hora en una segunda línea en móviles
+  const formattedDateTime = formatDateTime(currentDateTime);
+  const [dateOnly, timeOnly] = formattedDateTime.includes(' - ') ? formattedDateTime.split(' - ') : [formattedDateTime, ''];
+
   // Cargar logo de la empresa
   useEffect(() => {
     const loadCompanyLogo = async () => {
@@ -192,12 +196,16 @@ export function Layout({ children }: LayoutProps) {
     return false;
   });
 
+  // Ajuste de padding responsive para evitar desbordes en móvil
+  // When collapsed we remove left padding so content fills the screen.
+  const mainPadding = state.isNavCollapsed ? 'pl-0' : 'pl-16 sm:pl-64';
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f9fafb' }}>
       {/* Sidebar */}
       <div className={clsx(
-        'fixed inset-y-0 left-0 z-50 shadow-lg transition-all duration-300',
-        state.isNavCollapsed ? 'w-16' : 'w-64'
+        'fixed inset-y-0 left-0 z-50 shadow-lg transition-all duration-300 overflow-hidden',
+        state.isNavCollapsed ? 'w-0' : 'w-64'
       )}
       style={{ backgroundColor: colors.sidebar }}>
         <div className="flex h-16 items-center justify-between border-b px-4" style={{ borderColor: colors.primaryDark }}>
@@ -455,49 +463,64 @@ export function Layout({ children }: LayoutProps) {
         )}
       </div>
 
+      {/* Floating toggle shown only when sidebar is collapsed so user can expand it. */}
+      {state.isNavCollapsed && (
+        <button
+          onClick={handleToggleNav}
+          className="fixed top-4 left-3 z-40 px-3 py-2 rounded-md shadow-md sm:hidden flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(255,255,255,0.95)' }}
+          aria-label="Expand navigation"
+        >
+          <span className="text-sm font-medium text-gray-700">MENU</span>
+        </button>
+      )}
+
       {/* Main content */}
-      <div className={`transition-all duration-300 ${state.isNavCollapsed ? 'pl-16' : 'pl-64'}`}>
+      <div className={`transition-all duration-300 ${mainPadding}`}>
         {/* Header */}
-        <header className="h-16 border-b flex items-center justify-between px-8" style={{ backgroundColor: colors.header, borderColor: colors.primaryDark }}>
+        <header className="h-14 sm:h-16 border-b flex items-center justify-between px-4 sm:px-8" style={{ backgroundColor: colors.header, borderColor: colors.primaryDark }}>
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold" style={{ color: colors.text.primary }}>
-              {/* Título dinámico basado en la ruta actual */}
+            <h1 className="hidden sm:block text-xl font-semibold" style={{ color: colors.text.primary }}>
+              {/* Título dinámico basado en la ruta actual (oculto en móviles) */}
               Control de Talleres Mecanicos
             </h1>
           </div>
           
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-6 min-w-0">
             {/* Reloj en tiempo real */}
-            <div className="flex items-center space-x-3">
-              <svg className="w-6 h-6" style={{ color: '#ffffff' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center space-x-2">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" style={{ color: '#ffffff' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="text-md font-semibold tracking-wide" 
+              <div className="flex flex-col sm:flex-row sm:items-center text-sm sm:text-md font-medium sm:font-semibold tracking-wide min-w-0" 
                    style={{ 
                      color: colors.text.primary,
                      fontFamily: "'Inter', 'Segoe UI', sans-serif",
-                     letterSpacing: '0.5px'
+                     letterSpacing: '0.4px'
                    }}>
-                {formatDateTime(currentDateTime)}
+                <span className="truncate">{dateOnly}</span>
+                <span className="text-sm text-opacity-90 truncate">{timeOnly}</span>
               </div>
             </div>
 
             {/* Botón de Tema */}
-            <ThemeDropdown />
+            <div className="transform scale-90 sm:scale-100">
+              <ThemeDropdown />
+            </div>
 
             {/* Notificaciones (solo para clientes) */}
             {state.user?.role === 'client' && (
               <>
                 <button 
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="p-2 hover:opacity-80 transition-opacity relative" 
+                  className="p-3 sm:p-2 hover:opacity-80 transition-opacity relative rounded-md" 
                   style={{ color: colors.text.primary }}
                 >
-                  <BellIcon className="h-5 w-5" />
+                  <BellIcon className="h-6 w-6 sm:h-5 sm:w-5" />
                   {/* Indicador de notificaciones */}
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white font-medium">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                    <span className="absolute -top-1 -right-1 h-4 w-4 sm:h-4 sm:w-4 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-xs sm:text-xs text-white font-medium">{unreadCount > 9 ? '9+' : unreadCount}</span>
                     </span>
                   )}
                 </button>
@@ -516,7 +539,7 @@ export function Layout({ children }: LayoutProps) {
             )}
             
             {/* Información del usuario */}
-            <div className="text-sm" style={{ color: colors.text.primary }}>
+            <div className="hidden sm:block text-sm" style={{ color: colors.text.primary }}>
               Bienvenido, <span className="font-medium">{state.user?.name}</span>
             </div>
           </div>

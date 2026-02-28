@@ -51,7 +51,6 @@ export function ClientProfilePage() {
   // 🔥 Actualizar el estado global con los clientes cargados
   useEffect(() => {
     if (clientesLegacy && clientesLegacy.length > 0) {
-      console.log('✅ ClientProfilePage: Actualizando estado con', clientesLegacy.length, 'clientes');
       dispatch({ type: 'SET_CLIENTS', payload: clientesLegacy });
     }
   }, [clientesLegacy, dispatch]);
@@ -68,14 +67,12 @@ export function ClientProfilePage() {
       }
 
       setLoadingRelatedData(true);
-      console.log('🔄 Cargando datos relacionados para cliente:', selectedClientId);
 
       try {
         // Cargar vehículos
         const vehiclesResponse = await fetch(`http://localhost:8080/api/vehicles/client/${selectedClientId}`);
         const vehiclesResult = await vehiclesResponse.json();
         if (vehiclesResult.success && vehiclesResult.data) {
-          console.log('✅ Vehículos cargados:', vehiclesResult.data.length);
           setVehiclesData(vehiclesResult.data);
           
           // Actualizar estado global
@@ -97,7 +94,6 @@ export function ClientProfilePage() {
         const ordersResponse = await fetch(`http://localhost:8080/api/work-orders/client/${selectedClientId}`);
         const ordersResult = await ordersResponse.json();
         if (ordersResult.success && ordersResult.data) {
-          console.log('✅ Órdenes de trabajo cargadas:', ordersResult.data.length);
           setWorkOrdersData(ordersResult.data);
           
           // Actualizar estado global
@@ -119,7 +115,6 @@ export function ClientProfilePage() {
           const clientAppointments = appointmentsResult.data.filter((a: any) => 
             a.cliente_id?.toString() === selectedClientId
           );
-          console.log('✅ Citas cargadas:', clientAppointments.length);
           setAppointmentsData(clientAppointments);
           
           // Actualizar estado global
@@ -137,7 +132,6 @@ export function ClientProfilePage() {
         const quotationsResponse = await fetch(`http://localhost:8080/api/quotations/client/${selectedClientId}`);
         const quotationsResult = await quotationsResponse.json();
         if (quotationsResult.success && quotationsResult.data) {
-          console.log('✅ Cotizaciones cargadas:', quotationsResult.data.length);
           setQuotationsData(quotationsResult.data);
           
           // Actualizar estado global

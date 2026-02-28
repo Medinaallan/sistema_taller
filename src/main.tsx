@@ -4,7 +4,6 @@ import './estilos/index.css'
 import App from './App.tsx'
 
 // Inicialización simple sin dependencias de CSV
-console.log('Iniciando aplicación del taller...');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

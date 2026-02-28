@@ -304,7 +304,6 @@ export function VehiclesPage() {
   const loadClients = async () => {
     try {
       setLoadingClients(true);
-      console.log('. Cargando clientes desde BD usando SP_OBTENER_USUARIOS...');
       const response = await clientesService.obtenerClientes();
       
       if (response.success && response.data) {
@@ -323,10 +322,8 @@ export function VehiclesPage() {
           updatedAt: new Date()
         }));
         
-        console.log('✅ Clientes cargados desde BD:', clients.length);
         dispatch({ type: 'SET_CLIENTS', payload: clients });
       } else {
-        console.log('⚠️ No se obtuvieron clientes de la BD');
         dispatch({ type: 'SET_CLIENTS', payload: [] });
       }
     } catch (error) {
@@ -439,10 +436,7 @@ export function VehiclesPage() {
           foto_url: vehicleData.fotoUrl || null,
         };
         
-        console.log('', updateData);
-        
         const response = await vehiclesService.update(selectedVehicle.id, updateData);
-        console.log('', response);
         
         if (response.success) {
           // Update local state
@@ -452,7 +446,7 @@ export function VehiclesPage() {
             updatedAt: new Date(),
           };
           
-          console.log('✅ Vehículo actualizado localmente:', updatedVehicle);
+          
           
           // Detectar cambios para el log
           const changes: any = {};
@@ -480,7 +474,6 @@ export function VehiclesPage() {
         }
       } else {
         // Create new vehicle - USA EXACTAMENTE EL MISMO ENDPOINT DEL TEST QUE FUNCIONÓ
-        console.log(' Creando vehículo desde formulario...');
         
         // Convertir clientId a número exactamente como en el test
         const clienteIdNumerico = parseInt(vehicleData.clientId);
@@ -503,14 +496,12 @@ export function VehiclesPage() {
           foto_url: vehicleData.fotoUrl || ''
         };
         
-        console.log('📤 Enviando payload:', vehiclePayload);
+        
         
         // USAR EL SERVICIO vehiclesService CONFIGURADO CORRECTAMENTE
         const result = await vehiclesService.create(vehiclePayload);
-        console.log('📥 Respuesta del servidor:', result);
         
         if (result.success) {
-          console.log('✅ Vehículo creado exitosamente:', result.data);
           
           // Mapear respuesta del SP a formato Vehicle
           const newVehicle: Vehicle = {
@@ -651,12 +642,7 @@ export function VehiclesPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Detalles
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Órdenes de Trabajo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Citas
-                </th>
+                
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Fecha Registro
                 </th>
@@ -697,26 +683,7 @@ export function VehiclesPage() {
                         <div className="text-sm text-gray-500">{vehicle.mileage.toLocaleString()} km</div>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        Total: {workOrders.length}
-                      </div>
-                      {activeWorkOrders.length > 0 && (
-                        <div className="text-sm text-orange-600">
-                          Activas: {activeWorkOrders.length}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        Total: {appointments.length}
-                      </div>
-                      {upcomingAppointments.length > 0 && (
-                        <div className="text-sm text-blue-600">
-                          Próximas: {upcomingAppointments.length}
-                        </div>
-                      )}
-                    </td>
+                    
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(vehicle.createdAt)}
                     </td>

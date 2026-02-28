@@ -143,10 +143,8 @@ function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
 }
 
 export function ClientsPage() {
-  console.log(' ClientsPage: Iniciando componente...');
-  
   const { dispatch } = useApp();
-  console.log(' ClientsPage: useApp hook ejecutado');
+  
   
   // Usar el nuevo hook para cargar clientes desde API
   const { 
@@ -158,7 +156,7 @@ export function ClientsPage() {
     count 
   } = useClientesFromAPI();
   
-  console.log(' ClientsPage: useClientesFromAPI ejecutado, clientes:', count);
+  
   
   const businessLogs = useBusinessLogs();
   
@@ -169,25 +167,22 @@ export function ClientsPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(0);
 
-  console.log(' ClientsPage: Estados inicializados');
+  
 
   useEffect(() => {
-    console.log(' ClientsPage useEffect: Ejecutando...');
     try {
-      console.log(' ClientsPage: Clientes disponibles:', count);
       if (clientesLegacy && clientesLegacy.length > 0) {
-        console.log(' ClientsPage: Lista de clientes:', clientesLegacy.map((c: any) => ({ id: c.id, name: c.name, email: c.email })));
+        // clientesLegacy available
       }
     } catch (effectError) {
       console.error(' ClientsPage useEffect error:', effectError);
     }
   }, [clientesLegacy, count, forceRefresh]);
 
-  console.log(' ClientsPage: useEffect configurado');
+  
 
   //  AGREGADO: Función para forzar recarga
   const handleForceRefresh = async () => {
-    console.log(' Forzando recarga de clientes...');
     try {
       // Usar la función de recarga del hook
       await recargarClientes();
@@ -217,11 +212,10 @@ export function ClientsPage() {
     client?.phone?.includes(searchTerm)
   );
 
-  console.log(' ClientsPage: Clientes filtrados:', filteredClients.length);
+  
 
   //  PROTECCIÓN: Verificar estados de carga
   if (loading) {
-    console.log(' ClientsPage: Cargando clientes desde API...');
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -244,7 +238,6 @@ export function ClientsPage() {
   }
 
   if (error) {
-    console.log(' ClientsPage: Error cargando clientes:', error);
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -267,7 +260,7 @@ export function ClientsPage() {
     );
   }
 
-  console.log(' ClientsPage: Datos disponibles, renderizando componente completo...');
+  
 
   const handleCreateClient = () => {
     setSelectedClient(null);
@@ -315,8 +308,6 @@ export function ClientsPage() {
   const handleFormSubmit = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       if (modalType === 'create') {
-        console.log('➕ Creando cliente usando SP_REGISTRAR_USUARIO_CLIENTE...');
-        console.log('📤 Datos a enviar:', { name: clientData.name, email: clientData.email, phone: clientData.phone });
         
         // Usar el endpoint que utiliza SP_REGISTRAR_USUARIO_CLIENTE
         // Este SP solo requiere: nombre_completo, correo, telefono
@@ -334,10 +325,8 @@ export function ClientsPage() {
         });
         
         const result = await response.json();
-        console.log('📥 Respuesta del servidor:', result);
         
         if (response.ok && result.success) {
-          console.log('✅ Cliente creado exitosamente:', result.data);
           
           const newClient: Client = {
             id: result.data.id,
@@ -372,8 +361,7 @@ export function ClientsPage() {
         }
         
       } else if (modalType === 'edit' && selectedClient) {
-        console.log('✏️ Editando cliente usando SP_EDITAR_USUARIO...');
-        console.log('📤 Datos a enviar:', { name: clientData.name, email: clientData.email, phone: clientData.phone });
+        
         
         // Usar el endpoint que utiliza SP_EDITAR_USUARIO
         const response = await fetch(`http://localhost:8080/api/clients/${selectedClient.id}`, {
@@ -390,10 +378,8 @@ export function ClientsPage() {
         });
         
         const result = await response.json();
-        console.log('📥 Respuesta del servidor:', result);
         
         if (response.ok && result.success) {
-          console.log('✅ Cliente actualizado exitosamente:', result.data);
           
           const updatedClient: Client = {
             ...selectedClient,

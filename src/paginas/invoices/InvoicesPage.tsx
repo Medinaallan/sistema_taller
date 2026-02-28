@@ -124,7 +124,7 @@ const InvoicesPage = () => {
   const loadPaidInvoicesFromDB = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Cargando facturas pagadas desde BD (SP_OBTENER_PAGOS)...');
+      
       
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
       
@@ -138,7 +138,7 @@ const InvoicesPage = () => {
       const result = await response.json();
       const pagos = result.data as any[];
       
-      console.log(`✅ ${pagos.length} pagos encontrados desde BD`);
+      
       
       // Agrupar pagos por factura (puede haber múltiples pagos para una factura)
       const facturaMap = new Map<number, any>();
@@ -185,7 +185,7 @@ const InvoicesPage = () => {
         })
       );
       
-      console.log(`✅ Items cargados para ${facturasConItems.length} facturas`);
+      
       
       // Mapear facturas de BD a la interfaz GeneratedInvoice
       const invoices: GeneratedInvoice[] = facturasConItems.map(factura => {
@@ -259,7 +259,7 @@ const InvoicesPage = () => {
         };
       });
 
-      console.log(`✅ Facturas pagadas cargadas: ${invoices.length} (con ${invoices.reduce((sum, inv) => sum + inv.items.length, 0)} items totales)`);
+      
       setData(invoices);
       setPersistedData(invoices);
       setFilteredData(invoices);
@@ -288,7 +288,6 @@ const InvoicesPage = () => {
             const summaryResp = await cashService.getCurrentSummary(state.user.id);
             if (summaryResp?.success) {
               setCurrentSession(summaryResp.data);
-              console.log('💼 Sesión de caja actual:', summaryResp.data);
             }
           }
         }
@@ -391,24 +390,18 @@ const InvoicesPage = () => {
           ? new Date(currentSession.closedAt)
           : new Date(); // Hora actual si el turno está abierto
         
-        console.log('🔍 DEBUG FILTRO POR TURNO (HORA EXACTA DE APERTURA):');
-        console.log('  Turno abierto:', sessionOpenedAt.toLocaleString('es-HN'));
-        console.log('  Filtro DESDE:', filterStart.toLocaleString('es-HN'), '(hora exacta de apertura)');
-        console.log('  Filtro HASTA:', filterEnd.toLocaleString('es-HN'), '(hora de cierre/actual)');
-        console.log('  Total facturas antes de filtrar:', list.length);
+        
         
         list = list.filter(inv => {
           const invDate = new Date(inv.date);
           const passes = invDate >= filterStart && invDate <= filterEnd;
           
-          console.log(`  📄 Factura ${inv.invoiceNumber}:`);
-          console.log(`     Fecha factura: ${invDate.toLocaleString('es-HN')}`);
-          console.log(`     ¿Pasa filtro?: ${passes}`);
+          
           
           return passes;
         });
         
-        console.log(`📊 Filtro por turno activo: ${list.length} facturas desde ${filterStart.toLocaleString('es-HN')}`);
+        
       }
 
       if (filterNumber.trim()) {
