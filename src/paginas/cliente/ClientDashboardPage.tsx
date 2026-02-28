@@ -148,7 +148,6 @@ export function ClientDashboardPage() {
           setClientStats(statsResponse.data);
         }
       } catch (error) {
-        console.error('Error cargando historial de servicios:', error);
         setHistoryError('Error de conexión');
       } finally {
         setHistoryLoading(false);
@@ -165,18 +164,15 @@ export function ClientDashboardPage() {
       
       setVehiclesLoading(true);
       try {
-        console.log('Cargando vehículos para cliente:', state.user.id);
-        
         // Llamar al endpoint con el parámetro cliente_id para usar SP_OBTENER_VEHICULOS
         const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
-        
+
         if (!response.ok) {
           throw new Error(`Error HTTP: ${response.status}`);
         }
-        
+
         const result = await response.json();
-        console.log('Respuesta de vehículos:', result);
-        
+
         if (result.success && result.data) {
           const userVehicles = result.data.map((vehicle: any) => ({
             id: vehicle.vehiculo_id?.toString() || vehicle.id?.toString(),
@@ -188,14 +184,11 @@ export function ClientDashboardPage() {
             vin: vehicle.vin || '',
             mileage: parseInt(vehicle.kilometraje || vehicle.mileage) || 0
           }));
-          console.log('Vehículos mapeados:', userVehicles);
           setClientVehicles(userVehicles);
         } else {
-          console.error('Error en respuesta:', result.message);
           setClientVehicles([]);
         }
       } catch (error) {
-        console.error('Error cargando vehículos:', error);
         setClientVehicles([]);
       } finally {
         setVehiclesLoading(false);
@@ -221,20 +214,16 @@ export function ClientDashboardPage() {
   useEffect(() => {
     const loadClientWorkOrders = async () => {
       if (!state?.user?.id) {
-        console.log('No hay usuario autenticado, omitiendo carga de órdenes de trabajo');
         return;
       }
-      
+
       try {
         setWorkOrdersLoading(true);
-        console.log('Cargando órdenes de trabajo para cliente:', state.user.id);
-        
+
         const orders = await workOrdersService.getWorkOrdersByClient(state.user.id.toString());
-        console.log('Órdenes de trabajo cargadas:', orders);
-        
+
         setClientWorkOrders(orders || []);
       } catch (error) {
-        console.error('Error cargando órdenes de trabajo:', error);
         // No romper la UI si falla la carga de órdenes
         setClientWorkOrders([]);
       } finally {
@@ -295,7 +284,6 @@ export function ClientDashboardPage() {
         'Subcotización rechazada.'
       );
     } catch (error) {
-      console.error('Error respondiendo a subcotización:', error);
       showError('Error al procesar la respuesta. Por favor intenta de nuevo.');
     }
   };
@@ -311,12 +299,10 @@ export function ClientDashboardPage() {
     // Recargar órdenes de trabajo para actualizar el estado
     if (state?.user?.id) {
       try {
-        console.log('Recargando órdenes de trabajo después de firma...');
         const orders = await workOrdersService.getWorkOrdersByClient(state.user.id.toString());
         setClientWorkOrders(orders);
-        console.log('Órdenes de trabajo actualizadas:', orders);
       } catch (error) {
-        console.error('Error recargando órdenes de trabajo:', error);
+        // ignore
       }
     }
   };
@@ -1053,65 +1039,6 @@ export function ClientDashboardPage() {
     </div>
   );
 
-  const renderPaymentsTab = () => (
-    <div className="space-y-6">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Pagos y Facturas</h1>
-          <p className="mt-2 text-sm text-gray-700">Gestiona tus pagos y descarga facturas</p>
-        </div>
-      </div>
-
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Métodos de Pago</h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Configura tus métodos de pago preferidos
-          </p>
-        </div>
-        <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            <CreditCardIcon className="h-4 w-4 mr-2" />
-            Agregar Método de Pago
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Facturas Recientes</h3>
-        </div>
-        <div className="border-t border-gray-200">
-          <ul role="list" className="divide-y divide-gray-200">
-            {serviceHistory.map((record) => (
-              <li key={record.id}>
-                <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        Factura #{record.id}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {record.service} - {record.date}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <p className="text-sm font-medium text-gray-900">
-                        {formatCurrency(record.cost)}
-                      </p>
-                      <button className="text-blue-600 hover:text-blue-500 text-sm">
-                        Descargar PDF
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -1120,7 +1047,6 @@ export function ClientDashboardPage() {
       case 'appointments': return renderAppointmentsTab();
       case 'orders': return renderWorkOrdersTab();
       case 'history': return renderHistoryTab();
-      case 'payments': return renderPaymentsTab();
       default: return renderOverviewTab();
     }
   };
@@ -1251,7 +1177,6 @@ export function ClientDashboardPage() {
                 { id: 'appointments', name: 'Citas' },
                 { id: 'orders', name: 'Órdenes de Trabajo' },
                 { id: 'history', name: 'Historial' },
-                { id: 'payments', name: 'Pagos' },
               ].map((tab) => (
                 <option key={tab.id} value={tab.id}>
                   {tab.name}
@@ -1267,7 +1192,7 @@ export function ClientDashboardPage() {
               { id: 'vehicles', name: 'Mis Vehículos', icon: TruckIcon },
               { id: 'orders', name: 'Órdenes de Trabajo', icon: WrenchScrewdriverIcon },
               { id: 'history', name: 'Historial', icon: CheckCircleIcon },
-              { id: 'payments', name: 'Pagos', icon: CreditCardIcon },
+            
             ].map((tab) => (
               <button
                 key={tab.id}

@@ -16,6 +16,7 @@ import {
   ClipboardDocumentCheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
   DocumentTextIcon,
   CreditCardIcon
 } from '@heroicons/react/24/outline';
@@ -109,6 +110,17 @@ export function Layout({ children }: LayoutProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowTop(window.scrollY > 200);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   
   // Obtener cliente ID si el usuario es cliente
   const clientId = state.user?.role === 'client' ? state.user.id : null;
@@ -197,15 +209,17 @@ export function Layout({ children }: LayoutProps) {
   });
 
   // Ajuste de padding responsive para evitar desbordes en móvil
-  // When collapsed we remove left padding so content fills the screen.
-  const mainPadding = state.isNavCollapsed ? 'pl-0' : 'pl-16 sm:pl-64';
+  // When collapsed we remove left padding on mobile; on desktop (lg+) we keep
+  // padding that matches the sidebar width: collapsed -> 16, expanded -> 64.
+  const mainPadding = state.isNavCollapsed ? 'pl-0 lg:pl-16' : 'pl-0 lg:pl-64';
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f9fafb' }}>
-      {/* Sidebar */}
+    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#f9fafb' }}>
+      {/* Sidebar (desktop) */}
       <div className={clsx(
-        'fixed inset-y-0 left-0 z-50 shadow-lg transition-all duration-300 overflow-hidden',
-        state.isNavCollapsed ? 'w-0' : 'w-64'
+        'hidden lg:flex fixed inset-y-0 left-0 z-50 shadow-lg transition-all duration-300 overflow-hidden flex-col overflow-x-hidden',
+        // On desktop we show a narrow collapsed sidebar (icons) or expanded one
+        state.isNavCollapsed ? 'w-16' : 'w-64'
       )}
       style={{ backgroundColor: colors.sidebar }}>
         <div className="flex h-16 items-center justify-between border-b px-4" style={{ borderColor: colors.primaryDark }}>
@@ -246,7 +260,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
         
         <nav className={clsx(
-          'mt-8 overflow-y-auto',
+          'mt-8 overflow-y-auto w-full overflow-x-hidden',
           'max-h-[calc(100vh-166px)]',
           state.isNavCollapsed ? 'px-2' : 'px-4'
         )}>
@@ -393,8 +407,8 @@ export function Layout({ children }: LayoutProps) {
                   <Link
                     to={item.href!}
                     className={clsx(
-                      'flex items-center text-sm font-bold rounded-lg transition-all duration-200',
-                      state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2',
+                      'w-full flex items-center text-sm font-bold rounded-lg transition-all duration-200',
+                      state.isNavCollapsed ? 'justify-center p-2' : 'px-4 py-2 text-left',
                       isActive ? 'text-white shadow-md' : ''
                     )}
                     style={{
@@ -463,23 +477,23 @@ export function Layout({ children }: LayoutProps) {
         )}
       </div>
 
-      {/* Floating toggle shown only when sidebar is collapsed so user can expand it. */}
-      {state.isNavCollapsed && (
-        <button
-          onClick={handleToggleNav}
-          className="fixed top-4 left-3 z-40 px-3 py-2 rounded-md shadow-md sm:hidden flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(255,255,255,0.95)' }}
-          aria-label="Expand navigation"
-        >
-          <span className="text-sm font-medium text-gray-700">MENU</span>
-        </button>
-      )}
+      {/* (removed fixed floating toggle) */}
 
       {/* Main content */}
-      <div className={`transition-all duration-300 ${mainPadding}`}>
+      <div className={`transition-all duration-300 ${mainPadding} w-full`}>
         {/* Header */}
         <header className="h-14 sm:h-16 border-b flex items-center justify-between px-4 sm:px-8" style={{ backgroundColor: colors.header, borderColor: colors.primaryDark }}>
           <div className="flex items-center">
+            {/* Mobile menu button: stays inside header on small screens */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden inline-flex items-center px-3 py-1.5 mr-3 rounded-md"
+              style={{ backgroundColor: colors.primary }}
+              aria-label="Open navigation"
+            >
+              <span className="text-sm font-medium" style={{ color: colors.text.primary }}>MENU</span>
+            </button>
+
             <h1 className="hidden sm:block text-xl font-semibold" style={{ color: colors.text.primary }}>
               {/* Título dinámico basado en la ruta actual (oculto en móviles) */}
               Control de Talleres Mecanicos
@@ -517,14 +531,13 @@ export function Layout({ children }: LayoutProps) {
                   style={{ color: colors.text.primary }}
                 >
                   <BellIcon className="h-6 w-6 sm:h-5 sm:w-5" />
-                  {/* Indicador de notificaciones */}
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 sm:h-4 sm:w-4 bg-red-500 rounded-full flex items-center justify-center">
                       <span className="text-xs sm:text-xs text-white font-medium">{unreadCount > 9 ? '9+' : unreadCount}</span>
                     </span>
                   )}
                 </button>
-                
+
                 {clientId && (
                   <NotificationsDropdown
                     clientId={clientId}
@@ -536,6 +549,45 @@ export function Layout({ children }: LayoutProps) {
                   />
                 )}
               </>
+            )}
+
+            {/* Mobile overlay sidebar (hidden on lg+) */}
+            {mobileOpen && (
+              <div className="lg:hidden fixed inset-0 z-50 flex">
+                {/* Backdrop */}
+                <div className="fixed inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
+                <div className="relative w-64 shadow-xl" style={{ backgroundColor: colors.sidebar }}>
+                  <div className="flex h-16 items-center justify-between border-b px-4" style={{ borderColor: colors.primaryDark }}>
+                    <div className="flex items-center">
+                      {companyLogo ? (
+                        <img src={companyLogo} alt="Logo de la empresa" className="h-12 w-auto object-contain" style={{ filter: 'brightness(0) invert(1)', opacity: 0.95 }} />
+                      ) : (
+                        <WrenchScrewdriverIcon className="h-14 w-14" style={{ color: colors.text.primary }} />
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setMobileOpen(false)}
+                      className="p-2 rounded-lg hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: colors.hover }}
+                    >
+                      <ChevronLeftIcon className="h-5 w-5" style={{ color: colors.text.primary }} />
+                    </button>
+                  </div>
+
+                  <nav className={clsx('mt-8 overflow-y-auto max-h-[calc(100vh-166px)] px-4')}>
+                    <ul className="space-y-2">
+                      {filteredNavigation.map((item) => (
+                        <li key={item.name}>
+                          <Link to={item.href || '#'} className="flex items-center px-4 py-2 text-sm font-bold rounded-lg" onClick={() => setMobileOpen(false)} style={{ color: colors.text.primary }}>
+                            <item.icon className="h-5 w-5 mr-3" style={{ color: colors.text.primary }} />
+                            <span className="truncate">{item.name}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                </div>
+              </div>
             )}
             
             {/* Información del usuario */}
@@ -549,7 +601,21 @@ export function Layout({ children }: LayoutProps) {
         <main className="p-8">
           {children}
         </main>
+        {/* Scroll to top floating button */}
+        {showTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-6 right-4 z-50 p-3 rounded-full shadow-lg flex items-center justify-center"
+            style={{ backgroundColor: colors.primary }}
+            aria-label="Scroll to top"
+          >
+            <ChevronUpIcon className="h-5 w-5" style={{ color: colors.text.primary }} />
+          </button>
+        )}
       </div>
     </div>
   );
 }
+
+// Track scroll to show/hide the floating button
+// (kept outside component to avoid lint warnings about hooks — we'll attach inside via effect)

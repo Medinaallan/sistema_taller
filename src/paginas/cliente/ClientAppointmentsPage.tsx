@@ -71,7 +71,6 @@ export function ClientAppointmentsPage() {
       setLoadingServices(true);
       try {
         const response = await servicesService.getAll();
-        console.log('Respuesta de servicios RAW:', response);
         
         if (response.success && response.data) {
           // Mapear los servicios del CSV al formato esperado
@@ -82,7 +81,6 @@ export function ClientAppointmentsPage() {
             // Si el ID no es numérico, usar el índice + 1 como fallback
             if (!serviceId || isNaN(Number(serviceId))) {
               serviceId = index + 1;
-              console.warn('Servicio sin ID numérico válido, usando índice:', service, 'ID asignado:', serviceId);
             }
             
             return {
@@ -94,8 +92,7 @@ export function ClientAppointmentsPage() {
             };
           });
           
-          console.log('Servicios mapeados:', mappedServices);
-          console.log('IDs de servicios:', mappedServices.map((srv: any) => srv.id));
+          
           
           // Si no hay servicios en el CSV, usar servicios básicos
           if (mappedServices.length === 0) {
@@ -109,7 +106,6 @@ export function ClientAppointmentsPage() {
             setServiceTypes(mappedServices);
           }
         } else {
-          console.error('Error cargando servicios:', response.message);
           // Mantener algunos servicios básicos como fallback
           setServiceTypes([
             { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado'},
@@ -119,7 +115,6 @@ export function ClientAppointmentsPage() {
           ]);
         }
       } catch (error) {
-        console.error('Error cargando servicios:', error);
         // Servicios básicos como fallback
         setServiceTypes([
           { id: 'maintenance', name: 'Mantenimiento Preventivo', description: 'Servicio rutinario programado'},
@@ -143,8 +138,6 @@ export function ClientAppointmentsPage() {
       setLoadingVehicles(true);
       try {
         const response = await vehiclesService.getAll();
-        console.log('Respuesta de vehículos:', response);
-        console.log('Usuario actual ID:', state.user?.id);
         
         if (response.success && response.data) {
           // Filtrar solo los vehículos del cliente actual
@@ -153,7 +146,6 @@ export function ClientAppointmentsPage() {
             .filter((vehicle: any) => {
               const clientId = vehicle.cliente_id || vehicle.clienteId || vehicle.ClienteId;
               const userId = state.user?.id;
-              console.log('Comparando vehículo:', { vehicleClientId: clientId, userId, vehicle });
               return clientId == userId; // Usar == para comparar sin importar el tipo
             })
             .map((vehicle: any) => ({
@@ -167,14 +159,12 @@ export function ClientAppointmentsPage() {
               mileage: parseInt(vehicle.kilometraje || vehicle.mileage || vehicle.Kilometraje || '0')
             }));
           
-          console.log('Vehículos filtrados del usuario:', userVehicles);
+          
           setClientVehicles(userVehicles);
         } else {
-          console.error('Error cargando vehículos:', response.message);
           setClientVehicles([]);
         }
       } catch (error) {
-        console.error('Error cargando vehículos:', error);
         setClientVehicles([]);
       } finally {
         setLoadingVehicles(false);
@@ -192,7 +182,6 @@ export function ClientAppointmentsPage() {
       setLoadingAppointments(true);
       try {
         const response = await appointmentsService.getAll();
-        console.log('Respuesta de citas:', response);
         
         if (response.success && response.data) {
           // Filtrar solo las citas del cliente actual y mapear a formato frontend
@@ -243,14 +232,11 @@ export function ClientAppointmentsPage() {
               };
             });
           
-          console.log('Citas filtradas del usuario:', userAppointments);
           setAppointments(userAppointments);
         } else {
-          console.error('Error cargando citas:', response.message);
           setAppointments([]);
         }
       } catch (error) {
-        console.error('Error cargando citas:', error);
         setAppointments([]);
       } finally {
         setLoadingAppointments(false);
@@ -349,18 +335,11 @@ export function ClientAppointmentsPage() {
         registrado_por: state.user.id // El cliente que registra
       };
 
-      console.log('Payload a enviar:', payload);
-      console.log('vehiculo_id tipo:', typeof payload.vehiculo_id, 'valor:', payload.vehiculo_id);
-      console.log('tipo_servicio_id tipo:', typeof payload.tipo_servicio_id, 'valor:', payload.tipo_servicio_id);
+      
       
       // Validar que los IDs sean números válidos
       if (isNaN(payload.vehiculo_id) || isNaN(payload.tipo_servicio_id)) {
         showError('Error: Los IDs de vehículo o servicio no son válidos. Por favor, selecciona nuevamente.');
-        console.error('IDs inválidos:', {
-          vehiculo_id: payload.vehiculo_id,
-          tipo_servicio_id: payload.tipo_servicio_id,
-          formData
-        });
         return;
       }
 
@@ -403,11 +382,9 @@ export function ClientAppointmentsPage() {
           additionalNotes: '',
         });
       } else {
-        console.error('Error creando cita:', res.message, res);
         showError('Error al crear la cita: ' + (res.message || 'Error desconocido'));
       }
     } catch (error) {
-      console.error('Error creando cita:', error);
       showError('No se pudo conectar con el servidor al crear la cita');
     }
   };
@@ -490,9 +467,8 @@ export function ClientAppointmentsPage() {
                     setSelectedAppointment(mapped);
                     setShowDetails(true);
                   } catch (error) {
-                    console.error('Error cargando detalles de cita:', error);
-                    showError('No se pudieron cargar los detalles de la cita');
-                  }
+                      showError('No se pudieron cargar los detalles de la cita');
+                    }
                 }}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
               >

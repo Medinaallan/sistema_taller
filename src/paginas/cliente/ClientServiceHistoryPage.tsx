@@ -10,6 +10,7 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
+import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 
 interface ServiceRecord {
   id: string;
@@ -50,33 +51,71 @@ export function ClientServiceHistoryPage() {
   const [clientVehicles, setClientVehicles] = useState<Array<{id: string; name: string}>>([]);
   const [loading, setLoading] = useState(true);
 
-  // TODO: Cargar historial de servicios desde SP
+  // Cargar historial de servicios y vehículos del cliente
   useEffect(() => {
     const loadServiceHistory = async () => {
+      if (!state?.user?.id) return;
+
+      setLoading(true);
+
       try {
-        setLoading(true);
-        // TODO: Implementar llamada a API/SP para obtener historial
-        console.log('TODO: Cargar historial de servicios desde BD');
+        // Traer historial y estadísticas (si aplica)
+        const [historyResponse] = await Promise.all([
+          serviceHistoryService.getClientServiceHistory(state.user.id),
+        ]);
+
+        if (historyResponse && historyResponse.success) {
+          setServiceHistory(historyResponse.data || []);
+        } else {
+          setServiceHistory([]);
+        }
+
+        // Cargar vehículos del cliente (misma lógica del dashboard)
+        try {
+          const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
+          if (resp.ok) {
+            const result = await resp.json();
+            if (result.success && result.data) {
+              const userVehicles = result.data.map((vehicle: any) => ({
+                id: vehicle.vehiculo_id?.toString() || vehicle.id?.toString(),
+                name: `${vehicle.marca || ''} ${vehicle.modelo || ''} ${vehicle.placa ? '- ' + vehicle.placa : ''}`.trim(),
+              }));
+              setClientVehicles(userVehicles);
+            } else {
+              setClientVehicles([]);
+            }
+          } else {
+            setClientVehicles([]);
+          }
+        } catch (err) {
+          setClientVehicles([]);
+        }
+
+      } catch (error) {
         setServiceHistory([]);
         setClientVehicles([]);
-      } catch (error) {
-        console.error('Error cargando historial:', error);
       } finally {
         setLoading(false);
       }
     };
-    
-    loadServiceHistory();
-  }, []);
 
+    loadServiceHistory();
+  }, [state?.user?.id]);
+
+  const term = searchTerm.trim().toLowerCase();
   const filteredServices = serviceHistory
-    .filter(service => 
-      (filterVehicle === 'all' || service.vehicleId === filterVehicle) &&
-      (filterYear === 'all' || service.date.startsWith(filterYear)) &&
-      (service.serviceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       service.vehicleName.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    .filter(service => {
+      const matchesVehicle = filterVehicle === 'all' || String(service.vehicleId || '') === filterVehicle;
+      const matchesYear = filterYear === 'all' || String(service.date || '').startsWith(filterYear);
+
+      const serviceType = (service.serviceType || '').toString().toLowerCase();
+      const description = (service.description || '').toString().toLowerCase();
+      const vehicleName = (service.vehicleName || '').toString().toLowerCase();
+
+      const matchesTerm = term === '' || serviceType.includes(term) || description.includes(term) || vehicleName.includes(term);
+
+      return matchesVehicle && matchesYear && matchesTerm;
+    })
     .sort((a, b) => {
       switch (sortBy) {
         case 'cost':
@@ -109,15 +148,28 @@ export function ClientServiceHistoryPage() {
     }).format(amount);
   };
 
-  const totalSpent = serviceHistory.reduce((sum, service) => sum + service.cost, 0);
-  const averageRating = serviceHistory.filter(s => s.rating).reduce((sum, service) => sum + (service.rating || 0), 0) / serviceHistory.filter(s => s.rating).length;
+  const totalSpent = serviceHistory.reduce((sum, service) => {
+    const cost = (service as any).cost ?? (service as any).servicePrice ?? (service as any).price ?? 0;
+    return sum + (Number(cost) || 0);
+  }, 0);
+  const ratingValues = serviceHistory.filter(s => s.rating != null).map(s => s.rating || 0);
+  const averageRating = ratingValues.length ? ratingValues.reduce((sum, r) => sum + r, 0) / ratingValues.length : 0;
 
   const renderServiceCard = (service: ServiceRecord) => {
-    const statusConfig = getStatusConfig(service.status);
+    const status = (service as any).status ?? service.status ?? 'completed';
+    const statusConfig = getStatusConfig(status);
     const StatusIcon = statusConfig.icon;
 
+    const serviceId = (service as any).id ?? (service as any)._id ?? (service as any).history_id ?? service.id;
+    const serviceName = (service as any).serviceType ?? (service as any).serviceName ?? (service as any).service ?? '';
+    const vehicleName = (service as any).vehicleName ?? (service as any).vehicle ?? '';
+    const vehiclePlate = (service as any).vehiclePlate ?? (service as any).placa ?? '';
+    const serviceDescription = (service as any).description ?? (service as any).serviceDescription ?? (service as any).notes ?? '';
+    const dateText = (service as any).date ?? (service as any).createdAt ?? '';
+    const costValue = Number((service as any).cost ?? (service as any).servicePrice ?? (service as any).price ?? 0) || 0;
+
     return (
-      <div key={service.id} className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden">
+      <div key={serviceId} className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
@@ -126,9 +178,9 @@ export function ClientServiceHistoryPage() {
                 <CheckCircleIcon className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">{service.serviceType}</h3>
-                <p className="text-sm text-gray-600">#{service.id}</p>
-                <p className="text-sm text-gray-500">{service.vehicleName}</p>
+                <h3 className="text-lg font-bold text-gray-900">{serviceName}</h3>
+                <p className="text-sm text-gray-600">#{serviceId}</p>
+                <p className="text-sm text-gray-500">{vehicleName}{vehiclePlate ? ` • ${vehiclePlate}` : ''}</p>
               </div>
             </div>
             <div className="text-right">
@@ -147,7 +199,7 @@ export function ClientServiceHistoryPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Costo</p>
-              <p className="text-sm font-semibold text-gray-900">{formatCurrency(service.cost)}</p>
+              <p className="text-sm font-semibold text-gray-900">{formatCurrency(costValue)}</p>
             </div>
           </div>
 
@@ -198,7 +250,7 @@ export function ClientServiceHistoryPage() {
           </div>
 
           {/* Descripción */}
-          <p className="text-sm text-gray-700 mb-4 line-clamp-2">{service.description}</p>
+          <p className="text-sm text-gray-700 mb-4 line-clamp-2">{serviceDescription}</p>
 
           {/* Acciones */}
           <div className="flex space-x-2">
