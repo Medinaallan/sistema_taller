@@ -50,6 +50,9 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     producto_id: ''
   });
 
+  // Modo manual para repuestos (producto personalizado)
+  const [modoManualRepuesto, setModoManualRepuesto] = useState(false);
+
   // Items agregados
   const [items, setItems] = useState<QuotationItem[]>([]);
 
@@ -245,6 +248,10 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       showWarning('Debe seleccionar un tipo de servicio');
       return;
     }
+    if (itemForm.tipo_item === 'Repuesto' && !modoManualRepuesto && (!itemForm.producto_id || itemForm.producto_id.trim() === '')) {
+      showWarning('Debe seleccionar un producto del catálogo o usar el modo manual');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -274,6 +281,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         tipo_servicio_id: '',
         producto_id: ''
       });
+      setModoManualRepuesto(false);
 
       showSuccess('Item agregado exitosamente');
     } catch (error) {
@@ -331,7 +339,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     try {
       setLoading(true);
       
-      console.log(`🎯 Finalizando cotización #${cotizacionId}`);
+      console.log(` Finalizando cotización #${cotizacionId}`);
       
       // Cambiar estado de la cita a "aprobada" cuando se finaliza la cotización
       if (appointment && appointment.id) {
@@ -348,9 +356,9 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
             }
           );
           
-          console.log('✅ Estado de cita actualizado a "aprobada"');
+          console.log(' Estado de cita actualizado a "aprobada"');
         } catch (error) {
-          console.error('⚠️ Error al cambiar estado de cita:', error);
+          console.error(' Error al cambiar estado de cita:', error);
           // Continuar aunque falle el cambio de estado
         }
       }
@@ -370,6 +378,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
   const resetModal = () => {
     setStep('info');
     setCotizacionId(null);
+    setModoManualRepuesto(false);
     setFormData({
       fecha_vencimiento: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       comentario: ''
@@ -496,7 +505,10 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                 </label>
                 <Select
                   value={itemForm.tipo_item}
-                  onChange={(e) => setItemForm({ ...itemForm, tipo_item: e.target.value as 'Servicio' | 'Repuesto', tipo_servicio_id: '', producto_id: '', descripcion: '', precio_unitario: 0 })}
+                  onChange={(e) => {
+                    setModoManualRepuesto(false);
+                    setItemForm({ ...itemForm, tipo_item: e.target.value as 'Servicio' | 'Repuesto', tipo_servicio_id: '', producto_id: '', descripcion: '', precio_unitario: 0 });
+                  }}
                   options={[
                     { value: 'Servicio', label: 'Servicio' },
                     { value: 'Repuesto', label: 'Repuesto' }
@@ -533,28 +545,56 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
 
               {itemForm.tipo_item === 'Repuesto' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Producto *
-                  </label>
-                  <Select
-                    value={itemForm.producto_id}
-                    onChange={(e) => handleProductChange(e.target.value)}
-                    options={
-                      loadingProducts 
-                        ? [{ value: '', label: 'Cargando productos...' }]
-                        : [
-                            { value: '', label: '-- Seleccionar producto --' },
-                            ...(Array.isArray(products) ? products.map((p) => ({
-                              value: p.id || '',
-                              label: `${p.name || 'Producto sin nombre'} - L${(p.price || 0).toLocaleString()} ${p.stock !== undefined ? `(Stock: ${p.stock})` : ''}`
-                            })).filter(opt => opt.value) : [])
-                          ]
-                    }
-                    disabled={loadingProducts}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Al seleccionar un producto, el precio y descripción se completarán automáticamente
-                  </p>
+                  {/* Toggle entre catálogo y manual */}
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {modoManualRepuesto ? 'Producto Manual' : 'Producto *'}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModoManualRepuesto(!modoManualRepuesto);
+                        setItemForm(prev => ({ ...prev, producto_id: '', descripcion: '', precio_unitario: 0 }));
+                      }}
+                      className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                        modoManualRepuesto
+                          ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                      }`}
+                    >
+                      {modoManualRepuesto ? '← Volver al catálogo' : '+ Crear producto manual'}
+                    </button>
+                  </div>
+
+                  {!modoManualRepuesto ? (
+                    <>
+                      <Select
+                        value={itemForm.producto_id}
+                        onChange={(e) => handleProductChange(e.target.value)}
+                        options={
+                          loadingProducts 
+                            ? [{ value: '', label: 'Cargando productos...' }]
+                            : [
+                                { value: '', label: '-- Seleccionar producto --' },
+                                ...(Array.isArray(products) ? products.map((p) => ({
+                                  value: p.id || '',
+                                  label: `${p.name || 'Producto sin nombre'} - L${(p.price || 0).toLocaleString()} ${p.stock !== undefined ? `(Stock: ${p.stock})` : ''}`
+                                })).filter(opt => opt.value) : [])
+                              ]
+                        }
+                        disabled={loadingProducts}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Al seleccionar un producto, el precio y descripción se completarán automáticamente
+                      </p>
+                    </>
+                  ) : (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-3">
+                      <p className="text-xs text-orange-600 font-medium">
+                         Modo manual: ingrese los datos del repuesto que no está en el catálogo
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -565,12 +605,19 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                 <TextArea
                   value={itemForm.descripcion}
                   onChange={(e) => setItemForm({ ...itemForm, descripcion: e.target.value })}
-                  placeholder="Descripción del servicio o repuesto..."
+                  placeholder={modoManualRepuesto ? 'Ej: Filtro de aceite genérico, Tornillo especial...' : 'Descripción del servicio o repuesto...'}
                   rows={2}
                   maxLength={200}
+                  readOnly={!modoManualRepuesto && itemForm.tipo_item === 'Repuesto' && itemForm.producto_id !== ''}
+                  className={!modoManualRepuesto && itemForm.tipo_item === 'Repuesto' && itemForm.producto_id !== '' ? 'bg-gray-100 cursor-not-allowed' : ''}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {itemForm.tipo_item === 'Servicio' ? 'Se completa automáticamente al seleccionar servicio' : 'Describe el repuesto'}
+                  {modoManualRepuesto
+                    ? `${itemForm.descripcion.length}/200 caracteres — Escriba la descripción del repuesto`
+                    : itemForm.tipo_item === 'Servicio'
+                      ? 'Se completa automáticamente al seleccionar servicio'
+                      : 'Describe el repuesto'
+                  }
                 </p>
               </div>
 
@@ -597,18 +644,23 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
                     step="0.01"
                     value={itemForm.precio_unitario}
                     onChange={(e) => setItemForm({ ...itemForm, precio_unitario: parseFloat(e.target.value) || 0 })}
-                    placeholder={itemForm.tipo_item === 'Servicio' ? 'Se completa al seleccionar servicio' : 'Se completa al seleccionar producto'}
-                    readOnly={(itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0) || (itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0)}
-                    className={(itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0) || (itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0) ? 'bg-gray-100 cursor-not-allowed' : ''}
+                    placeholder={modoManualRepuesto ? 'Ingrese el precio' : (itemForm.tipo_item === 'Servicio' ? 'Se completa al seleccionar servicio' : 'Se completa al seleccionar producto')}
+                    readOnly={!modoManualRepuesto && ((itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0) || (itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0))}
+                    className={!modoManualRepuesto && ((itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0) || (itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0)) ? 'bg-gray-100 cursor-not-allowed' : ''}
                   />
                   {itemForm.tipo_item === 'Servicio' && itemForm.precio_unitario > 0 && (
                     <p className="text-xs text-green-600 mt-1">
                       ✓ Precio del servicio: L{itemForm.precio_unitario.toLocaleString()} (no editable)
                     </p>
                   )}
-                  {itemForm.tipo_item === 'Repuesto' && itemForm.precio_unitario > 0 && (
+                  {itemForm.tipo_item === 'Repuesto' && !modoManualRepuesto && itemForm.precio_unitario > 0 && (
                     <p className="text-xs text-green-600 mt-1">
                       ✓ Precio del producto: L{itemForm.precio_unitario.toLocaleString()} (no editable)
+                    </p>
+                  )}
+                  {modoManualRepuesto && (
+                    <p className="text-xs text-orange-600 mt-1">
+                       Ingrese el precio manualmente
                     </p>
                   )}
                 </div>

@@ -16,6 +16,64 @@ function mapInvoiceFields(factura) {
     factura.tax = factura.impuestos;
   }
   
+  // Mapear fecha_emision -> fecha (mantener ambos por compatibilidad)
+  if (factura.fecha_emision !== undefined && factura.fecha === undefined) {
+    factura.fecha = factura.fecha_emision;
+  }
+  
+  // Mapear fecha_emision -> createdAt (para compatibilidad con resolveInvoiceDate)
+  if (factura.fecha_emision !== undefined && factura.createdAt === undefined) {
+    factura.createdAt = factura.fecha_emision;
+  }
+  
+  // Mapear factura_id -> id (mantener ambos por compatibilidad)
+  if (factura.factura_id !== undefined && factura.id === undefined) {
+    factura.id = factura.factura_id.toString();
+  }
+  
+  // Mapear nombre_cliente -> clientName (mantener ambos por compatibilidad)
+  if (factura.nombre_cliente !== undefined && factura.clientName === undefined) {
+    factura.clientName = factura.nombre_cliente;
+  }
+  
+  // Mapear cliente_id -> clientId (mantener ambos por compatibilidad)
+  if (factura.cliente_id !== undefined && factura.clientId === undefined) {
+    factura.clientId = factura.cliente_id.toString();
+  }
+  
+  // Mapear registrado_por -> createdBy (para compatibilidad)
+  if (factura.registrado_por !== undefined && factura.createdBy === undefined) {
+    factura.createdBy = factura.registrado_por.toString();
+  }
+  
+  // Si no hay createdBy, usar valor por defecto
+  if (!factura.createdBy) {
+    factura.createdBy = 'Sistema';
+  }
+  
+  // Si no hay metodoPago, usar valor por defecto
+  if (!factura.metodoPago) {
+    factura.metodoPago = 'Efectivo';
+  }
+  
+  // Asegurar que items sea un array
+  if (!factura.items) {
+    factura.items = [];
+  }
+  
+  // Mapear estado -> estado lowercase para TypeScript
+  if (factura.estado && typeof factura.estado === 'string') {
+    // Backend usa "Pendiente"/"Pagada", frontend usa "pendiente"/"pagada"/"anulada"
+    const estadoLower = factura.estado.toLowerCase();
+    if (['pendiente', 'pagada', 'anulada'].includes(estadoLower)) {
+      factura.estado = estadoLower;
+    }
+  }
+  
+  // Asegurar que campos SAR estén disponibles para impresión
+  // (cai_grabado, fecha_limite_emision, rango_inicial, rango_final, etc.)
+  // Estos ya vienen del SP_OBTENER_FACTURAS, solo los preservamos
+  
   return factura;
 }
 

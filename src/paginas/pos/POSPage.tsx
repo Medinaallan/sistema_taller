@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Package, FileText, Wrench, User } from 'lucide-react';
+import { ShoppingCart, Search, Package, FileText, Wrench, User, Plus, X } from 'lucide-react';
 import type { Client } from '../../tipos';
 import usePendingInvoices from '../../hooks/usePendingInvoices';
 import { serviceHistoryService } from '../../servicios/serviceHistoryService';
@@ -96,6 +96,16 @@ const POSPage: React.FC = () => {
   // Hook para manejar facturas pendientes
   const { pendingInvoices, loading: pendingLoading, refreshPendingInvoices } = usePendingInvoices();
 
+  // Estado para modal de crear producto manual
+  const [showCreateProductModal, setShowCreateProductModal] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({
+    descripcion: '',
+    cantidad: 1,
+    precio_final_unitario: 0,
+    porcentaje_descuento: 0
+  });
+  const [creatingProduct, setCreatingProduct] = useState(false);
+
   // Productos cargados desde backend /api/products
   const [products, setProducts] = useState<POSItem[]>([] as POSItem[]);
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -146,10 +156,11 @@ const POSPage: React.FC = () => {
     const checkCashStatus = async () => {
       if (!state.user?.id) return;
       try {
-        const resp = await cashService.checkStatus(state.user.id);
+        const userId = typeof state.user.id === 'string' ? parseInt(state.user.id) : state.user.id;
+        const resp = await cashService.checkStatus(userId);
         if (resp && resp.success && resp.data?.estado === 'Abierta') {
           // Si está abierta, cargar el resumen actual
-          const summaryResp = await cashService.getCurrentSummary(state.user.id);
+          const summaryResp = await cashService.getCurrentSummary(userId);
           if (summaryResp && summaryResp.success) {
             setCurrentSession(summaryResp.data);
           }
@@ -166,7 +177,8 @@ const POSPage: React.FC = () => {
   const loadReport = async () => {
     if (!state.user?.id) return;
     try {
-      const resp = await cashService.getHistory(state.user.id);
+      const userId = typeof state.user.id === 'string' ? parseInt(state.user.id) : state.user.id;
+      const resp = await cashService.getHistory(userId);
       if (resp && resp.success) setReportData(resp.data || []);
       else setReportData([]);
     } catch (err) {
@@ -688,15 +700,19 @@ const POSPage: React.FC = () => {
             factura = {
               factura_id: facturaData.factura_id || activeFacturaId,
               numero: facturaData.numero || facturaData.numero_factura,
+              cai_grabado: facturaData.cai_grabado || '',
               cliente_id: facturaData.cliente_id || 0,
+              nombre_cliente: facturaData.nombre_cliente || facturaData.cliente_nombre || 'CONSUMIDOR FINAL',
               clientName: facturaData.nombre_cliente || facturaData.cliente_nombre || 'CONSUMIDOR FINAL',
               clientEmail: '',
+              vehicleName: '',
+              totalAmount: parseFloat(facturaData.total) || posState.total,
               total: parseFloat(facturaData.total) || posState.total,
               subtotal: parseFloat(facturaData.subtotal) || posState.subtotal,
-              impuesto: parseFloat(facturaData.impuestos) || parseFloat(facturaData.impuesto) || posState.tax,
+              impuestos: parseFloat(facturaData.impuestos) || parseFloat(facturaData.impuesto) || posState.tax,
               saldo_pendiente: parseFloat(facturaData.saldo_pendiente) || parseFloat(facturaData.total) || posState.total,
               estado: facturaData.estado || 'pendiente',
-              fecha: facturaData.fecha_emision || facturaData.fecha || new Date().toISOString(),
+              fecha_emision: facturaData.fecha_emision || facturaData.fecha || new Date().toISOString(),
               numero_ot: facturaData.numero_ot || null,
               telefono: facturaData.telefono || ''
             };
@@ -800,7 +816,7 @@ const POSPage: React.FC = () => {
           newInvoice = {
             id: facturaId.toString(),
             numero: originalInvoice.numero,
-            fecha: new Date().toISOString(),
+            fecha: originalInvoice.fecha_emision || new Date().toISOString(),
             clientId: finalClientId,
             clientName: finalClientName,
             items: posState.cart.map(item => ({
@@ -820,7 +836,9 @@ const POSPage: React.FC = () => {
             metodoPago: 'Efectivo',
             estado: 'pagada' as 'pagada' | 'pendiente' | 'anulada',
             createdBy: state.user?.name || 'Usuario',
-            createdAt: new Date().toISOString()
+            createdAt: originalInvoice.fecha_emision || new Date().toISOString(),
+            // Información fiscal SAR
+            cai_grabado: originalInvoice.cai_grabado
           };
           
           // Agregar al historial
@@ -1016,6 +1034,36 @@ const POSPage: React.FC = () => {
         <div className="flex-1 p-4 overflow-y-auto">
           {posState.activeTab === 'products' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {/* Card para crear producto personalizado */}
+              <div
+                onClick={() => {
+                  if (!activeFacturaId) {
+                    Swal.fire({
+                      icon: 'warning',
+                      title: 'Sin Factura Activa',
+                      html: '<p>Debe enlazar una Orden de Trabajo o crear una Venta Regular primero.</p>',
+                      confirmButtonColor: '#3b82f6'
+                    });
+                    return;
+                  }
+                  setNewProductForm({ descripcion: '', cantidad: 1, precio_final_unitario: 0, porcentaje_descuento: 0 });
+                  setShowCreateProductModal(true);
+                }}
+                className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md cursor-pointer transition-shadow border-2 border-dashed border-blue-400 hover:border-blue-600 group"
+              >
+                <div className="aspect-square bg-blue-50 rounded-lg mb-2 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                  <Plus className="w-10 h-10 text-blue-500 group-hover:text-blue-700" />
+                </div>
+                <div className="text-center">
+                  <div className="mb-1 text-xs bg-blue-600 text-white px-2 py-1 rounded font-semibold">
+                    AGREGAR PRODUCTO
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Personalizado
+                  </p>
+                </div>
+              </div>
+
               {filteredProducts.map(product => (
                 <div
                   key={product.id}
@@ -1340,10 +1388,11 @@ const POSPage: React.FC = () => {
                     return;
                   }
                   try {
-                    const resp = await cashService.openSession(state.user.id, openingAmount);
+                    const userId = typeof state.user.id === 'string' ? parseInt(state.user.id) : state.user.id;
+                    const resp = await cashService.openSession(userId, openingAmount);
                     if (resp && resp.success) {
                       // Recargar resumen actual para actualizar currentSession
-                      const summaryResp = await cashService.getCurrentSummary(state.user.id);
+                      const summaryResp = await cashService.getCurrentSummary(userId);
                       if (summaryResp && summaryResp.success) {
                         setCurrentSession(summaryResp.data);
                       }
@@ -1387,7 +1436,8 @@ const POSPage: React.FC = () => {
                     return;
                   }
                   try {
-                    const resp = await cashService.closeSession(state.user.id, closingCountedCash, closingNotes);
+                    const userId = typeof state.user.id === 'string' ? parseInt(state.user.id) : state.user.id;
+                    const resp = await cashService.closeSession(userId, closingCountedCash, closingNotes);
                     if (resp && resp.success) {
                       setCurrentSession(null);
                       setShowCloseModal(false);
@@ -1561,6 +1611,13 @@ const POSPage: React.FC = () => {
             let invoiceForPrint = null;
             try {
               invoiceForPrint = await invoicesService.getInvoiceById(String(invoiceId));
+              console.log('📄 Factura cargada para impresión:', {
+                id: invoiceForPrint?.id,
+                numero: invoiceForPrint?.numero,
+                fecha: invoiceForPrint?.fecha,
+                createdAt: invoiceForPrint?.createdAt,
+                fecha_emision: (invoiceForPrint as any)?.fecha_emision
+              });
             } catch (error) {
               console.error('Error cargando factura para imprimir:', error);
             }
@@ -1592,6 +1649,205 @@ const POSPage: React.FC = () => {
             setSelectedInvoiceForPayment(null);
           }}
         />
+      )}
+
+      {/* Modal Crear Producto Personalizado */}
+      {showCreateProductModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-blue-600 rounded-t-xl">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Agregar Producto a Factura
+              </h3>
+              <button
+                onClick={() => setShowCreateProductModal(false)}
+                className="text-white hover:text-gray-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-gray-500 mb-2">
+                Factura activa: <span className="font-semibold text-blue-600">#{activeFacturaId}</span>
+              </p>
+
+              {/* Descripción */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descripción <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={200}
+                  placeholder="Ej: Filtro de aceite, Servicio de alineación..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={newProductForm.descripcion}
+                  onChange={e => setNewProductForm(prev => ({ ...prev, descripcion: e.target.value }))}
+                />
+                <p className="text-xs text-gray-400 mt-1">{newProductForm.descripcion.length}/200 caracteres</p>
+              </div>
+
+              {/* Cantidad y Precio en fila */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Cantidad */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cantidad <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    placeholder="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={newProductForm.cantidad || ''}
+                    onChange={e => setNewProductForm(prev => ({ ...prev, cantidad: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+
+                {/* Precio Unitario */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Precio Unitario (L.) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={newProductForm.precio_final_unitario || ''}
+                    onChange={e => setNewProductForm(prev => ({ ...prev, precio_final_unitario: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+              </div>
+
+              {/* Descuento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descuento (%)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={newProductForm.porcentaje_descuento || ''}
+                  onChange={e => setNewProductForm(prev => ({ ...prev, porcentaje_descuento: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+
+              {/* Preview del total */}
+              {newProductForm.cantidad > 0 && newProductForm.precio_final_unitario > 0 && (
+                <div className="bg-gray-50 rounded-lg p-3 border">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Subtotal:</span>
+                    <span>L.{(newProductForm.cantidad * newProductForm.precio_final_unitario).toFixed(2)}</span>
+                  </div>
+                  {newProductForm.porcentaje_descuento > 0 && (
+                    <div className="flex justify-between text-sm text-red-500">
+                      <span>Descuento ({newProductForm.porcentaje_descuento}%):</span>
+                      <span>-L.{((newProductForm.cantidad * newProductForm.precio_final_unitario) * newProductForm.porcentaje_descuento / 100).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-gray-800 mt-1 pt-1 border-t">
+                    <span>Total:</span>
+                    <span>L.{((newProductForm.cantidad * newProductForm.precio_final_unitario) * (1 - newProductForm.porcentaje_descuento / 100)).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer con botones */}
+            <div className="px-6 py-4 border-t bg-gray-50 rounded-b-xl flex justify-end gap-3">
+              <button
+                onClick={() => setShowCreateProductModal(false)}
+                className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                disabled={creatingProduct}
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={creatingProduct || !newProductForm.descripcion.trim() || newProductForm.cantidad <= 0 || newProductForm.precio_final_unitario <= 0}
+                onClick={async () => {
+                  if (!activeFacturaId) return;
+                  setCreatingProduct(true);
+                  try {
+                    const usuario_id = localStorage.getItem('usuario_id');
+                    const result = await invoiceItemsService.addItem({
+                      factura_id: activeFacturaId,
+                      descripcion: newProductForm.descripcion.trim(),
+                      cantidad: newProductForm.cantidad,
+                      precio_final_unitario: newProductForm.precio_final_unitario,
+                      porcentaje_descuento: newProductForm.porcentaje_descuento,
+                      registrado_por: usuario_id ? parseInt(usuario_id) : 1
+                    });
+
+                    if (result.allow === 1) {
+                      // Recargar items desde BD para sincronizar carrito
+                      const items = await invoicesService.getInvoiceItems(activeFacturaId);
+                      const cartItems: CartItem[] = items.map((item: any) => ({
+                        id: `invoice-${activeFacturaId}-item-${item.factura_item_id}`,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        total: item.total,
+                        category: item.type === 'service' ? 'SERVICIOS' : 'REPUESTOS',
+                        type: item.type,
+                        isTaxed: true,
+                        exento: false,
+                        exonerado: false,
+                        es_obligatorio: item.es_obligatorio || false,
+                        is_from_ot: !!item.is_from_ot,
+                        factura_item_id: item.factura_item_id
+                      }));
+
+                      setPosState(prev => ({ ...prev, cart: cartItems }));
+                      setShowCreateProductModal(false);
+
+                      await Swal.fire({
+                        icon: 'success',
+                        title: 'Producto Agregado',
+                        text: `"${newProductForm.descripcion}" agregado a la factura`,
+                        timer: 1500,
+                        showConfirmButton: false
+                      });
+                    }
+                  } catch (error: any) {
+                    console.error('Error agregando producto personalizado:', error);
+                    await Swal.fire({
+                      icon: 'error',
+                      title: 'Error',
+                      text: error.message || 'No se pudo agregar el producto',
+                      confirmButtonColor: '#ef4444'
+                    });
+                  } finally {
+                    setCreatingProduct(false);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {creatingProduct ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Agregando...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Agregar a Factura
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
