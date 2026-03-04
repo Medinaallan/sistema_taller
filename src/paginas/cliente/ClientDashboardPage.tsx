@@ -307,78 +307,22 @@ export function ClientDashboardPage() {
     }
   };
 
+  // Función para obtener el saludo según la hora
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const firstName = state.user?.name?.split(' ')[0] || 'Usuario';
+    
+    if (hour >= 6 && hour < 12) {
+      return `¡Buen día, ${firstName}! ☕`;
+    } else if (hour >= 12 && hour < 18) {
+      return `¡Buenas tardes, ${firstName}! 🌤️`;
+    } else {
+      return `¡Buenas noches, ${firstName}! 🌌`;
+    }
+  };
+
   const renderOverviewTab = () => (
       <div className="space-y-6">
-      {/* Quick Stats - mobile: 4 cols grid, desktop keep previous layout */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-2 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TruckIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
-              </div>
-              <div className="ml-2 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Vehículos Activos</dt>
-                  <dd className="text-sm sm:text-lg font-medium text-gray-900">{clientVehicles.length}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-2 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <WrenchScrewdriverIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
-              </div>
-              <div className="ml-2 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Servicios Activos</dt>
-                  <dd className="text-sm sm:text-lg font-medium text-gray-900">
-                    {clientWorkOrders.filter(o => o.estado !== 'Completada' && o.estado !== 'Cerrada' && o.estado !== 'Cancelada').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-2 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CalendarDaysIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
-              </div>
-              <div className="ml-2 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Próximas Citas</dt>
-                  <dd className="text-sm sm:text-lg font-medium text-gray-900">{appointments.length}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-2 sm:p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
-              </div>
-              <div className="ml-2 sm:ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">Cotizaciones</dt>
-                  <dd className="text-sm sm:text-lg font-medium text-gray-900">
-                    {quotations.filter(q => q.status === 'pending' || q.status === 'sent').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Recent Activity */}
       <div className="bg-white shadow rounded-lg">
@@ -423,7 +367,7 @@ export function ClientDashboardPage() {
     <div className="space-y-6">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Mis Vehículos</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Vehículos</h1>
           <p className="mt-2 text-sm text-gray-700">Información de tus vehículos registrados</p>
         </div>
       </div>
@@ -1107,8 +1051,10 @@ export function ClientDashboardPage() {
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 sm:p-6 text-white mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
             <div className="mb-4 sm:mb-0">
-              <h1 className="text-xl sm:text-2xl font-bold">Mi Panel de Control</h1>
-              <p className="text-blue-100 text-sm sm:text-base">Bienvenido, {state.user?.name}</p>
+              {/* Título dinámico solo en responsive, en desktop mantenemos el original */}
+              <h1 className="text-xl sm:text-2xl font-bold block sm:hidden">{getGreeting()}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold hidden sm:block">Mi Panel de Control</h1>
+              <p className="text-blue-100 text-sm sm:text-base hidden sm:block">Bienvenido, {state.user?.name}</p>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3">
               <button
@@ -1128,9 +1074,9 @@ export function ClientDashboardPage() {
             </div>
           </div>
           
-          {/* Responsive Stats Grid (mobile: horizontal scroll, desktop: grid) */}
-          <div className="flex space-x-3 overflow-x-auto py-2 sm:grid sm:grid-cols-4 sm:gap-4">
-            <div className="bg-white/10 rounded-lg p-3 min-w-[140px] flex-shrink-0 sm:min-w-0">
+          {/* Grid 2x2 en responsive, grid 4 columnas en desktop - Los indicadores ahora están dentro del panel azul */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="bg-white/10 rounded-lg p-3">
               <div className="flex items-center">
                 <TruckIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
                 <div className="ml-2 sm:ml-3">
@@ -1139,7 +1085,7 @@ export function ClientDashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-white/10 rounded-lg p-3 min-w-[140px] flex-shrink-0 sm:min-w-0">
+            <div className="bg-white/10 rounded-lg p-3">
               <div className="flex items-center">
                 <WrenchScrewdriverIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
                 <div className="ml-2 sm:ml-3">
@@ -1150,12 +1096,23 @@ export function ClientDashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-white/10 rounded-lg p-3 min-w-[140px] flex-shrink-0 sm:min-w-0">
+            <div className="bg-white/10 rounded-lg p-3">
               <div className="flex items-center">
                 <CalendarDaysIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
                 <div className="ml-2 sm:ml-3">
                   <p className="text-xs sm:text-sm text-blue-200">Próximas Citas</p>
                   <p className="text-lg sm:text-xl font-semibold text-white">{appointments.length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-3">
+              <div className="flex items-center">
+                <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-200" />
+                <div className="ml-2 sm:ml-3">
+                  <p className="text-xs sm:text-sm text-blue-200">Cotizaciones</p>
+                  <p className="text-lg sm:text-xl font-semibold text-white">
+                    {additionalQuotations.filter(q => q.estado === 'pendiente-aprobacion').length}
+                  </p>
                 </div>
               </div>
             </div>

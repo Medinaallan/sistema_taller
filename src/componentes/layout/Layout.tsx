@@ -18,7 +18,9 @@ import {
   ChevronRightIcon,
   ChevronUpIcon,
   DocumentTextIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  ChatBubbleBottomCenterTextIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 import { useApp } from '../../contexto/useApp';
 import { useTheme } from '../../hooks/useTheme';
@@ -43,7 +45,7 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, roles: ['admin', 'mechanic', 'receptionist'] },
-  { name: 'Mi Panel', href: '/client-dashboard', icon: HomeIcon, roles: ['client'] },
+  { name: 'Inicio', href: '/client-dashboard', icon: HomeIcon, roles: ['client'] },
   { 
     name: 'Gestión', 
     icon: ClipboardDocumentListIcon, 
@@ -66,10 +68,10 @@ const navigationItems: NavigationItem[] = [
     ]
   },
   { name: 'Vehículos', href: '/vehicles', icon: TruckIcon, roles: ['admin', 'receptionist', 'mechanic'] },
-  { name: 'Mis Vehículos', href: '/client-vehicles', icon: TruckIcon, roles: ['client'] },
-  { name: 'Solicitar Cita', href: '/client-appointments', icon: CalendarDaysIcon, roles: ['client'] },
-  { name: 'Mis Cotizaciones', href: '/client-quotations', icon: DocumentTextIcon, roles: ['client'] },
-  { name: 'Mis Órdenes de Trabajo', href: '/client-workorders', icon: ClipboardDocumentCheckIcon, roles: ['client'] },
+  { name: 'Vehículos', href: '/client-vehicles', icon: TruckIcon, roles: ['client'] },
+  { name: 'Solicitar cita', href: '/client-appointments', icon: CalendarDaysIcon, roles: ['client'] },
+  { name: 'Cotizaciones', href: '/client-quotations', icon: DocumentTextIcon, roles: ['client'] },
+  { name: 'Órdenes de trabajo', href: '/client-workorders', icon: ClipboardDocumentCheckIcon, roles: ['client'] },
   // Productos dropdown with nested children: Ver listado, Stock -> Inventario, Proveedores -> Proveedores
   {
     name: 'Productos',
@@ -83,11 +85,11 @@ const navigationItems: NavigationItem[] = [
   },
   { name: 'Servicios', href: '/services', icon: WrenchScrewdriverIcon, roles: ['admin', 'receptionist', 'mechanic'] },
   { name: 'Bitácora', href: '/logs', icon: BellIcon, roles: ['admin'] },
-  { name: 'Recordatorios', href: '/reminders', icon: BellIcon, roles: ['admin', 'receptionist', 'mechanic'] },
-  { name: 'Mis Recordatorios', href: '/client-reminders', icon: BellIcon, roles: ['client'] },
-  { name: 'Historial de Servicios', href: '/client-service-history', icon: DocumentTextIcon, roles: ['client'] },
+  { name: 'Recordatorios', href: '/reminders', icon: ClockIcon, roles: ['admin', 'receptionist', 'mechanic'] },
+  { name: 'Recordatorios', href: '/client-reminders', icon: ClockIcon, roles: ['client'] },
+  { name: 'Historial de servicios', href: '/client-service-history', icon: DocumentTextIcon, roles: ['client'] },
   { name: 'Historial Global', href: '/admin-historial', icon: DocumentTextIcon, roles: ['admin', 'receptionist'] },
-  { name: 'Chat con Taller', href: '/client-chat', icon: BellIcon, roles: ['client'] },
+  { name: 'Chat', href: '/client-chat', icon: ChatBubbleBottomCenterTextIcon, roles: ['client'] },
   { 
     name: 'Reportes', 
     icon: ChartBarIcon, 

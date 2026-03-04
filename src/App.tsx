@@ -1,5 +1,6 @@
 import AdminChatPage from './paginas/administracion/chat/AdminChatPage';
 import ClientChatPage from './paginas/cliente/chat/ClientChatPage';
+import ClientChatInboxPage from './paginas/cliente/chat/ClientChatInboxPage';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './contexto/AppProvider';
@@ -157,8 +158,18 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Bandeja de entrada del chat (lista de conversaciones) */}
       <Route
         path="/client-chat"
+        element={
+          <ProtectedRoute>
+            <ClientChatInboxPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Chat directo con una sala específica */}
+      <Route
+        path="/client-chat/:salaId"
         element={
           <ProtectedRoute>
             <ClientChatPage />

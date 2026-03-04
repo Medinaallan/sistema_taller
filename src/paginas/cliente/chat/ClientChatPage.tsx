@@ -1,14 +1,18 @@
 
 import { useEffect, useRef, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { chatService, ChatMensajeDTO } from '../../../servicios/chatService';
 import { useApp } from '../../../contexto/useApp';
 import ImageModal from '../../../componentes/comunes/ImageModal';
 import { showError } from '../../../utilidades/sweetAlertHelpers';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 interface LocalMsg extends ChatMensajeDTO {}
 
 export default function ClientChatPage() {
   const { state } = useApp();
+  const { salaId: salaIdParam } = useParams<{ salaId: string }>();
+  const navigate = useNavigate();
   // ID de la sala y del usuario (ahora números)
   const [salaId, setSalaId] = useState<number | null>(null);
   const [usuarioId, setUsuarioId] = useState<number | null>(null);
@@ -40,18 +44,25 @@ export default function ClientChatPage() {
         chatService.conectar();
         chatService.setUserContext(usuarioIdNum, 'client');
         
-        // Obtener las salas de chat del usuario usando SP_OBTENER_CHATS_USUARIO
-        console.log('🔍 Obteniendo salas de chat para usuario_id:', usuarioIdNum);
-        const salas = await chatService.obtenerChatsUsuario(usuarioIdNum);
-        console.log('📋 Salas de chat obtenidas:', salas.length, salas);
-        
-        if (salas && salas.length > 0) {
-          // Usar la primera sala disponible (o la más reciente)
-          setSalaId(salas[0].sala_id);
-          console.log('✅ Sala seleccionada:', salas[0].sala_id, 'OT:', salas[0].numero_ot);
+        // Si hay un salaId en la URL, usar ese. Si no, obtener las salas del usuario
+        if (salaIdParam) {
+          const salaIdNum = parseInt(salaIdParam, 10);
+          console.log('✅ Usando sala de URL:', salaIdNum);
+          setSalaId(salaIdNum);
         } else {
-          console.warn('⚠️ No se encontraron salas de chat para el usuario');
-          console.warn('⚠️ Asegúrate de tener una orden de trabajo asignada');
+          // Obtener las salas de chat del usuario usando SP_OBTENER_CHATS_USUARIO
+          console.log('🔍 Obteniendo salas de chat para usuario_id:', usuarioIdNum);
+          const salas = await chatService.obtenerChatsUsuario(usuarioIdNum);
+          console.log('📋 Salas de chat obtenidas:', salas.length, salas);
+          
+          if (salas && salas.length > 0) {
+            // Usar la primera sala disponible (o la más reciente)
+            setSalaId(salas[0].sala_id);
+            console.log('✅ Sala seleccionada:', salas[0].sala_id, 'OT:', salas[0].numero_ot);
+          } else {
+            console.warn('⚠️ No se encontraron salas de chat para el usuario');
+            console.warn('⚠️ Asegúrate de tener una orden de trabajo asignada');
+          }
         }
       } catch (error) {
         console.error('❌ Error obteniendo salas de chat:', error);
@@ -63,7 +74,7 @@ export default function ClientChatPage() {
       }
     })();
     return () => { cancelado = true; };
-  }, [state.user]);
+  }, [state.user, salaIdParam]);
 
   // Conectar y unir a la sala ya resuelta
   useEffect(() => {
@@ -184,6 +195,14 @@ export default function ClientChatPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-200 flex flex-col">
       <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col p-2 sm:p-4 relative">
         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          {/* Botón de volver */}
+          <button
+            onClick={() => navigate('/client-chat')}
+            className="p-2 rounded-lg hover:bg-white/50 transition-colors"
+            title="Volver a conversaciones"
+          >
+            <ArrowLeftIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-900" />
+          </button>
           <img src="https://cdn-icons-png.flaticon.com/512/3208/3208722.png" alt="Taller" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border shadow" />
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-2xl font-bold text-blue-900 truncate">Chat con el Taller</h1>

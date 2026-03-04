@@ -549,29 +549,36 @@ export function ClientWorkOrdersPage() {
           </div>
         </div>
 
-        {/* Filtros responsivos */}
-        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-100">
-          <div className="flex flex-wrap gap-2">
-            {[
-              { key: 'all', label: 'Todas', count: workOrders.length },
-              { key: 'active', label: 'Activas', count: workOrders.filter(o => !['completed', 'cancelled'].includes(o.status)).length },
-              { key: 'completed', label: 'Completadas', count: workOrders.filter(o => o.status === 'completed').length }
-            ].map((filter) => (
-              <button
-                key={filter.key}
-                onClick={() => setActiveFilter(filter.key as any)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center ${
-                  activeFilter === filter.key
-                    ? 'bg-orange-100 text-orange-700'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {filter.label}
-                <span className="ml-2 bg-white px-2 py-0.5 rounded-full text-xs">
-                  {filter.count}
-                </span>
-              </button>
-            ))}
+        {/* Pestañas de filtrado responsivas */}
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm mb-6 sm:mb-8 border border-gray-100">
+          {/* Tabs container con scroll horizontal en mobile */}
+          <div className="overflow-x-auto">
+            <div className="flex border-b border-gray-200 min-w-max sm:min-w-0">
+              {[
+                { key: 'all', label: 'Todas', count: workOrders.length },
+                { key: 'active', label: 'Activas', count: workOrders.filter(o => !['completed', 'cancelled'].includes(o.status)).length },
+                { key: 'completed', label: 'Completadas', count: workOrders.filter(o => o.status === 'completed').length }
+              ].map((filter) => (
+                <button
+                  key={filter.key}
+                  onClick={() => setActiveFilter(filter.key as any)}
+                  className={`px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors border-b-2 flex items-center whitespace-nowrap ${
+                    activeFilter === filter.key
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  }`}
+                >
+                  {filter.label}
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    activeFilter === filter.key
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {filter.count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
