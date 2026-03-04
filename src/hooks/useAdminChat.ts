@@ -171,12 +171,19 @@ export function useAdminChat() {
       const salaId = msg.sala_id;
       let sala = salasRef.current.get(salaId);
       if (!sala) {
+        console.log('  ➕ Creando nueva sala en salasRef:', salaId);
         sala = { sala_id: salaId, mensajes: [], cargandoHistorial: false, historialCargado: false };
         salasRef.current.set(salaId, sala);
       }
-      // Evitar duplicados por optimistic UI
+      // Evitar duplicados por optimistic UI - usar actualización inmutable
       if (!sala.mensajes.find(m => m.mensaje_id === msg.mensaje_id)) {
-        sala.mensajes.push(msg);
+        console.log('  ✅ Agregando mensaje a sala', salaId);
+        // Crear nuevo array inmutable en lugar de mutar
+        sala.mensajes = [...sala.mensajes, msg];
+        // Actualizar la referencia en el Map
+        salasRef.current.set(salaId, { ...sala });
+      } else {
+        console.log('  ⏭️  Mensaje duplicado ignorado');
       }
       // Actualizar datos de cliente (ultimo mensaje / no leidos)
       setClientes(prev => prev.map(c => {
@@ -192,6 +199,7 @@ export function useAdminChat() {
         }
         return c;
       }));
+  console.log('  🔄 Forzando re-render con setRenderTick');
   setRenderTick(n => n + 1);
     });
     return () => {

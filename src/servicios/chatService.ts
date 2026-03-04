@@ -73,24 +73,31 @@ class ChatService {
   }
 
   conectar() {
-    if (this.socket) return;
+    if (this.socket) {
+      console.log('⚠️ [chatService] Socket ya está conectado');
+      return;
+    }
+    console.log('🔌 [chatService] Conectando socket a:', this.opciones.socketUrl);
     this.socket = io(this.opciones.socketUrl, {
       transports: ['websocket'],
       auth: this.opciones.token ? { token: this.opciones.token } : undefined
     });
 
     this.socket.on('connect', () => {
+      console.log('✅ [chatService] Socket conectado, ID:', this.socket?.id);
       this.conectado = true;
       this.emitirLocal('connect');
     });
 
     this.socket.on('disconnect', () => {
+      console.log('❌ [chatService] Socket desconectado');
       this.conectado = false;
       this.emitirLocal('disconnect');
     });
 
     // Evento de mensaje nuevo
     this.socket.on('chat:mensaje', (msg: any) => {
+      console.log('📥 [chatService] Socket recibió chat:mensaje:', { sala_id: msg.sala_id, mensaje_id: msg.mensaje_id, contenido: msg.contenido });
       const normalizado: ChatMensajeDTO = {
         mensaje_id: msg.mensaje_id,
         sala_id: msg.sala_id,
@@ -106,6 +113,7 @@ class ChatService {
         archivo_url: msg.archivo_url,
         tipo_archivo: msg.tipo_archivo
       };
+      console.log('  🔄 Emitiendo local a listeners');
       this.emitirLocal('chat:mensaje', normalizado);
     });
 
@@ -171,7 +179,11 @@ class ChatService {
 
   // Unir a sala (el backend maneja rooms reales con Socket.IO)
   unirSala(sala_id: number, usuario_consultante?: number) {
-    if (!this.socket) return;
+    if (!this.socket) {
+      console.warn('⚠️ [chatService] No se puede unir a sala - socket no conectado');
+      return;
+    }
+    console.log('🚪 [chatService] Uniéndose a sala:', { sala_id, usuario_consultante: usuario_consultante || this.currentUserId });
     this.socket.emit('joinRoom', { 
       sala_id, 
       usuario_consultante: usuario_consultante || this.currentUserId 
@@ -180,6 +192,7 @@ class ChatService {
 
   salirSala(sala_id: number) {
     if (!this.socket) return;
+    console.log('🚪 [chatService] Saliendo de sala:', sala_id);
     this.socket.emit('leaveRoom', { sala_id });
   }
 
@@ -192,7 +205,10 @@ class ChatService {
     archivo_url?: string; 
     tipo_archivo?: string; 
   }) {
-    if (!this.socket) return;
+    if (!this.socket) {
+      console.warn('⚠️ [chatService] No se puede enviar mensaje - socket no conectado');
+      return;
+    }
     
     const mensaje = {
       sala_id: data.sala_id,
@@ -203,6 +219,7 @@ class ChatService {
       tipo_archivo: data.tipo_archivo
     };
     
+    console.log('💬 [chatService] Enviando mensaje:', { sala_id: mensaje.sala_id, contenido: mensaje.contenido.substring(0, 50) });
     this.socket.emit('chat:send', mensaje);
   }
 
