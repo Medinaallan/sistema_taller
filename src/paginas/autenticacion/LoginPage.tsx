@@ -302,7 +302,7 @@ export function LoginPage() {
       case 'initialSetup': return 'Configuración del Sistema';
       case 'forgotPassword': return 'Recuperar Contraseña';
       case 'resetPassword': return 'Restablecer Contraseña';
-      default: return 'Iniciar Sesión';
+      default: return 'Iniciar sesión';
     }
   };
 
@@ -519,9 +519,7 @@ export function LoginPage() {
                   <h2 className="text-3xl font-bold text-white mb-2">
                     {getTitle()}
                   </h2>
-                  <p className="text-gray-300 text-sm">
-                    {getDescription()}
-                  </p>
+                  {/* subtitle removed per UI update */}
                 </div>
 
                 <form className="space-y-6" onSubmit={(e) => {
@@ -577,7 +575,7 @@ export function LoginPage() {
                     
                     <div className="group">
                       <label className="block text-sm font-medium text-gray-300 mb-2 group-focus-within:text-white transition-colors">
-                        Correo Electrónico
+                        Correo electrónico
                       </label>
                       <div className="relative">
                         <input
@@ -643,7 +641,7 @@ export function LoginPage() {
                       <span className="ml-3">
                         {loading 
                           ? 'Iniciando sesión...' 
-                          : (viewMode === 'setup' ? 'Crear Administrador' : 'Iniciar Sesión')
+                          : (viewMode === 'setup' ? 'Crear Administrador' : 'Iniciar sesión')
                         }
                       </span>
                     </button>
@@ -681,7 +679,7 @@ export function LoginPage() {
                         
                         <button
                           type="button"
-                          className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
+                          className="w-full text-sm text-gray-300 hover:text-white transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
                           onClick={() => setViewMode('forgotPassword')}
                         >
                           ¿Olvidaste tu contraseña?
@@ -729,9 +727,7 @@ export function LoginPage() {
               <h2 className="text-2xl font-bold text-white mb-2">
                 {getTitle()}
               </h2>
-              <p className="text-gray-300 text-sm">
-                {getDescription()}
-              </p>
+              {/* subtitle removed per UI update */}
             </div>
 
             <form className="space-y-6" onSubmit={(e) => {
@@ -786,9 +782,9 @@ export function LoginPage() {
                 )}
                 
                 <div className="group">
-                  <label className="block text-sm font-medium text-gray-300 mb-2 group-focus-within:text-white transition-colors">
-                    Correo Electrónico
-                  </label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2 group-focus-within:text-white transition-colors">
+                        Correo electrónico
+                      </label>
                   <div className="relative">
                     <input
                       id="email"
@@ -853,7 +849,7 @@ export function LoginPage() {
                   <span className="ml-3">
                     {loading 
                       ? 'Iniciando sesión...' 
-                      : (viewMode === 'setup' ? 'Crear Administrador' : 'Iniciar Sesión')
+                      : (viewMode === 'setup' ? 'Crear Administrador' : 'Iniciar sesión')
                     }
                   </span>
                 </button>
@@ -891,7 +887,7 @@ export function LoginPage() {
                     
                     <button
                       type="button"
-                      className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
+                      className="w-full text-sm text-gray-300 hover:text-white transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-white/5"
                       onClick={() => setViewMode('forgotPassword')}
                     >
                       ¿Olvidaste tu contraseña?
@@ -904,13 +900,11 @@ export function LoginPage() {
 
           {/* Footer Mobile */}
           <div className="text-center mt-8">
-            <p className="text-gray-400 text-sm">
-              Sistema de Gestión para Talleres Mecánicos
-            </p>
+            {/* mobile footer text removed per UI update */}
             <div className="mt-2 flex justify-center space-x-4 text-xs text-gray-500">
               <span>v2.0</span>
               <span>•</span>
-              <span>2025</span>
+              <span>{new Date().getFullYear()}</span>
             </div>
           </div>
         </div>

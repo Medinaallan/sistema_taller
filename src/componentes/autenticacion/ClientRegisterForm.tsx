@@ -288,11 +288,13 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
         }
         break;
     }
-  };  const getStepTitle = () => {
+  };
+
+  const getStepTitle = () => {
     switch (currentStep) {
-      case 'email': return 'Verificar Email';
-      case 'info': return 'Información Personal';
-      case 'code': return 'Verificar Código';
+      case 'email': return 'Verificar email';
+      case 'info': return 'Información personal';
+      case 'code': return 'Verificar código';
       case 'password': return 'Crear Contraseña';
     }
   };
@@ -309,9 +311,11 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">{getStepTitle()}</h2>
-        <p className="text-sm text-gray-600">{getStepDescription()}</p>
-        
+        <h2 className="text-2xl font-bold text-white">{getStepTitle()}</h2>
+        {currentStep !== 'email' && currentStep !== 'info' && currentStep !== 'code' && (
+          <p className="text-sm text-gray-600">{getStepDescription()}</p>
+        )}
+
         {/* Indicador de progreso */}
         <div className="flex items-center space-x-2 mt-4">
           {['email', 'info', 'code', 'password'].map((step, index) => (
@@ -343,7 +347,8 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
             id="email"
             name="email"
             type="email"
-            label="Correo Electrónico"
+            label="Correo electrónico"
+            labelClassName="text-white"
             value={formData.email}
             onChange={handleInputChange}
             error={errors.email}
@@ -358,7 +363,8 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               id="name"
               name="name"
               type="text"
-              label="Nombre Completo"
+              label="Nombre completo"
+              labelClassName="text-white"
               value={formData.name}
               onChange={handleInputChange}
               error={errors.name}
@@ -370,6 +376,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               name="phone"
               type="tel"
               label="Teléfono"
+              labelClassName="text-white"
               value={formData.phone}
               onChange={handleInputChange}
               error={errors.phone}
@@ -385,7 +392,8 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               id="code"
               name="code"
               type="text"
-              label="Código de Seguridad"
+              label="Ingrese el código enviado a su correo"
+              labelClassName="text-white"
               value={formData.code}
               onChange={handleInputChange}
               error={errors.code}
@@ -393,24 +401,6 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               maxLength={6}
               required
             />
-            {securityCode && (
-              <div className="text-sm bg-green-50 border border-green-200 p-4 rounded-md">
-                <div className="flex items-center">
-                  <div className="text-green-800">
-                    <strong>Código de seguridad (SIMULACIÓN):</strong>
-                    <div className="text-lg font-mono bg-green-100 px-2 py-1 rounded mt-1">
-                      {securityCode}
-                    </div>
-                    <p className="mt-2 text-xs text-green-600">
-                      En producción, este código se enviaría por email.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-md">
-              <strong>Para pruebas:</strong> Revise la consola del navegador (F12) para ver el código de seguridad generado.
-            </div>
           </>
         )}
 
@@ -421,6 +411,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               name="password"
               type="password"
               label="Contraseña"
+              labelClassName="text-white"
               value={formData.password}
               onChange={handleInputChange}
               error={errors.password}
@@ -433,6 +424,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               name="confirmPassword"
               type="password"
               label="Confirmar Contraseña"
+              labelClassName="text-white"
               value={formData.confirmPassword}
               onChange={handleInputChange}
               error={errors.confirmPassword}

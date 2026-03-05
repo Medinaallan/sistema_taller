@@ -64,13 +64,14 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  labelClassName?: string;
 }
 
-export function Input({ label, error, helperText, className, ...props }: InputProps) {
+export function Input({ label, error, helperText, className, labelClassName, ...props }: InputProps) {
   return (
     <div>
       {label && (
-        <label className="label" htmlFor={props.id}>
+        <label className={clsx('label', labelClassName)} htmlFor={props.id}>
           {label}
         </label>
       )}
