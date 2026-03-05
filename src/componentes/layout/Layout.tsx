@@ -548,6 +548,7 @@ export function Layout({ children }: LayoutProps) {
                       setNotificationsOpen(false);
                       refreshCount();
                     }}
+                    onNotificationsChanged={refreshCount}
                   />
                 )}
               </>

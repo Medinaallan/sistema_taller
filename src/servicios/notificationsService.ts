@@ -79,6 +79,13 @@ class NotificationsService {
         }
       });
       const data = await response.json();
+      if (!response.ok) {
+        console.error('Error HTTP al marcar como leída:', response.status, data);
+        return {
+          success: false,
+          error: data?.message || `HTTP ${response.status}`
+        };
+      }
       return data;
     } catch (error) {
       console.error('Error marcando notificación como leída:', error);
@@ -101,6 +108,13 @@ class NotificationsService {
         }
       });
       const data = await response.json();
+      if (!response.ok) {
+        console.error('Error HTTP al marcar todas como leídas:', response.status, data);
+        return {
+          success: false,
+          error: data?.message || `HTTP ${response.status}`
+        };
+      }
       return data;
     } catch (error) {
       console.error('Error marcando todas como leídas:', error);

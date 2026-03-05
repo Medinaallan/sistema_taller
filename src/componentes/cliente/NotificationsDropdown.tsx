@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import notificationsService, { Notification } from '../../servicios/notificationsService';
 
 interface NotificationsDropdownProps {
   clientId: string;
   isOpen: boolean;
   onClose: () => void;
+  onNotificationsChanged?: () => void;
 }
 
-export default function NotificationsDropdown({ clientId, isOpen, onClose }: NotificationsDropdownProps) {
+export default function NotificationsDropdown({ clientId, isOpen, onClose, onNotificationsChanged }: NotificationsDropdownProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && clientId) {
@@ -17,7 +19,7 @@ export default function NotificationsDropdown({ clientId, isOpen, onClose }: Not
     }
   }, [isOpen, clientId]);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const response = await notificationsService.getClientNotifications(clientId);
@@ -30,32 +32,78 @@ export default function NotificationsDropdown({ clientId, isOpen, onClose }: Not
     } finally {
       setLoading(false);
     }
-  };
+  }, [clientId]);
 
   const handleMarkAsRead = async (notificationId: string) => {
+    // Optimistic update: mark as read immediately in local state
+    setNotifications(prev =>
+      prev.map(n => String(n.id) === notificationId ? { ...n, isRead: true, readAt: new Date().toISOString() } : n)
+    );
+    setActionLoading(notificationId);
+
     try {
-      await notificationsService.markAsRead(notificationId);
-      loadNotifications();
+      const result = await notificationsService.markAsRead(notificationId);
+      if (!result.success) {
+        console.error('Error del servidor al marcar como leída:', result.error || result.message);
+        // Revert optimistic update on failure
+        await loadNotifications();
+      } else {
+        // Notify parent to update badge count
+        onNotificationsChanged?.();
+      }
     } catch (error) {
       console.error('Error marcando como leída:', error);
+      // Revert optimistic update on failure
+      await loadNotifications();
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleMarkAllAsRead = async () => {
+    // Optimistic update: mark all as read immediately
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() }))
+    );
+    setActionLoading('all');
+
     try {
-      await notificationsService.markAllAsRead(clientId);
-      loadNotifications();
+      const result = await notificationsService.markAllAsRead(clientId);
+      if (!result.success) {
+        console.error('Error del servidor al marcar todas como leídas:', result.error || result.message);
+        // Revert optimistic update on failure
+        await loadNotifications();
+      } else {
+        // Notify parent to update badge count
+        onNotificationsChanged?.();
+      }
     } catch (error) {
       console.error('Error marcando todas como leídas:', error);
+      // Revert optimistic update on failure
+      await loadNotifications();
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleDelete = async (notificationId: string) => {
+    // Optimistic update: remove from list immediately
+    setNotifications(prev => prev.filter(n => String(n.id) !== notificationId));
+    setActionLoading(notificationId);
+
     try {
-      await notificationsService.deleteNotification(notificationId);
-      loadNotifications();
+      const result = await notificationsService.deleteNotification(notificationId);
+      if (!result.success) {
+        console.error('Error del servidor al eliminar:', result.error || result.message);
+        await loadNotifications();
+      } else {
+        onNotificationsChanged?.();
+      }
     } catch (error) {
       console.error('Error eliminando notificación:', error);
+      await loadNotifications();
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -126,9 +174,10 @@ export default function NotificationsDropdown({ clientId, isOpen, onClose }: Not
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                disabled={actionLoading === 'all'}
+                className={`text-sm text-blue-600 hover:text-blue-800 ${actionLoading === 'all' ? 'opacity-50 cursor-wait' : ''}`}
               >
-                Marcar todas
+                {actionLoading === 'all' ? 'Marcando...' : 'Marcar todas'}
               </button>
             )}
             <button
@@ -182,15 +231,17 @@ export default function NotificationsDropdown({ clientId, isOpen, onClose }: Not
                         <div className="flex items-center space-x-2">
                           {!notification.isRead && (
                             <button
-                              onClick={() => handleMarkAsRead(notification.id)}
-                              className="text-xs text-blue-600 hover:text-blue-800"
+                              onClick={() => handleMarkAsRead(String(notification.id))}
+                              disabled={actionLoading === String(notification.id)}
+                              className={`text-xs text-blue-600 hover:text-blue-800 ${actionLoading === String(notification.id) ? 'opacity-50 cursor-wait' : ''}`}
                             >
-                              Marcar leída
+                              {actionLoading === String(notification.id) ? 'Marcando...' : 'Marcar leída'}
                             </button>
                           )}
                           <button
-                            onClick={() => handleDelete(notification.id)}
-                            className="text-xs text-red-600 hover:text-red-800"
+                            onClick={() => handleDelete(String(notification.id))}
+                            disabled={actionLoading === String(notification.id)}
+                            className={`text-xs text-red-600 hover:text-red-800 ${actionLoading === String(notification.id) ? 'opacity-50 cursor-wait' : ''}`}
                           >
                             Eliminar
                           </button>

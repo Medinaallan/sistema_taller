@@ -65,10 +65,10 @@ class NotificationsService {
             serviceName: r.servicio_nombre || r.tipo_servicio_nombre || null,
             raw: r
           },
-          isRead: !!(r.leida === 1 || r.isRead === true || r.read === 1 || r.leido === 1),
+          isRead: !!(r.leida === 1 || r.leida === true || r.isRead === true || r.read === 1 || r.read === true || r.leido === 1 || r.leido === true),
           createdAt: createdAt,
           sentAt: createdAt,
-          readAt: r.fecha_leida || r.read_at || r.leida_en || null
+          readAt: r.fecha_lectura || r.fecha_leida || r.read_at || r.leida_en || null
         };
       });
 
@@ -109,10 +109,10 @@ class NotificationsService {
           title: r.titulo || r.title || r.subject || '',
           message: r.cuerpo || r.message || r.body || '',
           metadata: { raw: r },
-          isRead: !!(r.leida === 1 || r.isRead === true || r.read === 1 || r.leido === 1),
+          isRead: !!(r.leida === 1 || r.leida === true || r.isRead === true || r.read === 1 || r.read === true || r.leido === 1 || r.leido === true),
           createdAt: createdAt,
           sentAt: createdAt,
-          readAt: r.fecha_leida || r.read_at || r.leida_en || null
+          readAt: r.fecha_lectura || r.fecha_leida || r.read_at || r.leida_en || null
         };
       });
 
@@ -169,7 +169,7 @@ class NotificationsService {
   async getUnreadCount(usuario_id) {
     try {
       const list = await this.getClientNotifications(parseInt(usuario_id, 10));
-      return Array.isArray(list) ? list.filter(n => !n.isRead && !n.leida && !n.read && !n.leido).length : 0;
+      return Array.isArray(list) ? list.filter(n => !n.isRead).length : 0;
     } catch (error) {
       console.error('Error obteniendo conteo de notificaciones no leídas:', error);
       throw error;
