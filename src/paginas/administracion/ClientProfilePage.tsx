@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { 
   Card, Button, Select, Badge, Modal, Tabs, Tab
 } from '../../componentes/comunes/UI';
@@ -70,7 +71,7 @@ export function ClientProfilePage() {
 
       try {
         // Cargar vehículos
-        const vehiclesResponse = await fetch(`http://localhost:8080/api/vehicles/client/${selectedClientId}`);
+        const vehiclesResponse = await fetch(`${appConfig.apiBaseUrl}/vehicles/client/${selectedClientId}`);
         const vehiclesResult = await vehiclesResponse.json();
         if (vehiclesResult.success && vehiclesResult.data) {
           setVehiclesData(vehiclesResult.data);
@@ -91,7 +92,7 @@ export function ClientProfilePage() {
         }
 
         // Cargar órdenes de trabajo
-        const ordersResponse = await fetch(`http://localhost:8080/api/work-orders/client/${selectedClientId}`);
+        const ordersResponse = await fetch(`${appConfig.apiBaseUrl}/work-orders/client/${selectedClientId}`);
         const ordersResult = await ordersResponse.json();
         if (ordersResult.success && ordersResult.data) {
           setWorkOrdersData(ordersResult.data);
@@ -109,7 +110,7 @@ export function ClientProfilePage() {
         }
 
         // Cargar citas
-        const appointmentsResponse = await fetch(`http://localhost:8080/api/appointments`);
+        const appointmentsResponse = await fetch(`${appConfig.apiBaseUrl}/appointments`);
         const appointmentsResult = await appointmentsResponse.json();
         if (appointmentsResult.success && appointmentsResult.data) {
           const clientAppointments = appointmentsResult.data.filter((a: any) => 
@@ -129,7 +130,7 @@ export function ClientProfilePage() {
         }
 
         // Cargar cotizaciones
-        const quotationsResponse = await fetch(`http://localhost:8080/api/quotations/client/${selectedClientId}`);
+        const quotationsResponse = await fetch(`${appConfig.apiBaseUrl}/quotations/client/${selectedClientId}`);
         const quotationsResult = await quotationsResponse.json();
         if (quotationsResult.success && quotationsResult.data) {
           setQuotationsData(quotationsResult.data);

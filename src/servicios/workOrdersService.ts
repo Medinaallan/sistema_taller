@@ -1,5 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = appConfig.apiBaseUrl;
 import { workOrderStatesManager } from './workOrderStatesManager';
+import { appConfig } from '../config/config';
 
 // Estados de Órdenes de Trabajo (gestionados por BD usando SP_GESTIONAR_ESTADO_OT)
 export type WorkOrderStatus = 

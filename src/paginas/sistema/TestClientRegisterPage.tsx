@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { ClientRegisterForm } from '../../componentes/autenticacion/ClientRegisterFormNew';
 import { obtenerClientes, Cliente } from '../../servicios/clientesApiService';
 
@@ -168,7 +169,7 @@ export function TestClientRegisterPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="font-medium text-blue-800">API:</span>
-              <span className="text-blue-700 ml-2">http://localhost:8081/api/clients</span>
+              <span className="text-blue-700 ml-2">{`${appConfig.apiBaseUrl}/clients`}</span>
             </div>
             <div>
               <span className="font-medium text-blue-800">Almacenamiento:</span>

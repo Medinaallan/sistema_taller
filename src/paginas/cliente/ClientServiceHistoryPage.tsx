@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import {
   CheckCircleIcon,
   CalendarDaysIcon,
@@ -72,7 +73,7 @@ export function ClientServiceHistoryPage() {
 
         // Cargar vehículos del cliente (misma lógica del dashboard)
         try {
-          const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
+          const resp = await fetch(`${appConfig.apiBaseUrl}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
           if (resp.ok) {
             const result = await resp.json();
             if (result.success && result.data) {

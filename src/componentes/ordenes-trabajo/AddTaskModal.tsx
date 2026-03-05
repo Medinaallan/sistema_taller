@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Modal, Button, Input, Select, TextArea } from '../comunes/UI';
 import workOrdersService, { WorkOrderData, TaskPriority } from '../../servicios/workOrdersService';
 import { showError, showSuccess, showWarning } from '../../utilidades/sweetAlertHelpers';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = appConfig.apiBaseUrl;
 
 interface AddTaskModalProps {
   isOpen: boolean;

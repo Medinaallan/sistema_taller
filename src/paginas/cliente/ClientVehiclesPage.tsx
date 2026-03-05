@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import {
   TruckIcon,
   PlusIcon,
@@ -102,7 +103,7 @@ export function ClientVehiclesPage() {
       setLoadingVehicles(true);
       try {
         // Llamar al endpoint específico para obtener vehículos de un cliente
-        const response = await fetch(`http://localhost:8080/api/vehicles/client/${state.user.id}`);
+        const response = await fetch(`${appConfig.apiBaseUrl}/vehicles/client/${state.user.id}`);
         const result = await response.json();
         
         if (result.success && result.data) {
@@ -210,7 +211,7 @@ export function ClientVehiclesPage() {
       formData.append('image', selectedImage);
       formData.append('folder', 'vehicle-photos');
       
-      const response = await fetch('http://localhost:8080/api/upload-image', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/upload-image`, {
         method: 'POST',
         body: formData
       });
@@ -420,7 +421,7 @@ export function ClientVehiclesPage() {
     
     setLoadingHistory(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/service-history/client/${state.user.id}`);
+      const response = await fetch(`${appConfig.apiBaseUrl}/service-history/client/${state.user.id}`);
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -1500,7 +1501,7 @@ function ClientAppointmentForm({ vehicleId, clientId, onClose, onSuccess }: {
         registrado_por: registradoPor
       };
 
-      const response = await fetch('http://localhost:8080/api/appointments', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(appointmentData)

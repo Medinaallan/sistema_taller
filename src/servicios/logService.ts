@@ -1,7 +1,8 @@
 // Servicio para manejar logs del sistema
 import type { Log } from '../tipos';
+import { appConfig } from '../config/config';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = appConfig.apiBaseUrl;
 
 export interface LogFilters {
   startDate?: string;

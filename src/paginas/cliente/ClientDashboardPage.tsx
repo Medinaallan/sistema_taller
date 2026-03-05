@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import {
   TruckIcon,
   WrenchScrewdriverIcon,
@@ -165,7 +166,7 @@ export function ClientDashboardPage() {
       setVehiclesLoading(true);
       try {
         // Llamar al endpoint con el parámetro cliente_id para usar SP_OBTENER_VEHICULOS
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
+        const response = await fetch(`${appConfig.apiBaseUrl}/vehicles?cliente_id=${state.user.id}&obtener_activos=1`);
 
         if (!response.ok) {
           throw new Error(`Error HTTP: ${response.status}`);

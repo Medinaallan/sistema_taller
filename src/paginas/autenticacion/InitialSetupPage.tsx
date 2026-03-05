@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { WrenchScrewdriverIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
@@ -53,7 +54,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
     try {
       setRolesLoading(true);
       
-      const response = await fetch('http://localhost:8080/api/users/roles');
+      const response = await fetch(`${appConfig.apiBaseUrl}/users/roles`);
       const data = await response.json();
       
       if (data.success && data.data) {
@@ -149,7 +150,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
       // Registrando usuario inicial con SP_REGISTRAR_USUARIO_PANEL_ADMIN
       
       // Llamar al SP_REGISTRAR_USUARIO_PANEL_ADMIN real
-      const response = await fetch('http://localhost:8080/api/users/panel', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/users/panel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -193,7 +194,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
       // Estableciendo contraseña con SP_REGISTRAR_PASSWORD
       
       // Llamar al SP_REGISTRAR_PASSWORD real
-      const response = await fetch('http://localhost:8080/api/auth/register-password', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/auth/register-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Reminder, Vehicle } from '../../tipos';
 import { useApp } from '../../contexto/useApp';
 import useInterconnectedData from '../../contexto/useInterconnectedData';
@@ -83,7 +84,7 @@ export default function RemindersPage() {
   const loadClientVehicles = async (clientId: string) => {
     try {
       console.log('🚗 Cargando vehículos del cliente:', clientId);
-      const response = await fetch(`http://localhost:8080/api/vehicles/client/${clientId}`);
+      const response = await fetch(`${appConfig.apiBaseUrl}/vehicles/client/${clientId}`);
       const data = await response.json();
       
       if (data.success && data.data) {

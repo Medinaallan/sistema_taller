@@ -1,7 +1,8 @@
 // Servicio para gestión de usuarios
 import { Usuario } from '../tipos/usuario';
+import { appConfig } from '../config/config';
 
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = appConfig.apiBaseUrl;
 
 export interface UsuarioResponse {
   success: boolean;

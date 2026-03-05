@@ -1,6 +1,7 @@
+import { appConfig } from '../config/config';
 // Servicio para gestión de recordatorios de mantenimiento
 
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = appConfig.apiBaseUrl;
 
 export interface Reminder {
   id: string;

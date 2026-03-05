@@ -4,8 +4,9 @@
 // ====================================
 
 import type { Client } from '../tipos';
+import { appConfig } from '../config/config';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = appConfig.apiBaseUrl;
 
 // Array de clientes registrados (cargado desde base de datos)
 export let clientesRegistrados: Client[] = [];

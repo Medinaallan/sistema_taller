@@ -1,6 +1,7 @@
+import { appConfig } from '../config/config';
 // Servicio para manejar la configuración de la empresa - Conexión directa al backend con SQL Server
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = appConfig.apiBaseUrl;
 
 // Interface adaptada a los campos del SP_OBTENER_CONFIGURACION_EMPRESA
 export interface CompanyInfo {

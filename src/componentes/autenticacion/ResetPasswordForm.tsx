@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Button, Input } from '../comunes/UI';
 
 interface ResetPasswordFormProps {
@@ -27,7 +28,7 @@ export function ResetPasswordForm({ token, onSuccess, onCancel }: ResetPasswordF
     try {
       console.log('🔍 Validando token:', token);
       
-      const response = await fetch('http://localhost:8080/api/auth/validate-reset-token', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/auth/validate-reset-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -91,7 +92,7 @@ export function ResetPasswordForm({ token, onSuccess, onCancel }: ResetPasswordF
     try {
       console.log('🔄 Restableciendo contraseña con token:', token);
       
-      const response = await fetch('http://localhost:8080/api/auth/reset-password', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

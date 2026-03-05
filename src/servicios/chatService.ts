@@ -4,6 +4,7 @@
 // Los mensajes se almacenan en SQL Server usando Stored Procedures.
 
 import { io, Socket } from 'socket.io-client';
+import { appConfig } from '../config/config';
 
 export interface ChatMensajeDTO {
   mensaje_id: number;           // Identificador único del mensaje (viene del backend)
@@ -58,8 +59,8 @@ class ChatService {
 
   constructor(opts?: ChatServiceOptions) {
     this.opciones = {
-      baseUrl: opts?.baseUrl || 'http://localhost:8080',
-      socketUrl: opts?.socketUrl || 'http://localhost:8080',
+      baseUrl: opts?.baseUrl || appConfig.backendBaseUrl,
+      socketUrl: opts?.socketUrl || appConfig.backendBaseUrl,
       token: opts?.token || '',
       userId: opts?.userId || 0
     };

@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { appConfig } from '../config/config';
+const API_BASE = appConfig.apiBaseUrl;
 
 async function handleResponse(response: Response) {
   try {

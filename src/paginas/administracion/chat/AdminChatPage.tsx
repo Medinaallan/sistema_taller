@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react';
+import { appConfig } from '../../../config/config';
 import { useAdminChat } from '../../../hooks/useAdminChat';
 import { ChatMensajeDTO, chatService } from '../../../servicios/chatService';
 import { useApp } from '../../../contexto/useApp';
@@ -75,7 +76,7 @@ export default function AdminChatPage() {
   const cargarUsuarios = async () => {
     setCargandoUsuarios(true);
     try {
-      const response = await fetch('http://localhost:8080/api/users/list');
+      const response = await fetch(`${appConfig.apiBaseUrl}/users/list`);
       const data = await response.json();
       
       if (data.success) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Modal, Button, TextArea, Select, Input } from '../comunes/UI';
 import { showError, showSuccess, showWarning, showConfirm } from '../../utilidades/sweetAlertHelpers';
 import quotationsService from '../../servicios/quotationsService';
@@ -105,7 +106,7 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
   const loadProducts = async () => {
     try {
       setLoadingProducts(true);
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const API_BASE_URL = appConfig.backendBaseUrl;
       const base = API_BASE_URL.replace(/\/api$/, '');
       const url = base.endsWith('/api') ? `${base}/products` : `${base}/api/products`;
       

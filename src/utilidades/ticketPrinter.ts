@@ -7,6 +7,7 @@ export const formatCurrency = (v: any) => {
   }
 };
 import jsPDF from 'jspdf';
+import { appConfig } from '../config/config';
 import companyConfigService from '../servicios/companyConfigService';
 
 export const formatDate = (d: any) => {
@@ -93,7 +94,7 @@ export async function printArqueoTicket(r: any, logoUrl?: string) {
   const imageUrlToBase64 = async (url?: string): Promise<string | null> => {
     if (!url) return null;
     try {
-      const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080';
+      const apiUrl = appConfig.backendBaseUrl;
       const baseUrl = apiUrl.replace(/\/$/, '').endsWith('/api')
         ? apiUrl.replace(/\/api$/, '')
         : apiUrl.replace(/\/$/, '');

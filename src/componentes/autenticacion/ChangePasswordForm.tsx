@@ -1,1 +1,187 @@
-import React, { useState } from 'react';\nimport { Button, Input } from '../comunes/UI';\nimport { useApp } from '../../contexto/useApp';\n\ninterface ChangePasswordFormProps {\n  onSuccess?: () => void;\n  onCancel?: () => void;\n}\n\nexport function ChangePasswordForm({ onSuccess, onCancel }: ChangePasswordFormProps) {\n  const { state } = useApp();\n  const [formData, setFormData] = useState({\n    currentPassword: '',\n    newPassword: '',\n    confirmPassword: ''\n  });\n  const [errors, setErrors] = useState<Record<string, string>>({});\n  const [loading, setLoading] = useState(false);\n\n  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {\n    const { name, value } = e.target;\n    setFormData(prev => ({ ...prev, [name]: value }));\n    // Limpiar error del campo\n    if (errors[name]) {\n      setErrors(prev => ({ ...prev, [name]: '' }));\n    }\n  };\n\n  const validateForm = () => {\n    const newErrors: Record<string, string> = {};\n\n    if (!formData.currentPassword.trim()) {\n      newErrors.currentPassword = 'La contraseña actual es requerida';\n    }\n\n    if (!formData.newPassword.trim()) {\n      newErrors.newPassword = 'La nueva contraseña es requerida';\n    } else if (formData.newPassword.length < 6) {\n      newErrors.newPassword = 'La nueva contraseña debe tener al menos 6 caracteres';\n    }\n\n    if (!formData.confirmPassword.trim()) {\n      newErrors.confirmPassword = 'Debe verificar la nueva contraseña';\n    } else if (formData.newPassword !== formData.confirmPassword) {\n      newErrors.confirmPassword = 'Las contraseñas no coinciden';\n    }\n\n    if (formData.currentPassword === formData.newPassword) {\n      newErrors.newPassword = 'La nueva contraseña debe ser diferente a la actual';\n    }\n\n    setErrors(newErrors);\n    return Object.keys(newErrors).length === 0;\n  };\n\n  const handleSubmit = async (e: React.FormEvent) => {\n    e.preventDefault();\n    \n    if (!validateForm()) return;\n\n    if (!state.user?.id) {\n      setErrors({ general: 'Usuario no identificado' });\n      return;\n    }\n\n    setLoading(true);\n    try {\n      const response = await fetch('http://localhost:8080/api/auth/change-password', {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json'\n        },\n        body: JSON.stringify({\n          usuario_id: parseInt(state.user.id),\n          currentPassword: formData.currentPassword,\n          newPassword: formData.newPassword\n        })\n      });\n\n      const data = await response.json();\n      \n      if (data.success) {\n        setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });\n        setErrors({});\n        if (onSuccess) onSuccess();\n      } else {\n        setErrors({ general: data.message || 'Error al cambiar contraseña' });\n      }\n    } catch (error) {\n      console.error('Error cambiando contraseña:', error);\n      setErrors({ general: 'Error de conexión con el servidor' });\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  return (\n    <div className=\"bg-white rounded-lg shadow-sm border border-gray-200 p-6\">\n      <div className=\"mb-6\">\n        <h3 className=\"text-lg font-medium text-gray-900\">Cambiar Contraseña</h3>\n        <p className=\"text-sm text-gray-600 mt-1\">\n          Por seguridad, necesitamos verificar tu contraseña actual antes de cambiarla.\n        </p>\n      </div>\n\n      <form onSubmit={handleSubmit} className=\"space-y-4\">\n        <Input\n          id=\"currentPassword\"\n          name=\"currentPassword\"\n          type=\"password\"\n          label=\"Contraseña Actual\"\n          value={formData.currentPassword}\n          onChange={handleInputChange}\n          error={errors.currentPassword}\n          placeholder=\"Ingrese su contraseña actual\"\n          required\n        />\n\n        <Input\n          id=\"newPassword\"\n          name=\"newPassword\"\n          type=\"password\"\n          label=\"Nueva Contraseña\"\n          value={formData.newPassword}\n          onChange={handleInputChange}\n          error={errors.newPassword}\n          placeholder=\"Ingrese la nueva contraseña\"\n          required\n        />\n\n        <Input\n          id=\"confirmPassword\"\n          name=\"confirmPassword\"\n          type=\"password\"\n          label=\"Verificar Nueva Contraseña\"\n          value={formData.confirmPassword}\n          onChange={handleInputChange}\n          error={errors.confirmPassword}\n          placeholder=\"Confirme la nueva contraseña\"\n          required\n        />\n\n        {errors.general && (\n          <div className=\"bg-red-50 border border-red-200 rounded-md p-4\">\n            <div className=\"text-sm text-red-600\">\n              {errors.general}\n            </div>\n          </div>\n        )}\n\n        <div className=\"flex space-x-3 pt-4\">\n          {onCancel && (\n            <Button\n              type=\"button\"\n              onClick={onCancel}\n              variant=\"secondary\"\n              className=\"flex-1\"\n            >\n              Cancelar\n            </Button>\n          )}\n          \n          <Button\n            type=\"submit\"\n            loading={loading}\n            className=\"flex-1\"\n          >\n            Cambiar Contraseña\n          </Button>\n        </div>\n      </form>\n\n      <div className=\"mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md\">\n        <div className=\"text-xs text-blue-700\">\n          <strong>Consejos de seguridad:</strong>\n          <ul className=\"mt-2 space-y-1 list-disc list-inside\">\n            <li>Use al menos 6 caracteres</li>\n            <li>Combine letras, números y símbolos</li>\n            <li>Evite palabras comunes o información personal</li>\n            <li>No comparta su contraseña con nadie</li>\n          </ul>\n        </div>\n      </div>\n    </div>\n  );\n}\n
+import { appConfig } from '../../config/config';
+import React, { useState } from 'react';
+import { Button, Input } from '../comunes/UI';
+import { useApp } from '../../contexto/useApp';
+
+interface ChangePasswordFormProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export function ChangePasswordForm({ onSuccess, onCancel }: ChangePasswordFormProps) {
+  const { state } = useApp();
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Limpiar error del campo
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.currentPassword.trim()) {
+      newErrors.currentPassword = 'La contraseña actual es requerida';
+    }
+
+    if (!formData.newPassword.trim()) {
+      newErrors.newPassword = 'La nueva contraseña es requerida';
+    } else if (formData.newPassword.length < 6) {
+      newErrors.newPassword = 'La nueva contraseña debe tener al menos 6 caracteres';
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Debe verificar la nueva contraseña';
+    } else if (formData.newPassword !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+    }
+
+    if (formData.currentPassword === formData.newPassword) {
+      newErrors.newPassword = 'La nueva contraseña debe ser diferente a la actual';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    if (!state.user?.id) {
+      setErrors({ general: 'Usuario no identificado' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${appConfig.apiBaseUrl}/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          usuario_id: parseInt(state.user.id),
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setErrors({});
+        if (onSuccess) onSuccess();
+      } else {
+        setErrors({ general: data.message || 'Error al cambiar contraseña' });
+      }
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error);
+      setErrors({ general: 'Error de conexión con el servidor' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="mb-6">
+        <h3 className="text-lg font-medium text-gray-900">Cambiar Contraseña</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Por seguridad, necesitamos verificar tu contraseña actual antes de cambiarla.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          id="currentPassword"
+          name="currentPassword"
+          type="password"
+          label="Contraseña Actual"
+          value={formData.currentPassword}
+          onChange={handleInputChange}
+          error={errors.currentPassword}
+          placeholder="Ingrese su contraseña actual"
+          required
+        />
+
+        <Input
+          id="newPassword"
+          name="newPassword"
+          type="password"
+          label="Nueva Contraseña"
+          value={formData.newPassword}
+          onChange={handleInputChange}
+          error={errors.newPassword}
+          placeholder="Ingrese la nueva contraseña"
+          required
+        />
+
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          label="Verificar Nueva Contraseña"
+          value={formData.confirmPassword}
+          onChange={handleInputChange}
+          error={errors.confirmPassword}
+          placeholder="Confirme la nueva contraseña"
+          required
+        />
+
+        {errors.general && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="text-sm text-red-600">
+              {errors.general}
+            </div>
+          </div>
+        )}
+
+        <div className="flex space-x-3 pt-4">
+          {onCancel && (
+            <Button
+              type="button"
+              onClick={onCancel}
+              variant="secondary"
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+          )}
+          
+          <Button
+            type="submit"
+            loading={loading}
+            className="flex-1"
+          >
+            Cambiar Contraseña
+          </Button>
+        </div>
+      </form>
+
+      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+        <div className="text-xs text-blue-700">
+          <strong>Consejos de seguridad:</strong>
+          <ul className="mt-2 space-y-1 list-disc list-inside">
+            <li>Use al menos 6 caracteres</li>
+            <li>Combine letras, números y símbolos</li>
+            <li>Evite palabras comunes o información personal</li>
+            <li>No comparta su contraseña con nadie</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}

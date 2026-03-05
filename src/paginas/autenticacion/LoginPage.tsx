@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Button, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
@@ -71,7 +72,7 @@ export function LoginPage() {
     const checkAdminUsers = async () => {
       try {
         // Usar el endpoint de usuarios que maneja correctamente el SP
-        const response = await fetch('http://localhost:8080/api/users/list');
+        const response = await fetch(`${appConfig.apiBaseUrl}/users/list`);
         const data = await response.json();
         
         if (data.success && data.data) {
@@ -174,7 +175,7 @@ export function LoginPage() {
       // USAR EXCLUSIVAMENTE SP_LOGIN REAL (REQUIERE VPN)
       // ========================================
       
-      const response = await fetch('http://localhost:8080/api/auth/login', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

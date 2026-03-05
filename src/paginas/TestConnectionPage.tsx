@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../config/config';
 
 export function TestConnectionPage() {
   const [backendStatus, setBackendStatus] = useState<string>('Verificando...');
@@ -13,7 +14,7 @@ export function TestConnectionPage() {
 
   const testBackendConnection = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/health');
+      const response = await fetch(`${appConfig.apiBaseUrl}/health`);
       const data = await response.json();
       if (data.status === 'OK') {
         setBackendStatus('✅ Backend conectado correctamente');
@@ -27,7 +28,7 @@ export function TestConnectionPage() {
 
   const testApiClients = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/clients');
+      const response = await fetch(`${appConfig.apiBaseUrl}/clients`);
       const data = await response.json();
       console.log('Datos de clientes:', data);
       setApiClients(data);
@@ -39,7 +40,7 @@ export function TestConnectionPage() {
   const testChatConnection = () => {
     try {
       // Intentar conectar Socket.IO
-      const socket = new WebSocket('ws://localhost:8080');
+      const socket = new WebSocket(appConfig.wsBaseUrl);
       
       socket.onopen = () => {
         setChatStatus('✅ WebSocket conectado');
@@ -124,7 +125,7 @@ export function TestConnectionPage() {
             💬 Chat Cliente
           </a>
           <a 
-            href="http://localhost:8080/api/clients" 
+            href={`${appConfig.apiBaseUrl}/clients`} 
             target="_blank"
             className="block p-4 bg-gray-600 text-white rounded text-center hover:bg-gray-700"
           >
