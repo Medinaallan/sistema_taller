@@ -588,23 +588,32 @@ app.post('/api/auth/register-user-info', async (req, res) => {
 app.post('/api/auth/verify-security-code', async (req, res) => {
   console.log('Verificar código:', req.body);
   try {
-    const { correo, codigo_seguridad } = req.body;
-    if (!correo || !codigo_seguridad) {
-      return res.json({ msg: 'Correo y código requeridos', allow: 0 });
+    // Aceptar ambos formatos: { email, securityCode } (frontend) y { correo, codigo_seguridad } (legacy)
+    const email = req.body.email || req.body.correo;
+    const securityCode = req.body.securityCode || req.body.codigo_seguridad;
+    
+    if (!email || !securityCode) {
+      return res.json({ success: false, message: 'Correo y código requeridos', allow: 0 });
     }
     
     const pool = await getConnection();
     const result = await pool.request()
-      .input('correo', sql.VarChar(100), correo)
-      .input('codigo_seguridad', sql.VarChar(10), codigo_seguridad)
+      .input('correo', sql.VarChar(100), email.toLowerCase())
+      .input('codigo_seguridad', sql.VarChar(10), securityCode.trim())
       .execute('SP_VERIFICAR_CODIGO_SEGURIDAD');
     
     const response = result.recordset[0];
-    console.log('Resultado:', response);
-    res.json(response);
+    console.log('Resultado SP:', response);
+    
+    const isValid = response.allow === 1;
+    res.json({
+      success: isValid,
+      message: response.msg,
+      allow: response.allow
+    });
   } catch (error) {
     console.error('Error verificando código:', error);
-    res.json({ msg: 'Error interno', allow: 0 });
+    res.json({ success: false, message: 'Error interno', allow: 0 });
   }
 });
 
