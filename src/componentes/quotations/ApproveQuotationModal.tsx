@@ -65,11 +65,9 @@ export default function ApproveQuotationModal({
             setFormData(prev => ({ ...prev, asesor_id: usuarioActual }));
           }
         } catch (err) {
-          console.error('Error al obtener usuarios desde usuariosService:', err);
           setUsers([]);
         }
       } catch (err) {
-        console.error('Error cargando usuarios:', err);
       }
     };
     loadUsers();
@@ -117,20 +115,13 @@ export default function ApproveQuotationModal({
     setLoading(true);
 
     try {
-      console.log('Iniciando aprobación de cotización:', quotation.cotizacion_id);
-      console.log('Tipo:', isAdditionalQuotation ? 'Adicional' : 'Inicial');
-      
       const usuario_id = localStorage.getItem('usuario_id');
       
       // Si es cotización adicional, usar el flujo simplificado
       if (isAdditionalQuotation) {
-        console.log('🔧 Cotización adicional - Aprobando y agregando tareas a OT existente:', quotation.ot_id);
-        
         const result = await quotationsService.approveAdditionalQuotation(
           quotation.cotizacion_id.toString()
         );
-        
-        console.log('✅ Resultado cotización adicional:', result);
         
         // No mostrar mensaje aquí - se mostrará en la página padre
         
@@ -162,41 +153,21 @@ export default function ApproveQuotationModal({
         }
       );
 
-      console.log('Resultado de aprobación:', result);
-
       // Cambiar estado de la cita a "aprobada" después de aprobar la cotización
       if (quotation.cita_id) {
         try {
           const cita_id = quotation.cita_id;
-          console.log(`Información para cambiar estado:`, {
-            cita_id,
-            nuevo_estado: 'aprobada',
-            comentario: 'Cotización aprobada',
-            registrado_por: usuario_id ? parseInt(usuario_id) : 0
-          });
-          
           const statusResponse = await appointmentsService.changeStatus(cita_id, {
             nuevo_estado: 'aprobada',
             comentario: 'Cotización aprobada',
             registrado_por: usuario_id ? parseInt(usuario_id) : 0
           });
-          
-          console.log('Respuesta del cambio de estado:', statusResponse);
-          console.log('Estado de cita actualizado a "aprobada"');
         } catch (error) {
-          console.error('Error al cambiar estado de cita:', error);
-          console.error('Detalles del error:', {
-            message: error instanceof Error ? error.message : error,
-            stack: error instanceof Error ? error.stack : 'No stack available'
-          });
           // No detener el flujo si falla el cambio de estado
         }
-      } else {
-        console.warn('No hay cita_id en la cotización:', quotation);
       }
       
       // No mostrar mensaje aquí - se mostrará en la página padre con más contexto
-      console.log('✅ Cotización aprobada y OT generada:', result);
       
       onSuccess({
         ot_id: result.ot_id || 0,
@@ -205,7 +176,6 @@ export default function ApproveQuotationModal({
       
       onClose();
     } catch (err) {
-      console.error('Error durante aprobación:', err);
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido';
       setError(`Error al aprobar cotización: ${errorMsg}`);
       showError(`Error: ${errorMsg}`);

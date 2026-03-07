@@ -35,7 +35,6 @@ class QuotationsService {
       }
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
-      console.error('Error fetching quotations:', error);
       throw error;
     }
   }
@@ -50,7 +49,6 @@ class QuotationsService {
       }
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
-      console.error('Error fetching client quotations:', error);
       throw error;
     }
   }
@@ -65,7 +63,6 @@ class QuotationsService {
       }
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
-      console.error('Error fetching OT quotations:', error);
       throw error;
     }
   }
@@ -82,7 +79,6 @@ class QuotationsService {
       
       return result.data as QuotationData || null;
     } catch (error) {
-      console.error('Error fetching quotation:', error);
       throw error;
     }
   }
@@ -119,7 +115,6 @@ class QuotationsService {
       
       return result;
     } catch (error) {
-      console.error('Error creating quotation:', error);
       throw error;
     }
   }
@@ -143,7 +138,6 @@ class QuotationsService {
       
       return result.data as QuotationData;
     } catch (error) {
-      console.error('Error updating quotation:', error);
       throw error;
     }
   }
@@ -190,7 +184,6 @@ class QuotationsService {
       
       return result;
     } catch (error) {
-      console.error('Error generating work order from quotation:', error);
       throw error;
     }
   }
@@ -211,25 +204,14 @@ class QuotationsService {
     msg: string;
   }> {
     try {
-      console.log('Iniciando flujo de aprobación y generación de OT');
-      
-      // Verificar estado actual de la cotización
       const quotation = await this.getQuotationById(quotationId);
       const alreadyApproved = quotation?.estado_cotizacion === 'Aprobada';
       
-      // Paso 1: Aprobar cotización solo si no está aprobada
       if (!alreadyApproved) {
-        console.log(`Paso 1: Aprobando cotización ${quotationId}...`);
         await this.approveQuotation(quotationId);
-        console.log('Cotización aprobada exitosamente');
-      } else {
-        console.log('ℹCotización ya estaba aprobada, saltando paso de aprobación');
       }
       
-      // Paso 2: Generar orden de trabajo (ejecuta SP_GENERAR_OT_DESDE_COTIZACION)
-      console.log(`Paso 2: Generando orden de trabajo desde cotización...`);
       const workOrderResult = await this.generateWorkOrderFromQuotation(quotationId, otData);
-      console.log('Orden de trabajo generada exitosamente:', workOrderResult);
       
       return {
         quotationApproved: true,
@@ -239,7 +221,6 @@ class QuotationsService {
         msg: `${alreadyApproved ? 'Cotización previamente aprobada' : 'Cotización aprobada exitosamente'}. Orden de trabajo #${workOrderResult.numero_ot} generada.`
       };
     } catch (error) {
-      console.error('Error en flujo de aprobación y generación:', error);
       throw error;
     }
   }
@@ -262,40 +243,24 @@ class QuotationsService {
       
       const alreadyApproved = quotation.estado_cotizacion === 'Aprobada';
       
-      // Paso 1: Aprobar cotización solo si no está aprobada
       if (!alreadyApproved) {
-        console.log(`Paso 1: Aprobando cotización adicional ${quotationId}...`);
         await this.approveQuotation(quotationId);
-        console.log(' Cotización adicional aprobada');
-      } else {
-        console.log(' Cotización adicional ya estaba aprobada');
       }
       
-      // Paso 2: Procesar cotización adicional (SP_GENERAR_OT_DESDE_COTIZACION)
-      // Para cotizaciones adicionales, el SP solo necesita el ID, no los datos de OT
-      console.log(`Paso 2: Procesando cotización adicional a OT ${quotation.ot_id}...`);
       const usuario_id = localStorage.getItem('usuario_id');
       
       const workOrderResult = await this.generateWorkOrderFromQuotation(quotationId, {
-        asesor_id: usuario_id ? parseInt(usuario_id) : 1, // Usar usuario actual o default
+        asesor_id: usuario_id ? parseInt(usuario_id) : 1,
         generado_por: usuario_id ? parseInt(usuario_id) : null,
       });
       
-      console.log(' Tareas agregadas a OT existente:', workOrderResult);
-      
-      // Paso 3: Verificar si la cotización contiene repuestos
-      console.log(`🔍 Paso 3: Verificando si cotización contiene repuestos...`);
       const items = await this.getQuotationItems(quotationId);
-      console.log('Items de cotización:', items.map(i => ({ tipo: i.tipo_item, desc: i.descripcion })));
       const hasSpares = items.some(item => item.tipo_item.trim().toLowerCase() === 'repuesto');
       
       let otPaused = false;
       let msg = `Cotización adicional aprobada. Tareas agregadas a OT ${workOrderResult.numero_ot || quotation.numero_ot}.`;
       
       if (hasSpares) {
-        console.log('🛠️ Cotización contiene repuestos. Pausando OT automáticamente...');
-        
-        // Importar dinámicamente workOrdersService para evitar dependencias circulares
         const { default: workOrdersService } = await import('./workOrdersService');
         
         const pauseResult = await workOrdersService.changeStatus(
@@ -304,15 +269,9 @@ class QuotationsService {
         );
         
         if (pauseResult.success) {
-          console.log('⏸️ OT pausada automáticamente por repuestos');
           otPaused = true;
           msg = `Cotización adicional aprobada con repuestos. OT ${workOrderResult.numero_ot || quotation.numero_ot} pausada automáticamente. Use "Reanudar" en el modal de tareas cuando los repuestos estén listos.`;
-        } else {
-          console.warn('⚠️ No se pudo pausar OT:', pauseResult.message);
-          console.warn('   Detalles:', pauseResult);
         }
-      } else {
-        console.log('✅ Cotización no contiene repuestos. OT continúa activa.');
       }
       
       return {
@@ -324,7 +283,6 @@ class QuotationsService {
         otPaused
       };
     } catch (error) {
-      console.error('Error en flujo de aprobación de cotización adicional:', error);
       throw error;
     }
   }
@@ -354,7 +312,6 @@ class QuotationsService {
         estado_cotizacion: 'Enviada'
       };
     } catch (error) {
-      console.error('Error marking quotation as sent:', error);
       throw error;
     }
   }
@@ -374,7 +331,6 @@ class QuotationsService {
       
       return true;
     } catch (error) {
-      console.error('Error deleting quotation:', error);
       throw error;
     }
   }
@@ -425,7 +381,6 @@ class QuotationsService {
       
       return result;
     } catch (error) {
-      console.error('Error adding item to quotation:', error);
       throw error;
     }
   }
@@ -451,7 +406,6 @@ class QuotationsService {
       
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
-      console.error('Error fetching quotation items:', error);
       throw error;
     }
   }
@@ -478,7 +432,6 @@ class QuotationsService {
       
       return result;
     } catch (error) {
-      console.error('Error removing item from quotation:', error);
       throw error;
     }
   }

@@ -132,7 +132,6 @@ const POSPage: React.FC = () => {
         }));
         setProducts(list);
       } catch (err) {
-        console.error('Error cargando productos desde API', err);
       }
     };
 
@@ -146,7 +145,6 @@ const POSPage: React.FC = () => {
   // Auto-refresh de facturas pendientes cuando se cambia a esa pestaña
   useEffect(() => {
     if (posState.activeTab === 'pending-invoices') {
-      console.log('🔄 Tab de facturas pendientes activado - Refrescando...');
       refreshPendingInvoices();
     }
   }, [posState.activeTab]);
@@ -168,7 +166,6 @@ const POSPage: React.FC = () => {
           setCurrentSession(null);
         }
       } catch (err) {
-        console.error('Error fetching cash status', err);
       }
     };
     checkCashStatus();
@@ -182,7 +179,6 @@ const POSPage: React.FC = () => {
       if (resp && resp.success) setReportData(resp.data || []);
       else setReportData([]);
     } catch (err) {
-      console.error('Error loading cash report', err);
       setReportData([]);
     }
   };
@@ -283,11 +279,8 @@ const POSPage: React.FC = () => {
           ...prev,
           cart: cartItems
         }));
-        
-        console.log('✅ Producto agregado y sincronizado desde BD');
       }
     } catch (error: any) {
-      console.error('❌ Error agregando producto:', error);
       await Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -300,14 +293,11 @@ const POSPage: React.FC = () => {
   const addPendingInvoiceToCart = async (pendingInvoice: any) => {
     try {
       const facturaId = pendingInvoice.factura_id;
-      console.log(`💰 Agregando factura ${facturaId} al carrito...`);
       
       // Obtener los items reales de la factura usando SP_OBTENER_ITEMS_FACTURA
       const items = await invoicesService.getInvoiceItems(facturaId);
-      console.log(`📦 Items obtenidos:`, items);
       
       if (items.length === 0) {
-        console.warn('⚠️ No se encontraron items para esta factura');
         // Fallback al comportamiento anterior si no hay items
         const precio = Number(pendingInvoice.totalAmount) || Number(pendingInvoice.total) || 0;
         const descripcionServicio = `Factura ${pendingInvoice.numero} - ${pendingInvoice.clientName} | OT #${pendingInvoice.numero_ot || 'N/A'}`;
@@ -376,9 +366,7 @@ const POSPage: React.FC = () => {
       
       //  Establecer factura activa para operaciones real-time
       setActiveFacturaId(facturaId);
-      console.log(`${cartItems.length} items agregados al carrito | Factura activa: ${facturaId}`);
     } catch (error) {
-      console.error('Error agregando factura pendiente:', error);
       // Fallback silencioso al comportamiento anterior
     }
   };
@@ -399,7 +387,6 @@ const POSPage: React.FC = () => {
 
     // Si no hay factura activa o no tiene factura_item_id, no hacer nada
     if (!activeFacturaId || !item.factura_item_id) {
-      console.warn('⚠️ No se puede editar: sin factura activa o item sin ID');
       return;
     }
 
@@ -442,10 +429,8 @@ const POSPage: React.FC = () => {
         }));
         
         setPosState(prev => ({ ...prev, cart: cartItems }));
-        console.log('Cantidad actualizada en BD');
       }
     } catch (error: any) {
-      console.error('Error editando cantidad:', error);
       await Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -506,10 +491,8 @@ const POSPage: React.FC = () => {
         }));
         
         setPosState(prev => ({ ...prev, cart: cartItems }));
-        console.log('✅ Item eliminado de BD');
       }
     } catch (error: any) {
-      console.error('❌ Error eliminando item:', error);
       await Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -526,7 +509,6 @@ const POSPage: React.FC = () => {
     }));
     // Limpiar también la factura activa
     setActiveFacturaId(null);
-    console.log('🧹 Carrito limpiado y factura activa reseteada');
   };
 
   const handleVentaRegular = async () => {
@@ -633,12 +615,10 @@ const POSPage: React.FC = () => {
           confirmButtonText: 'Continuar'
         });
 
-        console.log(`✅ Factura directa creada: ${numero_factura} (ID: ${factura_id})`);
       } else {
         throw new Error(result.message || 'Error al crear factura');
       }
     } catch (error: any) {
-      console.error('❌ Error creando venta directa:', error);
       await Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -678,13 +658,10 @@ const POSPage: React.FC = () => {
 
     // Detectar si hay una factura activa (recién creada o cargada)
     if (activeFacturaId) {
-      console.log(`💰 Procesando cobro de factura activa ID: ${activeFacturaId}`);
-      
       // Buscar la factura, primero en pendingInvoices, sino cargarla desde API
       let factura = pendingInvoices.find(inv => inv.factura_id === activeFacturaId);
       
       if (!factura) {
-        console.log('🔍 Factura no encontrada en cache, cargando desde API...');
         try {
           // Cargar factura directamente desde la API para obtener todos los campos del SP
           const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -717,10 +694,8 @@ const POSPage: React.FC = () => {
               telefono: facturaData.telefono || ''
             };
             
-            console.log('✅ Factura cargada desde API:', factura);
           }
         } catch (err) {
-          console.error('❌ Error cargando factura:', err);
         }
       }
       
@@ -809,7 +784,6 @@ const POSPage: React.FC = () => {
             throw new Error('Factura no encontrada');
           }
           
-          console.log(`✅ Procesando pago de factura: ${originalInvoice.numero}`);
           generatedInvoiceNumber = originalInvoice.numero;
           
           // Crear objeto de factura completo para impresión (con items del carrito)
@@ -870,10 +844,8 @@ const POSPage: React.FC = () => {
           try {
             await serviceHistoryService.addServiceHistory(historyRecord);
           } catch (historyError) {
-            console.error('Error al agregar al historial:', historyError);
           }
         } catch (error) {
-          console.error(`Error al procesar factura ${facturaId}:`, error);
           throw error; // Lanzar error para que se maneje abajo
         }
       } else {
@@ -929,7 +901,6 @@ const POSPage: React.FC = () => {
       }
       
     } catch (error) {
-      console.error('Error durante el checkout:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -1090,7 +1061,6 @@ const POSPage: React.FC = () => {
                 <h3 className="text-lg font-semibold">Facturas Pendientes de Cobro</h3>
                 <button
                   onClick={() => {
-                    console.log('🔄 Refrescando facturas pendientes manualmente...');
                     refreshPendingInvoices();
                   }}
                   disabled={pendingLoading}
@@ -1402,7 +1372,6 @@ const POSPage: React.FC = () => {
                       Swal.fire({ icon: 'error', title: 'Error', text: resp?.message || 'No se pudo aperturar la caja' });
                     }
                   } catch (err) {
-                    console.error(err);
                     Swal.fire({ icon: 'error', title: 'Error', text: 'Error conectando al servidor' });
                   }
                 }}
@@ -1446,7 +1415,6 @@ const POSPage: React.FC = () => {
                       Swal.fire({ icon: 'error', title: 'Error', text: resp?.message || 'No se pudo cerrar la caja' });
                     }
                   } catch (err) {
-                    console.error(err);
                     Swal.fire({ icon: 'error', title: 'Error', text: 'Error conectando al servidor' });
                   }
                 }}
@@ -1611,15 +1579,7 @@ const POSPage: React.FC = () => {
             let invoiceForPrint = null;
             try {
               invoiceForPrint = await invoicesService.getInvoiceById(String(invoiceId));
-              console.log('📄 Factura cargada para impresión:', {
-                id: invoiceForPrint?.id,
-                numero: invoiceForPrint?.numero,
-                fecha: invoiceForPrint?.fecha,
-                createdAt: invoiceForPrint?.createdAt,
-                fecha_emision: (invoiceForPrint as any)?.fecha_emision
-              });
             } catch (error) {
-              console.error('Error cargando factura para imprimir:', error);
             }
 
             const successAlertResult = await Swal.fire({
@@ -1820,7 +1780,6 @@ const POSPage: React.FC = () => {
                       });
                     }
                   } catch (error: any) {
-                    console.error('Error agregando producto personalizado:', error);
                     await Swal.fire({
                       icon: 'error',
                       title: 'Error',

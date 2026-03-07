@@ -153,7 +153,6 @@ class WorkOrdersService {
       const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
       return orders;
     } catch (error) {
-      console.error('Error fetching work orders:', error);
       throw error;
     }
   }
@@ -176,7 +175,6 @@ class WorkOrdersService {
       const orders = await Promise.all(rawOrders.map((order: any) => this.mapSpDataToWorkOrder(order)));
       return { data: orders, count: result.count || 0, page: result.page || page, limit: result.limit || limit };
     } catch (error) {
-      console.error('Error fetching paged work orders:', error);
       throw error;
     }
   }
@@ -187,7 +185,6 @@ class WorkOrdersService {
       const allWorkOrders = await this.getAllWorkOrders();
       return allWorkOrders.filter(workOrder => workOrder.clienteId === clienteId);
     } catch (error) {
-      console.error('Error fetching client work orders:', error);
       throw error;
     }
   }
@@ -198,7 +195,6 @@ class WorkOrdersService {
       const allWorkOrders = await this.getAllWorkOrders();
       return allWorkOrders.filter(workOrder => workOrder.estado === estado);
     } catch (error) {
-      console.error('Error fetching work orders by status:', error);
       throw error;
     }
   }
@@ -209,7 +205,6 @@ class WorkOrdersService {
       const completedOrders = await this.getWorkOrdersByStatus('completed');
       return completedOrders.length > 0 ? completedOrders[0] : null;
     } catch (error) {
-      console.error('Error fetching first completed work order:', error);
       return null;
     }
   }
@@ -226,7 +221,6 @@ class WorkOrdersService {
       
       return result.data as WorkOrderData || null;
     } catch (error) {
-      console.error('Error fetching work order:', error);
       throw error;
     }
   }
@@ -250,7 +244,6 @@ class WorkOrdersService {
       
       return result.data as WorkOrderData;
     } catch (error) {
-      console.error('Error creating work order:', error);
       throw error;
     }
   }
@@ -274,7 +267,6 @@ class WorkOrdersService {
       
       return result.data as WorkOrderData;
     } catch (error) {
-      console.error('Error creating work order from quotation:', error);
       throw error;
     }
   }
@@ -298,21 +290,15 @@ class WorkOrdersService {
       
       return result.data as WorkOrderData;
     } catch (error) {
-      console.error('Error updating work order:', error);
       throw error;
     }
   }
 
   // Cambiar estado de orden de trabajo (usando SP_GESTIONAR_ESTADO_OT)
   async changeStatus(id: string, newStatus: WorkOrderData['estado']): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
-    console.log(`🔄 Cambiando estado de OT ${id} a ${newStatus} (usando SP)`);
-    
-    // Actualizar usando el SP que valida las tareas
     const result = await workOrderStatesManager.updateState(id, newStatus);
     
     if (!result.success) {
-      // El SP rechazó el cambio (ej: tareas pendientes)
-      console.warn('⚠️ Cambio de estado rechazado:', result.message);
       return { 
         success: false, 
         message: result.message 
@@ -339,25 +325,17 @@ class WorkOrdersService {
 
   // Iniciar orden de trabajo
   async startWorkOrder(id: string): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
-    console.log(`🚀 Iniciando OT ${id}`);
     return this.changeStatus(id, 'En proceso');
   }
 
   // Completar orden de trabajo (usando SP - valida que tareas estén completadas)
   async completeWorkOrder(id: string, userId?: number): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
-    console.log(`⚠️ COMPLETAR OT #${id} - Usuario: ${userId || 'auto'}`);
-    console.trace('Stack trace para identificar quién llamó a completeWorkOrder');
-    
     try {
-      // Primero, cambiar el estado a "Completada"
       const statusResult = await this.changeStatus(id, 'Completada');
       
       if (!statusResult.success) {
-        console.error(`❌ Error al cambiar estado de OT #${id} a Completada:`, statusResult.message);
         return statusResult;
       }
-      
-      console.log(`✅ OT #${id} marcada como Completada`);
       
       // Obtener usuario ID desde localStorage si no se proporciona
       const getUserId = (): number => {
@@ -369,14 +347,12 @@ class WorkOrdersService {
             return parseInt(user.id) || 1;
           }
         } catch (error) {
-          console.error('Error obteniendo usuario ID:', error);
         }
         return 1;
       };
       
       // Luego, generar automáticamente la factura usando el SP
-      console.log(`🧾 Generando factura automáticamente para OT ${id}...`);
-      
+
       const response = await fetch(`${API_BASE_URL}/invoices/generate-from-ot`, {
         method: 'POST',
         headers: {
@@ -391,7 +367,6 @@ class WorkOrdersService {
       const facturaResult = await response.json();
       
       if (!response.ok || !facturaResult.success) {
-        console.error('❌ Error generando factura automáticamente:', facturaResult.message);
         // No fallar la operación completa si la factura no se genera
         return {
           ...statusResult,
@@ -399,14 +374,11 @@ class WorkOrdersService {
         };
       }
       
-      console.log(`✅ Factura generada automáticamente: ${facturaResult.data.numero_factura} (ID: ${facturaResult.data.factura_id})`);
-      
       return {
         ...statusResult,
         message: `OT completada exitosamente. Factura ${facturaResult.data.numero_factura} generada.`
       };
     } catch (error) {
-      console.error('❌ Error completando OT y generando factura:', error);
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Error desconocido al completar OT'
@@ -416,7 +388,6 @@ class WorkOrdersService {
 
   // Cancelar orden de trabajo
   async cancelWorkOrder(id: string): Promise<{ success: boolean; message?: string; order?: WorkOrderData }> {
-    console.log(`❌ Cancelando OT ${id}`);
     return this.changeStatus(id, 'Cancelada');
   }
 
@@ -435,7 +406,6 @@ class WorkOrdersService {
       
       return true;
     } catch (error) {
-      console.error('Error deleting work order:', error);
       throw error;
     }
   }
@@ -454,8 +424,6 @@ class WorkOrdersService {
     registrado_por?: number | null;
   }): Promise<any> {
     try {
-      console.log(' Registrando OT manual desde cliente:', data);
-      
       const response = await fetch(`${API_BASE_URL}/workorders/manual`, {
         method: 'POST',
         headers: {
@@ -470,11 +438,9 @@ class WorkOrdersService {
       }
 
       const result = await response.json();
-      console.log('✅ Orden registrada exitosamente:', result);
       
       return result;
     } catch (error) {
-      console.error('❌ Error registrando orden:', error);
       throw error;
     }
   }
@@ -600,7 +566,6 @@ class WorkOrdersService {
       const result: TareasResponse = await response.json();
       return Array.isArray(result.data) ? result.data : [];
     } catch (error) {
-      console.error('Error obteniendo tareas:', error);
       throw error;
     }
   }
@@ -608,7 +573,6 @@ class WorkOrdersService {
   // Agregar nueva tarea a una orden de trabajo
   async agregarTarea(otId: string, tareaData: CreateTareaData): Promise<OTTarea> {
     try {
-      console.log(`➕ Agregando tarea a OT ${otId}:`, tareaData);
       const response = await fetch(`${API_BASE_URL}/workorders/${otId}/tareas`, {
         method: 'POST',
         headers: {
@@ -623,10 +587,8 @@ class WorkOrdersService {
         throw new Error(result.message || result.msg || 'Error al agregar tarea');
       }
       
-      console.log('✅ Tarea agregada exitosamente:', result);
       return result.data as OTTarea;
     } catch (error) {
-      console.error('❌ Error agregando tarea:', error);
       throw error;
     }
   }
@@ -634,7 +596,6 @@ class WorkOrdersService {
   // Eliminar una tarea de OT
   async eliminarTarea(tareaId: number, eliminadoPor?: number): Promise<boolean> {
     try {
-      console.log(`🗑️ Eliminando tarea ${tareaId}`);
       const response = await fetch(`${API_BASE_URL}/workorders/tareas/${tareaId}`, {
         method: 'DELETE',
         headers: {
@@ -649,23 +610,20 @@ class WorkOrdersService {
         throw new Error(result.message || result.msg || 'Error al eliminar tarea');
       }
       
-      console.log('✅ Tarea eliminada exitosamente');
       return true;
     } catch (error) {
-      console.error('❌ Error eliminando tarea:', error);
       throw error;
     }
   }
 
   // Gestionar estado de una tarea
   async gestionarEstadoTarea(
-    tareaId: number, 
-    nuevoEstado: TaskStatus, 
+    tareaId: number,
+    nuevoEstado: TaskStatus,
     horasEstimadas?: number,
     registradoPor?: number
   ): Promise<OTTarea> {
     try {
-      console.log(`🔄 Gestionando estado de tarea ${tareaId} a ${nuevoEstado}`);
       const response = await fetch(`${API_BASE_URL}/workorders/tareas/${tareaId}/estado`, {
         method: 'PUT',
         headers: {
@@ -684,10 +642,8 @@ class WorkOrdersService {
         throw new Error(result.message || result.msg || 'Error al gestionar estado de tarea');
       }
       
-      console.log('✅ Estado de tarea gestionado exitosamente');
       return result.data as OTTarea;
     } catch (error) {
-      console.error('❌ Error gestionando estado de tarea:', error);
       throw error;
     }
   }

@@ -95,7 +95,6 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
             setClientes([]);
           }
         } catch (error) {
-          console.error('Error cargando clientes:', error);
           setClientes([]);
         } finally {
           setLoadingClientes(false);
@@ -114,7 +113,6 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         try {
           const response = await servicesService.getAll();
           if (response.success) {
-              console.log('Respuesta de servicesService.getAll():', response);
             const mappedServices = response.data.map((servicio: any) => ({
               id: servicio.tipo_servicio_id,
               name: servicio.nombre,
@@ -122,11 +120,9 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
               basePrice: servicio.precio_base !== null && servicio.precio_base !== undefined ? Number(servicio.precio_base) : 0,
               estimatedTime: servicio.horas_estimadas || '',
             }));
-              console.log('Servicios mapeados:', mappedServices);
             setServicios(mappedServices);
           }
         } catch (error) {
-          console.error('Error cargando servicios:', error);
           setServicios([]);
         } finally {
           setLoadingServicios(false);
@@ -148,7 +144,6 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
             setVehiculos(response.data);
           }
         } catch (error) {
-          console.error('Error cargando vehículos:', error);
           setVehiculos([]);
         } finally {
           setLoadingVehiculos(false);
@@ -259,7 +254,6 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         canal_origen: formData.canalOrigen,
         registrado_por: registradoPor
       };
-      console.log('Datos enviados a crear cita:', appointmentData);
       const response = await appointmentsService.create(appointmentData);
       if (response.success) {
         onSubmit({
@@ -273,7 +267,6 @@ const NewAppointmentModal: React.FC<NewAppointmentModalProps> = ({
         setErrors({ submit: response.message || 'Error al crear la cita. Intente nuevamente.' });
       }
     } catch (error) {
-      console.error('Error creando cita:', error);
       setErrors({ submit: 'Error al crear la cita. Intente nuevamente.' });
     }
   };

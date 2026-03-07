@@ -31,15 +31,11 @@ class WorkOrderStatesManager {
   // ⚠️ YA NO SE USA - Los estados vienen directo de la BD
   // Se mantiene por compatibilidad pero siempre retorna null
   async getState(otId: string): Promise<WorkOrderStatus | null> {
-    console.log(`ℹ️ getState(${otId}) - Estados ahora vienen directo de la BD`);
     return null;
   }
 
   // ✅ Actualizar el estado de una OT usando SP_GESTIONAR_ESTADO_OT
   async updateState(otId: string, newState: WorkOrderStatus): Promise<{ success: boolean; message?: string }> {
-    console.log(`💾 Actualizando estado de OT ${otId} a ${newState} usando SP...`);
-    console.log(`🔗 URL: ${API_BASE_URL}/workorder-states/${otId}`);
-    
     try {
       const response = await fetch(`${API_BASE_URL}/workorder-states/${otId}`, {
         method: 'PUT',
@@ -49,21 +45,14 @@ class WorkOrderStatesManager {
         body: JSON.stringify({ estado: newState }),
       });
 
-      console.log(`📡 Respuesta HTTP: ${response.status} ${response.statusText}`);
-
       const result = await response.json();
-      console.log('📦 Resultado:', result);
       
       if (result.success) {
-        console.log('✅ Estado actualizado correctamente usando SP_GESTIONAR_ESTADO_OT');
         return { success: true, message: result.message };
       } else {
-        // El SP rechazó el cambio (ej: tareas pendientes)
-        console.warn('⚠️ El cambio de estado fue rechazado por el SP:', result.message);
         return { success: false, message: result.message };
       }
     } catch (error) {
-      console.error('❌ Error actualizando estado en backend:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       return { success: false, message: `Error de conexión: ${errorMessage}` };
     }
@@ -78,7 +67,6 @@ class WorkOrderStatesManager {
   async initializeState(otId: string, initialState: WorkOrderStatus = 'Abierta'): Promise<void> {
     await this.waitForInit();
     if (!this.states[otId]) {
-      console.log(`🆕 Inicializando estado de OT ${otId} a ${initialState} (solo memoria)`);
       this.states[otId] = initialState;
     }
   }

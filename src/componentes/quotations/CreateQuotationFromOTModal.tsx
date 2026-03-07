@@ -70,8 +70,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
           descripcion: descripcion,
           precio_unitario: precio
         }));
-        
-        console.log(`💰 Servicio seleccionado: ${descripcion} - Precio: L${precio}`);
       }
     }
   };
@@ -92,8 +90,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
           descripcion: descripcion,
           precio_unitario: precio
         }));
-        
-        console.log(`📦 Producto seleccionado: ${descripcion} - Precio: L${precio}`);
       }
     }
   };
@@ -119,7 +115,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
         if (result.success && result.data) {
           const validProducts = Array.isArray(result.data) ? result.data : [];
           setProducts(validProducts);
-          console.log(`📦 ${validProducts.length} productos cargados`);
         } else {
           setProducts([]);
         }
@@ -127,7 +122,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
         setProducts([]);
       }
     } catch (error) {
-      console.error('Error cargando productos:', error);
       setProducts([]);
     } finally {
       setLoadingProducts(false);
@@ -145,7 +139,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
         setServices([]);
       }
     } catch (error) {
-      console.error('Error cargando servicios:', error);
       setServices([]);
     } finally {
       setLoadingServices(false);
@@ -160,8 +153,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
       setLoading(true);
       const usuario_id = localStorage.getItem('usuario_id');
 
-      console.log(`📝 Creando cotización adicional para OT ${workOrder.id}`);
-
       const response = await quotationsService.createQuotation({
         cita_id: null,
         ot_id: parseInt(workOrder.id),
@@ -170,22 +161,15 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
         registrado_por: usuario_id ? parseInt(usuario_id) : null
       });
 
-      console.log('📥 Respuesta completa del backend:', response);
-      console.log('🔍 cotizacion_id:', response?.cotizacion_id);
-      console.log('🔍 allow:', response?.allow);
-      console.log('🔍 msg:', response?.msg);
-
       if (response && response.cotizacion_id) {
         setCotizacionId(String(response.cotizacion_id));
         setStep('items');
         showSuccess('Cotización adicional creada. Ahora agregue los items.');
       } else {
         const errorMsg = response?.msg || 'No se recibió ID de cotización';
-        console.error('❌ Error en respuesta:', { response, allow: response?.allow });
         showError(`Error: ${errorMsg}. Por favor revise la consola para más detalles.`);
       }
     } catch (error) {
-      console.error('Error creando cotización adicional:', error);
       showError('Error creando cotización adicional: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -198,7 +182,7 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
       const itemsData = await quotationsService.getQuotationItems(quotationId);
       setItems(itemsData as QuotationItem[]);
     } catch (error) {
-      console.error('Error cargando items:', error);
+      showError('Error cargando items');
     }
   };
 
@@ -252,7 +236,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
 
       showSuccess('Item agregado exitosamente');
     } catch (error) {
-      console.error('Error agregando item:', error);
       showError('Error agregando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -282,7 +265,6 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
 
       showSuccess('Item eliminado exitosamente');
     } catch (error) {
-      console.error('Error eliminando item:', error);
       showError('Error eliminando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -304,14 +286,11 @@ const CreateQuotationFromOTModal = ({ isOpen, onClose, workOrder, onSuccess }: C
     try {
       setLoading(true);
       
-      console.log(`🎯 Finalizando cotización adicional #${cotizacionId}`);
-      
       showSuccess('Cotización adicional creada exitosamente. El cliente debe aprobarla para agregar los servicios/repuestos a la OT.');
       onSuccess();
       resetModal();
       onClose();
     } catch (error) {
-      console.error('Error al finalizar cotización:', error);
       showError('Error al finalizar la cotización');
     } finally {
       setLoading(false);
