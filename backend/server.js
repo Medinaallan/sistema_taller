@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -7,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const spacesService = require('./services/spacesService');
+const emailService = require('./services/emailService');
 
 // ========================================
 // CONFIGURACIÓN DE ZONA HORARIA
@@ -727,8 +729,20 @@ app.post('/api/auth/register-client', async (req, res) => {
     const response = result.recordset[0];
     console.log('Resultado:', response);
     
+    const isSuccess = response.response === '200 OK';
+    
+    // Enviar código de seguridad por email
+    if (isSuccess && response.codigo_seguridad) {
+      try {
+        await emailService.sendSecurityCode(email, response.codigo_seguridad, fullName);
+      } catch (emailError) {
+        console.error('⚠️ Error enviando email:', emailError.message);
+        // No bloqueamos el registro si el email falla
+      }
+    }
+    
     res.json({
-      success: response.response === '200 OK',
+      success: isSuccess,
       message: response.msg,
       data: {
         securityCode: response.codigo_seguridad
@@ -787,8 +801,6 @@ app.post('/api/auth/login', async (req, res) => {
 // ==============================================
 // RECUPERACIÓN DE CONTRASEÑA
 // ==============================================
-
-const emailService = require('./services/emailService');
 
 // 1. Iniciar recuperación de contraseña
 // SP: SP_INICIAR_RECUPERACION_PASSWORD
