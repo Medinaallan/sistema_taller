@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Card, Button, Modal, Input, Select, TextArea } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { showAlert, showPrompt, showSuccess, showError } from '../../utilidades/sweetAlertHelpers';
 import type { Product } from '../../tipos';
 import type { ColumnDef } from '@tanstack/react-table';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE = appConfig.backendBaseUrl;
 
 const columns: ColumnDef<Product>[] = [
   { accessorKey: 'id', header: 'ID' },

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../config/config';
 
 // Interfaz para Factura desde BD
 interface FacturaDB {
@@ -32,7 +33,7 @@ export const usePendingInvoices = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchPendingInvoicesFromDB = async (): Promise<PendingInvoice[]> => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const API_BASE_URL = appConfig.apiBaseUrl;
     
     try {
       

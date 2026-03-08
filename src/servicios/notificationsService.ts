@@ -1,5 +1,6 @@
+import { appConfig } from '../config/config';
 // Servicio para gestión de notificaciones en el frontend
-const API_BASE = 'http://localhost:8080/api/notifications';
+const API_BASE = `${appConfig.apiBaseUrl}/notifications`;
 
 export interface Notification {
   id: string;

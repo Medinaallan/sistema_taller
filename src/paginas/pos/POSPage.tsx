@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { ShoppingCart, Search, Package, FileText, Wrench, User, Plus, X } from 'lucide-react';
 import type { Client } from '../../tipos';
 import usePendingInvoices from '../../hooks/usePendingInvoices';
@@ -108,7 +109,7 @@ const POSPage: React.FC = () => {
 
   // Productos cargados desde backend /api/products
   const [products, setProducts] = useState<POSItem[]>([] as POSItem[]);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const API_BASE = appConfig.backendBaseUrl;
 
   // Cargar productos al montar (evitar doble /api) y cuando se actualizan
   useEffect(() => {
@@ -664,7 +665,7 @@ const POSPage: React.FC = () => {
       if (!factura) {
         try {
           // Cargar factura directamente desde la API para obtener todos los campos del SP
-          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const API_BASE = appConfig.backendBaseUrl;
           const base = API_BASE.replace(/\/$/, '');
           const url = base.endsWith('/api') ? `${base}/invoices/${activeFacturaId}` : `${base}/api/invoices/${activeFacturaId}`;
           

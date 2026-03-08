@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Card, Button, Badge } from '../../componentes/comunes/UI';
 import { TanStackCrudTable } from '../../componentes/comunes/TanStackCrudTable';
 import { formatCurrency, formatDate } from '../../utilidades/globalMockDatabase';
@@ -126,7 +127,7 @@ const InvoicesPage = () => {
       setLoading(true);
       
       
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+      const API_BASE_URL = appConfig.apiBaseUrl;
       
       // Obtener historial de pagos usando SP_OBTENER_PAGOS
       const response = await fetch(`${API_BASE_URL}/invoice-payments/history`);

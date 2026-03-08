@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { appConfig } from '../config/config';
+const API_BASE = appConfig.backendBaseUrl;
 
 interface AddItemParams {
   factura_id: number;

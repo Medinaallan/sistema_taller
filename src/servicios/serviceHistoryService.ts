@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+import { appConfig } from '../config/config';
+const API_BASE_URL = appConfig.apiBaseUrl;
 
 export const serviceHistoryService = {
   /**

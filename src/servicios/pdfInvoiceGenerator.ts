@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { appConfig } from '../config/config';
 import autoTable from 'jspdf-autotable';
 import { Invoice } from './invoicesService';
 import clientesService from './clientesService';
@@ -15,7 +16,7 @@ class PDFInvoiceGenerator {
    */
   private async imageUrlToBase64(url: string): Promise<string | null> {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const apiUrl = appConfig.backendBaseUrl;
       const baseUrl = apiUrl.replace(/\/$/, '').endsWith('/api') 
         ? apiUrl.replace(/\/api$/, '') 
         : apiUrl.replace(/\/$/, '');

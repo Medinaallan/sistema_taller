@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Card, Button } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import { showError } from '../../utilidades/sweetAlertHelpers';
@@ -44,7 +45,7 @@ const ClientWorkOrdersPage = () => {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'abiertas' | 'en_proceso' | 'cerradas'>('all');
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  const API_BASE_URL = appConfig.apiBaseUrl;
 
   const loadClientWorkOrders = async () => {
     try {

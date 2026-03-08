@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { appConfig } from '../config/config';
+const API_BASE_URL = appConfig.backendBaseUrl;
 
 export interface InvoiceItem {
   id: string;
@@ -356,7 +357,7 @@ class InvoicesService {
         const exentoVal = (invoice as any).exento || 0;
         const exoneradoVal = (invoice as any).exonerado || 0;
         if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
-          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const base = appConfig.backendBaseUrl;
           const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
           try {
             const res = await fetch(url);
@@ -397,7 +398,7 @@ class InvoicesService {
         const exentoVal = (invoice as any).exento || 0;
         const exoneradoVal = (invoice as any).exonerado || 0;
         if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
-          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const base = appConfig.backendBaseUrl;
           const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
           try {
             const res = await fetch(url);
@@ -433,7 +434,7 @@ class InvoicesService {
         const exentoVal = (invoice as any).exento || 0;
         const exoneradoVal = (invoice as any).exonerado || 0;
         if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
-          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const base = appConfig.backendBaseUrl;
           const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
           try {
             const res = await fetch(url);
@@ -467,7 +468,7 @@ class InvoicesService {
         const exentoVal = (invoice as any).exento || 0;
         const exoneradoVal = (invoice as any).exonerado || 0;
         if ((!exentoVal || !exentoVal > 0) && (!exoneradoVal || !exoneradoVal > 0)) {
-          const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+          const base = appConfig.backendBaseUrl;
           const url = base.replace(/\/$/, '').endsWith('/api') ? `${base.replace(/\/$/, '')}/products` : `${base.replace(/\/$/, '')}/api/products`;
           try {
             const res = await fetch(url);

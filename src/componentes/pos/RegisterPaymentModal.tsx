@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Modal, Button, Input, Select } from '../comunes/UI';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { paymentMethodsService, type PaymentMethod } from '../../paginas/administracion/secciones/PaymentMethodsSection';
@@ -172,7 +173,7 @@ export const RegisterPaymentModal = ({
 
     setLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+      const API_BASE_URL = appConfig.apiBaseUrl;
       
       // Registrar cada pago usando el SP_REGISTRAR_PAGO
       for (const payment of payments) {

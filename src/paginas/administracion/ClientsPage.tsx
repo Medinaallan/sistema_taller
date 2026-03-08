@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Modal } from '../../componentes/comunes/UI';
 import { showError, showSuccess, showAlert, showConfirm } from '../../utilidades/sweetAlertHelpers';
@@ -311,7 +312,7 @@ export function ClientsPage() {
         
         // Usar el endpoint que utiliza SP_REGISTRAR_USUARIO_CLIENTE
         // Este SP solo requiere: nombre_completo, correo, telefono
-        const response = await fetch('http://localhost:8080/api/clients', {
+        const response = await fetch(`${appConfig.apiBaseUrl}/clients`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -364,7 +365,7 @@ export function ClientsPage() {
         
         
         // Usar el endpoint que utiliza SP_EDITAR_USUARIO
-        const response = await fetch(`http://localhost:8080/api/clients/${selectedClient.id}`, {
+        const response = await fetch(`${appConfig.apiBaseUrl}/clients/${selectedClient.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

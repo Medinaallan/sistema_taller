@@ -1,4 +1,5 @@
-﻿const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { appConfig } from '../config/config';
+const API_BASE_URL = appConfig.apiBaseUrl;
 
 interface InvoicePaymentData {
   paidInvoices: string[];
@@ -115,4 +116,3 @@ class InvoicePaymentManager {
 
 export const invoicePaymentManager = new InvoicePaymentManager();
 export default invoicePaymentManager;
-

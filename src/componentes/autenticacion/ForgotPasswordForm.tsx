@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { appConfig } from '../../config/config';
 import { Button, Input } from '../comunes/UI';
 
 interface ForgotPasswordFormProps {
@@ -31,7 +32,7 @@ export function ForgotPasswordForm({ onSuccess, onCancel }: ForgotPasswordFormPr
     try {
       console.log('📧 Enviando solicitud de recuperación para:', email);
       
-      const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
+      const response = await fetch(`${appConfig.apiBaseUrl}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

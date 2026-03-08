@@ -1,5 +1,6 @@
 // Página de depuración para verificar datos CSV
 import { useState, useEffect } from 'react';
+import { appConfig } from '../config/config';
 
 export function DebugPage() {
   const [datos, setDatos] = useState<any>(null);
@@ -9,7 +10,7 @@ export function DebugPage() {
     setLoading(true);
     try {
       console.log('🔍 Probando API directamente...');
-      const response = await fetch('http://localhost:8080/api/clients');
+      const response = await fetch(`${appConfig.apiBaseUrl}/clients`);
       const data = await response.json();
       
       console.log('📊 Datos recibidos:', data);

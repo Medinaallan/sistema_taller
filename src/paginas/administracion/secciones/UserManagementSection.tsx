@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { appConfig } from '../../../config/config';
 import { 
   UserIcon,
   PencilIcon,
@@ -159,7 +160,7 @@ export function UserManagementSection() {
 
   const loadUsers = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+      const apiUrl = appConfig.apiBaseUrl;
       const response = await fetch(`${apiUrl}/users/list`);
       
       if (!response.ok) {
@@ -783,7 +784,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
       if (user) {
         // Editar usuario existente usando SP_EDITAR_USUARIO
         console.log('📝 Editando usuario:', user.id);
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+        const apiUrl = appConfig.apiBaseUrl;
         
         const response = await fetch(`${apiUrl}/users/${user.id}`, {
           method: 'PUT',

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { appConfig } from '../../config/config';
 import { Card, Button, Select, Input } from '../../componentes/comunes/UI';
 import { useApp } from '../../contexto/useApp';
 import type { ReportFilters, FinancialStats } from '../../tipos/index';
@@ -311,7 +312,7 @@ export function ReportsPage() {
   const loadFinancialData = useCallback(async () => {
     setLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const API_BASE_URL = appConfig.backendBaseUrl;
       const base = API_BASE_URL.replace(/\/$/, '');
       const url = base.endsWith('/api') ? `${base}/invoice-payments/history` : `${base}/api/invoice-payments/history`;
       
@@ -410,7 +411,7 @@ export function ReportsPage() {
     });
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const API_BASE_URL = appConfig.backendBaseUrl;
       const base = API_BASE_URL.replace(/\/$/, '');
       const url = base.endsWith('/api') ? `${base}/invoice-payments/history` : `${base}/api/invoice-payments/history`;
       
