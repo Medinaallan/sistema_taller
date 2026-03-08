@@ -1,9 +1,9 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+﻿const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-// Estado de autorización
+// Estado de autorizaciÃ³n
 export type AuthorizationStatus = 'pending' | 'approved' | 'rejected';
 
-// Interfaz para autorización de OT
+// Interfaz para autorizaciÃ³n de OT
 export interface WorkOrderAuthorization {
   otId: string;
   otNumero?: string;
@@ -55,7 +55,7 @@ class WorkOrderAuthorizationsService {
     }
   }
 
-  // Obtener autorización de una OT específica
+  // Obtener autorizaciÃ³n de una OT especÃ­fica
   async getAuthorizationByOT(otId: string): Promise<WorkOrderAuthorization | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/workorder-authorizations/ot/${otId}`);
@@ -64,15 +64,15 @@ class WorkOrderAuthorizationsService {
       const result = await response.json();
       return result.data || null;
     } catch (error) {
-      console.error('Error cargando autorización:', error);
+      console.error('Error cargando autorizaciÃ³n:', error);
       return null;
     }
   }
 
-  // Crear/Enviar nueva autorización
+  // Crear/Enviar nueva autorizaciÃ³n
   async createAuthorization(authorization: Omit<WorkOrderAuthorization, 'fechaEnvio' | 'estado'>): Promise<boolean> {
     try {
-      console.log('📤 Enviando autorización al cliente...');
+      console.log('ðŸ“¤ Enviando autorizaciÃ³n al cliente...');
       const response = await fetch(`${API_BASE_URL}/workorder-authorizations`, {
         method: 'POST',
         headers: {
@@ -87,26 +87,26 @@ class WorkOrderAuthorizationsService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Error al enviar autorización');
+        throw new Error(error.message || 'Error al enviar autorizaciÃ³n');
       }
 
       const result = await response.json();
-      console.log('✅ Autorización enviada:', result);
+      console.log('âœ… AutorizaciÃ³n enviada:', result);
       return result.success;
     } catch (error) {
-      console.error('❌ Error enviando autorización:', error);
+      console.error('âŒ Error enviando autorizaciÃ³n:', error);
       throw error;
     }
   }
 
-  // Responder a una autorización (aprobar/rechazar)
+  // Responder a una autorizaciÃ³n (aprobar/rechazar)
   async respondToAuthorization(
     otId: string, 
     estado: 'approved' | 'rejected', 
     comentarios?: string
   ): Promise<boolean> {
     try {
-      console.log(`📝 Respondiendo autorización de OT ${otId}: ${estado}`);
+      console.log(`ðŸ“ Respondiendo autorizaciÃ³n de OT ${otId}: ${estado}`);
       const response = await fetch(`${API_BASE_URL}/workorder-authorizations/${otId}/respond`, {
         method: 'PUT',
         headers: {
@@ -121,19 +121,19 @@ class WorkOrderAuthorizationsService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Error al responder autorización');
+        throw new Error(error.message || 'Error al responder autorizaciÃ³n');
       }
 
       const result = await response.json();
-      console.log('✅ Respuesta registrada:', result);
+      console.log('âœ… Respuesta registrada:', result);
       return result.success;
     } catch (error) {
-      console.error('❌ Error respondiendo autorización:', error);
+      console.error('âŒ Error respondiendo autorizaciÃ³n:', error);
       throw error;
     }
   }
 
-  // Verificar si una OT tiene autorización pendiente
+  // Verificar si una OT tiene autorizaciÃ³n pendiente
   async hasPendingAuthorization(otId: string): Promise<boolean> {
     const auth = await this.getAuthorizationByOT(otId);
     return auth?.estado === 'pending';
@@ -148,3 +148,4 @@ class WorkOrderAuthorizationsService {
 
 export const workOrderAuthorizationsService = new WorkOrderAuthorizationsService();
 export default workOrderAuthorizationsService;
+

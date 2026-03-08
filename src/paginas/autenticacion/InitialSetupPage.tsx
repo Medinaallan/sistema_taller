@@ -52,14 +52,12 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
   const loadRoles = async () => {
     try {
       setRolesLoading(true);
-      console.log('. Cargando roles desde SP_OBTENER_ROLES...');
       
       const response = await fetch('http://localhost:8080/api/users/roles');
       const data = await response.json();
       
       if (data.success && data.data) {
         setRoles(data.data);
-        console.log('✅ Roles cargados:', data.data);
         
         // Auto-seleccionar rol de Administrador si existe
         const adminRole = data.data.find((role: Role) => 
@@ -69,7 +67,6 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
           setFormData(prev => ({ ...prev, role: adminRole.nombre }));
         }
       } else {
-        console.error(' Error obteniendo roles:', data.message);
         // Fallback roles si no se pueden cargar desde la DB
         setRoles([
           { rol_id: 1, nombre: 'Administrador', descripcion: 'Acceso completo al sistema' },
@@ -79,7 +76,7 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
         setFormData(prev => ({ ...prev, role: 'Administrador' }));
       }
     } catch (error) {
-      console.error(' Error de conexión cargando roles, usando fallback:', error);
+      // Error de conexión cargando roles, usar fallback
       // Roles de emergencia si no hay conexión
       setRoles([
         { rol_id: 1, nombre: 'Administrador', descripcion: 'Acceso completo al sistema' },
@@ -149,8 +146,8 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
 
     setLoading(true);
     try {
-      console.log('🚀 Registrando usuario inicial con SP_REGISTRAR_USUARIO_PANEL_ADMIN:', formData);
-
+      // Registrando usuario inicial con SP_REGISTRAR_USUARIO_PANEL_ADMIN
+      
       // Llamar al SP_REGISTRAR_USUARIO_PANEL_ADMIN real
       const response = await fetch('http://localhost:8080/api/users/panel', {
         method: 'POST',
@@ -168,20 +165,18 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
       });
 
       const result = await response.json();
-      console.log('📊 Respuesta del SP:', result);
-
+      
       if (result.success) {
-        console.log('✅ Usuario registrado exitosamente, paso 2: establecer contraseña');
+        // Usuario registrado exitosamente, paso 2: establecer contraseña
         setCurrentStep('password');
         setErrors({}); // Limpiar errores
       } else {
-        console.error('❌ Error registrando usuario:', result.message);
         setErrors({ 
           general: result.message || 'Error al registrar usuario. Verifique los datos.' 
         });
       }
     } catch (error) {
-      console.error('⚠️ Error de conexión:', error);
+      // Error de conexión
       setErrors({ 
         general: 'Error de conexión con el servidor. Verifique su VPN y que el backend esté funcionando.' 
       });
@@ -195,8 +190,8 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
 
     setLoading(true);
     try {
-      console.log('🔒 Estableciendo contraseña con SP_REGISTRAR_PASSWORD:', formData.email);
-
+      // Estableciendo contraseña con SP_REGISTRAR_PASSWORD
+      
       // Llamar al SP_REGISTRAR_PASSWORD real
       const response = await fetch('http://localhost:8080/api/auth/register-password', {
         method: 'POST',
@@ -210,11 +205,9 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
       });
 
       const result = await response.json();
-      console.log('📊 Respuesta del SP_REGISTRAR_PASSWORD:', result);
-
+      
       if (result.allow === 1) {
-        console.log('✅ Contraseña establecida exitosamente');
-        
+        // Contraseña establecida exitosamente
         // Crear usuario para el contexto local con la contraseña real
         const newUser = {
           id: Date.now().toString(),
@@ -233,13 +226,12 @@ export function InitialSetupPage({ onComplete, onCancel }: InitialSetupPageProps
         
         onComplete();
       } else {
-        console.error('❌ Error estableciendo contraseña:', result.msg);
         setErrors({ 
           general: result.msg || 'Error al establecer contraseña. Intente nuevamente.' 
         });
       }
     } catch (error) {
-      console.error('⚠️ Error de conexión:', error);
+      // Error de conexión
       setErrors({ 
         general: 'Error de conexión con el servidor. Verifique su VPN.' 
       });

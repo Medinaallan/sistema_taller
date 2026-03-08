@@ -379,7 +379,6 @@ export function ReportsPage() {
       });
       
     } catch (error) {
-      console.error('Error cargando datos financieros:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -419,7 +418,6 @@ export function ReportsPage() {
       const fechaInicio = filters.startDate.toISOString().split('T')[0];
       const fechaFin = filters.endDate.toISOString().split('T')[0];
       
-      console.log('📊 Obteniendo datos para reporte Excel...');
       const response = await fetch(`${url}?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`);
       
       if (!response.ok) {
@@ -428,7 +426,6 @@ export function ReportsPage() {
       
       const result = await response.json();
       const pagos = result.data || [];
-      console.log(`✅ ${pagos.length} pagos obtenidos`);
 
       // Cerrar loading antes de mostrar cualquier otro modal
       Swal.close();
@@ -466,10 +463,8 @@ export function ReportsPage() {
       });
 
       const facturasUnicas = Array.from(facturaMap.values());
-      console.log(`📋 ${facturasUnicas.length} facturas únicas a exportar`);
 
       // Cargar la plantilla Excel con ExcelJS (que SÍ preserva estilos)
-      console.log('📄 Cargando plantilla Excel...');
       const templatePath = '/TempReportsPage.xlsx';
       const templateResponse = await fetch(templatePath);
       
@@ -487,7 +482,7 @@ export function ReportsPage() {
         throw new Error('No se pudo leer la hoja de la plantilla');
       }
       
-      console.log('✏️ Llenando datos en la plantilla...');
+      // Llenando datos en la plantilla
       
       // Actualizar fecha y hora de generación (celda E4)
       const fechaGeneracion = new Date().toLocaleString('es-HN', {
@@ -605,7 +600,6 @@ export function ReportsPage() {
       finPaginaCell.font = { bold: true, color: { argb: 'FFC0C0C0' }, size: 14 };
       
       // Generar el archivo Excel
-      console.log('💾 Generando archivo Excel...');
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
@@ -615,7 +609,6 @@ export function ReportsPage() {
       const fileName = `reporte_ventas_${fechaInicio}_${fechaFin}.xlsx`;
       saveAs(blob, fileName);
       
-      console.log('✅ Archivo Excel generado exitosamente');
       
       await Swal.fire({
         icon: 'success',
@@ -626,7 +619,6 @@ export function ReportsPage() {
       });
       
     } catch (error) {
-      console.error('❌ Error generando reporte Excel:', error);
       Swal.close(); // Asegurar que se cierre el loading
       await Swal.fire({
         icon: 'error',

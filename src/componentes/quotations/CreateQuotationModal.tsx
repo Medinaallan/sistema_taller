@@ -82,8 +82,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
           descripcion: descripcion,
           precio_unitario: precio
         }));
-        
-        console.log(`💰 Servicio seleccionado: ${descripcion} - Precio: L${precio}`);
       }
     }
   };
@@ -105,8 +103,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
           descripcion: descripcion,
           precio_unitario: precio
         }));
-        
-        console.log(`📦 Producto seleccionado: ${descripcion} - Precio: L${precio}`);
       }
     }
   };
@@ -133,17 +129,13 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         if (result.success && result.data) {
           const validProducts = Array.isArray(result.data) ? result.data : [];
           setProducts(validProducts);
-          console.log(`📦 ${validProducts.length} productos cargados`);
         } else {
-          console.error('Error en respuesta de productos:', result);
           setProducts([]);
         }
       } else {
-        console.error('Error al cargar productos:', response.statusText);
         setProducts([]);
       }
     } catch (error) {
-      console.error('Error cargando productos:', error);
       setProducts([]);
     } finally {
       setLoadingProducts(false);
@@ -158,11 +150,9 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         const validServices = Array.isArray(response.data) ? response.data : [];
         setServices(validServices);
       } else {
-        console.warn('No se pudieron cargar los servicios:', response);
         setServices([]);
       }
     } catch (error) {
-      console.error('Error cargando servicios:', error);
       setServices([]);
     } finally {
       setLoadingServices(false);
@@ -179,7 +169,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         });
         setDisplayNames(names);
       } catch (error) {
-        console.error('Error cargando nombres:', error);
         setDisplayNames({
           clientName: `Cliente #${appointment.clientId}`,
           vehicleName: `Vehículo #${appointment.vehicleId}`,
@@ -212,7 +201,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
         showError('Error: No se recibió ID de cotización. Respuesta: ' + JSON.stringify(response));
       }
     } catch (error) {
-      console.error('Error creando cotización:', error);
       showError('Error creando cotización: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -225,7 +213,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       const itemsData = await quotationsService.getQuotationItems(quotationId);
       setItems(itemsData as QuotationItem[]);
     } catch (error) {
-      console.error('Error cargando items:', error);
+      // ignore
     }
   };
 
@@ -285,7 +273,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
 
       showSuccess('Item agregado exitosamente');
     } catch (error) {
-      console.error('Error agregando item:', error);
       showError('Error agregando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -317,7 +304,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
 
       showSuccess('Item eliminado exitosamente');
     } catch (error) {
-      console.error('Error eliminando item:', error);
       showError('Error eliminando item: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -339,14 +325,10 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
     try {
       setLoading(true);
       
-      console.log(` Finalizando cotización #${cotizacionId}`);
-      
       // Cambiar estado de la cita a "aprobada" cuando se finaliza la cotización
       if (appointment && appointment.id) {
         try {
           const usuario_id = localStorage.getItem('usuario_id');
-          console.log(`Cambiando estado de cita ${appointment.id} a "aprobada"`);
-          
           await appointmentsService.changeStatus(
             typeof appointment.id === 'string' ? parseInt(appointment.id, 10) : appointment.id,
             {
@@ -355,10 +337,7 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
               registrado_por: usuario_id ? parseInt(usuario_id) : 0
             }
           );
-          
-          console.log(' Estado de cita actualizado a "aprobada"');
         } catch (error) {
-          console.error(' Error al cambiar estado de cita:', error);
           // Continuar aunque falle el cambio de estado
         }
       }
@@ -368,7 +347,6 @@ const CreateQuotationModal = ({ isOpen, onClose, appointment, onSuccess }: Creat
       resetModal();
       onClose();
     } catch (error) {
-      console.error('Error al finalizar cotización:', error);
       showError('Error al finalizar la cotización');
     } finally {
       setLoading(false);

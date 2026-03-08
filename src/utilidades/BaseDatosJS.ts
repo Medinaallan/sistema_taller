@@ -1,4 +1,4 @@
-// ====================================
+﻿// ====================================
 // BASE DE DATOS TYPESCRIPT - CLIENTES
 // Sistema de almacenamiento de clientes usando SP_OBTENER_USUARIOS
 // ====================================
@@ -10,7 +10,7 @@ const API_BASE_URL = 'http://localhost:8080/api';
 // Array de clientes registrados (cargado desde base de datos)
 export let clientesRegistrados: Client[] = [];
 
-// Función para cargar clientes desde base de datos vía SP_OBTENER_USUARIOS
+
 async function cargarClientesDB(): Promise<Client[]> {
   try {
     console.log(' GET /api/clients/registered - Obteniendo todos los clientes desde BD');
@@ -19,7 +19,7 @@ async function cargarClientesDB(): Promise<Client[]> {
     const response = await fetch(`${API_BASE_URL}/users/list`);
     
     if (!response.ok) {
-      console.error('❌ Error HTTP:', response.status);
+      
       return [];
     }
     
@@ -45,10 +45,10 @@ async function cargarClientesDB(): Promise<Client[]> {
             name: usuario.nombre_completo,
             email: usuario.correo,
             phone: usuario.telefono,
-            address: '', // Los usuarios no tienen dirección en el SP
-            password: '', // No exponemos contraseñas
-            vehicles: [], // Los vehículos se cargarían por separado
-            createdAt: new Date(), // Fecha genérica
+            address: '', 
+            password: '', 
+            vehicles: [], 
+            createdAt: new Date(), 
             updatedAt: new Date()
           };
           console.log(`    Cliente convertido: ${clienteConvertido.name} (${clienteConvertido.email})`);
@@ -67,7 +67,7 @@ async function cargarClientesDB(): Promise<Client[]> {
   }
 }
 
-// Función para guardar cliente en base de datos vía API
+
 async function guardarCliente(cliente: Client): Promise<boolean> {
   try {
     console.log(' Guardando cliente en base de datos:', cliente.name);
@@ -106,11 +106,11 @@ async function guardarCliente(cliente: Client): Promise<boolean> {
   }
 }
 
-// Función para inicializar clientes desde base de datos
+//
 export async function inicializarClientes(): Promise<void> {
   clientesRegistrados = await cargarClientesDB();
   
-  // Configurar recarga automática cada 30 segundos
+ 
   setInterval(async () => {
     try {
       const clientesActualizados = await cargarClientesDB();
@@ -119,18 +119,18 @@ export async function inicializarClientes(): Promise<void> {
         clientesRegistrados = clientesActualizados;
       }
     } catch (error) {
-      console.error('Error en recarga automática:', error);
+      
     }
   }, 30000); // 30 segundos
 }
 
-// Función para recargar clientes desde base de datos (para refrescar cambios manuales)
+// FunciÃ³n para recargar clientes desde base de datos (para refrescar cambios manuales)
 export async function recargarClientes(): Promise<void> {
   console.log('Recargando clientes desde base de datos...');
   clientesRegistrados = await cargarClientesDB();
 }
 
-// Función para obtener todos los clientes (con opción de recargar)
+// FunciÃ³n para obtener todos los clientes (con opciÃ³n de recargar)
 export async function obtenerClientes(recargar: boolean = true): Promise<Client[]> {
   if (recargar) {
     // Recargar datos frescos de la base de datos
@@ -139,29 +139,29 @@ export async function obtenerClientes(recargar: boolean = true): Promise<Client[
   return [...clientesRegistrados];
 }
 
-// Función para obtener todos los clientes (versión síncrona - datos en memoria)
+// FunciÃ³n para obtener todos los clientes (versiÃ³n sÃ­ncrona - datos en memoria)
 export function obtenerClientesEnMemoria(): Client[] {
   return [...clientesRegistrados];
 }
 
-// Función para obtener todos los clientes con recarga forzada
+// FunciÃ³n para obtener todos los clientes con recarga forzada
 export async function obtenerClientesActualizados(): Promise<Client[]> {
   await recargarClientes();
   return [...clientesRegistrados];
 }
 
-// Función para agregar un nuevo cliente
+// FunciÃ³n para agregar un nuevo cliente
 export async function agregarCliente(nuevoCliente: Client): Promise<Client | null> {
   console.log(' Agregando nuevo cliente:', nuevoCliente.name);
   
-  // Guardar en base de datos vía API
+  // Guardar en base de datos vÃ­a API
   const guardado = await guardarCliente(nuevoCliente);
   
   if (guardado) {
     // Recargar datos desde la base de datos para obtener el cliente con ID generado
     await recargarClientes();
     
-    // Buscar el cliente recién creado por email
+    // Buscar el cliente reciÃ©n creado por email
     const clienteCreado = clientesRegistrados.find(c => c.email === nuevoCliente.email);
     
     console.log(' Cliente agregado exitosamente');
@@ -173,14 +173,14 @@ export async function agregarCliente(nuevoCliente: Client): Promise<Client | nul
   }
 }
 
-// Función para buscar cliente por email
+// FunciÃ³n para buscar cliente por email
 export function buscarClientePorEmail(email: string): Client | undefined {
   return clientesRegistrados.find(cliente => 
     cliente.email.toLowerCase() === email.toLowerCase()
   );
 }
 
-// Función para autenticar cliente
+// FunciÃ³n para autenticar cliente
 export function autenticarCliente(email: string, password: string): Client | undefined {
   return clientesRegistrados.find(cliente => 
     cliente.email.toLowerCase() === email.toLowerCase() && 
@@ -188,7 +188,7 @@ export function autenticarCliente(email: string, password: string): Client | und
   );
 }
 
-// Función para actualizar un cliente
+// FunciÃ³n para actualizar un cliente
 export async function actualizarCliente(id: string, datosActualizados: Partial<Client>): Promise<Client | null> {
   const index = clientesRegistrados.findIndex(cliente => cliente.id === id);
   if (index !== -1) {
@@ -198,14 +198,14 @@ export async function actualizarCliente(id: string, datosActualizados: Partial<C
       updatedAt: new Date()
     };
     
-    // Aquí podrías agregar lógica para actualizar en la base de datos si es necesario
+    // AquÃ­ podrÃ­as agregar lÃ³gica para actualizar en la base de datos si es necesario
     console.log('Cliente actualizado:', clientesRegistrados[index]);
     return clientesRegistrados[index];
   }
   return null;
 }
 
-// Función para eliminar un cliente
+// FunciÃ³n para eliminar un cliente
 export function eliminarCliente(id: string): Client | null {
   const index = clientesRegistrados.findIndex(cliente => cliente.id === id);
   if (index !== -1) {
@@ -216,7 +216,7 @@ export function eliminarCliente(id: string): Client | null {
   return null;
 }
 
-// Función para obtener estadísticas
+// FunciÃ³n para obtener estadÃ­sticas
 export function obtenerEstadisticasClientes() {
   return {
     total: clientesRegistrados.length,
@@ -226,7 +226,7 @@ export function obtenerEstadisticasClientes() {
   };
 }
 
-// Función para limpiar localStorage (eliminar datos antiguos)
+// FunciÃ³n para limpiar localStorage (eliminar datos antiguos)
 export function limpiarLocalStorage(): void {
   try {
     // Eliminar clientes del localStorage
@@ -238,5 +238,6 @@ export function limpiarLocalStorage(): void {
   }
 }
 
-// Auto-limpiar localStorage al cargar el módulo
+// Auto-limpiar localStorage al cargar el mÃ³dulo
 limpiarLocalStorage();
+

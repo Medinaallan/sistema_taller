@@ -45,7 +45,6 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const loadServicios = async () => {
     try {
       setLoadingServicios(true);
-      console.log('📥 Cargando tipos de servicio desde SP_OBTENER_TIPOS_SERVICIO...');
       
       const response = await fetch(`${API_BASE_URL}/service-types?obtener_activos=1`);
       
@@ -54,21 +53,17 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
       }
       
       const data = await response.json();
-      console.log('✅ Tipos de servicio recibidos:', data);
       
       if (Array.isArray(data)) {
         const mappedServices = data.map((service: any) => ({
           value: service.tipo_servicio_id.toString(),
           label: service.nombre
         }));
-        console.log('✅ Servicios mapeados:', mappedServices);
         setServicios(mappedServices);
       } else {
-        console.error('❌ Formato de respuesta inesperado:', data);
         throw new Error('Formato de respuesta inválido');
       }
     } catch (error) {
-      console.error('❌ Error cargando tipos de servicio:', error);
       showError('Error al cargar tipos de servicio disponibles');
     } finally {
       setLoadingServicios(false);
@@ -103,15 +98,12 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
         prioridad: formData.prioridad
       };
 
-      console.log('📤 Enviando datos de tarea:', tareaData);
-      
       await workOrdersService.agregarTarea(workOrder.id, tareaData);
       
       showSuccess('Tarea agregada exitosamente');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error agregando tarea:', error);
       showError('Error al agregar tarea: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
