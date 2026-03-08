@@ -11,12 +11,21 @@ interface AppointmentDetailsModalProps {
 }
 
 const statusColors = {
-  pending: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', label: 'Pendiente' },
-  confirmed: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', label: 'Confirmada' },
-  approved: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', label: 'Aprobada' },
-  completed: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', label: 'Completada' },
-  cancelled: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', label: 'Cancelada' }
-};
+  // English keys
+  pending:   { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', label: 'Pendiente' },
+  confirmed: { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-800',   label: 'Confirmada' },
+  approved:  { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-800',  label: 'Aprobada' },
+  completed: { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-800',  label: 'Completada' },
+  cancelled: { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-800',    label: 'Cancelada' },
+  // Spanish keys (lowercase)
+  pendiente:  { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', label: 'Pendiente' },
+  confirmada: { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-800',   label: 'Confirmada' },
+  aprobada:   { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-800',  label: 'Aprobada' },
+  completada: { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-800',  label: 'Completada' },
+  cancelada:  { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-800',    label: 'Cancelada' },
+} as const;
+
+const fallbackStatus = { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-800', label: 'Desconocido' };
 
 export default function AppointmentDetailsModal({
   isOpen,
@@ -28,8 +37,8 @@ export default function AppointmentDetailsModal({
 }: AppointmentDetailsModalProps) {
   if (!appointment) return null;
 
-  const statusKey = (appointment.status as keyof typeof statusColors) || 'pending';
-  const statusInfo = statusColors[statusKey];
+  const statusKey = ((appointment.status as string) || 'pending').toLowerCase() as keyof typeof statusColors;
+  const statusInfo = statusColors[statusKey] ?? fallbackStatus;
 
   return (
     <Modal

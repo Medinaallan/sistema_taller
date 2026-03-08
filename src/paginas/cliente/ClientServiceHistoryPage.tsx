@@ -15,14 +15,24 @@ import { serviceHistoryService } from '../../servicios/serviceHistoryService';
 
 interface ServiceRecord {
   id: string;
+  numero_ot?: string;
   vehicleId: string;
   vehicleName: string;
+  placa?: string;
   serviceType: string;
   description: string;
   date: string;
+  fechaEstimada?: string;
+  odometro?: number;
   cost: number;
+  totalTareas?: number;
   technician: string;
+  asesor?: string;
   status: 'completed' | 'warranty' | 'pending-payment';
+  clientId?: string;
+  clientName?: string;
+  clientPhone?: string;
+  fotoVehiculo?: string | null;
   rating?: number;
   review?: string;
   warranty?: {
@@ -310,13 +320,39 @@ export function ClientServiceHistoryPage() {
                 <h5 className="font-semibold text-gray-900 mb-3">Detalles del Servicio</h5>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Fecha:</span>
+                    <span className="text-sm text-gray-600">Fecha recepción:</span>
                     <span className="text-sm font-medium text-gray-900">{selectedService.date}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Técnico:</span>
-                    <span className="text-sm font-medium text-gray-900">{selectedService.technician}</span>
-                  </div>
+                  {selectedService.fechaEstimada && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Fecha estimada:</span>
+                      <span className="text-sm font-medium text-gray-900">{selectedService.fechaEstimada}</span>
+                    </div>
+                  )}
+                  {selectedService.odometro != null && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Odómetro:</span>
+                      <span className="text-sm font-medium text-gray-900">{selectedService.odometro?.toLocaleString()} km</span>
+                    </div>
+                  )}
+                  {selectedService.technician && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Mecánico:</span>
+                      <span className="text-sm font-medium text-gray-900">{selectedService.technician}</span>
+                    </div>
+                  )}
+                  {selectedService.asesor && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Asesor:</span>
+                      <span className="text-sm font-medium text-gray-900">{selectedService.asesor}</span>
+                    </div>
+                  )}
+                  {selectedService.placa && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Placa:</span>
+                      <span className="text-sm font-medium text-gray-900">{selectedService.placa}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Estado:</span>
                     <span className={`text-sm font-medium px-2 py-1 rounded ${statusConfig.color}`}>
@@ -329,6 +365,12 @@ export function ClientServiceHistoryPage() {
               <div className="bg-gray-50 rounded-lg p-4">
                 <h5 className="font-semibold text-gray-900 mb-3">Costos</h5>
                 <div className="space-y-2">
+                  {selectedService.totalTareas != null && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total tareas:</span>
+                      <span className="text-sm font-medium text-gray-900">{selectedService.totalTareas}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Costo total:</span>
                     <span className="text-lg font-bold text-gray-900">{formatCurrency(selectedService.cost)}</span>

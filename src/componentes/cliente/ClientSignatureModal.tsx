@@ -99,6 +99,53 @@ export const ClientSignatureModal: React.FC<ClientSignatureModalProps> = ({
     setIsDrawing(false);
   };
 
+  const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    setIsDrawing(true);
+    ctx.beginPath();
+    ctx.moveTo(
+      (touch.clientX - rect.left) * scaleX,
+      (touch.clientY - rect.top) * scaleY
+    );
+  };
+
+  const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.lineTo(
+      (touch.clientX - rect.left) * scaleX,
+      (touch.clientY - rect.top) * scaleY
+    );
+    ctx.stroke();
+    setHasSignature(true);
+  };
+
+  const stopDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsDrawing(false);
+  };
+
   const clearSignature = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -169,7 +216,7 @@ export const ClientSignatureModal: React.FC<ClientSignatureModalProps> = ({
         {/* Alerta informativa */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
-            <strong>⚠️ Importante:</strong> Este documento autoriza al taller a realizar pruebas 
+            <strong>Importante:</strong> Este documento autoriza al taller a realizar pruebas 
             de manejo y validación del vehículo. Por favor, lea cuidadosamente antes de firmar.
           </p>
         </div>
@@ -262,15 +309,19 @@ export const ClientSignatureModal: React.FC<ClientSignatureModalProps> = ({
               width={700}
               height={200}
               className="w-full cursor-crosshair"
+              style={{ touchAction: 'none' }}
               onMouseDown={startDrawing}
               onMouseMove={draw}
               onMouseUp={stopDrawing}
               onMouseLeave={stopDrawing}
+              onTouchStart={startDrawingTouch}
+              onTouchMove={drawTouch}
+              onTouchEnd={stopDrawingTouch}
             />
           </div>
           
           <p className="text-xs text-gray-500">
-            Dibuja tu firma en el recuadro usando el cursor del mouse
+            Dibuja tu firma en el recuadro usando el cursor del mouse o con tu dedo/lápiz
           </p>
         </div>
 
