@@ -818,14 +818,42 @@ router.post('/:cotizacionId/generate-workorder', async (req, res) => {
 
 		const output = result.recordset?.[0] || {};
 		
+		// Si el SP no retornó ot_id pero sí allow, buscarlo por cotizacion_id
+		let otIdFinal = output.ot_id;
+		if (output.allow && !output.ot_id) {
+			console.log('⚠️ SP no retornó ot_id, buscando OT creada para cotización:', cotizacionId);
+			try {
+				const buscarOT = await pool.request()
+					.input('ot_id', sql.Int, null)
+					.input('cliente_id', sql.Int, null)
+					.input('placa', sql.VarChar(50), null)
+					.input('estado', sql.VarChar(50), null)
+					.input('numero_ot', sql.VarChar(20), null)
+					.execute('SP_OBTENER_ORDENES_TRABAJO');
+				
+				const otEncontrada = buscarOT.recordset.find(ot =>
+					ot.cotizacion_id && parseInt(ot.cotizacion_id) === parseInt(cotizacionId)
+				);
+				
+				if (otEncontrada) {
+					otIdFinal = otEncontrada.ot_id;
+					console.log('✅ OT encontrada con ot_id:', otIdFinal);
+				} else {
+					console.error('❌ No se encontró la OT creada para cotización:', cotizacionId);
+				}
+			} catch (buscarError) {
+				console.error('❌ Error buscando OT creada:', buscarError);
+			}
+		}
+
 		// Iniciar sala de chat para la OT si fue creada exitosamente
-		if (output.allow && output.ot_id) {
+		if (output.allow && otIdFinal) {
 			try {
 				await pool.request()
-					.input('ot_id', sql.Int, output.ot_id)
+					.input('ot_id', sql.Int, otIdFinal)
 					.input('registrado_por', sql.Int, generado_por || null)
 					.execute('SP_INICIAR_SALA_CHAT');
-				console.log('✅ Sala de chat iniciada para OT:', output.ot_id);
+				console.log('✅ Sala de chat iniciada para OT:', otIdFinal);
 			} catch (chatError) {
 				console.error('⚠️ Error al iniciar sala de chat:', chatError);
 				// No fallar la operación si la sala de chat falla

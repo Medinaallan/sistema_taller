@@ -9,42 +9,6 @@ import type {
   InventoryItem, Supplier, Log, DashboardStats
 } from '../tipos';
 
-// ====================================
-// ARRAYS CON DATOS DE PRUEBA
-// ====================================
-
-export const mockUsers: User[] = [
-  {
-    id: 'user-admin-001',
-    email: 'admin@taller.com',
-    password: 'admin123',
-    role: 'admin',
-    name: 'ADMIN ALLAN',
-    phone: '+1234567890',
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-  },
-  {
-    id: 'user-recep-001',
-    email: 'recep@taller.com',
-    password: 'recep123',
-    role: 'receptionist',
-    name: 'Recepcionista del Taller',
-    phone: '+1234567891',
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-  },
-  {
-    id: 'user-mec-001',
-    email: 'mecanico@taller.com',
-    password: 'mec123',
-    role: 'mechanic',
-    name: 'Mecánico Principal',
-    phone: '+1234567892',
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-  }
-];
 export const mockServiceTypes: ServiceType[] = [];
 export const mockClients: Client[] = [];
 export const mockVehicles: Vehicle[] = [];

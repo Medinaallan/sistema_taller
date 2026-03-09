@@ -327,7 +327,7 @@ export function ClientRegisterForm({ onSuccess, onCancel }: ClientRegisterFormPr
               value={formData.phone}
               onChange={handleInputChange}
               error={errors.phone}
-              placeholder="+1234567890"
+              placeholder="0000-0000"
               required
             />
           </>
